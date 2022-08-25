@@ -99,23 +99,7 @@ func main() {
 	transforms    := ecs.CreateStorage[comps.Transform]            (ECS_RESERVE_COUNT)
 	movers        := ecs.CreateStorage[comps.Movement]             (ECS_RESERVE_COUNT)
 	fpControllers := ecs.CreateStorage[comps.FirstPersonController](ECS_RESERVE_COUNT)
-
-	//Camera controller
-	cameraEnt := world.NewEnt()
-	cameras.Assign(cameraEnt, comps.NewCamera(45.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
-	camTran := comps.TransformFromMatrix(math2.LookAtV(mgl32.Vec3{6.0, 6.0, 6.0}, math2.Vec3Zero(), math2.Vec3Up()))
-
-	transforms.Assign(cameraEnt, camTran)
-	movers.Assign(cameraEnt, comps.Movement{MaxSpeed: 12.0, YawAngle: camTran.GetYaw(), PitchAngle: camTran.GetPitch()})
-	fpControllers.Assign(cameraEnt, comps.FirstPersonController{ 
-		ForwardAction: ACTION_FORWARD, 
-		BackAction: ACTION_BACK, 
-		StrafeLeftAction: ACTION_LEFT, 
-		StrafeRightAction: ACTION_RIGHT,
-		LookHorzAction: ACTION_LOOK_HORZ, 
-		LookVertAction: ACTION_LOOK_VERT,
-	})
-
+	
 	//Load map
 	te3, err := assets.LoadTE3File("assets/maps/E3M1.te3")
 	if err != nil {
@@ -126,13 +110,33 @@ func main() {
 		log.Println("Map generating error: ", err)
 	}
 
+	//Camera controller
+	cameraEnt := world.NewEnt()
+	cameras.Assign(cameraEnt, comps.NewCamera(45.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
+
+	//Place camera at player's position
+	camTrans := comps.Transform{}
+	playerSpawn, _ := te3.FindEntWithProperty("type", "player spawn")
+	camTrans.SetPosition(playerSpawn.Position)
+	transforms.Assign(cameraEnt, camTrans)
+	
+	movers.Assign(cameraEnt, comps.Movement{MaxSpeed: 12.0, YawAngle: mgl32.DegToRad(playerSpawn.Angles[1]), PitchAngle: 0.0})
+	fpControllers.Assign(cameraEnt, comps.FirstPersonController{ 
+		ForwardAction: ACTION_FORWARD, 
+		BackAction: ACTION_BACK, 
+		StrafeLeftAction: ACTION_LEFT, 
+		StrafeRightAction: ACTION_RIGHT,
+		LookHorzAction: ACTION_LOOK_HORZ, 
+		LookVertAction: ACTION_LOOK_VERT,
+	})
+
 	input.TrapMouse()
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.CULL_FACE)
 	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(1.0, 1.0, 1.0, 1.0)
+	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 
 	previousTime := glfw.GetTime()
 
@@ -176,6 +180,9 @@ func main() {
 		
 		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &mvp[0])
 		gl.Uniform1i(assets.MapShader.GetUniformLoc("uTex"), 0)
+
+		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogStart"), 1.0)
+		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogLength"), 50.0)
 		
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture.GetID())

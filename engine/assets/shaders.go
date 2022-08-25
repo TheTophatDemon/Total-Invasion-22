@@ -42,6 +42,8 @@ func InitShaders() {
 		in vec2 vTexCoord;
 
 		uniform sampler2D uTex;
+		uniform float uFogStart;
+		uniform float uFogLength;
 
 		out vec4 oColor;
 
@@ -50,6 +52,9 @@ func InitShaders() {
 			if (diffuse.a < 0.5) {
 				discard;
 			}
+			float depth = gl_FragCoord.z / gl_FragCoord.w;
+			float fog = 1.0 - clamp((depth - uFogStart) / uFogLength, 0.0, 1.0);
+    		diffuse.xyz *= fog;
 			oColor = diffuse;
 		}
 	`)
