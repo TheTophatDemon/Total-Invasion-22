@@ -27,19 +27,28 @@ func InitShaders() {
 
 		layout(location = 0) in vec3 aPos;
 		layout(location = 1) in vec2 aTexCoord;
+		layout(location = 2) in vec3 aNormal;
 
 		uniform mat4 uMVP;
+		uniform mat4 uModelTransform;
 
 		out vec2 vTexCoord;
+		out vec3 vNormal;
 
 		void main() {
 			vTexCoord = aTexCoord;
+			mat3 rot = mat3(uModelTransform[0].xyz, uModelTransform[1].xyz, uModelTransform[2].xyz);
+			vNormal = normalize(rot * aNormal);
 			gl_Position = uMVP * vec4(aPos, 1);
 		}
 	`, `
 		#version 330
 
+		const vec3 LIGHT_DIR = normalize(vec3(1.0, 0.0, 1.0));
+		const vec3 AMBIENT = vec3(0.5, 0.5, 0.5);
+
 		in vec2 vTexCoord;
+		in vec3 vNormal;
 
 		uniform sampler2D uTex;
 		uniform float uFogStart;
@@ -52,9 +61,11 @@ func InitShaders() {
 			if (diffuse.a < 0.5) {
 				discard;
 			}
+			float lightFactor = (dot(-LIGHT_DIR, normalize(vNormal)) + 1.0) / 2.0;
+			diffuse.rgb *= AMBIENT + (vec3(1.0) - AMBIENT) * lightFactor;
 			float depth = gl_FragCoord.z / gl_FragCoord.w;
 			float fog = 1.0 - clamp((depth - uFogStart) / uFogLength, 0.0, 1.0);
-    		diffuse.xyz *= fog;
+    		diffuse.rgb *= fog;
 			oColor = diffuse;
 		}
 	`)

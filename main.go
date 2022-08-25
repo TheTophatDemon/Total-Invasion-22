@@ -196,6 +196,8 @@ func main() {
 
 		//Draw the map
 		te3Mesh.Bind()
+		model := mgl32.Ident4()
+		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uModelTransform"), 1, false, &model[0])
 		for _, group := range te3Mesh.GetGroupNames() {
 			gl.BindTexture(gl.TEXTURE_2D, assets.GetTexture(group).GetID())
 			te3Mesh.DrawGroup(group)
