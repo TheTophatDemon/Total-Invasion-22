@@ -4,9 +4,6 @@ package ecs
 //The generation count increases with each reuse of the ID to indicate that it's a different entity than the last one.
 type EntID uint32
 
-//ID of 0 signifies an absence of an entity, so storage containers can identify non-owned components.
-const NO_ENT EntID = 0
-
 const (
 	ENT_IDX_MASK  = 0x0000FFFF
 	ENT_GEN_MASK  = 0xFFFF0000

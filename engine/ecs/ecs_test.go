@@ -17,20 +17,20 @@ var transforms *ComponentStorage[Transform]
 
 func init() {
 	world = CreateWorld(MAX_ENTS)
-	cameras = CreateStorage[Camera](MAX_ENTS)
-	transforms = CreateStorage[Transform](MAX_ENTS)
+	cameras = CreateStorage[Camera]()
+	transforms = CreateStorage[Transform]()
 }
 
 func TestCumulative(t *testing.T) {
 	camEnt := world.NewEnt()
 	camID, _ := camEnt.Split()
-	err := cameras.Assign(camEnt, Camera{})
+	_, err := cameras.Assign(camEnt)
 	if err != nil || !cameras.Has(camEnt) {
 		t.Fatalf("Could not assign component; %v", err)
 	}
 
-	err = transforms.Assign(camEnt, Transform{})
-	trans, err := transforms.Get(camEnt)
+	trans, err := transforms.Assign(camEnt)
+	// trans, err = transforms.Get(camEnt)
 	trans.dirty = true
 
 	trans, err = transforms.Get(camEnt)

@@ -95,10 +95,10 @@ func main() {
 
 	//Create ECS world
 	world := ecs.CreateWorld(ECS_RESERVE_COUNT)
-	cameras       := ecs.CreateStorage[comps.Camera]               (ECS_RESERVE_COUNT)
-	transforms    := ecs.CreateStorage[comps.Transform]            (ECS_RESERVE_COUNT)
-	movers        := ecs.CreateStorage[comps.Movement]             (ECS_RESERVE_COUNT)
-	fpControllers := ecs.CreateStorage[comps.FirstPersonController](ECS_RESERVE_COUNT)
+	cameras       := ecs.CreateStorage[comps.Camera]()
+	transforms    := ecs.CreateStorage[comps.Transform]()
+	movers        := ecs.CreateStorage[comps.Movement]()
+	fpControllers := ecs.CreateStorage[comps.FirstPersonController]()
 	
 	//Load map
 	te3, err := assets.LoadTE3File("assets/maps/E3M1.te3")
@@ -130,7 +130,7 @@ func main() {
 		LookVertAction: ACTION_LOOK_VERT,
 	})
 
-	input.TrapMouse()
+	//input.TrapMouse()
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
@@ -177,15 +177,17 @@ func main() {
 		// Render
 		assets.MapShader.Use()
 		cube.Bind()
-		
+
 		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &mvp[0])
 		gl.Uniform1i(assets.MapShader.GetUniformLoc("uTex"), 0)
+		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlas"), 1)
+		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
 
 		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogStart"), 1.0)
 		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogLength"), 50.0)
-		
+
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, texture.GetID())
+		gl.BindTexture(texture.Target(), texture.ID())
 		
 		// cube.DrawAll()
 		
@@ -199,11 +201,24 @@ func main() {
 		model := mgl32.Ident4()
 		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uModelTransform"), 1, false, &model[0])
 		for _, group := range te3Mesh.GetGroupNames() {
-			gl.BindTexture(gl.TEXTURE_2D, assets.GetTexture(group).GetID())
+			tex := assets.GetTexture(group)
+			//Turn on uniforms for the texture
+			switch tex.(type) {
+			case *assets.AtlasTexture:
+				gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 1)
+				gl.Uniform1i(assets.MapShader.GetUniformLoc("uFrame"), int32(time * 5.0) % 16)
+				gl.ActiveTexture(gl.TEXTURE1)
+			default:
+				gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
+				gl.ActiveTexture(gl.TEXTURE0)
+			}
+			gl.BindTexture(tex.Target(), tex.ID())
 			te3Mesh.DrawGroup(group)
+			engine.CheckOpenGLError()
 		}
+		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
 		// te3Mesh.DrawAll()
-
+		engine.CheckOpenGLError()
 		//Draw second one pointing at the thing
 		cylinder.Bind()
 		angle += float64(elapsed)
@@ -214,10 +229,8 @@ func main() {
 		mvp = mvp.Mul4(look.GetMatrix())
 		// mvp = mvp.Mul4(lookMtx)
 		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &mvp[0])
-		gl.BindTexture(gl.TEXTURE_2D, texture2.GetID())
+		gl.BindTexture(texture.Target(), texture2.ID())
 		cylinder.DrawAll()
-
-		engine.CheckOpenGLError()
 
 		input.Update()
 		window.SwapBuffers()

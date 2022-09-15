@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-var textures map[string]*Texture
+var textures map[string]Texture
 var meshes   map[string]*Mesh
 
 func init() {
-	textures = make(map[string]*Texture)
+	textures = make(map[string]Texture)
 	meshes   = make(map[string]*Mesh)
 }
 
@@ -21,7 +21,7 @@ func getFile(assetPath string) (*os.File, error) {
 	return os.Open(assetPath)
 }
 
-func GetTexture(assetPath string) *Texture {
+func GetTexture(assetPath string) Texture {
 	texture, ok := textures[assetPath]
 	if !ok {
 		textures[assetPath] = loadTexture(assetPath)

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"log"
+	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
@@ -27,6 +28,7 @@ func CheckOpenGLError() {
 		case gl.CONTEXT_LOST:
 			errName = "Context lost"
 		}
-		log.Println("**OPENGL ERROR**", errName)
+		_, fileName, lineNum, _ := runtime.Caller(1)
+		log.Printf("**OPENGL ERROR** (%s, %v): %s", fileName, lineNum, errName)
 	}
 }

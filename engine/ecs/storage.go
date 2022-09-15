@@ -4,66 +4,86 @@ import (
 	"fmt"
 )
 
+const STORAGE_INIT_CAPACITY = 16
+const UNOWNED_IDX = 0xFFFFFFFF
+
 //Generic implementation of component storage
 type ComponentStorage[C any] struct {
-	storage []C
-	owners  []EntID
+	components    []C     //Contiguous array of components
+	owners        []EntID //Indicates the Entity ID that owns each component
+	sparseIndexes []int   //Using the Entity ID as an index, this array points to the component in storage that it owns.
 }
 
-func CreateStorage[C any](initialLength int) *ComponentStorage[C] {
-	return &ComponentStorage[C]{
-		storage: make([]C, initialLength),
-		owners: make([]EntID, initialLength),
+func CreateStorage[C any]() *ComponentStorage[C] {
+	storage := &ComponentStorage[C]{
+		components: make([]C, 0, STORAGE_INIT_CAPACITY),
+		owners: make([]EntID, 0, STORAGE_INIT_CAPACITY),
+		sparseIndexes: make([]int, 0),
 	}
+	return storage
 }
 
 func (storage *ComponentStorage[C]) Has(id EntID) bool {
 	idx, _ := id.Split()
-	if idx >= len(storage.owners) { return false }
-	return storage.owners[idx] == id
+	if idx >= len(storage.sparseIndexes) { return false }
+	return storage.sparseIndexes[idx] != UNOWNED_IDX
 }
 
 func (storage *ComponentStorage[C]) Get(id EntID) (*C, error) {
 	idx, _ := id.Split()
-	if idx >= len(storage.owners) {
+	if idx >= len(storage.sparseIndexes) {
 		return nil, fmt.Errorf(ERR_INDEX)
 	}
-	if storage.owners[idx] != id {
+	ci := storage.sparseIndexes[idx]
+	if ci == UNOWNED_IDX {
 		return nil, fmt.Errorf(ERR_OWNER)
+	} else if ci >= len(storage.components) {
+		return nil, fmt.Errorf("Sparse array index is out of bounds.")
 	}
-	return &storage.storage[idx], nil
+	return &storage.components[ci], nil
 }
 
-func (storage *ComponentStorage[C]) Assign(id EntID, component C) error {
+func (storage *ComponentStorage[C]) Assign(id EntID) (*C, error) {
 	idx, _ := id.Split()
-	if idx >= len(storage.owners) {
-		storage.realloc(idx + 1)
+	//Expand the sparse index array
+	if idx >= len(storage.sparseIndexes) {
+		//Reallocate sparse indexes array to include the new ID
+		newIndexes := make([]int, idx + 1)
+		copy(newIndexes, storage.sparseIndexes)
+		//Indicate unused indexes
+		for i := len(storage.sparseIndexes); i < len(newIndexes); i++ {
+			newIndexes[i] = UNOWNED_IDX
+		}
+		storage.sparseIndexes = newIndexes
 	}
-	if storage.owners[idx] != NO_ENT && storage.owners[idx] != id {
-		return fmt.Errorf(ERR_OWNER)
+	//Return component if previously assigned.
+	if storage.sparseIndexes[idx] != UNOWNED_IDX {
+		return &storage.components[storage.sparseIndexes[idx]], nil
 	}
-	storage.storage[idx] = component
-	storage.owners[idx] = id
-	return nil
+	//Look for free component
+	compIndex := len(storage.components)
+	for o, owner := range storage.owners {
+		if owner == UNOWNED_IDX {
+			compIndex = o
+		}
+	}
+	//Expand the components/owners arrays as necessary.
+	if compIndex == len(storage.components) {
+		storage.components = append(storage.components, *new(C))
+		storage.owners = append(storage.owners, UNOWNED_IDX)
+	}
+	storage.sparseIndexes[idx] = compIndex
+	storage.owners[compIndex] = id
+	return &storage.components[compIndex], nil
 }
 
+//Mark the component for this entity as having no owner, so it can be reused by other entities.
 func (storage *ComponentStorage[C]) Unassign(id EntID) error {
 	idx, _ := id.Split()
-	if idx >= len(storage.owners) {
+	if idx >= len(storage.sparseIndexes) {
 		return fmt.Errorf(ERR_INDEX)
 	}
-	if storage.owners[idx] != id {
-		return fmt.Errorf(ERR_OWNER)
-	}
-	storage.owners[idx] = NO_ENT
+	storage.owners[storage.sparseIndexes[idx]] = UNOWNED_IDX
+	storage.sparseIndexes[idx] = UNOWNED_IDX
 	return nil
-}
-
-func (storage *ComponentStorage[C]) realloc(newLength int) {
-	newStorage := make([]C, newLength)
-	newOwners  := make([]EntID, newLength)
-	if storage.storage != nil { copy(newStorage, storage.storage) }
-	if storage.owners != nil { copy(newOwners, storage.owners) }
-	storage.storage = newStorage
-	storage.owners = newOwners
 }
