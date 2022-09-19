@@ -24,12 +24,12 @@ func init() {
 func TestCumulative(t *testing.T) {
 	camEnt := world.NewEnt()
 	camID, _ := camEnt.Split()
-	_, err := cameras.Assign(camEnt)
+	_, err := cameras.Assign(camEnt, Camera{})
 	if err != nil || !cameras.Has(camEnt) {
 		t.Fatalf("Could not assign component; %v", err)
 	}
 
-	trans, err := transforms.Assign(camEnt)
+	trans, err := transforms.Assign(camEnt, Transform{})
 	// trans, err = transforms.Get(camEnt)
 	trans.dirty = true
 

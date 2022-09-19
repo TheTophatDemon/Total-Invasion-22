@@ -11,7 +11,7 @@ package comps
 // }
 
 // //Resets the state of the animation player to assume the animation set of the given texture atlas.
-// func (ap *AnimationPlayer) FromFrames(atlas *assets.AtlasTexture,) {
+// func (ap *AnimationPlayer) FromFrames(atlas *assets.AtlasTexture, animIndex int) {
 // 	//Copy animations
 // 	ap.animation = atlas.GetAnimation(animIndex)
 

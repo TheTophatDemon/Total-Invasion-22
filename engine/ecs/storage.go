@@ -43,9 +43,9 @@ func (storage *ComponentStorage[C]) Get(id EntID) (*C, error) {
 	return &storage.components[ci], nil
 }
 
-func (storage *ComponentStorage[C]) Assign(id EntID) (*C, error) {
+func (storage *ComponentStorage[C]) Assign(id EntID, comp C) (*C, error) {
 	idx, _ := id.Split()
-	//Expand the sparse index array
+	//Expand the sparse index array if necessary
 	if idx >= len(storage.sparseIndexes) {
 		//Reallocate sparse indexes array to include the new ID
 		newIndexes := make([]int, idx + 1)
@@ -57,23 +57,24 @@ func (storage *ComponentStorage[C]) Assign(id EntID) (*C, error) {
 		storage.sparseIndexes = newIndexes
 	}
 	//Return component if previously assigned.
-	if storage.sparseIndexes[idx] != UNOWNED_IDX {
-		return &storage.components[storage.sparseIndexes[idx]], nil
+	if ci := storage.sparseIndexes[idx]; ci != UNOWNED_IDX {
+		return &storage.components[ci], nil
 	}
-	//Look for free component
+	//Otherwise look for free component
 	compIndex := len(storage.components)
 	for o, owner := range storage.owners {
 		if owner == UNOWNED_IDX {
 			compIndex = o
 		}
 	}
-	//Expand the components/owners arrays as necessary.
 	if compIndex == len(storage.components) {
+		//Expand the components/owners arrays as necessary.
 		storage.components = append(storage.components, *new(C))
 		storage.owners = append(storage.owners, UNOWNED_IDX)
 	}
 	storage.sparseIndexes[idx] = compIndex
 	storage.owners[compIndex] = id
+	storage.components[compIndex] = comp
 	return &storage.components[compIndex], nil
 }
 

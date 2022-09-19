@@ -12,8 +12,8 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/comps"
 	"tophatdemon.com/total-invasion-ii/engine/ecs"
+	"tophatdemon.com/total-invasion-ii/engine/comps"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/systems"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
