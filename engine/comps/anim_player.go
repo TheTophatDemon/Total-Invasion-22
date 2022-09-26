@@ -1,49 +1,55 @@
 package comps
 
-// import "tophatdemon.com/total-invasion-ii/engine/assets"
+import "tophatdemon.com/total-invasion-ii/engine/assets"
 
-// type AnimationPlayer struct {
-// 	animation    assets.FrameAnimation
-// 	currentFrame int //The current frame number from the animation data
-// 	currentIndex int //The current index into the animation data's frames array
-// 	playing      bool 
-// 	frameTimer   float32
-// }
+type AnimationPlayer struct {
+	animation    assets.FrameAnimation //Animation currently being played
+	currentFrame int //The current frame number from the animation data
+	currentIndex int //The current index into the animation data's frames array
+	playing      bool 
+	frameTimer   float32
+}
 
-// //Resets the state of the animation player to assume the animation set of the given texture atlas.
-// func (ap *AnimationPlayer) FromFrames(atlas *assets.AtlasTexture, animIndex int) {
-// 	//Copy animations
-// 	ap.animation = atlas.GetAnimation(animIndex)
+func NewAnimationPlayer(anim assets.FrameAnimation) *AnimationPlayer {
+	return &AnimationPlayer{
+		animation: anim,
+		currentFrame: 0,
+		currentIndex: 0,
+		playing: false,
+		frameTimer: 0.0,
+	}
+}
 
-// 	ap.currentAnim = 0
-// 	ap.currentFrame = 0
-// 	ap.frameTimer = 0.0	
-// }
+func NewAnimationPlayerAutoPlay(anim assets.FrameAnimation) *AnimationPlayer {
+	ap := NewAnimationPlayer(anim)
+	ap.Play()
+	return ap
+}
 
-// func (ap *AnimationPlayer) Update(deltaTime float32) {
-// 	if !ap.playing { return }
-// 	anim := ap.animations[ap.currentAnim]
-// 	ap.frameTimer += deltaTime
-// 	if ap.frameTimer > anim.Speed {
-// 		ap.frameTimer = 0.0
-// 		ap.currentIndex += 1
-// 		if ap.currentIndex >= len(anim.Frames) {
-// 			if anim.Loop {
-// 				ap.currentIndex = len(anim.Frames)
-// 			} else {
-// 				ap.currentIndex = 0
-// 			}
-// 		}
-// 		ap.currentFrame = anim.Frames[ap.currentIndex]
-// 	}
-// }
+func (ap *AnimationPlayer) Update(deltaTime float32) {
+	if !ap.playing { return }
+	ap.frameTimer += deltaTime
+	if ap.frameTimer > ap.animation.Speed {
+		ap.frameTimer = 0.0
+		ap.currentIndex += 1
+		if ap.currentIndex >= len(ap.animation.Frames) {
+			if !ap.animation.Loop {
+				ap.currentIndex = len(ap.animation.Frames) - 1
+				ap.playing = false
+			} else {
+				ap.currentIndex = 0
+			}
+		}
+		ap.currentFrame = ap.animation.Frames[ap.currentIndex] //Why you skip this line????
+	}
+}
 
-// func (ap *AnimationPlayer) Frame() int {
-// 	return ap.currentFrame
-// }
+func (ap *AnimationPlayer) Frame() int {
+	return ap.currentFrame
+}
 
-// func (ap *AnimationPlayer) Play() {
-// 	ap.playing = true
-// 	ap.frameTimer = 0.0
-// 	ap.currentFrame = 0
-// }
+func (ap *AnimationPlayer) Play() {
+	ap.playing = true
+	ap.frameTimer = 0.0
+	ap.currentFrame = 0
+}

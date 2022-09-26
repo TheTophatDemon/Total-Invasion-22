@@ -99,15 +99,12 @@ func main() {
 	transforms    := ecs.CreateStorage[comps.Transform]()
 	movers        := ecs.CreateStorage[comps.Movement]()
 	fpControllers := ecs.CreateStorage[comps.FirstPersonController]()
+	animPlayers   := ecs.CreateStorage[comps.AnimationPlayer]()
 	
 	//Load map
-	te3, err := assets.LoadTE3File("assets/maps/E3M1.te3")
+	gameMap, err := engine.LoadGameMap("assets/maps/E3M1.te3")
 	if err != nil {
 		log.Println("Map loading error: ", err)
-	}
-	te3Mesh, err := te3.BuildMesh()
-	if err != nil {
-		log.Println("Map generating error: ", err)
 	}
 
 	//Camera controller
@@ -116,7 +113,7 @@ func main() {
 
 	//Place camera at player's position
 	camTrans := comps.Transform{}
-	playerSpawn, _ := te3.FindEntWithProperty("type", "player spawn")
+	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
 	camTrans.SetPosition(playerSpawn.Position)
 	transforms.Assign(cameraEnt, camTrans)
 	
@@ -167,6 +164,9 @@ func main() {
 
 		systems.UpdateFirstPersonControllers(elapsed, world, movers, fpControllers)
 		systems.UpdateMovement(elapsed, world, movers, transforms)
+		systems.UpdateAnimationPlayers(elapsed, world, animPlayers)
+
+		gameMap.Update(elapsed)
 
 		tf, _ := transforms.Get(cameraEnt)
 		viewMat := tf.GetMatrix().Inv()
@@ -197,25 +197,9 @@ func main() {
 		// cylinder.DrawGroup("culld")
 
 		//Draw the map
-		te3Mesh.Bind()
-		model := mgl32.Ident4()
-		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uModelTransform"), 1, false, &model[0])
-		for _, group := range te3Mesh.GetGroupNames() {
-			tex := assets.GetTexture(group)
-			//Turn on uniforms for the texture
-			switch tex.(type) {
-			case *assets.AtlasTexture:
-				gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 1)
-				gl.Uniform1i(assets.MapShader.GetUniformLoc("uFrame"), int32(time * 5.0) % 16)
-				gl.ActiveTexture(gl.TEXTURE1)
-			default:
-				gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
-				gl.ActiveTexture(gl.TEXTURE0)
-			}
-			gl.BindTexture(tex.Target(), tex.ID())
-			te3Mesh.DrawGroup(group)
-			engine.CheckOpenGLError()
-		}
+		gameMap.Render(mvp)
+
+		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
 		// te3Mesh.DrawAll()
 		engine.CheckOpenGLError()

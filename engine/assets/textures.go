@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"tophatdemon.com/total-invasion-ii/engine"
 )
 
 type TextureFlag uint32
@@ -192,8 +191,8 @@ func loadTexture(assetPath string) Texture {
 	var texture Texture
 
 	//Generate OpenGL Texture
-	engine.CheckOpenGLError()
-	engine.CheckOpenGLError()
+	
+	
 	if metadata != nil && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {
 		//Providing a frame size turns it into an atlas texture
 
@@ -218,22 +217,24 @@ func loadTexture(assetPath string) Texture {
 			frameWidth: metadata.FrameSize[0],
 			frameHeight: metadata.FrameSize[1],
 		}
+		atlasTexture.animations = make([]FrameAnimation, len(metadata.Animations))
+		copy(atlasTexture.animations, metadata.Animations)
 
 		rows := int(atlasTexture.width / atlasTexture.frameWidth)
 		cols := int(atlasTexture.height / atlasTexture.frameHeight)
 		nFrames := rows * cols
 		
-		engine.CheckOpenGLError()
+		
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.GenTextures(1, &atlasTexture.glID)
 		gl.BindTexture(atlasTexture.target, atlasTexture.glID)
 		
-		engine.CheckOpenGLError()
+		
 
 		gl.TexImage3D(atlasTexture.target, 0, gl.RGBA, int32(atlasTexture.frameWidth), int32(atlasTexture.frameHeight), int32(nFrames), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 
-		engine.CheckOpenGLError()
+		
 		// Generate subimages for each frame
 		for x := 0; x < cols; x++ {
 			for y := 0; y < rows; y++ {
@@ -249,7 +250,7 @@ func loadTexture(assetPath string) Texture {
 					gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frameRGBA.Pix))
 			}
 		}
-		engine.CheckOpenGLError()
+		
 
 		texture = atlasTexture
 	} else {
@@ -267,18 +268,18 @@ func loadTexture(assetPath string) Texture {
 			height: uint32(rgba.Bounds().Dy()),
 		}
 
-		engine.CheckOpenGLError()
+		
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.GenTextures(1, &baseTexture.glID)
 		gl.BindTexture(baseTexture.target, baseTexture.glID)
 		gl.TexImage2D(baseTexture.target, 0, gl.RGBA, int32(baseTexture.width), int32(baseTexture.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
-		engine.CheckOpenGLError()
+		
 
 		texture = baseTexture
 	}
 
 	//Apply filtering and mipmapping
-	engine.CheckOpenGLError()
+	
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.REPEAT)
@@ -287,7 +288,7 @@ func loadTexture(assetPath string) Texture {
 
 	log.Println("Texture loaded at ", assetPath, ".")
 
-	engine.CheckOpenGLError()
+	
 
 	return texture
 }
