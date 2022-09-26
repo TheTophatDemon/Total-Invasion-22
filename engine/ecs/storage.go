@@ -43,6 +43,24 @@ func (storage *ComponentStorage[C]) Get(id EntID) (*C, error) {
 	return &storage.components[ci], nil
 }
 
+// func (storage *ComponentStorage[C]) Iter() func()(bool, *C) {
+// 	n := 0
+// 	return func()(bool, *C) {
+// 		if n < len(storage.components) {
+// 			n += 1
+// 			return true, &storage.components[n - 1]
+// 		} else {
+// 			return false, nil
+// 		}
+// 	}
+// }
+
+func (storage *ComponentStorage[C]) ForEach(fn func(*C)) {
+	for c := range storage.components {
+		fn(&storage.components[c])
+	}
+}
+
 func (storage *ComponentStorage[C]) Assign(id EntID, comp C) (*C, error) {
 	idx, _ := id.Split()
 	//Expand the sparse index array if necessary

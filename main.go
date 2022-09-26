@@ -164,7 +164,11 @@ func main() {
 
 		systems.UpdateFirstPersonControllers(elapsed, world, movers, fpControllers)
 		systems.UpdateMovement(elapsed, world, movers, transforms)
-		systems.UpdateAnimationPlayers(elapsed, world, animPlayers)
+
+		//Update animation players
+		animPlayers.ForEach(func(ap *comps.AnimationPlayer){
+			ap.Update(elapsed)
+		})
 
 		gameMap.Update(elapsed)
 
