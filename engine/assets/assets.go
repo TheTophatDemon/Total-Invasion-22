@@ -9,14 +9,14 @@ import (
 )
 
 var textures map[string]Texture
-var meshes   map[string]*Mesh
+var meshes map[string]*Mesh
 
 func init() {
 	textures = make(map[string]Texture)
-	meshes   = make(map[string]*Mesh)
+	meshes = make(map[string]*Mesh)
 }
 
-//Retrieves the asset's file from one of the available asset packs
+// Retrieves the asset's file from one of the available asset packs
 func getFile(assetPath string) (*os.File, error) {
 	return os.Open(assetPath)
 }
@@ -30,9 +30,17 @@ func GetTexture(assetPath string) Texture {
 	return texture
 }
 
+// Releases memory for all cached textures
+func FreeTextures() {
+	for p := range textures {
+		textures[p].Free()
+		delete(textures, p)
+	}
+}
+
 func GetMesh(assetPath string) (*Mesh, error) {
 	var err error
-	
+
 	mesh, ok := meshes[assetPath]
 	if !ok {
 		switch {
@@ -49,7 +57,7 @@ func GetMesh(assetPath string) (*Mesh, error) {
 	return mesh, nil
 }
 
-//Loads a JSON file from the given asset-path (relative to assets folder) and returns the json.Unmarshal result as type T.
+// Loads a JSON file from the given asset-path (relative to assets folder) and returns the json.Unmarshal result as type T.
 func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
 	file, err := getFile(assetPath)
 	if err != nil {
@@ -64,6 +72,6 @@ func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
 
 	t := new(T)
 	err = json.Unmarshal(fileBytes, t)
-	
+
 	return t, err
 }

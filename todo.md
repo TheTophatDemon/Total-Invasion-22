@@ -1,7 +1,8 @@
 # TODO
-[ ] Free texture memory at some point
-[ ] Font rendering
-[ ] Player movement
-[ ] Player collision
-[ ] Doors
-[ ] Debug console
+Sprites
+Font rendering
+Player movement
+Player collision
+Scene entity ID management
+Doors
+Debug console

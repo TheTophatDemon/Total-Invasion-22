@@ -20,25 +20,26 @@ const (
 	TEXFLAG_LIQUID   TextureFlag = 1 << 1
 )
 
-var textureFlagFromString = map[string]TextureFlag {
+var textureFlagFromString = map[string]TextureFlag{
 	"unshaded": TEXFLAG_UNSHADED,
-	"liquid"  : TEXFLAG_LIQUID,
+	"liquid":   TEXFLAG_LIQUID,
 }
 
 type Texture interface {
-	Width()              int
-	Height()             int
-	ID()                 uint32
-	Target()             uint32
+	Width() int
+	Height() int
+	ID() uint32
+	Target() uint32
 	HasFlag(TextureFlag) bool
+	Free()
 }
 
 type BaseTexture struct {
-	target      uint32
-	glID        uint32
-	width       uint32 //Size of entire texture
-	height      uint32
-	flags       TextureFlag
+	target uint32
+	glID   uint32
+	width  uint32 //Size of entire texture
+	height uint32
+	flags  TextureFlag
 }
 
 type AtlasTexture struct {
@@ -75,6 +76,11 @@ func (t *BaseTexture) HasFlag(testFlag TextureFlag) bool {
 	return (t.flags & testFlag) == testFlag
 }
 
+func (t *BaseTexture) Free() {
+	id := t.glID
+	gl.DeleteTextures(1, &id)
+}
+
 func (at *AtlasTexture) GetAnimation(index int) FrameAnimation {
 	return at.animations[index]
 }
@@ -95,7 +101,7 @@ const ERROR_TEXTURE_SIZE = 64
 
 var errorTexture *BaseTexture
 
-//Returns and/or generates the error texture, a magenta-and-black checkered image.
+// Returns and/or generates the error texture, a magenta-and-black checkered image.
 func ErrorTexture() Texture {
 	if errorTexture == nil {
 		errorTexture = new(BaseTexture)
@@ -132,7 +138,7 @@ func ErrorTexture() Texture {
 	return errorTexture
 }
 
-//Loads an image from a file and flips it to be loaded into a texture.
+// Loads an image from a file and flips it to be loaded into a texture.
 func loadImage(assetPath string) (*image.RGBA, error) {
 	if strings.ToLower(path.Ext(assetPath)) != ".png" {
 		return nil, fmt.Errorf("Cannot load %s; only .png images are supported!", assetPath)
@@ -149,7 +155,7 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error decoding texture at %s.", assetPath)
 	}
-	
+
 	//Convert image to RGBA
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
@@ -158,20 +164,20 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 	//Flip vertically
 	for x := 0; x < rgba.Bounds().Dx(); x++ {
 		for y := 0; y < rgba.Bounds().Dy(); y++ {
-			rgba.Set(x, y, img.At(x, rgba.Bounds().Dy() - y - 1))
+			rgba.Set(x, y, img.At(x, rgba.Bounds().Dy()-y-1))
 		}
 	}
 
 	return rgba, nil
 }
 
-//Creates a new image representing the rectangle subsection of the source image.
+// Creates a new image representing the rectangle subsection of the source image.
 func subImageCopy(src *image.RGBA, x, y, w, h int) *image.RGBA {
 	dest := image.NewRGBA(image.Rect(0, 0, w, h))
 
 	for i := 0; i < w; i++ {
 		for j := 0; j < h; j++ {
-			dest.Set(i, j, src.At(i + x, j + y))
+			dest.Set(i, j, src.At(i+x, j+y))
 		}
 	}
 
@@ -187,12 +193,11 @@ func loadTexture(assetPath string) Texture {
 		//The file is optional, so print errors that aren't 'file not found'.
 		log.Printf("Could not parse metadata for %s; %s\n", assetPath, err)
 	}
-	
+
 	var texture Texture
 
 	//Generate OpenGL Texture
-	
-	
+
 	if metadata != nil && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {
 		//Providing a frame size turns it into an atlas texture
 
@@ -211,10 +216,10 @@ func loadTexture(assetPath string) Texture {
 		atlasTexture := &AtlasTexture{
 			BaseTexture: BaseTexture{
 				target: gl.TEXTURE_2D_ARRAY,
-				width: uint32(atlasImg.Bounds().Dx()),
+				width:  uint32(atlasImg.Bounds().Dx()),
 				height: uint32(atlasImg.Bounds().Dy()),
 			},
-			frameWidth: metadata.FrameSize[0],
+			frameWidth:  metadata.FrameSize[0],
 			frameHeight: metadata.FrameSize[1],
 		}
 		atlasTexture.animations = make([]FrameAnimation, len(metadata.Animations))
@@ -223,18 +228,13 @@ func loadTexture(assetPath string) Texture {
 		rows := int(atlasTexture.width / atlasTexture.frameWidth)
 		cols := int(atlasTexture.height / atlasTexture.frameHeight)
 		nFrames := rows * cols
-		
-		
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.GenTextures(1, &atlasTexture.glID)
 		gl.BindTexture(atlasTexture.target, atlasTexture.glID)
-		
-		
 
 		gl.TexImage3D(atlasTexture.target, 0, gl.RGBA, int32(atlasTexture.frameWidth), int32(atlasTexture.frameHeight), int32(nFrames), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 
-		
 		// Generate subimages for each frame
 		for x := 0; x < cols; x++ {
 			for y := 0; y < rows; y++ {
@@ -242,15 +242,14 @@ func loadTexture(assetPath string) Texture {
 				ofsy := y * atlasTexture.FrameHeight()
 				frameRGBA := subImageCopy(atlasImg, ofsx, ofsy, atlasTexture.FrameWidth(), atlasTexture.FrameHeight())
 
-				gl.TexSubImage3D(atlasTexture.target, 0, 0, 0, 
-					int32(x + y * cols), 
-					int32(atlasTexture.frameWidth), 
-					int32(atlasTexture.frameHeight), 
-					1, 
+				gl.TexSubImage3D(atlasTexture.target, 0, 0, 0,
+					int32(x+y*cols),
+					int32(atlasTexture.frameWidth),
+					int32(atlasTexture.frameHeight),
+					1,
 					gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frameRGBA.Pix))
 			}
 		}
-		
 
 		texture = atlasTexture
 	} else {
@@ -264,22 +263,20 @@ func loadTexture(assetPath string) Texture {
 
 		baseTexture := &BaseTexture{
 			target: gl.TEXTURE_2D,
-			width: uint32(rgba.Bounds().Dx()), 
+			width:  uint32(rgba.Bounds().Dx()),
 			height: uint32(rgba.Bounds().Dy()),
 		}
 
-		
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.GenTextures(1, &baseTexture.glID)
 		gl.BindTexture(baseTexture.target, baseTexture.glID)
 		gl.TexImage2D(baseTexture.target, 0, gl.RGBA, int32(baseTexture.width), int32(baseTexture.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
-		
 
 		texture = baseTexture
 	}
 
 	//Apply filtering and mipmapping
-	
+
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.REPEAT)
@@ -287,8 +284,6 @@ func loadTexture(assetPath string) Texture {
 	gl.GenerateMipmap(texture.Target())
 
 	log.Println("Texture loaded at ", assetPath, ".")
-
-	
 
 	return texture
 }

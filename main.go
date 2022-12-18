@@ -164,11 +164,6 @@ func main() {
 
 		scene.Update(elapsed)
 
-		//Update animation players
-		// animPlayers.ForEach(func(ap *comps.AnimationPlayer) {
-		// 	ap.Update(elapsed)
-		// })
-
 		gameMap.Update(elapsed)
 
 		tr, ok := camEnt.GetComponent(&comps.Transform{}).(*comps.Transform)
@@ -227,6 +222,8 @@ func main() {
 
 	cylinder.Free()
 	cube.Free()
+
+	assets.FreeTextures()
 	assets.FreeShaders()
 }
 
