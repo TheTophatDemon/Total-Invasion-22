@@ -3,6 +3,7 @@ package comps
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type Transform struct {
@@ -11,13 +12,16 @@ type Transform struct {
 	dirty           bool
 }
 
+func (tr *Transform) Update(ent *scene.Entity, deltaTime float32) {
+}
+
 func TransformFromMatrix(matrix mgl32.Mat4) Transform {
 	return Transform{
-		pos: matrix.Col(3).Vec3(),
-		rot: math2.Mat4EulerAngles(&matrix),
-		scale: mgl32.Vec3{ matrix[0], matrix[5], matrix[10] },
+		pos:    matrix.Col(3).Vec3(),
+		rot:    math2.Mat4EulerAngles(&matrix),
+		scale:  mgl32.Vec3{matrix[0], matrix[5], matrix[10]},
 		matrix: matrix,
-		dirty: false,
+		dirty:  false,
 	}
 }
 
@@ -41,13 +45,13 @@ func (t *Transform) Translate(x, y, z float32) {
 	t.dirty = true
 }
 
-//Sets the rotation in euler angles (radians)
+// Sets the rotation in euler angles (radians)
 func (t *Transform) SetRotation(pitch, yaw, roll float32) {
 	t.rot = mgl32.Vec3{pitch, yaw, roll}
 	t.dirty = true
 }
 
-//Returns the euler angles of rotation (pitch, yaw, roll)
+// Returns the euler angles of rotation (pitch, yaw, roll)
 func (t *Transform) GetRotation() mgl32.Vec3 {
 	return t.rot
 }

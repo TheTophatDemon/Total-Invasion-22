@@ -1,12 +1,7 @@
 # TODO
-[x] Map loader
-[ ] Animated textures
-     - Animation player component?
-[ ] Free texture memory?
+[ ] Free texture memory at some point
 [ ] Font rendering
 [ ] Player movement
 [ ] Player collision
 [ ] Doors
 [ ] Debug console
-[ ] Sparse Set for components
-[ ] Component grouping

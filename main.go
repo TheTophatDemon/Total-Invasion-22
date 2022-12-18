@@ -12,11 +12,10 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/comps"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/systems"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	sc "tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 const (
@@ -86,46 +85,47 @@ func main() {
 
 	//Generate cube
 	cube := assets.CreateMesh(cubeVertices, cubeIndices)
-	cube.SetGroup("front", assets.Group{ Offset: 12, Length: 6 })
+	cube.SetGroup("front", assets.Group{Offset: 12, Length: 6})
 
 	cylinder, err := assets.GetMesh("assets/models/shapes/wedge.obj")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	//Create ECS world
-	world := ecs.CreateWorld(ECS_RESERVE_COUNT)
-	cameras       := ecs.CreateStorage[comps.Camera]()
-	transforms    := ecs.CreateStorage[comps.Transform]()
-	movers        := ecs.CreateStorage[comps.Movement]()
-	fpControllers := ecs.CreateStorage[comps.FirstPersonController]()
-	animPlayers   := ecs.CreateStorage[comps.AnimationPlayer]()
-	
+	//Create scene
+	scene := sc.NewScene()
+
 	//Load map
 	gameMap, err := engine.LoadGameMap("assets/maps/E3M1.te3")
 	if err != nil {
 		log.Println("Map loading error: ", err)
 	}
 
-	//Camera controller
-	cameraEnt := world.NewEnt()
-	cameras.Assign(cameraEnt, comps.NewCamera(45.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
+	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
+
+	camEnt := sc.NewEntity(
+		comps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0),
+		&comps.Transform{},
+		&comps.Movement{
+			MaxSpeed:   12.0,
+			YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
+			PitchAngle: 0.0,
+		},
+		&comps.FirstPersonController{
+			ForwardAction:     ACTION_FORWARD,
+			BackAction:        ACTION_BACK,
+			StrafeLeftAction:  ACTION_LEFT,
+			StrafeRightAction: ACTION_RIGHT,
+			LookHorzAction:    ACTION_LOOK_HORZ,
+			LookVertAction:    ACTION_LOOK_VERT,
+		},
+	)
+	scene.AddEntity(camEnt)
 
 	//Place camera at player's position
-	camTrans := comps.Transform{}
-	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
-	camTrans.SetPosition(playerSpawn.Position)
-	transforms.Assign(cameraEnt, camTrans)
-	
-	movers.Assign(cameraEnt, comps.Movement{MaxSpeed: 12.0, YawAngle: mgl32.DegToRad(playerSpawn.Angles[1]), PitchAngle: 0.0})
-	fpControllers.Assign(cameraEnt, comps.FirstPersonController{ 
-		ForwardAction: ACTION_FORWARD, 
-		BackAction: ACTION_BACK, 
-		StrafeLeftAction: ACTION_LEFT, 
-		StrafeRightAction: ACTION_RIGHT,
-		LookHorzAction: ACTION_LOOK_HORZ, 
-		LookVertAction: ACTION_LOOK_VERT,
-	})
+	if tr, ok := camEnt.GetComponent(&comps.Transform{}).(*comps.Transform); ok {
+		tr.SetPosition(playerSpawn.Position)
+	}
 
 	//input.TrapMouse()
 
@@ -162,21 +162,21 @@ func main() {
 			fpsTicks += 1
 		}
 
-		systems.UpdateFirstPersonControllers(elapsed, world, movers, fpControllers)
-		systems.UpdateMovement(elapsed, world, movers, transforms)
+		scene.Update(elapsed)
 
 		//Update animation players
-		animPlayers.ForEach(func(ap *comps.AnimationPlayer){
-			ap.Update(elapsed)
-		})
+		// animPlayers.ForEach(func(ap *comps.AnimationPlayer) {
+		// 	ap.Update(elapsed)
+		// })
 
 		gameMap.Update(elapsed)
 
-		tf, _ := transforms.Get(cameraEnt)
-		viewMat := tf.GetMatrix().Inv()
+		tr, ok := camEnt.GetComponent(&comps.Transform{}).(*comps.Transform)
+		if !ok {
+			tr = &comps.Transform{}
+		}
+		viewMat := tr.GetMatrix().Inv()
 		mvp := projMat.Mul4(viewMat)
-		// tf, _ := transforms.Get(cameraEnt)
-		// mvp = mvp.Mul4(tf.GetMatrix())
 
 		// Render
 		assets.MapShader.Use()
@@ -192,9 +192,9 @@ func main() {
 
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(texture.Target(), texture.ID())
-		
+
 		// cube.DrawAll()
-		
+
 		//cube.DrawGroup("front")
 		cylinder.Bind()
 		cylinder.DrawAll()
@@ -243,46 +243,46 @@ var cubeVertices = assets.Vertices{
 	Pos: []mgl32.Vec3{
 		//Bottom
 		{-1.0, -1.0, -1.0},
-		{ 1.0, -1.0, -1.0},
-		{-1.0, -1.0,  1.0},
-		{ 1.0, -1.0, -1.0},
-		{ 1.0, -1.0,  1.0},
-		{-1.0, -1.0,  1.0},
+		{1.0, -1.0, -1.0},
+		{-1.0, -1.0, 1.0},
+		{1.0, -1.0, -1.0},
+		{1.0, -1.0, 1.0},
+		{-1.0, -1.0, 1.0},
 		//Top
-		{-1.0,  1.0, -1.0},
-		{-1.0,  1.0,  1.0},
-		{ 1.0,  1.0, -1.0},
-		{ 1.0,  1.0, -1.0},
-		{-1.0,  1.0,  1.0},
-		{ 1.0,  1.0,  1.0},
+		{-1.0, 1.0, -1.0},
+		{-1.0, 1.0, 1.0},
+		{1.0, 1.0, -1.0},
+		{1.0, 1.0, -1.0},
+		{-1.0, 1.0, 1.0},
+		{1.0, 1.0, 1.0},
 		//Front
-		{-1.0, -1.0,  1.0},
-		{ 1.0, -1.0,  1.0},
-		{-1.0,  1.0,  1.0},
-		{ 1.0, -1.0,  1.0},
-		{ 1.0,  1.0,  1.0},
-		{-1.0,  1.0,  1.0},
+		{-1.0, -1.0, 1.0},
+		{1.0, -1.0, 1.0},
+		{-1.0, 1.0, 1.0},
+		{1.0, -1.0, 1.0},
+		{1.0, 1.0, 1.0},
+		{-1.0, 1.0, 1.0},
 		//Back
 		{-1.0, -1.0, -1.0},
-		{-1.0,  1.0, -1.0},
-		{ 1.0, -1.0, -1.0},
-		{ 1.0, -1.0, -1.0},
-		{-1.0,  1.0, -1.0},
-		{ 1.0,  1.0, -1.0},
+		{-1.0, 1.0, -1.0},
+		{1.0, -1.0, -1.0},
+		{1.0, -1.0, -1.0},
+		{-1.0, 1.0, -1.0},
+		{1.0, 1.0, -1.0},
 		//Left
-		{-1.0, -1.0,  1.0},
-		{-1.0,  1.0, -1.0},
+		{-1.0, -1.0, 1.0},
+		{-1.0, 1.0, -1.0},
 		{-1.0, -1.0, -1.0},
-		{-1.0, -1.0,  1.0},
-		{-1.0,  1.0,  1.0}, 
-		{-1.0,  1.0, -1.0},
+		{-1.0, -1.0, 1.0},
+		{-1.0, 1.0, 1.0},
+		{-1.0, 1.0, -1.0},
 		//Right
-		{ 1.0, -1.0,  1.0}, 
-		{ 1.0, -1.0, -1.0},
-		{ 1.0,  1.0, -1.0}, 
-		{ 1.0, -1.0,  1.0}, 
-		{ 1.0,  1.0, -1.0}, 
-		{ 1.0,  1.0,  1.0},  
+		{1.0, -1.0, 1.0},
+		{1.0, -1.0, -1.0},
+		{1.0, 1.0, -1.0},
+		{1.0, -1.0, 1.0},
+		{1.0, 1.0, -1.0},
+		{1.0, 1.0, 1.0},
 	},
 	TexCoord: []mgl32.Vec2{
 		// Bottom
@@ -328,6 +328,6 @@ var cubeVertices = assets.Vertices{
 		{0.0, 0.0},
 		{0.0, 1.0},
 	},
-	Normal:   nil,
-	Color:    nil,
+	Normal: nil,
+	Color:  nil,
 }
