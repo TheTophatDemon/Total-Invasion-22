@@ -1,6 +1,8 @@
 package comps
 
 import (
+	"fmt"
+
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -12,13 +14,11 @@ type FirstPersonController struct {
 	LookHorzAction, LookVertAction      input.Action
 }
 
-func (controller *FirstPersonController) Update(entity *scene.Entity, deltaTime float32) {
+func (controller *FirstPersonController) UpdateComponent(sc *scene.Scene, entity scene.Entity, deltaTime float32) {
 	var movement *Movement
-	if m, ok := entity.GetComponent(movement).(*Movement); ok {
-		movement = m
-	}
-
-	if movement == nil {
+	movement, err := scene.ExtractComponent(sc, entity, movement)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 

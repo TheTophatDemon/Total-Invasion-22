@@ -1,22 +1,25 @@
 package comps
 
-import "tophatdemon.com/total-invasion-ii/engine/assets"
+import (
+	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+)
 
 type AnimationPlayer struct {
 	animation    assets.FrameAnimation //Animation currently being played
-	currentFrame int //The current frame number from the animation data
-	currentIndex int //The current index into the animation data's frames array
-	playing      bool 
+	currentFrame int                   //The current frame number from the animation data
+	currentIndex int                   //The current index into the animation data's frames array
+	playing      bool
 	frameTimer   float32
 }
 
 func NewAnimationPlayer(anim assets.FrameAnimation) *AnimationPlayer {
 	return &AnimationPlayer{
-		animation: anim,
+		animation:    anim,
 		currentFrame: 0,
 		currentIndex: 0,
-		playing: false,
-		frameTimer: 0.0,
+		playing:      false,
+		frameTimer:   0.0,
 	}
 }
 
@@ -26,8 +29,14 @@ func NewAnimationPlayerAutoPlay(anim assets.FrameAnimation) *AnimationPlayer {
 	return ap
 }
 
+func (ap *AnimationPlayer) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
+	ap.Update(deltaTime)
+}
+
 func (ap *AnimationPlayer) Update(deltaTime float32) {
-	if !ap.playing { return }
+	if !ap.playing {
+		return
+	}
 	ap.frameTimer += deltaTime
 	if ap.frameTimer > ap.animation.Speed {
 		ap.frameTimer = 0.0

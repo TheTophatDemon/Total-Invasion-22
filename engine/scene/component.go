@@ -1,5 +1,10 @@
 package scene
 
 type Component interface {
-	Update(*Entity, float32)
+	UpdateComponent(*Scene, Entity, float32)
+}
+
+type RenderComponent interface {
+	Component
+	RenderComponent(*Scene, Entity)
 }

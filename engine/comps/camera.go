@@ -9,7 +9,7 @@ type Camera struct {
 	projection mgl32.Mat4
 }
 
-func (c *Camera) Update(ent *scene.Entity, deltaTime float32) {
+func (c *Camera) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
 }
 
 func NewCamera(fovDegrees, aspectRatio, nearDist, farDist float32) *Camera {

@@ -15,15 +15,13 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/comps"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	sc "tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 const (
 	WINDOW_WIDTH        = 1280
 	WINDOW_HEIGHT       = 720
 	WINDOW_ASPECT_RATIO = float32(WINDOW_WIDTH) / WINDOW_HEIGHT
-
-	ECS_RESERVE_COUNT = 1024
 
 	ACTION_FORWARD   = "MoveForward"
 	ACTION_BACK      = "MoveBack"
@@ -93,7 +91,7 @@ func main() {
 	}
 
 	//Create scene
-	scene := sc.NewScene()
+	sc := scene.NewScene()
 
 	//Load map
 	gameMap, err := engine.LoadGameMap("assets/maps/E3M1.te3")
@@ -103,7 +101,8 @@ func main() {
 
 	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
 
-	camEnt := sc.NewEntity(
+	camEnt := sc.AddEntity()
+	sc.AddComponents(camEnt,
 		comps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0),
 		&comps.Transform{},
 		&comps.Movement{
@@ -120,12 +119,14 @@ func main() {
 			LookVertAction:    ACTION_LOOK_VERT,
 		},
 	)
-	scene.AddEntity(camEnt)
 
 	//Place camera at player's position
-	if tr, ok := camEnt.GetComponent(&comps.Transform{}).(*comps.Transform); ok {
-		tr.SetPosition(playerSpawn.Position)
+	var tr *comps.Transform
+	tr, err = scene.ExtractComponent(sc, camEnt, tr)
+	if err != nil {
+		log.Fatalln(err)
 	}
+	tr.SetPosition(playerSpawn.Position)
 
 	//input.TrapMouse()
 
@@ -162,14 +163,10 @@ func main() {
 			fpsTicks += 1
 		}
 
-		scene.Update(elapsed)
+		sc.Update(elapsed)
 
 		gameMap.Update(elapsed)
 
-		tr, ok := camEnt.GetComponent(&comps.Transform{}).(*comps.Transform)
-		if !ok {
-			tr = &comps.Transform{}
-		}
 		viewMat := tr.GetMatrix().Inv()
 		mvp := projMat.Mul4(viewMat)
 

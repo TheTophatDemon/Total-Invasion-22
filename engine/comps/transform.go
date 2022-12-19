@@ -12,7 +12,7 @@ type Transform struct {
 	dirty           bool
 }
 
-func (tr *Transform) Update(ent *scene.Entity, deltaTime float32) {
+func (tr *Transform) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
 }
 
 func TransformFromMatrix(matrix mgl32.Mat4) Transform {
