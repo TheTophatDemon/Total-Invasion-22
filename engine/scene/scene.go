@@ -3,49 +3,72 @@ package scene
 import (
 	"fmt"
 	"reflect"
+
+	"tophatdemon.com/total-invasion-ii/engine/containers"
 )
 
+var renderComponentType = reflect.TypeOf(RenderComponent(nil))
+
 type Scene struct {
-	entities   []Entity                     // List of active entity IDs, contiguous array.
-	active     []bool                       // Indicates which IDs are active, indexed by entity ID.
+	entities   *containers.List[Entity]     // List of active entity IDs, contiguous array.
+	active     []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
 	components map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
 }
 
 func NewScene() *Scene {
 	return &Scene{
-		entities:   make([]Entity, 0),
-		active:     make([]bool, 0),
+		entities:   containers.NewList[Entity](),
+		active:     make([]Entity, 0),
 		components: make(map[reflect.Type][]Component),
 	}
 }
 
 func (sc *Scene) Update(deltaTime float32) {
-	for _, e := range sc.entities {
-		for comp := range sc.components {
-			sc.components[comp][e.ID()].UpdateComponent(sc, e, deltaTime)
+	for e := sc.entities.Front(); e != nil; e = e.Next() {
+		for cType := range sc.components {
+			comp := sc.components[cType][e.Value.Index()]
+			if comp != nil {
+				comp.UpdateComponent(sc, e.Value, deltaTime)
+			}
+		}
+	}
+}
+
+func (sc *Scene) Render() {
+	for cType := range sc.components {
+		if cType.Implements(renderComponentType) {
+			for idx, rc := range sc.components[cType] {
+				renderComponent := rc.(RenderComponent)
+				renderComponent.RenderComponent(sc, sc.active[idx])
+			}
 		}
 	}
 }
 
 func (sc *Scene) AddEntity() Entity {
-	var ent Entity = Entity(ENT_INVALID)
-	for i, active := range sc.active {
-		if !active {
-			ent = Entity(i)
+	var ent Entity
+	for _, active := range sc.active {
+		if active == ENT_INVALID {
+			ent = active.Renew()
+			goto add_to_active
 		}
 	}
-	if ent == ENT_INVALID {
-		ent = Entity(len(sc.active))
-		sc.active = append(sc.active, true)
-	}
-	sc.entities = append(sc.entities, ent)
+	//If no inactive ID was found, create a new one...
+	ent = Entity(len(sc.active))
+	sc.active = append(sc.active, ent)
+add_to_active:
+	sc.entities.PushBack(ent)
 	return ent
 }
 
+//TODO: Remove entity
+
 // Check if entity is in the scene and is active
 func (sc *Scene) ValidateEntity(ent Entity) error {
-	if len(sc.active) <= int(ent.ID()) || !sc.active[ent.ID()] {
-		return fmt.Errorf("could not add components to entity %d because it is not in the scene", ent)
+	if ent == ENT_INVALID || len(sc.active) <= int(ent.Index()) {
+		return fmt.Errorf("could not access entity %d because it is not in the scene", ent)
+	} else if sc.active[ent.Index()] == ENT_INVALID {
+		return fmt.Errorf("could not access entity %d because it is not active", ent)
 	}
 	return nil
 }
@@ -58,25 +81,25 @@ func (sc *Scene) AddComponents(ent Entity, components ...Component) error {
 	//Add components
 	for _, c := range components {
 		cType := reflect.TypeOf(c)
-		slice, ok := sc.components[cType]
+		slice, arrayExists := sc.components[cType]
 
 		//Expand the component storage if necessary
-		if !ok || len(slice) <= int(ent.ID()) {
-			sc.components[cType] = make([]Component, ent.ID()+1)
-			if ok {
+		if !arrayExists || len(slice) <= int(ent.Index()) {
+			sc.components[cType] = make([]Component, ent.Index()+1)
+			if arrayExists {
 				copy(sc.components[cType], slice)
 			}
 		}
 
 		//Assign component
-		sc.components[cType][ent.ID()] = c
+		sc.components[cType][ent.Index()] = c
 	}
 
 	return nil
 }
 
 // Returns a reference to the given entity's component whose type is the same as the Component passed in.
-// Returns an error if the entity isn't active, and returns a nil component if the component isn't found.
+// Returns an error if the entity isn't active, and returns a nil component without an error if the component isn't found.
 func (sc *Scene) GetComponent(ent Entity, componentType Component) (Component, error) {
 	if err := sc.ValidateEntity(ent); err != nil {
 		return nil, err
@@ -84,11 +107,11 @@ func (sc *Scene) GetComponent(ent Entity, componentType Component) (Component, e
 
 	cType := reflect.TypeOf(componentType)
 
-	if len(sc.components[cType]) <= int(ent.ID()) {
+	if len(sc.components[cType]) <= int(ent.Index()) {
 		return nil, nil
 	}
 
-	ptr := sc.components[cType][ent.ID()]
+	ptr := sc.components[cType][ent.Index()]
 	return ptr, nil
 }
 
@@ -96,7 +119,7 @@ func (sc *Scene) GetComponent(ent Entity, componentType Component) (Component, e
 // Returns an error if the entity isn't active or doesn't have the given component type.
 // Automatically casts the component to the correct concrete type.
 func ExtractComponent[C Component](sc *Scene, ent Entity, componentType C) (C, error) {
-	zero := *new(C)
+	zero := *new(C) // This should be nil, since C is a pointer to a component
 	c, err := sc.GetComponent(ent, componentType)
 	if err != nil {
 		return zero, err

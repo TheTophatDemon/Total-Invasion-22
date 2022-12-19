@@ -14,6 +14,6 @@ func (mr *MeshRender) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTi
 
 }
 
-func (mr *MeshRender) RenderComponent() {
+func (mr *MeshRender) RenderComponent(sc *scene.Scene, ent scene.Entity) {
 
 }
