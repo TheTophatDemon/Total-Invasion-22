@@ -16,7 +16,7 @@ type FirstPersonController struct {
 
 func (controller *FirstPersonController) UpdateComponent(sc *scene.Scene, entity scene.Entity, deltaTime float32) {
 	var movement *Movement
-	movement, err := scene.ExtractComponent(sc, entity, movement)
+	movement, err := scene.GetComponent(sc, entity, movement)
 	if err != nil {
 		fmt.Println(err)
 		return

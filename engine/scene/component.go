@@ -7,4 +7,6 @@ type Component interface {
 type RenderComponent interface {
 	Component
 	RenderComponent(*Scene, Entity)
+	LayerID() int   // Specifies the order in which this component gets rendered.
+	PrepareRender() // Prepares the graphics state to render an instance of this component
 }

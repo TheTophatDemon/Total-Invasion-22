@@ -15,7 +15,7 @@ type Movement struct {
 
 func (m *Movement) UpdateComponent(sc *scene.Scene, entity scene.Entity, deltaTime float32) {
 	var transform *Transform
-	transform, err := scene.ExtractComponent(sc, entity, transform)
+	transform, err := scene.GetComponent(sc, entity, transform)
 	if err != nil {
 		fmt.Println(err)
 		return

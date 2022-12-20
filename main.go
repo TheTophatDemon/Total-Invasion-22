@@ -122,7 +122,7 @@ func main() {
 
 	//Place camera at player's position
 	var tr *comps.Transform
-	tr, err = scene.ExtractComponent(sc, camEnt, tr)
+	tr, err = scene.GetComponent(sc, camEnt, tr)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -1,26 +1,30 @@
 package scene
 
 import (
+	"container/heap"
 	"fmt"
+	"math"
 	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 )
 
-var renderComponentType = reflect.TypeOf(RenderComponent(nil))
-
 type Scene struct {
-	entities   *containers.List[Entity]     // List of active entity IDs, contiguous array.
-	active     []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
-	components map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
+	entities    *containers.List[Entity]     // List of active entity IDs, contiguous array.
+	active      []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
+	components  map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
+	renderQueue RenderQueue                  // Sorts entities that are going to be rendered
 }
 
 func NewScene() *Scene {
-	return &Scene{
-		entities:   containers.NewList[Entity](),
-		active:     make([]Entity, 0),
-		components: make(map[reflect.Type][]Component),
+	sc := &Scene{
+		entities:    containers.NewList[Entity](),
+		active:      make([]Entity, 0),
+		components:  make(map[reflect.Type][]Component),
+		renderQueue: make(RenderQueue, 0),
 	}
+	heap.Init(&sc.renderQueue)
+	return sc
 }
 
 func (sc *Scene) Update(deltaTime float32) {
@@ -35,13 +39,14 @@ func (sc *Scene) Update(deltaTime float32) {
 }
 
 func (sc *Scene) Render() {
-	for cType := range sc.components {
-		if cType.Implements(renderComponentType) {
-			for idx, rc := range sc.components[cType] {
-				renderComponent := rc.(RenderComponent)
-				renderComponent.RenderComponent(sc, sc.active[idx])
-			}
+	lastLayer := math.MinInt
+	for _, ri := range sc.renderQueue {
+		// Render items should be sorted in the queue so that all items in the same layer are contiguous.
+		// Therefore, PrepareRender() needs only be called once when first encountering a given layer.
+		if ri.component.LayerID() != lastLayer {
+			ri.component.PrepareRender()
 		}
+		ri.component.RenderComponent(sc, ri.entity)
 	}
 }
 
@@ -93,6 +98,14 @@ func (sc *Scene) AddComponents(ent Entity, components ...Component) error {
 
 		//Assign component
 		sc.components[cType][ent.Index()] = c
+
+		//Assign entity to render queue if it has a render component
+		if rc, ok := c.(RenderComponent); ok {
+			heap.Push(&sc.renderQueue, &RenderItem{
+				component: rc,
+				entity:    ent,
+			})
+		}
 	}
 
 	return nil
@@ -118,7 +131,7 @@ func (sc *Scene) GetComponent(ent Entity, componentType Component) (Component, e
 // Returns the given entity's component from the given scene with the type of the component passed in.
 // Returns an error if the entity isn't active or doesn't have the given component type.
 // Automatically casts the component to the correct concrete type.
-func ExtractComponent[C Component](sc *Scene, ent Entity, componentType C) (C, error) {
+func GetComponent[C Component](sc *Scene, ent Entity, componentType C) (C, error) {
 	zero := *new(C) // This should be nil, since C is a pointer to a component
 	c, err := sc.GetComponent(ent, componentType)
 	if err != nil {
