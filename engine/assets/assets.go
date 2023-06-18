@@ -13,13 +13,13 @@ import (
 )
 
 // This map caches the textures loaded from the filesystem by their paths.
-var textures map[string]Texture
+var textures map[string]*Texture
 
 // This caches the meshes loaded from the filesystem by their paths.
 var meshes map[string]*Mesh
 
 func init() {
-	textures = make(map[string]Texture)
+	textures = make(map[string]*Texture)
 	meshes = make(map[string]*Mesh)
 }
 
@@ -90,7 +90,7 @@ func getFile(assetPath string) (*os.File, error) {
 	return os.Open(assetPath)
 }
 
-func GetTexture(assetPath string) Texture {
+func GetTexture(assetPath string) *Texture {
 	texture, ok := textures[assetPath]
 	if !ok {
 		textures[assetPath] = loadTexture(assetPath)
@@ -116,7 +116,7 @@ func GetMesh(assetPath string) (*Mesh, error) {
 		case strings.HasSuffix(assetPath, ".obj"):
 			mesh, err = loadOBJMesh(assetPath)
 		default:
-			err = fmt.Errorf("Unsupported model file type.")
+			err = fmt.Errorf("unsupported model file type")
 		}
 		if err != nil {
 			return nil, nil

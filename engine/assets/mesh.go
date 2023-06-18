@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	
 )
 
 const (
@@ -50,7 +49,7 @@ func (v *Vertices) Stride() int {
 
 func (verts *Vertices) Flatten() ([]float32, error) {
 	if len(verts.Pos) <= 0 {
-		return nil, fmt.Errorf("Vertices has no position data!")
+		return nil, fmt.Errorf("vertices has no position data")
 	}
 	data := make([]float32, 0, len(verts.Pos)*verts.Stride())
 	for v, pos := range verts.Pos {
@@ -101,10 +100,10 @@ type Group struct {
 }
 
 type Mesh struct {
-	Verts                 Vertices
-	Inds                  []uint32
+	Verts Vertices
+	Inds  []uint32
 
-	groups                map[string]Group
+	groups map[string]Group
 
 	uploaded              bool
 	vertBuffer, idxBuffer uint32 //VBOs
@@ -113,9 +112,9 @@ type Mesh struct {
 
 func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
-		Verts:      verts,
-		Inds:       inds,
-		groups:     make(map[string]Group, 0),
+		Verts:  verts,
+		Inds:   inds,
+		groups: make(map[string]Group, 0),
 	}
 	mesh.Upload()
 	return mesh
@@ -196,7 +195,7 @@ func (m *Mesh) DrawGroup(name string) error {
 	if !ok {
 		return fmt.Errorf("Group not found")
 	}
-	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset) * unsafe.Sizeof(m.Inds[0]))
+	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.Inds[0]))
 	return nil
 }
 

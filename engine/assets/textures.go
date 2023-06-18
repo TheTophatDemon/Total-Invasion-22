@@ -12,99 +12,84 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-type TextureFlag uint32
-
-const (
-	TEXFLAG_NONE     TextureFlag = 0 << 0
-	TEXFLAG_UNSHADED TextureFlag = 1 << 0
-	TEXFLAG_LIQUID   TextureFlag = 1 << 1
-)
-
-var textureFlagFromString = map[string]TextureFlag{
-	"unshaded": TEXFLAG_UNSHADED,
-	"liquid":   TEXFLAG_LIQUID,
+type Texture struct {
+	target      uint32           // OpenGL Texture Target (GL_TEXTURE_2D & etc.)
+	glID        uint32           // OpenGL Texture ID
+	width       uint32           // Size of entire texture
+	height      uint32           // Size of the entire texture
+	flags       []string         // Flags indicate the in-game properties of the texture
+	frameWidth  uint32           // Width of an animation frame
+	frameHeight uint32           // Height of an animation frame
+	animations  []FrameAnimation // List of animations (may be empty)
 }
 
-type Texture interface {
-	Width() int
-	Height() int
-	ID() uint32
-	Target() uint32
-	HasFlag(TextureFlag) bool
-	Free()
-}
-
-type BaseTexture struct {
-	target uint32
-	glID   uint32
-	width  uint32 //Size of entire texture
-	height uint32
-	flags  TextureFlag
-}
-
-type AtlasTexture struct {
-	BaseTexture
-	frameWidth  uint32
-	frameHeight uint32
-	animations  []FrameAnimation
-}
-
+// Represents the contents of a texture configuration .json file.
 type TextureMetadata struct {
-	Atlas      string
-	FrameSize  [2]uint32
+	Atlas      string    // Path to the atlas texture relative to the program executable.
+	FrameSize  [2]uint32 // The size of a frame in the atlas.
 	Animations []FrameAnimation
-	Flags      []string
+	Flags      []string // Defines in-game properties of the texture.
 }
 
-func (t *BaseTexture) Width() int {
+func (t *Texture) Width() int {
 	return int(t.width)
 }
 
-func (t *BaseTexture) Height() int {
+func (t *Texture) Height() int {
 	return int(t.height)
 }
 
-func (t *BaseTexture) ID() uint32 {
+func (t *Texture) ID() uint32 {
 	return t.glID
 }
 
-func (t *BaseTexture) Target() uint32 {
+func (t *Texture) Target() uint32 {
 	return t.target
 }
 
-func (t *BaseTexture) HasFlag(testFlag TextureFlag) bool {
-	return (t.flags & testFlag) == testFlag
+// Returns true if the texture has a flag matching the argument (ignoring case).
+func (t *Texture) HasFlag(testFlag string) bool {
+	for f := range t.flags {
+		if strings.EqualFold(t.flags[f], testFlag) {
+			return true
+		}
+	}
+	return false
 }
 
-func (t *BaseTexture) Free() {
+func (t *Texture) Free() {
 	id := t.glID
 	gl.DeleteTextures(1, &id)
 }
 
-func (at *AtlasTexture) GetAnimation(index int) FrameAnimation {
+func (at *Texture) GetAnimation(index int) FrameAnimation {
 	return at.animations[index]
 }
 
-func (at *AtlasTexture) AnimationCount() int {
+func (at *Texture) AnimationCount() int {
 	return len(at.animations)
 }
 
-func (at *AtlasTexture) FrameWidth() int {
+func (at *Texture) FrameWidth() int {
 	return int(at.frameWidth)
 }
 
-func (at *AtlasTexture) FrameHeight() int {
+func (at *Texture) FrameHeight() int {
 	return int(at.frameHeight)
+}
+
+func (t *Texture) IsAtlas() bool {
+	return t.animations != nil && len(t.animations) > 0
 }
 
 const ERROR_TEXTURE_SIZE = 64
 
-var errorTexture *BaseTexture
+var errorTexture *Texture
 
 // Returns and/or generates the error texture, a magenta-and-black checkered image.
-func ErrorTexture() Texture {
+func ErrorTexture() *Texture {
 	if errorTexture == nil {
-		errorTexture = new(BaseTexture)
+		errorTexture = new(Texture)
 		gl.GenTextures(1, &errorTexture.glID)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, errorTexture.glID)
@@ -141,25 +126,25 @@ func ErrorTexture() Texture {
 // Loads an image from a file and flips it to be loaded into a texture.
 func loadImage(assetPath string) (*image.RGBA, error) {
 	if strings.ToLower(path.Ext(assetPath)) != ".png" {
-		return nil, fmt.Errorf("Cannot load %s; only .png images are supported!", assetPath)
+		return nil, fmt.Errorf("cannot load %s; only .png images are supported", assetPath)
 	}
 
 	//Load image
 	imgFile, err := getFile(assetPath)
 	if err != nil {
-		return nil, fmt.Errorf("Error loading texture at %s.", assetPath)
+		return nil, fmt.Errorf("error loading texture at %s", assetPath)
 	}
 	defer imgFile.Close()
 
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error decoding texture at %s.", assetPath)
+		return nil, fmt.Errorf("error decoding texture at %s", assetPath)
 	}
 
 	//Convert image to RGBA
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return nil, fmt.Errorf("Error converting texture at %s.", assetPath)
+		return nil, fmt.Errorf("error converting texture at %s", assetPath)
 	}
 	//Flip vertically
 	for x := 0; x < rgba.Bounds().Dx(); x++ {
@@ -184,7 +169,7 @@ func subImageCopy(src *image.RGBA, x, y, w, h int) *image.RGBA {
 	return dest
 }
 
-func loadTexture(assetPath string) Texture {
+func loadTexture(assetPath string) *Texture {
 
 	//Look for metadata file
 	metaPath := strings.TrimSuffix(assetPath, ".png") + ".json"
@@ -194,89 +179,70 @@ func loadTexture(assetPath string) Texture {
 		log.Printf("Could not parse metadata for %s; %s\n", assetPath, err)
 	}
 
-	var texture Texture
+	//Load atlas image file listed in the metadata, or else use the image itself.
+	var img *image.RGBA
+	if metadata != nil && len(metadata.Atlas) > 0 {
+		img, err = loadImage(metadata.Atlas)
+	} else {
+		img, err = loadImage(assetPath)
+	}
+	if err != nil {
+		log.Println(err)
+		return ErrorTexture()
+	}
+
+	texture := &Texture{
+		width:  uint32(img.Bounds().Dx()),
+		height: uint32(img.Bounds().Dy()),
+	}
 
 	//Generate OpenGL Texture
+	if metadata != nil && len(metadata.Atlas) > 0 && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {
+		// If it's an atlas texture...
+		texture.target = gl.TEXTURE_2D_ARRAY
+		texture.frameWidth = metadata.FrameSize[0]
+		texture.frameHeight = metadata.FrameSize[1]
+		texture.animations = make([]FrameAnimation, len(metadata.Animations))
+		copy(texture.animations, metadata.Animations)
 
-	if metadata != nil && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {
-		//Providing a frame size turns it into an atlas texture
-
-		//Load atlas file listed in the metadata, or else use the image itself.
-		var atlasImg *image.RGBA
-		if len(metadata.Atlas) > 0 {
-			atlasImg, err = loadImage(metadata.Atlas)
-		} else {
-			atlasImg, err = loadImage(assetPath)
-		}
-		if err != nil {
-			log.Println(err)
-			return ErrorTexture()
-		}
-
-		atlasTexture := &AtlasTexture{
-			BaseTexture: BaseTexture{
-				target: gl.TEXTURE_2D_ARRAY,
-				width:  uint32(atlasImg.Bounds().Dx()),
-				height: uint32(atlasImg.Bounds().Dy()),
-			},
-			frameWidth:  metadata.FrameSize[0],
-			frameHeight: metadata.FrameSize[1],
-		}
-		atlasTexture.animations = make([]FrameAnimation, len(metadata.Animations))
-		copy(atlasTexture.animations, metadata.Animations)
-
-		rows := int(atlasTexture.width / atlasTexture.frameWidth)
-		cols := int(atlasTexture.height / atlasTexture.frameHeight)
+		rows := int(texture.width / texture.frameWidth)
+		cols := int(texture.height / texture.frameHeight)
 		nFrames := rows * cols
 
 		gl.ActiveTexture(gl.TEXTURE1)
-		gl.GenTextures(1, &atlasTexture.glID)
-		gl.BindTexture(atlasTexture.target, atlasTexture.glID)
+		gl.GenTextures(1, &texture.glID)
+		gl.BindTexture(texture.target, texture.glID)
 
-		gl.TexImage3D(atlasTexture.target, 0, gl.RGBA, int32(atlasTexture.frameWidth), int32(atlasTexture.frameHeight), int32(nFrames), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+		gl.TexImage3D(texture.target, 0, gl.RGBA, int32(texture.frameWidth), int32(texture.frameHeight), int32(nFrames), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 
 		// Generate subimages for each frame
 		for x := 0; x < cols; x++ {
 			for y := 0; y < rows; y++ {
-				ofsx := x * atlasTexture.FrameWidth()
-				ofsy := y * atlasTexture.FrameHeight()
-				frameRGBA := subImageCopy(atlasImg, ofsx, ofsy, atlasTexture.FrameWidth(), atlasTexture.FrameHeight())
+				ofsx := x * texture.FrameWidth()
+				ofsy := y * texture.FrameHeight()
+				frameRGBA := subImageCopy(img, ofsx, ofsy, texture.FrameWidth(), texture.FrameHeight())
 
-				gl.TexSubImage3D(atlasTexture.target, 0, 0, 0,
+				gl.TexSubImage3D(texture.target, 0, 0, 0,
 					int32(x+y*cols),
-					int32(atlasTexture.frameWidth),
-					int32(atlasTexture.frameHeight),
+					int32(texture.frameWidth),
+					int32(texture.frameHeight),
 					1,
 					gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(frameRGBA.Pix))
 			}
 		}
-
-		texture = atlasTexture
 	} else {
 		//Set texture data as whole image
-
-		rgba, err := loadImage(assetPath)
-		if err != nil {
-			log.Println(err)
-			return ErrorTexture()
-		}
-
-		baseTexture := &BaseTexture{
-			target: gl.TEXTURE_2D,
-			width:  uint32(rgba.Bounds().Dx()),
-			height: uint32(rgba.Bounds().Dy()),
-		}
-
+		texture.target = gl.TEXTURE_2D
+		texture.frameWidth = texture.width
+		texture.frameHeight = texture.height
+		texture.animations = nil
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.GenTextures(1, &baseTexture.glID)
-		gl.BindTexture(baseTexture.target, baseTexture.glID)
-		gl.TexImage2D(baseTexture.target, 0, gl.RGBA, int32(baseTexture.width), int32(baseTexture.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
-
-		texture = baseTexture
+		gl.GenTextures(1, &texture.glID)
+		gl.BindTexture(texture.target, texture.glID)
+		gl.TexImage2D(texture.target, 0, gl.RGBA, int32(texture.width), int32(texture.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
 	}
 
 	//Apply filtering and mipmapping
-
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.REPEAT)

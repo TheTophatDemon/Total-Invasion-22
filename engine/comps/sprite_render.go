@@ -7,23 +7,31 @@ import (
 
 type SpriteRender struct {
 	*MeshRender
-	atlas *assets.AtlasTexture
+	atlas *assets.Texture
 	anim  *AnimationPlayer
 }
 
-func NewSpriteRender(atlas *assets.AtlasTexture) *SpriteRender {
+func NewSpriteRender(atlas *assets.Texture) *SpriteRender {
+	// If the texture isn't actually an atlas, then the animation player will be nil.
+	var animPlayer *AnimationPlayer = nil
+	if atlas.IsAtlas() {
+		animPlayer = NewAnimationPlayer(atlas.GetAnimation(0))
+	}
+
 	return &SpriteRender{
 		&MeshRender{
 			mesh:   assets.SpriteMesh,
 			shader: assets.SpriteShader,
 		},
 		atlas,
-		NewAnimationPlayer(atlas.GetAnimation(0)),
+		animPlayer,
 	}
 }
 
 func (sr *SpriteRender) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
-	sr.anim.Update(deltaTime)
+	if sr.anim != nil {
+		sr.anim.Update(deltaTime)
+	}
 }
 
 func (sr *SpriteRender) RenderComponent(sc *scene.Scene, ent scene.Entity) {

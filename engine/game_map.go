@@ -1,7 +1,6 @@
 package engine
 
 import (
-
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
@@ -12,7 +11,7 @@ import (
 type GameMap struct {
 	*assets.TE3File
 
-	mesh *assets.Mesh
+	mesh           *assets.Mesh
 	tileAnimations map[string]*comps.AnimationPlayer
 }
 
@@ -31,15 +30,12 @@ func LoadGameMap(te3Path string) (*GameMap, error) {
 	animPlayerMap := make(map[string]*comps.AnimationPlayer)
 	for _, groupName := range mesh.GetGroupNames() {
 		tex := assets.GetTexture(groupName)
-		switch t := tex.(type) {
-		case *assets.AtlasTexture:
-			if t.AnimationCount() > 0 {
-				animPlayerMap[groupName] = comps.NewAnimationPlayerAutoPlay(t.GetAnimation(0))
-			}
+		if tex.AnimationCount() > 0 {
+			animPlayerMap[groupName] = comps.NewAnimationPlayerAutoPlay(tex.GetAnimation(0))
 		}
 	}
 
-	return &GameMap{ te3File, mesh, animPlayerMap }, nil
+	return &GameMap{te3File, mesh, animPlayerMap}, nil
 }
 
 func (gm *GameMap) Update(deltaTime float32) {
@@ -61,7 +57,7 @@ func (gm *GameMap) Render(viewProjection mgl32.Mat4) {
 
 	//Draw the map
 	gm.mesh.Bind()
-	
+
 	model := mgl32.Ident4()
 	gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uModelTransform"), 1, false, &model[0])
 
@@ -74,15 +70,15 @@ func (gm *GameMap) Render(viewProjection mgl32.Mat4) {
 			frame := tileAnim.Frame()
 			gl.Uniform1i(assets.MapShader.GetUniformLoc("uFrame"), int32(frame))
 			gl.ActiveTexture(gl.TEXTURE1)
-			} else {
-				gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
+		} else {
+			gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
 			gl.ActiveTexture(gl.TEXTURE0)
 		}
-		
+
 		tex := assets.GetTexture(group)
 		gl.BindTexture(tex.Target(), tex.ID())
 		gm.mesh.DrawGroup(group)
 	}
-	
+
 	CheckOpenGLError()
 }
