@@ -1,29 +1,24 @@
 package scene
 
 import (
-	"container/heap"
 	"fmt"
-	"math"
 	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 )
 
 type Scene struct {
-	entities    *containers.List[Entity]     // List of active entity IDs, contiguous array.
-	active      []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
-	components  map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
-	renderQueue RenderQueue                  // Sorts entities that are going to be rendered
+	entities   *containers.List[Entity]     // List of active entity IDs, contiguous array.
+	active     []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
+	components map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
 }
 
 func NewScene() *Scene {
 	sc := &Scene{
-		entities:    containers.NewList[Entity](),
-		active:      make([]Entity, 0),
-		components:  make(map[reflect.Type][]Component),
-		renderQueue: make(RenderQueue, 0),
+		entities:   containers.NewList[Entity](),
+		active:     make([]Entity, 0),
+		components: make(map[reflect.Type][]Component),
 	}
-	heap.Init(&sc.renderQueue)
 	return sc
 }
 
@@ -39,14 +34,15 @@ func (sc *Scene) Update(deltaTime float32) {
 }
 
 func (sc *Scene) Render() {
-	lastLayer := math.MinInt
-	for _, ri := range sc.renderQueue {
-		// Render items should be sorted in the queue so that all items in the same layer are contiguous.
-		// Therefore, PrepareRender() needs only be called once when first encountering a given layer.
-		if ri.component.LayerID() != lastLayer {
-			ri.component.PrepareRender()
+	for cType := range sc.components {
+		first, renderable := sc.components[cType][0].(RenderComponent)
+		if renderable {
+			first.PrepareRender()
+			for c := range sc.components[cType] {
+				rc := sc.components[cType][c].(RenderComponent)
+				rc.RenderComponent(sc, sc.active[c])
+			}
 		}
-		ri.component.RenderComponent(sc, ri.entity)
 	}
 }
 
@@ -98,14 +94,6 @@ func (sc *Scene) AddComponents(ent Entity, components ...Component) error {
 
 		//Assign component
 		sc.components[cType][ent.Index()] = c
-
-		//Assign entity to render queue if it has a render component
-		if rc, ok := c.(RenderComponent); ok {
-			heap.Push(&sc.renderQueue, &RenderItem{
-				component: rc,
-				entity:    ent,
-			})
-		}
 	}
 
 	return nil

@@ -2,10 +2,10 @@ package assets
 
 import (
 	"bufio"
-	"strings"
-	"strconv"
-	_"fmt"
+	_ "fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -17,7 +17,7 @@ type OBJFace [4]OBJIndex //May be a quad or a triangle. For triangles, last inde
 type OBJGroup struct {
 	faces []OBJFace
 }
-	
+
 type OBJ struct {
 	pos    [][3]float32
 	tex    [][2]float32
@@ -26,24 +26,24 @@ type OBJ struct {
 }
 
 func loadOBJMesh(path string) (*Mesh, error) {
-	
+
 	file, err := getFile(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	
+
 	verts := Vertices{
-		Pos: make([]mgl32.Vec3, 0),
+		Pos:      make([]mgl32.Vec3, 0),
 		TexCoord: make([]mgl32.Vec2, 0),
-		Normal: make([]mgl32.Vec3, 0),
-		Color: nil,
+		Normal:   make([]mgl32.Vec3, 0),
+		Color:    nil,
 	}
 	inds := make([]uint32, 0)
-	
+
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
-	
+
 	obj := OBJ{
 		pos:    make([][3]float32, 0, 16),
 		tex:    make([][2]float32, 0, 16),
@@ -91,9 +91,9 @@ func loadOBJMesh(path string) (*Mesh, error) {
 				}
 			}
 		case "f":
-			if len(tokens) > 5 || len(tokens) < 4 { 
+			if len(tokens) > 5 || len(tokens) < 4 {
 				log.Println("Error: OBJ loader found unsupported polygon type.")
-				continue 
+				continue
 			}
 			var face OBJFace
 			face[3] = OBJIndex{-1, -1, -1} //Marks a triangle unless overwritten
@@ -108,25 +108,25 @@ func loadOBJMesh(path string) (*Mesh, error) {
 						idx[t] = -1
 					}
 				}
-				face[i - 1] = idx
+				face[i-1] = idx
 
 				//Create vertices for each face's vertex
 				_, ok := vertSet[idx]
 				if !ok {
 					v := len(verts.Pos)
 					vertSet[idx] = v
-					
+
 					if idx[0] >= 0 { //Position
-						verts.Pos = append(verts.Pos, 
-							mgl32.Vec3(obj.pos[idx[0] - 1]))
+						verts.Pos = append(verts.Pos,
+							mgl32.Vec3(obj.pos[idx[0]-1]))
 					}
 					if idx[1] >= 0 { //Tex coord
-						verts.TexCoord = append(verts.TexCoord, 
-							mgl32.Vec2(obj.tex[idx[1] - 1]))
+						verts.TexCoord = append(verts.TexCoord,
+							mgl32.Vec2(obj.tex[idx[1]-1]))
 					}
 					if idx[2] >= 0 { //Normal
 						verts.Normal = append(verts.Normal,
-							 mgl32.Vec3(obj.norm[idx[2] - 1]))
+							mgl32.Vec3(obj.norm[idx[2]-1]))
 					}
 				}
 			}
@@ -136,26 +136,26 @@ func loadOBJMesh(path string) (*Mesh, error) {
 
 	meshGroups := make(map[string]Group)
 	for name, group := range obj.groups {
-		meshGroup := Group{ Offset: len(inds) }
+		meshGroup := Group{Offset: len(inds)}
 		for _, face := range group.faces {
 			//Add indices from faces
 			if face[3][0] == -1 {
 				//Triangle
-				inds = append(inds, 
-					uint32(vertSet[face[0]]), 
-					uint32(vertSet[face[1]]), 
-					uint32(vertSet[face[2]]), 
+				inds = append(inds,
+					uint32(vertSet[face[0]]),
+					uint32(vertSet[face[1]]),
+					uint32(vertSet[face[2]]),
 				)
 				meshGroup.Length += 3
 			} else {
 				//Quad (two triangles)
-				inds = append(inds, 
-					uint32(vertSet[face[0]]), 
-					uint32(vertSet[face[1]]), 
-					uint32(vertSet[face[2]]), 
-					uint32(vertSet[face[2]]), 
-					uint32(vertSet[face[3]]), 
-					uint32(vertSet[face[0]]), 
+				inds = append(inds,
+					uint32(vertSet[face[0]]),
+					uint32(vertSet[face[1]]),
+					uint32(vertSet[face[2]]),
+					uint32(vertSet[face[2]]),
+					uint32(vertSet[face[3]]),
+					uint32(vertSet[face[0]]),
 				)
 				meshGroup.Length += 6
 			}

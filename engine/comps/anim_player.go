@@ -49,7 +49,7 @@ func (ap *AnimationPlayer) Update(deltaTime float32) {
 				ap.currentIndex = 0
 			}
 		}
-		ap.currentFrame = ap.animation.Frames[ap.currentIndex] //Why you skip this line????
+		ap.currentFrame = ap.animation.Frames[ap.currentIndex]
 	}
 }
 

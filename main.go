@@ -61,7 +61,7 @@ func main() {
 		panic(err)
 	}
 
-	assets.InitShaders()
+	assets.InitBuiltInAssets()
 
 	input.BindActionKey(ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(ACTION_BACK, glfw.KeyS)
@@ -221,7 +221,7 @@ func main() {
 	cube.Free()
 
 	assets.FreeTextures()
-	assets.FreeShaders()
+	assets.FreeBuiltInAssets()
 }
 
 var cubeIndices = []uint32{

@@ -1,8 +1,8 @@
 package assets
 
 import (
+	_ "embed"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -14,95 +14,14 @@ type Shader struct {
 	attribs  map[string]int32
 }
 
-var (
-	MapShader *Shader
-)
-
-//Initialize built-in shaders
-func InitShaders() {
-	var err error
-
-	MapShader, err = CreateShader(`
-		#version 330
-
-		layout(location = 0) in vec3 aPos;
-		layout(location = 1) in vec2 aTexCoord;
-		layout(location = 2) in vec3 aNormal;
-
-		uniform mat4 uMVP;
-		uniform mat4 uModelTransform;
-
-		out vec2 vTexCoord;
-		out vec3 vNormal;
-
-		void main() {
-			vTexCoord = aTexCoord;
-			mat3 rot = mat3(uModelTransform[0].xyz, uModelTransform[1].xyz, uModelTransform[2].xyz);
-			vNormal = normalize(rot * aNormal);
-			gl_Position = uMVP * vec4(aPos, 1);
-		}
-	`, `
-		#version 330
-
-		const vec3 LIGHT_DIR = normalize(vec3(1.0, 0.0, 1.0));
-		const vec3 AMBIENT = vec3(0.5, 0.5, 0.5);
-
-		in vec2 vTexCoord;
-		in vec3 vNormal;
-
-		uniform sampler2D uTex;
-		uniform sampler2DArray uAtlas;
-		uniform int uFrame = 0;
-		uniform bool uAtlasUsed = false;
-
-		uniform float uFogStart;
-		uniform float uFogLength;
-
-		out vec4 oColor;
-
-		void main() {
-			//Sample texture or atlas
-			vec4 diffuse;
-			if (uAtlasUsed) {
-				diffuse = texture(uAtlas, vec3(vTexCoord, uFrame));
-			} else {
-				diffuse = texture(uTex, vTexCoord);
-			}
-			
-			//Discard transparent pixels
-			if (diffuse.a < 0.5) {
-				discard;
-			}
-			
-			//Calulate diffuse lighting
-			float lightFactor = (dot(-LIGHT_DIR, normalize(vNormal)) + 1.0) / 2.0;
-			diffuse.rgb *= AMBIENT + (vec3(1.0) - AMBIENT) * lightFactor;
-			
-			//Apply depth based fog
-			float depth = gl_FragCoord.z / gl_FragCoord.w;
-			float fog = 1.0 - clamp((depth - uFogStart) / uFogLength, 0.0, 1.0);
-    		diffuse.rgb *= fog;
-
-			oColor = diffuse;
-		}
-	`)
-	if err != nil {
-		log.Fatalln("Couldn't compile mapShader: ", err)
-	}
-}
-
-func FreeShaders() {
-	MapShader.Free()
-}
-
 func CreateShader(vertSrc, fragSrc string) (*Shader, error) {
 	vertShader, err := compileShader(vertSrc, gl.VERTEX_SHADER)
 	if err != nil {
-		return nil, fmt.Errorf("Vertex shader error: %v", err)
+		return nil, fmt.Errorf("vertex shader error: %v", err)
 	}
 	fragShader, err := compileShader(fragSrc, gl.FRAGMENT_SHADER)
 	if err != nil {
-		return nil, fmt.Errorf("Fragment shader error: %v", err)
+		return nil, fmt.Errorf("fragment shader error: %v", err)
 	}
 
 	program := gl.CreateProgram()
@@ -119,7 +38,7 @@ func CreateShader(vertSrc, fragSrc string) (*Shader, error) {
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
 
-		return nil, fmt.Errorf("Failed to link shader program")
+		return nil, fmt.Errorf("failed to link shader program")
 	}
 
 	gl.BindFragDataLocation(program, 0, gl.Str("oColor\x00"))

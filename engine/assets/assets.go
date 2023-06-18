@@ -1,19 +1,88 @@
 package assets
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
+// This map caches the textures loaded from the filesystem by their paths.
 var textures map[string]Texture
+
+// This caches the meshes loaded from the filesystem by their paths.
 var meshes map[string]*Mesh
 
 func init() {
 	textures = make(map[string]Texture)
 	meshes = make(map[string]*Mesh)
+}
+
+var (
+	MapShader *Shader
+
+	//go:embed map.vs.glsl
+	mapVertShaderSrc string
+	//go:embed map.fs.glsl
+	mapFragShaderSrc string
+
+	SpriteShader *Shader
+
+	//go:embed sprite.vs.glsl
+	spriteVertShaderSrc string
+	//go:embed sprite.fs.glsl
+	spriteFragShaderSrc string
+
+	SpriteMesh *Mesh
+)
+
+// Initialize built-in assets
+func InitBuiltInAssets() {
+	var err error
+
+	MapShader, err = CreateShader(mapVertShaderSrc, mapFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile map shader: ", err)
+	}
+
+	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile sprite shader: ", err)
+	}
+
+	SpriteMesh = CreateMesh(Vertices{
+		Pos: []mgl32.Vec3{
+			{-1.0, -1.0, 0.0},
+			{1.0, -1.0, 0.0},
+			{-1.0, 1.0, 0.0},
+			{1.0, 1.0, 0.0},
+		},
+		TexCoord: []mgl32.Vec2{
+			{1.0, 0.0},
+			{0.0, 0.0},
+			{1.0, 1.0},
+			{0.0, 1.0},
+		},
+		Normal: []mgl32.Vec3{
+			{0.0, 0.0, 1.0},
+			{0.0, 0.0, 1.0},
+			{0.0, 0.0, 1.0},
+			{0.0, 0.0, 1.0},
+		},
+		Color: nil,
+	}, []uint32{
+		0, 2, 1, 2, 3, 1,
+	})
+}
+
+func FreeBuiltInAssets() {
+	MapShader.Free()
+	SpriteShader.Free()
 }
 
 // Retrieves the asset's file from one of the available asset packs
