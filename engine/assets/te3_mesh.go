@@ -6,75 +6,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-type CullGroup struct {
-	complement int
-	mask       uint32
-	name       string
-	dir        [3]int
-}
-
-var cullGroups = [...]CullGroup{
-	{CULLGROUP_NONE, 0 << 0, "nocull", [3]int{0, 0, 0}},
-	{CULLGROUP_DOWN, 1 << 0, "cullu", [3]int{0, 1, 0}},
-	{CULLGROUP_UP, 1 << 1, "culld", [3]int{0, -1, 0}},
-	{CULLGROUP_WEST, 1 << 2, "culle", [3]int{1, 0, 0}},
-	{CULLGROUP_EAST, 1 << 3, "cullw", [3]int{-1, 0, 0}},
-	{CULLGROUP_SOUTH, 1 << 4, "culln", [3]int{0, 0, -1}},
-	{CULLGROUP_NORTH, 1 << 5, "culls", [3]int{0, 0, 1}},
-}
-
-// Indexes into the cullGroups array
-const (
-	CULLGROUP_NONE = iota
-	CULLGROUP_UP
-	CULLGROUP_DOWN
-	CULLGROUP_EAST
-	CULLGROUP_WEST
-	CULLGROUP_NORTH
-	CULLGROUP_SOUTH
-)
-
-var cullGroupFromName map[string]*CullGroup
-var cullGroupFromDir map[[3]int]*CullGroup
-
-func init() {
-	cullGroupFromName = make(map[string]*CullGroup)
-	cullGroupFromDir = make(map[[3]int]*CullGroup)
-
-	for i, cg := range cullGroups {
-		cullGroupFromName[cg.name] = &cullGroups[i]
-		cullGroupFromDir[cg.dir] = &cullGroups[i]
-	}
-
-	cullGroupFromName[""] = &cullGroups[CULLGROUP_NONE]
-}
-
-func (tiles *Tiles) ShouldCull(tile Tile, gridX, gridY, gridZ int, testGroup *CullGroup) bool {
-	//Don't cull if the tile doesn't have that cull group
-	if (tile.cullGroup & testGroup.mask) == 0 {
-		return false
-	}
-
-	//Neighboring tile's grid position
-	nGridX := gridX + testGroup.dir[0]
-	nGridY := gridY + testGroup.dir[1]
-	nGridZ := gridZ + testGroup.dir[2]
-
-	//If the neighbor is out of bounds then cull the tile
-	if nGridX < 0 || nGridY < 0 || nGridZ < 0 || nGridX >= tiles.Width || nGridY >= tiles.Height || nGridZ >= tiles.Length {
-		return false
-	}
-
-	neighbor := tiles.Data[tiles.FlattenGridPos(nGridX, nGridY, nGridZ)]
-
-	//Don't cull when the neighbor is a different shape or if it is empty
-	if neighbor.ShapeID != tile.ShapeID || neighbor.ShapeID < 0 || neighbor.TextureID < 0 {
-		return false
-	}
-
-	//Cull if the neighbor has a complementary culling group
-	return (neighbor.cullGroup & cullGroups[testGroup.complement].mask) != 0
-}
+var NORMAL_EAST = mgl32.Vec3{1.0, 0.0, 0.0}
+var NORMAL_WEST = mgl32.Vec3{-1.0, 0.0, 0.0}
+var NORMAL_NORTH = mgl32.Vec3{0.0, 0.0, -1.0}
+var NORMAL_SOUTH = mgl32.Vec3{0.0, 0.0, 1.0}
+var NORMAL_UP = mgl32.Vec3{0.0, 1.0, 0.0}
+var NORMAL_DOWN = mgl32.Vec3{0.0, -1.0, 0.0}
 
 func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 	var err error
@@ -116,22 +53,6 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 			group = make([]int, 0, 16)
 		}
 		groupTiles[tile.TextureID] = append(group, t)
-
-		//Calculate rotation matrix for later
-		rotMatx := tile.GetRotationMatrix()
-		te3.Tiles.Data[t].rotMatx = rotMatx
-
-		//Assign culling groups
-		te3.Tiles.Data[t].cullGroup = 0
-		for _, groupName := range shapeMeshes[tile.ShapeID].GetGroupNames() {
-			meshCullGroup := cullGroupFromName[groupName]
-			//Transform the shape's culling group vector into the tile's space to assign the map space culling group
-			dir := mgl32.Vec3{float32(meshCullGroup.dir[0]), float32(meshCullGroup.dir[1]), float32(meshCullGroup.dir[2])}
-			dir = mgl32.TransformNormal(dir, rotMatx)
-			intDir := [3]int{int(dir.X()), int(dir.Y()), int(dir.Z())}
-
-			te3.Tiles.Data[t].cullGroup |= cullGroupFromDir[intDir].mask
-		}
 	}
 
 	meshGroups := make([]Group, 0, len(groupTiles))
@@ -146,46 +67,92 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 			shapeMesh := shapeMeshes[tile.ShapeID]
 			gridX, gridY, gridZ := te3.Tiles.GetGridPos(t)
 
-			// tileVertexOffset := len(mapVerts.Pos)
+			rotMatrix := tile.GetRotationMatrix()
 
-			//Add the shape's groups individually to the aggregate mesh
-			for _, shapeGroupName := range shapeMesh.GetGroupNames() {
-				//Transform the culling direction of the shape by the tile rotation to get the right culling group
-				g := cullGroupFromName[shapeGroupName]
-				dir := mgl32.Vec3{float32(g.dir[0]), float32(g.dir[1]), float32(g.dir[2])}
-				dir = mgl32.TransformNormal(dir, tile.rotMatx)
-				intDir := [3]int{int(dir.X()), int(dir.Y()), int(dir.Z())}
+		triangle:
+			for t := 0; t < len(shapeMesh.Inds)/3; t++ {
+				//Cull the triangle if it happens to match with one from a neighboring tile
 
-				if te3.Tiles.ShouldCull(tile, gridX, gridY, gridZ, cullGroupFromDir[intDir]) {
-					continue
+				triPoints := [3]mgl32.Vec3{}
+				for i := 0; i < 3; i++ {
+					//Rotate and translate the points of the triangle to the tile's final position
+					triPoints[i] = mgl32.TransformCoordinate(shapeMesh.Verts.Pos[shapeMesh.Inds[t*3+i]], rotMatrix)
+					triPoints[i][0] += float32(gridX)*GRID_SPACING + HALF_GRID_SPACING
+					triPoints[i][1] += float32(gridY)*GRID_SPACING + HALF_GRID_SPACING
+					triPoints[i][2] += float32(gridZ)*GRID_SPACING + HALF_GRID_SPACING
+				}
+				planeNormal := triPoints[1].Sub(triPoints[0]).Cross(triPoints[2].Sub(triPoints[0])).Normalize()
+				planeDist := -planeNormal.Dot(triPoints[0])
+
+				//Determine the grid position of the tile neighboring this face
+				nborX, nborY, nborZ := gridX, gridY, gridZ
+				if planeNormal.ApproxEqual(NORMAL_EAST) {
+					nborX += 1
+				} else if planeNormal.ApproxEqual(NORMAL_WEST) {
+					nborX -= 1
+				} else if planeNormal.ApproxEqual(NORMAL_NORTH) {
+					nborZ -= 1
+				} else if planeNormal.ApproxEqual(NORMAL_SOUTH) {
+					nborZ += 1
+				} else if planeNormal.ApproxEqual(NORMAL_UP) {
+					nborY += 1
+				} else if planeNormal.ApproxEqual(NORMAL_DOWN) {
+					nborY -= 1
+				} else {
+					goto nocull
 				}
 
-				shapeGroup := shapeMesh.GetGroup(shapeGroupName)
+				if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
+					//Check the faces of the neighboring tile
+					nborTile := te3.Tiles.Data[te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)]
+					if nborTile.ShapeID < 0 || GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
+						goto nocull
+					}
+					nRotMatrix := nborTile.GetRotationMatrix()
+					nborMesh := shapeMeshes[nborTile.ShapeID]
+					for nt := 0; nt < len(nborMesh.Inds)/3; nt++ {
+						nTriPoints := [3]mgl32.Vec3{}
+						for i := 0; i < 3; i++ {
+							//Rotate and translate the points of the triangle to the tile's final position
+							nTriPoints[i] = mgl32.TransformCoordinate(nborMesh.Verts.Pos[nborMesh.Inds[nt*3+i]], nRotMatrix)
+							nTriPoints[i][0] += float32(nborX)*GRID_SPACING + HALF_GRID_SPACING
+							nTriPoints[i][1] += float32(nborY)*GRID_SPACING + HALF_GRID_SPACING
+							nTriPoints[i][2] += float32(nborZ)*GRID_SPACING + HALF_GRID_SPACING
+						}
+						nPlaneNormal := nTriPoints[1].Sub(nTriPoints[0]).Cross(nTriPoints[2].Sub(nTriPoints[0])).Normalize()
+						nPlaneDist := -nPlaneNormal.Dot(nTriPoints[0])
 
-				for i := shapeGroup.Offset; i < shapeGroup.Offset+shapeGroup.Length; i++ {
-					ind := shapeMesh.Inds[i]
+						//The triangle is culled if the neighbor has a triangle facing the opposite direction sharing all three points.
+						if mgl32.FloatEqual(mgl32.Abs(planeDist), mgl32.Abs(nPlaneDist)) &&
+							mgl32.FloatEqual(nPlaneNormal.Dot(planeNormal), -1.0) &&
+							(triPoints[0].ApproxEqual(nTriPoints[0]) || triPoints[0].ApproxEqual(nTriPoints[1]) || triPoints[0].ApproxEqual(nTriPoints[2])) &&
+							(triPoints[1].ApproxEqual(nTriPoints[0]) || triPoints[1].ApproxEqual(nTriPoints[1]) || triPoints[1].ApproxEqual(nTriPoints[2])) &&
+							(triPoints[2].ApproxEqual(nTriPoints[0]) || triPoints[2].ApproxEqual(nTriPoints[1]) || triPoints[2].ApproxEqual(nTriPoints[2])) {
+							continue triangle
+						}
+					}
+				}
+
+			nocull:
+				//Add the triangle's indices to the map mesh
+				for i := 0; i < 3; i++ {
+					ind := shapeMesh.Inds[t*3+i]
 					mapInds = append(mapInds, uint32(len(mapVerts.Pos)))
 
 					//Add the shape's vertex position to the aggregate mesh, offset by the overall tile position
-					pos := mgl32.TransformCoordinate(shapeMesh.Verts.Pos[ind], tile.rotMatx) //Rotate by tile orientation
-					pos[0] += float32(gridX)*GRID_SPACING + HALF_GRID_SPACING
-					pos[1] += float32(gridY)*GRID_SPACING + HALF_GRID_SPACING
-					pos[2] += float32(gridZ)*GRID_SPACING + HALF_GRID_SPACING
-					mapVerts.Pos = append(mapVerts.Pos, pos)
+					mapVerts.Pos = append(mapVerts.Pos, triPoints[i])
 
 					//Append tex coordinates
 					mapVerts.TexCoord = append(mapVerts.TexCoord, shapeMesh.Verts.TexCoord[ind])
 
 					//Append normal, rotated by the tile orientation
-					normal := mgl32.TransformNormal(shapeMesh.Verts.Normal[ind], tile.rotMatx)
+					normal := mgl32.TransformNormal(shapeMesh.Verts.Normal[ind], rotMatrix)
 					mapVerts.Normal = append(mapVerts.Normal, normal)
 				}
-
-				group.Length += shapeGroup.Length
+				group.Length += 3
 			}
 		}
 
-		// group.Length = len(mapVerts.Pos) - group.Offset
 		meshGroups = append(meshGroups, group)
 		meshGroupNames = append(meshGroupNames, te3.Tiles.Textures[texID])
 	}

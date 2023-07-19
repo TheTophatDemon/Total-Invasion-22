@@ -43,10 +43,6 @@ type Tile struct {
 	Yaw       int32 //Yaw in whole number of degrees
 	TextureID TextureID
 	Pitch     int32 //Pitch in whole number of degrees
-
-	//State variables, not decoded from the file
-	cullGroup uint32     //Bit mask specifying cull groups in map space
-	rotMatx   mgl32.Mat4 //Rotation matrix calculated from yaw and pitch
 }
 
 // Returns the rotation matrix based off of the tile's yaw and pitch values.

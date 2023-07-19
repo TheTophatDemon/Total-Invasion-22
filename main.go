@@ -79,13 +79,13 @@ func main() {
 	sc := scene.NewScene()
 
 	//Load map
-	gameMap, err := engine.LoadGameMap("assets/maps/E3M1.te3")
+	gameMap, err := engine.LoadGameMap("assets/maps/ti2-malicious-intents.te3")
 	if err != nil {
 		log.Println("Map loading error: ", err)
 	}
 
 	// Find player spawn
-	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
+	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player")
 
 	// Spawn sprites
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
@@ -127,7 +127,7 @@ func main() {
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
-	gl.Disable(gl.CULL_FACE)
+	gl.Enable(gl.CULL_FACE)
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 

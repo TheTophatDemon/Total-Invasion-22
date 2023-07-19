@@ -16,7 +16,7 @@ type GameMap struct {
 }
 
 func LoadGameMap(te3Path string) (*GameMap, error) {
-	te3File, err := assets.LoadTE3File("assets/maps/E3M1.te3")
+	te3File, err := assets.LoadTE3File(te3Path)
 	if err != nil {
 		return nil, err
 	}
