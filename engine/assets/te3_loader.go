@@ -15,8 +15,6 @@ import (
 const GRID_SPACING = 2.0
 const HALF_GRID_SPACING = GRID_SPACING / 2.0
 
-const INVISIBLE_TEXTURE = "assets/textures/tiles/invisible.png"
-
 type TE3File struct {
 	Ents  []Ent
 	Tiles Tiles
@@ -94,13 +92,20 @@ func (tiles *Tiles) UnmarshalJSON(b []byte) error {
 	reader := bytes.NewReader(tileBytes)
 	tiles.Data = make([]Tile, 0)
 	var tile Tile
-	for t := 0; t < tiles.Width*tiles.Height*tiles.Length; t++ {
+	for t := int64(0); t < reader.Size(); t++ {
 		if binary.Read(reader, binary.LittleEndian, &tile.ShapeID) != io.ErrUnexpectedEOF &&
 			binary.Read(reader, binary.LittleEndian, &tile.Yaw) != io.ErrUnexpectedEOF &&
 			binary.Read(reader, binary.LittleEndian, &tile.TextureID) != io.ErrUnexpectedEOF &&
 			binary.Read(reader, binary.LittleEndian, &tile.Pitch) != io.ErrUnexpectedEOF {
 
-			tiles.Data = append(tiles.Data, tile)
+			if tile.ShapeID < 0 {
+				//Negative shape ID represents a run of empty tiles
+				for r := 0; r < -int(tile.ShapeID); r++ {
+					tiles.Data = append(tiles.Data, Tile{ShapeID: ShapeID(-1), Yaw: 0, TextureID: TextureID(-1), Pitch: 0})
+				}
+			} else {
+				tiles.Data = append(tiles.Data, tile)
+			}
 		} else {
 			return io.ErrUnexpectedEOF
 		}

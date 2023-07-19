@@ -195,6 +195,9 @@ func loadTexture(assetPath string) *Texture {
 		width:  uint32(img.Bounds().Dx()),
 		height: uint32(img.Bounds().Dy()),
 	}
+	if metadata != nil {
+		texture.flags = metadata.Flags
+	}
 
 	//Generate OpenGL Texture
 	if metadata != nil && len(metadata.Atlas) > 0 && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {

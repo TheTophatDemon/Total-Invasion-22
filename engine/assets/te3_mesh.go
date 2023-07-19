@@ -105,8 +105,8 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 			continue
 		}
 
-		//Exclude tiles with the invisible texture
-		if te3.Tiles.Textures[tile.TextureID] == INVISIBLE_TEXTURE {
+		//Exclude tiles with invisible texture flag
+		if GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
 			continue
 		}
 
