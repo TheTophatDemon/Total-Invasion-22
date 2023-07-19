@@ -37,12 +37,12 @@ func (l *List[T]) PushBack(value T) *Element[T] {
 		next:  nil,
 		prev:  l.back,
 	}
-	if l.back != nil {
-		l.back.next = elem
-		l.back = elem
-	}
 	if l.front == nil {
 		l.front = elem
+		l.back = elem
+	} else if l.back != nil {
+		l.back.next = elem
+		l.back = elem
 	}
 	l.size += 1
 	return elem
@@ -61,6 +61,7 @@ func (l *List[T]) RemoveElem(e *Element[T]) {
 	} else {
 		l.back = before
 	}
+	l.size -= 1
 }
 
 func (l *List[T]) FindElem(value T) *Element[T] {

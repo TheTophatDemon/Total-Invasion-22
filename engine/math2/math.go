@@ -22,7 +22,7 @@ func Clamp[N Number](val, min, max N) N {
 	} else if val > max {
 		return max
 	}
-	return val	
+	return val
 }
 
 func Abs[N Number](val N) N {
@@ -61,32 +61,36 @@ func Vec3Zero() mgl32.Vec3 {
 	return mgl32.Vec3{0.0, 0.0, 0.0}
 }
 
+func Vec3One() mgl32.Vec3 {
+	return mgl32.Vec3{1.0, 1.0, 1.0}
+}
+
 func QuatToEulerAngles(q mgl32.Quat) mgl32.Vec3 {
 	//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-	sinr_cosp := 2.0 * (q.W * q.X() + q.Y() * q.Z())
-	cosr_cosp := 1.0 - 2.0 * (q.X() * q.X() + q.Y() * q.Y())
+	sinr_cosp := 2.0 * (q.W*q.X() + q.Y()*q.Z())
+	cosr_cosp := 1.0 - 2.0*(q.X()*q.X()+q.Y()*q.Y())
 	roll := Atan2(sinr_cosp, cosr_cosp)
 
-	sinp := 2.0 * (q.W * q.Y() - q.Z() * q.X())
+	sinp := 2.0 * (q.W*q.Y() - q.Z()*q.X())
 	var pitch float32
 	if Abs(sinp) >= 1.0 {
-		pitch = CopySign(math.Pi / 2.0, sinp)
+		pitch = CopySign(math.Pi/2.0, sinp)
 	} else {
 		pitch = Asin(sinp)
 	}
 
-	siny_cosp := 2.0 * (q.W * q.Z() + q.X() * q.Y())
-	cosy_cosp := 1.0 - 2.0 * (q.Y() * q.Y() + q.Z() * q.Z())
+	siny_cosp := 2.0 * (q.W*q.Z() + q.X()*q.Y())
+	cosy_cosp := 1.0 - 2.0*(q.Y()*q.Y()+q.Z()*q.Z())
 	yaw := Atan2(siny_cosp, cosy_cosp)
 
 	return mgl32.Vec3{pitch, yaw, roll}
 }
 
-//Returns the pitch, yaw, and roll of a Mat4 as a vector of Euler angles (in radians).
+// Returns the pitch, yaw, and roll of a Mat4 as a vector of Euler angles (in radians).
 func Mat4EulerAngles(m *mgl32.Mat4) mgl32.Vec3 {
 	//Referencing http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
 	var theta, psi, fi float64
-	
+
 	//Change the handedness of the matrix
 	matx := mgl32.Mat4FromCols(
 		m.Col(0), m.Col(1), m.Col(2).Mul(-1.0), m.Col(3))
@@ -98,12 +102,12 @@ func Mat4EulerAngles(m *mgl32.Mat4) mgl32.Vec3 {
 	r11 := float64(matx.At(0, 0))
 	r12 := float64(matx.At(0, 1))
 	r13 := float64(matx.At(0, 2))
-	
+
 	if Abs(r23) != 1.0 {
 		psi = -math.Asin(r23)
 		cosPsi := math.Cos(psi)
-		theta = math.Atan2(r13 / cosPsi, r33 / cosPsi)
-		fi = math.Atan2(r21 / cosPsi, r22 / cosPsi)  
+		theta = math.Atan2(r13/cosPsi, r33/cosPsi)
+		fi = math.Atan2(r21/cosPsi, r22/cosPsi)
 	} else {
 		fi = 0.0
 		if r23 == -1 {
@@ -115,7 +119,7 @@ func Mat4EulerAngles(m *mgl32.Mat4) mgl32.Vec3 {
 		}
 	}
 
-	return mgl32.Vec3{ float32(psi), float32(theta), float32(fi) }
+	return mgl32.Vec3{float32(psi), float32(theta), float32(fi)}
 }
 
 func LookAtV(eye, center, up mgl32.Vec3) mgl32.Mat4 {

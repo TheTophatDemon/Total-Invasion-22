@@ -29,6 +29,13 @@ func NewAnimationPlayerAutoPlay(anim assets.FrameAnimation) *AnimationPlayer {
 	return ap
 }
 
+func (ap *AnimationPlayer) ChangeAnimation(newAnim assets.FrameAnimation) {
+	ap.animation = newAnim
+	ap.currentFrame = newAnim.Frames[0]
+	ap.currentIndex = 0
+	ap.frameTimer = 0.0
+}
+
 func (ap *AnimationPlayer) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
 	ap.Update(deltaTime)
 }

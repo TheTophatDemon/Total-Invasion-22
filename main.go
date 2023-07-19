@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -14,7 +13,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/comps"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
@@ -77,19 +75,6 @@ func main() {
 	projMat := mgl32.Perspective(mgl32.DegToRad(45.0), WINDOW_ASPECT_RATIO, 0.1, 100.0)
 	// viewMat := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
 
-	// Load the texture
-	texture := assets.GetTexture("assets/textures/tiles/psa2.png")
-	texture2 := assets.GetTexture("assets/textures/tiles/pillar_head.png")
-
-	//Generate cube
-	cube := assets.CreateMesh(cubeVertices, cubeIndices)
-	cube.SetGroup("front", assets.Group{Offset: 12, Length: 6})
-
-	cylinder, err := assets.GetMesh("assets/models/shapes/wedge.obj")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	//Create scene
 	sc := scene.NewScene()
 
@@ -99,7 +84,17 @@ func main() {
 		log.Println("Map loading error: ", err)
 	}
 
+	// Find player spawn
 	playerSpawn, _ := gameMap.FindEntWithProperty("type", "player spawn")
+
+	// Spawn sprites
+	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
+		enemyEnt := sc.AddEntity()
+		transform := comps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]})
+		sprite := comps.NewSpriteRender(assets.GetTexture("assets/textures/sprites/wraith.png"))
+		sc.AddComponents(enemyEnt, transform, sprite)
+		sprite.Anim.Play()
+	}
 
 	camEnt := sc.AddEntity()
 	sc.AddComponents(camEnt,
@@ -132,7 +127,7 @@ func main() {
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.CULL_FACE)
+	gl.Disable(gl.CULL_FACE)
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 
@@ -141,8 +136,6 @@ func main() {
 	//FPS counters
 	var fpsTimer float32
 	var fps, fpsTicks int
-
-	var angle float64
 
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -167,161 +160,22 @@ func main() {
 
 		gameMap.Update(elapsed)
 
+		// Render
 		viewMat := tr.GetMatrix().Inv()
 		mvp := projMat.Mul4(viewMat)
 
-		// Render
-		assets.MapShader.Use()
-		cube.Bind()
-
-		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &mvp[0])
-		gl.Uniform1i(assets.MapShader.GetUniformLoc("uTex"), 0)
-		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlas"), 1)
-		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
-
-		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogStart"), 1.0)
-		gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogLength"), 50.0)
-
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(texture.Target(), texture.ID())
-
-		// cube.DrawAll()
-
-		//cube.DrawGroup("front")
-		cylinder.Bind()
-		cylinder.DrawAll()
-		// cylinder.DrawGroup("culld")
-
 		//Draw the map
 		gameMap.Render(mvp)
+		//And the scene
+		sc.Render(mvp, projMat, viewMat)
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
-		// te3Mesh.DrawAll()
 		engine.CheckOpenGLError()
-		//Draw second one pointing at the thing
-		cylinder.Bind()
-		angle += float64(elapsed)
-		eye := mgl32.Vec3{3 * float32(math.Cos(angle)), 3, 3 * float32(math.Sin(angle))}
-		lookMtx := math2.LookAtV(eye, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-		look := comps.TransformFromMatrix(lookMtx)
-		// look.SetPosition(eye)
-		mvp = mvp.Mul4(look.GetMatrix())
-		// mvp = mvp.Mul4(lookMtx)
-		gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &mvp[0])
-		gl.BindTexture(texture.Target(), texture2.ID())
-		cylinder.DrawAll()
 
 		input.Update()
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
 
-	cylinder.Free()
-	cube.Free()
-
 	assets.FreeTextures()
 	assets.FreeBuiltInAssets()
-}
-
-var cubeIndices = []uint32{
-	0, 1, 2, 3, 4, 5,
-	6, 7, 8, 9, 10, 11,
-	12, 13, 14, 15, 16, 17,
-	18, 19, 20, 21, 22, 23,
-	24, 25, 26, 27, 28, 29,
-	30, 31, 32, 33, 34, 35,
-}
-
-var cubeVertices = assets.Vertices{
-	Pos: []mgl32.Vec3{
-		//Bottom
-		{-1.0, -1.0, -1.0},
-		{1.0, -1.0, -1.0},
-		{-1.0, -1.0, 1.0},
-		{1.0, -1.0, -1.0},
-		{1.0, -1.0, 1.0},
-		{-1.0, -1.0, 1.0},
-		//Top
-		{-1.0, 1.0, -1.0},
-		{-1.0, 1.0, 1.0},
-		{1.0, 1.0, -1.0},
-		{1.0, 1.0, -1.0},
-		{-1.0, 1.0, 1.0},
-		{1.0, 1.0, 1.0},
-		//Front
-		{-1.0, -1.0, 1.0},
-		{1.0, -1.0, 1.0},
-		{-1.0, 1.0, 1.0},
-		{1.0, -1.0, 1.0},
-		{1.0, 1.0, 1.0},
-		{-1.0, 1.0, 1.0},
-		//Back
-		{-1.0, -1.0, -1.0},
-		{-1.0, 1.0, -1.0},
-		{1.0, -1.0, -1.0},
-		{1.0, -1.0, -1.0},
-		{-1.0, 1.0, -1.0},
-		{1.0, 1.0, -1.0},
-		//Left
-		{-1.0, -1.0, 1.0},
-		{-1.0, 1.0, -1.0},
-		{-1.0, -1.0, -1.0},
-		{-1.0, -1.0, 1.0},
-		{-1.0, 1.0, 1.0},
-		{-1.0, 1.0, -1.0},
-		//Right
-		{1.0, -1.0, 1.0},
-		{1.0, -1.0, -1.0},
-		{1.0, 1.0, -1.0},
-		{1.0, -1.0, 1.0},
-		{1.0, 1.0, -1.0},
-		{1.0, 1.0, 1.0},
-	},
-	TexCoord: []mgl32.Vec2{
-		// Bottom
-		{0.0, 0.0},
-		{1.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 0.0},
-		{1.0, 1.0},
-		{0.0, 1.0},
-		//Top
-		{0.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 0.0},
-		{1.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 1.0},
-		//Front
-		{1.0, 0.0},
-		{0.0, 0.0},
-		{1.0, 1.0},
-		{0.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 1.0},
-		//Back
-		{0.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 0.0},
-		{1.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 1.0},
-		//Left
-		{0.0, 1.0},
-		{1.0, 0.0},
-		{0.0, 0.0},
-		{0.0, 1.0},
-		{1.0, 1.0},
-		{1.0, 0.0},
-		//Right
-		{1.0, 1.0},
-		{1.0, 0.0},
-		{0.0, 0.0},
-		{1.0, 1.0},
-		{0.0, 0.0},
-		{0.0, 1.0},
-	},
-	Normal: nil,
-	Color:  nil,
 }

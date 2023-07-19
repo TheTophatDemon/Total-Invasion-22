@@ -47,7 +47,7 @@ func (gm *GameMap) Update(deltaTime float32) {
 func (gm *GameMap) Render(viewProjection mgl32.Mat4) {
 	assets.MapShader.Use()
 
-	gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uMVP"), 1, false, &viewProjection[0])
+	gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uViewProjection"), 1, false, &viewProjection[0])
 	gl.Uniform1i(assets.MapShader.GetUniformLoc("uTex"), 0)
 	gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlas"), 1)
 	gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)

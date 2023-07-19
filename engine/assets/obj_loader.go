@@ -68,19 +68,43 @@ func loadOBJMesh(path string) (*Mesh, error) {
 		case "v":
 			var x, y, z float64
 			x, err = strconv.ParseFloat(tokens[1], 32)
+			if err != nil {
+				return nil, err
+			}
 			y, err = strconv.ParseFloat(tokens[2], 32)
+			if err != nil {
+				return nil, err
+			}
 			z, err = strconv.ParseFloat(tokens[3], 32)
+			if err != nil {
+				return nil, err
+			}
 			obj.pos = append(obj.pos, [3]float32{float32(x), float32(y), float32(z)})
 		case "vt":
 			var u, v float64
 			u, err = strconv.ParseFloat(tokens[1], 32)
+			if err != nil {
+				return nil, err
+			}
 			v, err = strconv.ParseFloat(tokens[2], 32)
+			if err != nil {
+				return nil, err
+			}
 			obj.tex = append(obj.tex, [2]float32{float32(u), float32(v)})
 		case "vn":
 			var x, y, z float64
 			x, err = strconv.ParseFloat(tokens[1], 32)
+			if err != nil {
+				return nil, err
+			}
 			y, err = strconv.ParseFloat(tokens[2], 32)
+			if err != nil {
+				return nil, err
+			}
 			z, err = strconv.ParseFloat(tokens[3], 32)
+			if err != nil {
+				return nil, err
+			}
 			obj.norm = append(obj.norm, [3]float32{float32(x), float32(y), float32(z)})
 		case "g":
 			groupName = tokens[1]

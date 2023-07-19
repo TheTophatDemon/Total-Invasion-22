@@ -187,7 +187,7 @@ func (m *Mesh) Upload() {
 }
 
 func (m *Mesh) DrawAll() {
-	gl.DrawElements(gl.TRIANGLES, int32(len(m.Inds)), gl.UNSIGNED_INT, gl.PtrOffset(0))
+	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(len(m.Inds)), gl.UNSIGNED_INT, 0)
 }
 
 func (m *Mesh) DrawGroup(name string) error {

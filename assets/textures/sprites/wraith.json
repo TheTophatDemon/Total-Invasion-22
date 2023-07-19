@@ -1,0 +1,12 @@
+{
+	"atlas": "assets/textures/sprites/wraith.png",
+	"frameSize": [64, 64],
+	"animations": [
+		{
+			"name": "walk",
+			"frames": [0, 1, 2, 3],
+			"speed": 0.25,
+			"loop": true
+		}
+	]
+}

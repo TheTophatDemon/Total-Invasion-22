@@ -15,13 +15,22 @@ type Transform struct {
 func (tr *Transform) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
 }
 
-func TransformFromMatrix(matrix mgl32.Mat4) Transform {
-	return Transform{
+func TransformFromMatrix(matrix mgl32.Mat4) *Transform {
+	return &Transform{
 		pos:    matrix.Col(3).Vec3(),
 		rot:    math2.Mat4EulerAngles(&matrix),
 		scale:  mgl32.Vec3{matrix[0], matrix[5], matrix[10]},
 		matrix: matrix,
 		dirty:  false,
+	}
+}
+
+func TransformFromTranslation(position mgl32.Vec3) *Transform {
+	return &Transform{
+		pos:   position,
+		rot:   math2.Vec3Zero(),
+		scale: math2.Vec3One(),
+		dirty: true,
 	}
 }
 

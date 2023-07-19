@@ -12,11 +12,11 @@ type MeshRender struct {
 
 func (mr *MeshRender) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {}
 
-func (mr *MeshRender) RenderComponent(sc *scene.Scene, ent scene.Entity) {
+func (mr *MeshRender) RenderComponent(sc *scene.Scene, ent scene.Entity, ctx *scene.RenderContext) {
 	mr.mesh.DrawAll()
 }
 
-func (mr *MeshRender) PrepareRender() {
+func (mr *MeshRender) PrepareRender(ctx *scene.RenderContext) {
 	mr.mesh.Bind()
 	mr.shader.Use()
 }

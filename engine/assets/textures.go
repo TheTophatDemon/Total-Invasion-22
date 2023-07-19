@@ -205,8 +205,8 @@ func loadTexture(assetPath string) *Texture {
 		texture.animations = make([]FrameAnimation, len(metadata.Animations))
 		copy(texture.animations, metadata.Animations)
 
-		rows := int(texture.width / texture.frameWidth)
-		cols := int(texture.height / texture.frameHeight)
+		cols := int(texture.width / texture.frameWidth)
+		rows := int(texture.height / texture.frameHeight)
 		nFrames := rows * cols
 
 		gl.ActiveTexture(gl.TEXTURE1)

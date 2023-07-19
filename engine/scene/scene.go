@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 )
 
@@ -24,8 +25,12 @@ func NewScene() *Scene {
 
 func (sc *Scene) Update(deltaTime float32) {
 	for e := sc.entities.Front(); e != nil; e = e.Next() {
-		for cType := range sc.components {
-			comp := sc.components[cType][e.Value.Index()]
+		index := e.Value.Index()
+		for _, cArray := range sc.components {
+			if int(index) >= len(cArray) {
+				continue
+			}
+			comp := cArray[index]
 			if comp != nil {
 				comp.UpdateComponent(sc, e.Value, deltaTime)
 			}
@@ -33,14 +38,21 @@ func (sc *Scene) Update(deltaTime float32) {
 	}
 }
 
-func (sc *Scene) Render() {
+func (sc *Scene) Render(view, projection, viewProjection mgl32.Mat4) {
+	renderCtx := &RenderContext{
+		ViewProjection: viewProjection,
+		View:           view,
+		Projection:     projection,
+		FogStart:       1.0,
+		FogLength:      50.0,
+	}
 	for cType := range sc.components {
 		first, renderable := sc.components[cType][0].(RenderComponent)
 		if renderable {
-			first.PrepareRender()
+			first.PrepareRender(renderCtx)
 			for c := range sc.components[cType] {
 				rc := sc.components[cType][c].(RenderComponent)
-				rc.RenderComponent(sc, sc.active[c])
+				rc.RenderComponent(sc, sc.active[c], renderCtx)
 			}
 		}
 	}
