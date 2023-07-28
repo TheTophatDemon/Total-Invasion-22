@@ -1,145 +1,92 @@
 package scene
 
-import (
-	"fmt"
-	"reflect"
-
-	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/containers"
-)
-
 type Scene struct {
-	entities   *containers.List[Entity]     // List of active entity IDs, contiguous array.
-	active     []Entity                     // If the entity is active, then it will be in this array indexed by its ID. Otherwise, there will be ENT_INVALID there.
-	components map[reflect.Type][]Component // Stored component slices, keyed by component type, indexed by entity ID.
+	ents   []Entity
+	active []bool
 }
 
-func NewScene() *Scene {
+func NewScene(maxEnts uint) *Scene {
 	sc := &Scene{
-		entities:   containers.NewList[Entity](),
-		active:     make([]Entity, 0),
-		components: make(map[reflect.Type][]Component),
+		ents:   make([]Entity, maxEnts),
+		active: make([]bool, maxEnts),
+	}
+	for i := range sc.ents {
+		sc.ents[i] = Entity(i)
 	}
 	return sc
 }
 
-func (sc *Scene) Update(deltaTime float32) {
-	for e := sc.entities.Front(); e != nil; e = e.Next() {
-		index := e.Value.Index()
-		for _, cArray := range sc.components {
-			if int(index) >= len(cArray) {
-				continue
-			}
-			comp := cArray[index]
-			if comp != nil {
-				comp.UpdateComponent(sc, e.Value, deltaTime)
-			}
+func (scene *Scene) MaxEntCount() uint {
+	return uint(len(scene.active))
+}
+
+func (sc *Scene) AddEntity() (Entity, bool) {
+	for i, active := range sc.active {
+		if !active {
+			newEnt := sc.ents[i].Renew()
+			sc.ents[i] = newEnt
+			sc.active[i] = true
+			return newEnt, true
 		}
 	}
+
+	return ENT_INVALID, false
 }
 
-func (sc *Scene) Render(view, projection, viewProjection mgl32.Mat4) {
-	renderCtx := &RenderContext{
-		ViewProjection: viewProjection,
-		View:           view,
-		Projection:     projection,
-		FogStart:       1.0,
-		FogLength:      50.0,
+func (sc *Scene) RemoveEntity(ent Entity) bool {
+	idx := ent.Index()
+	if sc.active[idx] {
+		sc.active[idx] = false
+		return true
 	}
-	for cType := range sc.components {
-		first, renderable := sc.components[cType][0].(RenderComponent)
-		if renderable {
-			first.PrepareRender(renderCtx)
-			for c := range sc.components[cType] {
-				rc := sc.components[cType][c].(RenderComponent)
-				rc.RenderComponent(sc, sc.active[c], renderCtx)
+	return false
+}
+
+type EntsIter struct {
+	sc  *Scene
+	ent Entity
+}
+
+func (ei EntsIter) Valid() bool {
+	return ei.sc != nil && ei.ent != ENT_INVALID
+}
+
+func (ei EntsIter) Next() EntsIter {
+	if !ei.Valid() {
+		goto invalid
+	}
+
+	for i := int(ei.ent.Index() + 1); i < len(ei.sc.ents); i++ {
+		if ei.sc.active[i] {
+			return EntsIter{
+				sc:  ei.sc,
+				ent: ei.sc.ents[i],
 			}
 		}
 	}
+
+invalid:
+	return EntsIter{
+		sc:  nil,
+		ent: ENT_INVALID,
+	}
 }
 
-func (sc *Scene) AddEntity() Entity {
-	var ent Entity
-	for _, active := range sc.active {
-		if active == ENT_INVALID {
-			ent = active.Renew()
-			goto add_to_active
-		}
-	}
-	//If no inactive ID was found, create a new one...
-	ent = Entity(len(sc.active))
-	sc.active = append(sc.active, ent)
-add_to_active:
-	sc.entities.PushBack(ent)
-	return ent
+func (ei EntsIter) Entity() Entity {
+	return ei.ent
 }
 
-//TODO: Remove entity
-
-// Check if entity is in the scene and is active
-func (sc *Scene) ValidateEntity(ent Entity) error {
-	if ent == ENT_INVALID || len(sc.active) <= int(ent.Index()) {
-		return fmt.Errorf("could not access entity %d because it is not in the scene", ent)
-	} else if sc.active[ent.Index()] == ENT_INVALID {
-		return fmt.Errorf("could not access entity %d because it is not active", ent)
-	}
-	return nil
-}
-
-func (sc *Scene) AddComponents(ent Entity, components ...Component) error {
-	if err := sc.ValidateEntity(ent); err != nil {
-		return err
-	}
-
-	//Add components
-	for _, c := range components {
-		cType := reflect.TypeOf(c)
-		slice, arrayExists := sc.components[cType]
-
-		//Expand the component storage if necessary
-		if !arrayExists || len(slice) <= int(ent.Index()) {
-			sc.components[cType] = make([]Component, ent.Index()+1)
-			if arrayExists {
-				copy(sc.components[cType], slice)
+func (sc *Scene) EntsIter() EntsIter {
+	for i := range sc.ents {
+		if sc.active[i] {
+			return EntsIter{
+				sc:  sc,
+				ent: sc.ents[i],
 			}
 		}
-
-		//Assign component
-		sc.components[cType][ent.Index()] = c
 	}
-
-	return nil
-}
-
-// Returns a reference to the given entity's component whose type is the same as the Component passed in.
-// Returns an error if the entity isn't active, and returns a nil component without an error if the component isn't found.
-func (sc *Scene) GetComponent(ent Entity, componentType Component) (Component, error) {
-	if err := sc.ValidateEntity(ent); err != nil {
-		return nil, err
+	return EntsIter{
+		sc:  sc,
+		ent: ENT_INVALID,
 	}
-
-	cType := reflect.TypeOf(componentType)
-
-	if len(sc.components[cType]) <= int(ent.Index()) {
-		return nil, nil
-	}
-
-	ptr := sc.components[cType][ent.Index()]
-	return ptr, nil
-}
-
-// Returns the given entity's component from the given scene with the type of the component passed in.
-// Returns an error if the entity isn't active or doesn't have the given component type.
-// Automatically casts the component to the correct concrete type.
-func GetComponent[C Component](sc *Scene, ent Entity, componentType C) (C, error) {
-	zero := *new(C) // This should be nil, since C is a pointer to a component
-	c, err := sc.GetComponent(ent, componentType)
-	if err != nil {
-		return zero, err
-	}
-	typedComponent, ok := c.(C)
-	if !ok {
-		return zero, fmt.Errorf("component in storage cannot be converted to the appropriate type")
-	}
-	return typedComponent, nil
 }

@@ -6,12 +6,40 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
+)
+
+type UniformTypes interface {
+	int | bool | float32 | mgl32.Mat4
+}
+
+type IUniform interface {
+	UniformName() string
+}
+
+type Uniform[T UniformTypes] struct {
+	name string
+}
+
+func (u Uniform[T]) UniformName() string {
+	return u.name
+}
+
+var (
+	UniformModelMatrix Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uModelMatrix"}
+	UniformViewMatrix  Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uViewMatrix"}
+	UniformProjMatrix  Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uProjMatrix"}
+	UniformFogStart    Uniform[float32]    = Uniform[float32]{"uFogStart"}
+	UniformFogLength   Uniform[float32]    = Uniform[float32]{"uFogLength"}
+	UniformTex         Uniform[int]        = Uniform[int]{"uTex"}
+	UniformAtlas       Uniform[int]        = Uniform[int]{"uAtlas"}
+	UniformFrame       Uniform[int]        = Uniform[int]{"uFrame"}
+	UniformAtlasUsed   Uniform[bool]       = Uniform[bool]{"uAtlasUsed"}
 )
 
 type Shader struct {
-	id       uint32
-	uniforms map[string]int32
-	attribs  map[string]int32
+	id          uint32
+	uniformLocs map[IUniform]int32
 }
 
 func CreateShader(vertSrc, fragSrc string) (*Shader, error) {
@@ -47,9 +75,8 @@ func CreateShader(vertSrc, fragSrc string) (*Shader, error) {
 	gl.DeleteShader(fragShader)
 
 	shader := &Shader{
-		id:       program,
-		uniforms: make(map[string]int32),
-		attribs:  make(map[string]int32),
+		id:          program,
+		uniformLocs: make(map[IUniform]int32),
 	}
 	return shader, nil
 }
@@ -62,22 +89,56 @@ func (s *Shader) Use() {
 	gl.UseProgram(s.id)
 }
 
-func (s *Shader) GetUniformLoc(name string) int32 {
-	loc, ok := s.uniforms[name]
+func (s *Shader) getUniformLoc(u IUniform) (int32, error) {
+	loc, ok := s.uniformLocs[u]
 	if !ok {
-		loc = gl.GetUniformLocation(s.id, gl.Str(name+"\x00"))
-		s.uniforms[name] = loc
+		loc = gl.GetUniformLocation(s.id, gl.Str(u.UniformName()+"\x00"))
+		s.uniformLocs[u] = loc
 	}
-	return loc
+	if loc < 0 {
+		return loc, fmt.Errorf("uniform not found: %s", u.UniformName())
+	}
+	return loc, nil
 }
 
-func (s *Shader) GetAttribLoc(name string) int32 {
-	loc, ok := s.attribs[name]
-	if !ok {
-		loc = gl.GetAttribLocation(s.id, gl.Str(name+"\x00"))
-		s.attribs[name] = loc
+func (s *Shader) SetUniformInt(u Uniform[int], val int) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
 	}
-	return loc
+	gl.Uniform1i(loc, int32(val))
+	return nil
+}
+
+func (s *Shader) SetUniformBool(u Uniform[bool], val bool) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
+	}
+	if val {
+		gl.Uniform1i(loc, 1)
+	} else {
+		gl.Uniform1i(loc, 0)
+	}
+	return nil
+}
+
+func (s *Shader) SetUniformFloat(u Uniform[float32], val float32) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
+	}
+	gl.Uniform1f(loc, val)
+	return nil
+}
+
+func (s *Shader) SetUniformMatrix(u Uniform[mgl32.Mat4], val mgl32.Mat4) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
+	}
+	gl.UniformMatrix4fv(loc, 1, false, &val[0])
+	return nil
 }
 
 func compileShader(src string, sType uint32) (uint32, error) {

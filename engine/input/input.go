@@ -11,15 +11,15 @@ type Action string
 
 type Binding interface {
 	IsPressed() bool
-	Axis()  float32
+	Axis() float32
 }
 
 type MouseAxis uint8
 
 const (
-	MOUSE_AXIS_X MouseAxis = 0
-	MOUSE_AXIS_Y MouseAxis = 1
-	MOUSE_DEADZONE = 0.05
+	MOUSE_AXIS_X   MouseAxis = 0
+	MOUSE_AXIS_Y   MouseAxis = 1
+	MOUSE_DEADZONE           = 0.05
 )
 
 const (
@@ -27,12 +27,14 @@ const (
 )
 
 var bindings map[Action]Binding
+var bindingsWerePressed map[Action]bool
 
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 
 func init() {
 	bindings = make(map[Action]Binding)
+	bindingsWerePressed = make(map[Action]bool)
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
 }
 
@@ -43,6 +45,10 @@ func Update() {
 		mouseDeltaY = mousePosY - mousePrevY
 	}
 	mousePrevX, mousePrevY = mousePosX, mousePosY
+
+	for action, binding := range bindings {
+		bindingsWerePressed[action] = binding.IsPressed()
+	}
 }
 
 func TrapMouse() {
@@ -53,12 +59,18 @@ func UntrapMouse() {
 	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 }
 
+func IsMouseTrapped() bool {
+	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
+}
+
 func BindActionKey(action Action, key glfw.Key) {
-	bindings[action] = &KeyBinding{ key }
+	bindings[action] = &KeyBinding{key}
+	bindingsWerePressed[action] = false
 }
 
 func BindActionMouseMove(action Action, axis MouseAxis, sensitivity float32) {
-	bindings[action] = &MouseMovementBinding{ axis, sensitivity }
+	bindings[action] = &MouseMovementBinding{axis, sensitivity}
+	bindingsWerePressed[action] = false
 }
 
 func IsActionPressed(action Action) bool {
@@ -68,6 +80,16 @@ func IsActionPressed(action Action) bool {
 		return false
 	}
 	return bind.IsPressed()
+}
+
+func IsActionJustPressed(action Action) bool {
+	bind, ok := bindings[action]
+	wasPressed, ok2 := bindingsWerePressed[action]
+	if !ok || !ok2 {
+		log.Printf(ERRT_NO_ACTION, action)
+		return false
+	}
+	return bind.IsPressed() && !wasPressed
 }
 
 func ActionAxis(action Action) float32 {

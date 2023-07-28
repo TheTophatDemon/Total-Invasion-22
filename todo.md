@@ -1,8 +1,9 @@
 # TODO
-Sprites
-Font rendering
-Player movement
-Player collision
-Scene entity ID management
-Doors
-Debug console
+- Materials
+- Add common lighting parameters to RenderContext
+- Sprites
+- Font rendering
+- Player movement
+- Player collision
+- Doors
+- Debug console

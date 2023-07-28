@@ -2,7 +2,6 @@ package comps
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type AnimationPlayer struct {
@@ -34,10 +33,6 @@ func (ap *AnimationPlayer) ChangeAnimation(newAnim assets.FrameAnimation) {
 	ap.currentFrame = newAnim.Frames[0]
 	ap.currentIndex = 0
 	ap.frameTimer = 0.0
-}
-
-func (ap *AnimationPlayer) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {
-	ap.Update(deltaTime)
 }
 
 func (ap *AnimationPlayer) Update(deltaTime float32) {

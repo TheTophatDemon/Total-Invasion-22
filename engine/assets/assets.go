@@ -107,6 +107,14 @@ func FreeTextures() {
 	}
 }
 
+// Releases memory for all cached meshes
+func FreeMeshes() {
+	for p := range meshes {
+		meshes[p].Free()
+		delete(meshes, p)
+	}
+}
+
 func GetMesh(assetPath string) (*Mesh, error) {
 	var err error
 

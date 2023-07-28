@@ -21,15 +21,23 @@ const (
 	WINDOW_HEIGHT       = 720
 	WINDOW_ASPECT_RATIO = float32(WINDOW_WIDTH) / WINDOW_HEIGHT
 
-	ACTION_FORWARD   = "MoveForward"
-	ACTION_BACK      = "MoveBack"
-	ACTION_LEFT      = "StrafeLeft"
-	ACTION_RIGHT     = "StrafeRight"
-	ACTION_LOOK_HORZ = "LookHorz"
-	ACTION_LOOK_VERT = "LookVert"
+	ACTION_FORWARD    = "MoveForward"
+	ACTION_BACK       = "MoveBack"
+	ACTION_LEFT       = "StrafeLeft"
+	ACTION_RIGHT      = "StrafeRight"
+	ACTION_LOOK_HORZ  = "LookHorz"
+	ACTION_LOOK_VERT  = "LookVert"
+	ACTION_TRAP_MOUSE = "TrapMouse"
 
 	MOUSE_SENSITIVITY = 0.005
 )
+
+var Transforms *scene.ComponentStorage[comps.Transform]
+var Movements *scene.ComponentStorage[comps.Movement]
+var Cameras *scene.ComponentStorage[comps.Camera]
+var FirstPersonControllers *scene.ComponentStorage[comps.FirstPersonController]
+var MeshRenders *scene.ComponentStorage[comps.MeshRender]
+var AnimationPlayers *scene.ComponentStorage[comps.AnimationPlayer]
 
 func init() {
 	runtime.LockOSThread()
@@ -60,23 +68,28 @@ func main() {
 	}
 
 	assets.InitBuiltInAssets()
+	defer assets.FreeTextures()
+	defer assets.FreeMeshes()
+	defer assets.FreeBuiltInAssets()
 
 	input.BindActionKey(ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(ACTION_BACK, glfw.KeyS)
 	input.BindActionKey(ACTION_LEFT, glfw.KeyA)
 	input.BindActionKey(ACTION_RIGHT, glfw.KeyD)
+	input.BindActionKey(ACTION_TRAP_MOUSE, glfw.KeyEscape)
 	input.BindActionMouseMove(ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, MOUSE_SENSITIVITY)
 	input.BindActionMouseMove(ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, MOUSE_SENSITIVITY)
-	// input.BindActionKey(ACTION_LOOK_VERT, glfw.KeyUp)
-	// input.BindActionKey(ACTION_LOOK_HORZ, glfw.KeyRight)
 
 	engine.CheckOpenGLError()
 
-	projMat := mgl32.Perspective(mgl32.DegToRad(45.0), WINDOW_ASPECT_RATIO, 0.1, 100.0)
-	// viewMat := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-
 	//Create scene
-	sc := scene.NewScene()
+	sc := scene.NewScene(1024)
+	Transforms = scene.RegisterComponent[comps.Transform](sc)
+	Movements = scene.RegisterComponent[comps.Movement](sc)
+	Cameras = scene.RegisterComponent[comps.Camera](sc)
+	FirstPersonControllers = scene.RegisterComponent[comps.FirstPersonController](sc)
+	MeshRenders = scene.RegisterComponent[comps.MeshRender](sc)
+	AnimationPlayers = scene.RegisterComponent[comps.AnimationPlayer](sc)
 
 	//Load map
 	gameMap, err := engine.LoadGameMap("assets/maps/ti2-malicious-intents.te3")
@@ -89,41 +102,32 @@ func main() {
 
 	// Spawn sprites
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
-		enemyEnt := sc.AddEntity()
-		transform := comps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]})
-		sprite := comps.NewSpriteRender(assets.GetTexture("assets/textures/sprites/wraith.png"))
-		sc.AddComponents(enemyEnt, transform, sprite)
-		sprite.Anim.Play()
+		enemyEnt, _ := sc.AddEntity()
+		Transforms.Assign(enemyEnt, comps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]}))
+		MeshRenders.Assign(enemyEnt, comps.MeshRender{
+			Mesh:   assets.SpriteMesh,
+			Shader: assets.SpriteShader,
+		})
 	}
 
-	camEnt := sc.AddEntity()
-	sc.AddComponents(camEnt,
-		comps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0),
-		&comps.Transform{},
-		&comps.Movement{
-			MaxSpeed:   12.0,
-			YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
-			PitchAngle: 0.0,
-		},
-		&comps.FirstPersonController{
-			ForwardAction:     ACTION_FORWARD,
-			BackAction:        ACTION_BACK,
-			StrafeLeftAction:  ACTION_LEFT,
-			StrafeRightAction: ACTION_RIGHT,
-			LookHorzAction:    ACTION_LOOK_HORZ,
-			LookVertAction:    ACTION_LOOK_VERT,
-		},
-	)
+	camEnt, _ := sc.AddEntity()
+	Cameras.Assign(camEnt, comps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
+	Movements.Assign(camEnt, comps.Movement{
+		MaxSpeed:   12.0,
+		YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
+		PitchAngle: 0.0,
+	})
+	FirstPersonControllers.Assign(camEnt, comps.FirstPersonController{
+		ForwardAction:     ACTION_FORWARD,
+		BackAction:        ACTION_BACK,
+		StrafeLeftAction:  ACTION_LEFT,
+		StrafeRightAction: ACTION_RIGHT,
+		LookHorzAction:    ACTION_LOOK_HORZ,
+		LookVertAction:    ACTION_LOOK_VERT,
+	})
+	Transforms.Assign(camEnt, comps.TransformFromTranslation(playerSpawn.Position))
 
-	//Place camera at player's position
-	var tr *comps.Transform
-	tr, err = scene.GetComponent(sc, camEnt, tr)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	tr.SetPosition(playerSpawn.Position)
-
-	//input.TrapMouse()
+	input.TrapMouse()
 
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
@@ -142,11 +146,11 @@ func main() {
 
 		// Update
 		time := glfw.GetTime()
-		elapsed := float32(time - previousTime)
+		deltaTime := float32(time - previousTime)
 		previousTime = time
 
 		//Calc FPS
-		fpsTimer += elapsed
+		fpsTimer += deltaTime
 		if fpsTimer > 1.0 {
 			fpsTimer = 0.0
 			fps = fpsTicks
@@ -156,18 +160,61 @@ func main() {
 			fpsTicks += 1
 		}
 
-		sc.Update(elapsed)
+		//Free mouse
+		if input.IsActionJustPressed(ACTION_TRAP_MOUSE) {
+			if input.IsMouseTrapped() {
+				input.UntrapMouse()
+			} else {
+				input.TrapMouse()
+			}
+		}
 
-		gameMap.Update(elapsed)
+		//Update scene
+		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+			ent := iter.Entity()
 
-		// Render
-		viewMat := tr.GetMatrix().Inv()
-		mvp := projMat.Mul4(viewMat)
+			controller, ok := FirstPersonControllers.Get(ent)
+			if ok {
+				controller.Update(Movements, ent, deltaTime)
+			}
+
+			movement, ok := Movements.Get(ent)
+			if ok {
+				movement.Update(Transforms, ent, deltaTime)
+			}
+
+			animPlayer, ok := AnimationPlayers.Get(ent)
+			if ok {
+				animPlayer.Update(deltaTime)
+			}
+		}
+
+		gameMap.Update(deltaTime)
+
+		//Render setup
+		cameraTransform, _ := Transforms.Get(camEnt)
+		camera, _ := Cameras.Get(camEnt)
+		viewMat := cameraTransform.GetMatrix().Inv()
+		projMat := camera.GetProjectionMatrix()
+		renderContext := scene.RenderContext{
+			View:       viewMat,
+			Projection: projMat,
+			FogStart:   1.0,
+			FogLength:  50.0,
+		}
+
+		//Draw the scene
+		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+			ent := iter.Entity()
+
+			meshRender, ok := MeshRenders.Get(ent)
+			if ok {
+				meshRender.Render(Transforms, ent, &renderContext)
+			}
+		}
 
 		//Draw the map
-		gameMap.Render(mvp)
-		//And the scene
-		sc.Render(mvp, projMat, viewMat)
+		gameMap.Render(&renderContext)
 
 		engine.CheckOpenGLError()
 
@@ -175,7 +222,4 @@ func main() {
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
-
-	assets.FreeTextures()
-	assets.FreeBuiltInAssets()
 }

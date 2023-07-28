@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
@@ -13,11 +11,9 @@ type Movement struct {
 	YawAngle, PitchAngle      float32 //Radians
 }
 
-func (m *Movement) UpdateComponent(sc *scene.Scene, entity scene.Entity, deltaTime float32) {
-	var transform *Transform
-	transform, err := scene.GetComponent(sc, entity, transform)
-	if err != nil {
-		fmt.Println(err)
+func (m *Movement) Update(transforms *scene.ComponentStorage[Transform], ent scene.Entity, deltaTime float32) {
+	transform, ok := transforms.Get(ent)
+	if !ok {
 		return
 	}
 

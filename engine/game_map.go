@@ -1,11 +1,15 @@
 package engine
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type GameMap struct {
@@ -44,34 +48,32 @@ func (gm *GameMap) Update(deltaTime float32) {
 	}
 }
 
-func (gm *GameMap) Render(viewProjection mgl32.Mat4) {
-	assets.MapShader.Use()
+func (gm *GameMap) Render(context *scene.RenderContext) {
+	shader := assets.MapShader
+	shader.Use()
 
-	gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uViewProjection"), 1, false, &viewProjection[0])
-	gl.Uniform1i(assets.MapShader.GetUniformLoc("uTex"), 0)
-	gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlas"), 1)
-	gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
-
-	gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogStart"), 1.0)
-	gl.Uniform1f(assets.MapShader.GetUniformLoc("uFogLength"), 50.0)
+	err := errors.Join(context.SetUniforms(shader),
+		shader.SetUniformMatrix(assets.UniformModelMatrix, mgl32.Ident4()),
+		shader.SetUniformInt(assets.UniformTex, 0),
+		shader.SetUniformInt(assets.UniformAtlas, 1),
+		shader.SetUniformBool(assets.UniformAtlasUsed, false))
 
 	//Draw the map
 	gm.mesh.Bind()
-
-	model := mgl32.Ident4()
-	gl.UniformMatrix4fv(assets.MapShader.GetUniformLoc("uModelTransform"), 1, false, &model[0])
 
 	//Render each geometry group with correct texture
 	for _, group := range gm.mesh.GetGroupNames() {
 		//Set the animation frame if applicable
 		tileAnim, ok := gm.tileAnimations[group]
 		if ok {
-			gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 1)
 			frame := tileAnim.Frame()
-			gl.Uniform1i(assets.MapShader.GetUniformLoc("uFrame"), int32(frame))
+			err = errors.Join(err,
+				shader.SetUniformBool(assets.UniformAtlasUsed, true),
+				shader.SetUniformInt(assets.UniformFrame, frame))
 			gl.ActiveTexture(gl.TEXTURE1)
 		} else {
-			gl.Uniform1i(assets.MapShader.GetUniformLoc("uAtlasUsed"), 0)
+			err = errors.Join(err,
+				shader.SetUniformBool(assets.UniformAtlasUsed, false))
 			gl.ActiveTexture(gl.TEXTURE0)
 		}
 
@@ -80,5 +82,8 @@ func (gm *GameMap) Render(viewProjection mgl32.Mat4) {
 		gm.mesh.DrawGroup(group)
 	}
 
+	if err != nil {
+		fmt.Println(err)
+	}
 	CheckOpenGLError()
 }

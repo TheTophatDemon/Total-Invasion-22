@@ -1,11 +1,11 @@
 package scene
 
+type Entity uint64
+
 const IDX_MASK uint64 = 0x00000000FFFFFFFF
 const GEN_MASK uint64 = ^IDX_MASK
 const GEN_INCREMENT uint64 = 0x0000000100000000
-const ENT_INVALID = 0xFFFFFFFFFFFFFFFF
-
-type Entity uint64
+const ENT_INVALID Entity = Entity(IDX_MASK | GEN_MASK)
 
 func (ent Entity) Index() uint64 {
 	return uint64(ent) & IDX_MASK

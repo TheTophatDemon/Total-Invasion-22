@@ -1,18 +1,23 @@
 package scene
 
-import "github.com/go-gl/mathgl/mgl32"
+import (
+	"errors"
 
-type RenderComponent interface {
-	Component
-	RenderComponent(*Scene, Entity, *RenderContext)
-	PrepareRender(*RenderContext) // Prepares the graphics state to render an instance of this component
-}
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
+)
 
 // Contains global information useful for rendering.
 type RenderContext struct {
-	ViewProjection mgl32.Mat4
-	View           mgl32.Mat4
-	Projection     mgl32.Mat4
-	FogStart       float32
-	FogLength      float32
+	View       mgl32.Mat4
+	Projection mgl32.Mat4
+	FogStart   float32
+	FogLength  float32
+}
+
+func (context *RenderContext) SetUniforms(shader *assets.Shader) error {
+	return errors.Join(shader.SetUniformMatrix(assets.UniformViewMatrix, context.View),
+		shader.SetUniformMatrix(assets.UniformProjMatrix, context.Projection),
+		shader.SetUniformFloat(assets.UniformFogStart, context.FogStart),
+		shader.SetUniformFloat(assets.UniformFogLength, context.FogLength))
 }

@@ -1,22 +1,38 @@
 package comps
 
 import (
+	"errors"
+	"fmt"
+
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type MeshRender struct {
-	mesh   *assets.Mesh
-	shader *assets.Shader
+	Mesh   *assets.Mesh
+	Shader *assets.Shader
 }
 
-func (mr *MeshRender) UpdateComponent(sc *scene.Scene, ent scene.Entity, deltaTime float32) {}
+func (mr *MeshRender) Render(transforms *scene.ComponentStorage[Transform], ent scene.Entity, context *scene.RenderContext) {
+	modelMatrix := mgl32.Ident4()
+	transform, ok := transforms.Get(ent)
+	if ok {
+		modelMatrix = transform.GetMatrix()
+	}
 
-func (mr *MeshRender) RenderComponent(sc *scene.Scene, ent scene.Entity, ctx *scene.RenderContext) {
-	mr.mesh.DrawAll()
-}
+	mr.Mesh.Bind()
+	mr.Shader.Use()
 
-func (mr *MeshRender) PrepareRender(ctx *scene.RenderContext) {
-	mr.mesh.Bind()
-	mr.shader.Use()
+	err := errors.Join(
+		context.SetUniforms(mr.Shader),
+		mr.Shader.SetUniformInt(assets.UniformTex, 0),
+		mr.Shader.SetUniformInt(assets.UniformAtlas, 1),
+		mr.Shader.SetUniformBool(assets.UniformAtlasUsed, false),
+		mr.Shader.SetUniformMatrix(assets.UniformModelMatrix, modelMatrix))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	mr.Mesh.DrawAll()
 }
