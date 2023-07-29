@@ -15,6 +15,7 @@ import (
 type Texture struct {
 	target      uint32           // OpenGL Texture Target (GL_TEXTURE_2D & etc.)
 	glID        uint32           // OpenGL Texture ID
+	glUnit      uint32           // Texture unit (gl.TEXTURE0 for regular, gl.TEXTURE1 for atlas)
 	width       uint32           // Size of entire texture
 	height      uint32           // Size of the entire texture
 	flags       []string         // Flags indicate the in-game properties of the texture
@@ -45,6 +46,10 @@ func (t *Texture) ID() uint32 {
 
 func (t *Texture) Target() uint32 {
 	return t.target
+}
+
+func (t *Texture) Unit() uint32 {
+	return t.glUnit
 }
 
 // Returns true if the texture has a flag matching the argument (ignoring case).
@@ -80,6 +85,11 @@ func (at *Texture) FrameHeight() int {
 
 func (t *Texture) IsAtlas() bool {
 	return t.animations != nil && len(t.animations) > 0
+}
+
+func (t *Texture) Bind() {
+	gl.ActiveTexture(t.glUnit)
+	gl.BindTexture(t.target, t.glID)
 }
 
 const ERROR_TEXTURE_SIZE = 64
@@ -203,6 +213,7 @@ func loadTexture(assetPath string) *Texture {
 	if metadata != nil && len(metadata.Atlas) > 0 && metadata.FrameSize[0] > 0 && metadata.FrameSize[1] > 0 {
 		// If it's an atlas texture...
 		texture.target = gl.TEXTURE_2D_ARRAY
+		texture.glUnit = gl.TEXTURE1
 		texture.frameWidth = metadata.FrameSize[0]
 		texture.frameHeight = metadata.FrameSize[1]
 		texture.animations = make([]FrameAnimation, len(metadata.Animations))
@@ -236,6 +247,7 @@ func loadTexture(assetPath string) *Texture {
 	} else {
 		//Set texture data as whole image
 		texture.target = gl.TEXTURE_2D
+		texture.glUnit = gl.TEXTURE0
 		texture.frameWidth = texture.width
 		texture.frameHeight = texture.height
 		texture.animations = nil

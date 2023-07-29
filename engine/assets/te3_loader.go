@@ -16,8 +16,9 @@ const GRID_SPACING = 2.0
 const HALF_GRID_SPACING = GRID_SPACING / 2.0
 
 type TE3File struct {
-	Ents  []Ent
-	Tiles Tiles
+	Ents     []Ent
+	Tiles    Tiles
+	filePath string
 }
 
 type Ent struct {
@@ -112,10 +113,15 @@ func (tiles *Tiles) UnmarshalJSON(b []byte) error {
 // Loads a Total Editor 3 map file into a data structure
 func LoadTE3File(assetPath string) (*TE3File, error) {
 	te3, err := LoadAndUnmarshalJSON[TE3File](assetPath)
+	te3.filePath = assetPath
 	if err == nil {
 		log.Println("Loaded TE3 file", assetPath)
 	}
 	return te3, err
+}
+
+func (te3 *TE3File) FilePath() string {
+	return te3.filePath
 }
 
 // Returns the integer grid position (x, y, z) from the given flat index into the Data array

@@ -133,6 +133,10 @@ func (m *Mesh) GetGroup(name string) Group {
 	return m.groups[name]
 }
 
+func (m *Mesh) GetGroupCount() int {
+	return len(m.groups)
+}
+
 func (m *Mesh) GetGroupNames() []string {
 	out := make([]string, 0, len(m.groups))
 	for name := range m.groups {

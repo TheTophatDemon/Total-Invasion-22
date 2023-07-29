@@ -1,10 +1,7 @@
 #version 330
 
 in vec2 vTexCoord;
-in vec3 vNormal;
 
-uniform vec3 uLightDir;
-uniform vec3 uAmbientColor;
 uniform sampler2D uTex;
 uniform sampler2DArray uAtlas;
 uniform int uFrame = 0;
@@ -28,10 +25,6 @@ void main() {
     if (diffuse.a < 0.5) {
         discard;
     }
-    
-    //Calulate diffuse lighting
-    float lightFactor = (dot(-uLightDir, normalize(vNormal)) + 1.0) / 2.0;
-    diffuse.rgb *= uAmbientColor + (vec3(1.0) - uAmbientColor) * lightFactor;
     
     //Apply depth based fog
     float depth = gl_FragCoord.z / gl_FragCoord.w;

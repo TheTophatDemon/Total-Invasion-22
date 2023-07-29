@@ -1,5 +1,7 @@
 package scene
 
+import "fmt"
+
 type Scene struct {
 	ents   []Entity
 	active []bool
@@ -20,17 +22,17 @@ func (scene *Scene) MaxEntCount() uint {
 	return uint(len(scene.active))
 }
 
-func (sc *Scene) AddEntity() (Entity, bool) {
+func (sc *Scene) AddEntity() (Entity, error) {
 	for i, active := range sc.active {
 		if !active {
 			newEnt := sc.ents[i].Renew()
 			sc.ents[i] = newEnt
 			sc.active[i] = true
-			return newEnt, true
+			return newEnt, nil
 		}
 	}
 
-	return ENT_INVALID, false
+	return ENT_INVALID, fmt.Errorf("out of entity indices")
 }
 
 func (sc *Scene) RemoveEntity(ent Entity) bool {

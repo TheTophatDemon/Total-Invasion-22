@@ -12,6 +12,19 @@ type FirstPersonController struct {
 	LookHorzAction, LookVertAction      input.Action
 }
 
+func AddFirstPersonController(
+	ent scene.Entity,
+	ForwardAction, BackAction,
+	StrafeLeftAction, StrafeRightAction,
+	LookHorzAction, LookVertAction input.Action,
+) {
+	FirstPersonControllerComps.Assign(ent, FirstPersonController{
+		ForwardAction, BackAction,
+		StrafeLeftAction, StrafeRightAction,
+		LookHorzAction, LookVertAction,
+	})
+}
+
 func (controller *FirstPersonController) Update(movement *Movement, ent scene.Entity, deltaTime float32) {
 	if input.IsActionPressed(controller.ForwardAction) {
 		movement.InputForward = 1.0

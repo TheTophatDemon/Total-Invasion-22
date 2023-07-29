@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -60,10 +59,8 @@ func main() {
 		panic(err)
 	}
 
-	assets.InitBuiltInAssets()
-	defer assets.FreeTextures()
-	defer assets.FreeMeshes()
-	defer assets.FreeBuiltInAssets()
+	assets.Init()
+	defer assets.FreeAll()
 
 	input.BindActionKey(ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(ACTION_BACK, glfw.KeyS)
@@ -76,13 +73,17 @@ func main() {
 	engine.CheckOpenGLError()
 
 	//Create scene
-	sc := scene.NewScene(1024)
+	sc := scene.NewScene(2048)
 	ecomps.RegisterAll(sc)
 
 	//Load map
-	gameMap, err := engine.LoadGameMap("assets/maps/ti2-malicious-intents.te3")
-	if err != nil {
-		log.Println("Map loading error: ", err)
+	var gameMap *assets.TE3File
+	if gameMap, err = assets.LoadTE3File("assets/maps/ti2-malicious-intents.te3"); err != nil {
+		panic(err)
+	}
+
+	if _, err := engine.SpawnGameMap(sc, gameMap); err != nil {
+		panic(err)
 	}
 
 	// Find player spawn
@@ -91,29 +92,36 @@ func main() {
 	// Spawn sprites
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
 		enemyEnt, _ := sc.AddEntity()
-		ecomps.TransformComps.Assign(enemyEnt, ecomps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]}))
-		ecomps.MeshRenderComps.Assign(enemyEnt, ecomps.MeshRender{
-			Mesh:   assets.SpriteMesh,
-			Shader: assets.SpriteShader,
-		})
+
+		ecomps.AddTransform(enemyEnt,
+			ecomps.TransformFromTranslationAngles(
+				mapEnt.Position, mapEnt.Angles))
+
+		tex := assets.GetTexture("assets/textures/sprites/wraith.png")
+
+		ecomps.AddMeshRender(
+			enemyEnt,
+			assets.SpriteMesh,
+			assets.SpriteShader,
+			tex)
+
+		ecomps.AddAnimationPlayer(enemyEnt, tex.GetAnimation(0), true)
 	}
 
 	camEnt, _ := sc.AddEntity()
-	ecomps.CameraComps.Assign(camEnt, ecomps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
-	ecomps.MovementComps.Assign(camEnt, ecomps.Movement{
+	ecomps.AddCamera(camEnt, 70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0)
+	ecomps.AddMovement(camEnt, ecomps.Movement{
 		MaxSpeed:   12.0,
 		YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
 		PitchAngle: 0.0,
 	})
-	ecomps.FirstPersonControllerComps.Assign(camEnt, ecomps.FirstPersonController{
-		ForwardAction:     ACTION_FORWARD,
-		BackAction:        ACTION_BACK,
-		StrafeLeftAction:  ACTION_LEFT,
-		StrafeRightAction: ACTION_RIGHT,
-		LookHorzAction:    ACTION_LOOK_HORZ,
-		LookVertAction:    ACTION_LOOK_VERT,
-	})
-	ecomps.TransformComps.Assign(camEnt, ecomps.TransformFromTranslation(playerSpawn.Position))
+	ecomps.AddFirstPersonController(camEnt,
+		ACTION_FORWARD, ACTION_BACK,
+		ACTION_LEFT, ACTION_RIGHT,
+		ACTION_LOOK_HORZ, ACTION_LOOK_VERT)
+	ecomps.AddTransform(camEnt,
+		ecomps.TransformFromTranslationAngles(
+			playerSpawn.Position, playerSpawn.Angles))
 
 	input.TrapMouse()
 
@@ -163,8 +171,6 @@ func main() {
 			ecomps.UpdateDefaultComps(sc, ent, deltaTime)
 		}
 
-		gameMap.Update(deltaTime)
-
 		//Render setup
 		cameraTransform, _ := ecomps.TransformComps.Get(camEnt)
 		camera, _ := ecomps.CameraComps.Get(camEnt)
@@ -184,9 +190,6 @@ func main() {
 			ent := iter.Entity()
 			ecomps.RenderDefaultComps(sc, ent, &renderContext)
 		}
-
-		//Draw the map
-		gameMap.Render(&renderContext)
 
 		engine.CheckOpenGLError()
 

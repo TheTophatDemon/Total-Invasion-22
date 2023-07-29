@@ -42,7 +42,7 @@ var (
 )
 
 // Initialize built-in assets
-func InitBuiltInAssets() {
+func Init() {
 	var err error
 
 	MapShader, err = CreateShader(mapVertShaderSrc, mapFragShaderSrc)
@@ -113,6 +113,17 @@ func FreeMeshes() {
 		meshes[p].Free()
 		delete(meshes, p)
 	}
+}
+
+func FreeAll() {
+	FreeTextures()
+	FreeMeshes()
+	FreeBuiltInAssets()
+}
+
+// Takes ownership of an already loaded mesh. Will dispose of its resources along with the other meshes.
+func TakeMesh(assetPath string, mesh *Mesh) {
+	meshes[assetPath] = mesh
 }
 
 func GetMesh(assetPath string) (*Mesh, error) {

@@ -3,12 +3,17 @@ package ecomps
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type Transform struct {
 	pos, rot, scale mgl32.Vec3
 	matrix          mgl32.Mat4
 	dirty           bool
+}
+
+func AddTransform(ent scene.Entity, transform Transform) {
+	TransformComps.Assign(ent, transform)
 }
 
 func TransformFromMatrix(matrix mgl32.Mat4) *Transform {
@@ -25,6 +30,15 @@ func TransformFromTranslation(position mgl32.Vec3) Transform {
 	return Transform{
 		pos:   position,
 		rot:   math2.Vec3Zero(),
+		scale: math2.Vec3One(),
+		dirty: true,
+	}
+}
+
+func TransformFromTranslationAngles(position mgl32.Vec3, angles mgl32.Vec3) Transform {
+	return Transform{
+		pos:   position,
+		rot:   angles,
 		scale: math2.Vec3One(),
 		dirty: true,
 	}

@@ -11,6 +11,10 @@ type Movement struct {
 	YawAngle, PitchAngle      float32 //Radians
 }
 
+func AddMovement(ent scene.Entity, movement Movement) {
+	MovementComps.Assign(ent, movement)
+}
+
 func (m *Movement) Update(transform *Transform, ent scene.Entity, deltaTime float32) {
 
 	strafe := m.InputStrafe * m.MaxSpeed * deltaTime

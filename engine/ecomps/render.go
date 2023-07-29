@@ -8,6 +8,6 @@ import (
 func RenderDefaultComps(sc *scene.Scene, ent scene.Entity, context *scene.RenderContext) {
 	meshRender, hasMeshRender := MeshRenderComps.Get(ent)
 	if hasMeshRender {
-		meshRender.Render(TransformComps, ent, context)
+		meshRender.Render(ent, context)
 	}
 }
