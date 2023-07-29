@@ -76,7 +76,7 @@ func InitBuiltInAssets() {
 		},
 		Color: nil,
 	}, []uint32{
-		0, 2, 1, 2, 3, 1,
+		1, 2, 0, 1, 3, 2,
 	})
 }
 

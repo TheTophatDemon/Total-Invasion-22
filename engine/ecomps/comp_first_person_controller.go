@@ -1,4 +1,4 @@
-package comps
+package ecomps
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -12,12 +12,7 @@ type FirstPersonController struct {
 	LookHorzAction, LookVertAction      input.Action
 }
 
-func (controller *FirstPersonController) Update(movements *scene.ComponentStorage[Movement], ent scene.Entity, deltaTime float32) {
-	movement, ok := movements.Get(ent)
-	if !ok {
-		return
-	}
-
+func (controller *FirstPersonController) Update(movement *Movement, ent scene.Entity, deltaTime float32) {
 	if input.IsActionPressed(controller.ForwardAction) {
 		movement.InputForward = 1.0
 	} else if input.IsActionPressed(controller.BackAction) {

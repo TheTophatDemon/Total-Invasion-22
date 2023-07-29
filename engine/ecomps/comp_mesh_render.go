@@ -1,4 +1,4 @@
-package comps
+package ecomps
 
 import (
 	"errors"
@@ -10,8 +10,9 @@ import (
 )
 
 type MeshRender struct {
-	Mesh   *assets.Mesh
-	Shader *assets.Shader
+	Mesh    *assets.Mesh
+	Shader  *assets.Shader
+	Texture *assets.Texture
 }
 
 func (mr *MeshRender) Render(transforms *scene.ComponentStorage[Transform], ent scene.Entity, context *scene.RenderContext) {

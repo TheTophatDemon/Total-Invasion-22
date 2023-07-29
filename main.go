@@ -11,7 +11,7 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/comps"
+	"tophatdemon.com/total-invasion-ii/engine/ecomps"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
@@ -31,13 +31,6 @@ const (
 
 	MOUSE_SENSITIVITY = 0.005
 )
-
-var Transforms *scene.ComponentStorage[comps.Transform]
-var Movements *scene.ComponentStorage[comps.Movement]
-var Cameras *scene.ComponentStorage[comps.Camera]
-var FirstPersonControllers *scene.ComponentStorage[comps.FirstPersonController]
-var MeshRenders *scene.ComponentStorage[comps.MeshRender]
-var AnimationPlayers *scene.ComponentStorage[comps.AnimationPlayer]
 
 func init() {
 	runtime.LockOSThread()
@@ -84,12 +77,7 @@ func main() {
 
 	//Create scene
 	sc := scene.NewScene(1024)
-	Transforms = scene.RegisterComponent[comps.Transform](sc)
-	Movements = scene.RegisterComponent[comps.Movement](sc)
-	Cameras = scene.RegisterComponent[comps.Camera](sc)
-	FirstPersonControllers = scene.RegisterComponent[comps.FirstPersonController](sc)
-	MeshRenders = scene.RegisterComponent[comps.MeshRender](sc)
-	AnimationPlayers = scene.RegisterComponent[comps.AnimationPlayer](sc)
+	ecomps.RegisterAll(sc)
 
 	//Load map
 	gameMap, err := engine.LoadGameMap("assets/maps/ti2-malicious-intents.te3")
@@ -103,21 +91,21 @@ func main() {
 	// Spawn sprites
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
 		enemyEnt, _ := sc.AddEntity()
-		Transforms.Assign(enemyEnt, comps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]}))
-		MeshRenders.Assign(enemyEnt, comps.MeshRender{
+		ecomps.TransformComps.Assign(enemyEnt, ecomps.TransformFromTranslation(mgl32.Vec3{mapEnt.Position[0], mapEnt.Position[1], mapEnt.Position[2]}))
+		ecomps.MeshRenderComps.Assign(enemyEnt, ecomps.MeshRender{
 			Mesh:   assets.SpriteMesh,
 			Shader: assets.SpriteShader,
 		})
 	}
 
 	camEnt, _ := sc.AddEntity()
-	Cameras.Assign(camEnt, comps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
-	Movements.Assign(camEnt, comps.Movement{
+	ecomps.CameraComps.Assign(camEnt, ecomps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
+	ecomps.MovementComps.Assign(camEnt, ecomps.Movement{
 		MaxSpeed:   12.0,
 		YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
 		PitchAngle: 0.0,
 	})
-	FirstPersonControllers.Assign(camEnt, comps.FirstPersonController{
+	ecomps.FirstPersonControllerComps.Assign(camEnt, ecomps.FirstPersonController{
 		ForwardAction:     ACTION_FORWARD,
 		BackAction:        ACTION_BACK,
 		StrafeLeftAction:  ACTION_LEFT,
@@ -125,7 +113,7 @@ func main() {
 		LookHorzAction:    ACTION_LOOK_HORZ,
 		LookVertAction:    ACTION_LOOK_VERT,
 	})
-	Transforms.Assign(camEnt, comps.TransformFromTranslation(playerSpawn.Position))
+	ecomps.TransformComps.Assign(camEnt, ecomps.TransformFromTranslation(playerSpawn.Position))
 
 	input.TrapMouse()
 
@@ -172,28 +160,14 @@ func main() {
 		//Update scene
 		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
 			ent := iter.Entity()
-
-			controller, ok := FirstPersonControllers.Get(ent)
-			if ok {
-				controller.Update(Movements, ent, deltaTime)
-			}
-
-			movement, ok := Movements.Get(ent)
-			if ok {
-				movement.Update(Transforms, ent, deltaTime)
-			}
-
-			animPlayer, ok := AnimationPlayers.Get(ent)
-			if ok {
-				animPlayer.Update(deltaTime)
-			}
+			ecomps.UpdateDefaultComps(sc, ent, deltaTime)
 		}
 
 		gameMap.Update(deltaTime)
 
 		//Render setup
-		cameraTransform, _ := Transforms.Get(camEnt)
-		camera, _ := Cameras.Get(camEnt)
+		cameraTransform, _ := ecomps.TransformComps.Get(camEnt)
+		camera, _ := ecomps.CameraComps.Get(camEnt)
 		viewMat := cameraTransform.GetMatrix().Inv()
 		projMat := camera.GetProjectionMatrix()
 		renderContext := scene.RenderContext{
@@ -208,11 +182,7 @@ func main() {
 		//Draw the scene
 		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
 			ent := iter.Entity()
-
-			meshRender, ok := MeshRenders.Get(ent)
-			if ok {
-				meshRender.Render(Transforms, ent, &renderContext)
-			}
+			ecomps.RenderDefaultComps(sc, ent, &renderContext)
 		}
 
 		//Draw the map

@@ -8,7 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/comps"
+	"tophatdemon.com/total-invasion-ii/engine/ecomps"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
@@ -16,7 +16,7 @@ type GameMap struct {
 	*assets.TE3File
 
 	mesh           *assets.Mesh
-	tileAnimations map[string]*comps.AnimationPlayer
+	tileAnimations map[string]*ecomps.AnimationPlayer
 }
 
 func LoadGameMap(te3Path string) (*GameMap, error) {
@@ -31,11 +31,11 @@ func LoadGameMap(te3Path string) (*GameMap, error) {
 	}
 
 	//Create tile animation players
-	animPlayerMap := make(map[string]*comps.AnimationPlayer)
+	animPlayerMap := make(map[string]*ecomps.AnimationPlayer)
 	for _, groupName := range mesh.GetGroupNames() {
 		tex := assets.GetTexture(groupName)
 		if tex.AnimationCount() > 0 {
-			animPlayerMap[groupName] = comps.NewAnimationPlayerAutoPlay(tex.GetAnimation(0))
+			animPlayerMap[groupName] = ecomps.NewAnimationPlayerAutoPlay(tex.GetAnimation(0))
 		}
 	}
 

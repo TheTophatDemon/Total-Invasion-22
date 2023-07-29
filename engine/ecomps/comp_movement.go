@@ -1,4 +1,4 @@
-package comps
+package ecomps
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -11,11 +11,7 @@ type Movement struct {
 	YawAngle, PitchAngle      float32 //Radians
 }
 
-func (m *Movement) Update(transforms *scene.ComponentStorage[Transform], ent scene.Entity, deltaTime float32) {
-	transform, ok := transforms.Get(ent)
-	if !ok {
-		return
-	}
+func (m *Movement) Update(transform *Transform, ent scene.Entity, deltaTime float32) {
 
 	strafe := m.InputStrafe * m.MaxSpeed * deltaTime
 	forward := m.InputForward * m.MaxSpeed * deltaTime

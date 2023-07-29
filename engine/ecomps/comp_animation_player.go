@@ -1,4 +1,4 @@
-package comps
+package ecomps
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"

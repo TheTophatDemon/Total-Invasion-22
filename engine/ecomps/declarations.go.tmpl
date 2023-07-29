@@ -1,0 +1,19 @@
+// Code generated DO NOT EDIT.
+
+package ecomps
+
+import (
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+)
+
+// Declare component storage{{"" -}}
+{{range .}}
+var {{.}}Comps *scene.ComponentStorage[{{.}}]
+{{- end}}
+
+// Register default components
+func RegisterAll(sc *scene.Scene) { {{"" -}}
+    {{range .}}
+    {{.}}Comps = scene.RegisterComponent[{{.}}](sc)
+    {{- end}}
+}
