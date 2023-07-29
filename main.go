@@ -197,10 +197,12 @@ func main() {
 		viewMat := cameraTransform.GetMatrix().Inv()
 		projMat := camera.GetProjectionMatrix()
 		renderContext := scene.RenderContext{
-			View:       viewMat,
-			Projection: projMat,
-			FogStart:   1.0,
-			FogLength:  50.0,
+			View:           viewMat,
+			Projection:     projMat,
+			FogStart:       1.0,
+			FogLength:      50.0,
+			LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
+			AmbientColor:   mgl32.Vec3{0.4, 0.4, 0.4},
 		}
 
 		//Draw the scene

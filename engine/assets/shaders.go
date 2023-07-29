@@ -10,7 +10,7 @@ import (
 )
 
 type UniformTypes interface {
-	int | bool | float32 | mgl32.Mat4
+	int | bool | float32 | mgl32.Mat4 | mgl32.Vec3 | mgl32.Vec4
 }
 
 type IUniform interface {
@@ -26,15 +26,17 @@ func (u Uniform[T]) UniformName() string {
 }
 
 var (
-	UniformModelMatrix Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uModelMatrix"}
-	UniformViewMatrix  Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uViewMatrix"}
-	UniformProjMatrix  Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uProjMatrix"}
-	UniformFogStart    Uniform[float32]    = Uniform[float32]{"uFogStart"}
-	UniformFogLength   Uniform[float32]    = Uniform[float32]{"uFogLength"}
-	UniformTex         Uniform[int]        = Uniform[int]{"uTex"}
-	UniformAtlas       Uniform[int]        = Uniform[int]{"uAtlas"}
-	UniformFrame       Uniform[int]        = Uniform[int]{"uFrame"}
-	UniformAtlasUsed   Uniform[bool]       = Uniform[bool]{"uAtlasUsed"}
+	UniformModelMatrix  Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uModelMatrix"}
+	UniformViewMatrix   Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uViewMatrix"}
+	UniformProjMatrix   Uniform[mgl32.Mat4] = Uniform[mgl32.Mat4]{"uProjMatrix"}
+	UniformFogStart     Uniform[float32]    = Uniform[float32]{"uFogStart"}
+	UniformFogLength    Uniform[float32]    = Uniform[float32]{"uFogLength"}
+	UniformTex          Uniform[int]        = Uniform[int]{"uTex"}
+	UniformAtlas        Uniform[int]        = Uniform[int]{"uAtlas"}
+	UniformFrame        Uniform[int]        = Uniform[int]{"uFrame"}
+	UniformAtlasUsed    Uniform[bool]       = Uniform[bool]{"uAtlasUsed"}
+	UniformLightDir     Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uLightDir"}
+	UniformAmbientColor Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uAmbientColor"}
 )
 
 type Shader struct {
@@ -138,6 +140,24 @@ func (s *Shader) SetUniformMatrix(u Uniform[mgl32.Mat4], val mgl32.Mat4) error {
 		return err
 	}
 	gl.UniformMatrix4fv(loc, 1, false, &val[0])
+	return nil
+}
+
+func (s *Shader) SetUniformVec3(u Uniform[mgl32.Vec3], val mgl32.Vec3) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
+	}
+	gl.Uniform3fv(loc, 1, &val[0])
+	return nil
+}
+
+func (s *Shader) SetUniformVec4(u Uniform[mgl32.Vec4], val mgl32.Vec4) error {
+	loc, err := s.getUniformLoc(u)
+	if err != nil {
+		return err
+	}
+	gl.Uniform4fv(loc, 1, &val[0])
 	return nil
 }
 
