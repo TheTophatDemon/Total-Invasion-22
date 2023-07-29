@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"runtime"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
@@ -35,32 +33,56 @@ func init() {
 	runtime.LockOSThread()
 }
 
+type Game struct {
+	sc     *scene.Scene
+	camEnt scene.Entity
+}
+
+func (game *Game) Update(deltaTime float32) {
+	//Free mouse
+	if input.IsActionJustPressed(ACTION_TRAP_MOUSE) {
+		if input.IsMouseTrapped() {
+			input.UntrapMouse()
+		} else {
+			input.TrapMouse()
+		}
+	}
+
+	//Update scene
+	for iter := game.sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+		ent := iter.Entity()
+		ecomps.UpdateDefaultComps(game.sc, ent, deltaTime)
+	}
+}
+
+func (game *Game) Render() {
+	//Render setup
+	cameraTransform, _ := ecomps.TransformComps.Get(game.camEnt)
+	camera, _ := ecomps.CameraComps.Get(game.camEnt)
+	viewMat := cameraTransform.GetMatrix().Inv()
+	projMat := camera.GetProjectionMatrix()
+	renderContext := scene.RenderContext{
+		View:           viewMat,
+		Projection:     projMat,
+		FogStart:       1.0,
+		FogLength:      50.0,
+		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
+		AmbientColor:   mgl32.Vec3{0.4, 0.4, 0.4},
+	}
+
+	//Draw the scene
+	for iter := game.sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+		ent := iter.Entity()
+		ecomps.RenderDefaultComps(game.sc, ent, &renderContext)
+	}
+}
+
 func main() {
-	err := glfw.Init()
+	err := engine.Init(WINDOW_WIDTH, WINDOW_HEIGHT, "Total Invasion II")
+	defer engine.DeInit()
 	if err != nil {
 		panic(err)
 	}
-	defer glfw.Terminate()
-
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
-	window, err := glfw.CreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Total Invasion II", nil, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	window.MakeContextCurrent()
-
-	if err := gl.Init(); err != nil {
-		panic(err)
-	}
-
-	assets.Init()
-	defer assets.FreeAll()
 
 	input.BindActionKey(ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(ACTION_BACK, glfw.KeyS)
@@ -69,8 +91,6 @@ func main() {
 	input.BindActionKey(ACTION_TRAP_MOUSE, glfw.KeyEscape)
 	input.BindActionMouseMove(ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, MOUSE_SENSITIVITY)
 	input.BindActionMouseMove(ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, MOUSE_SENSITIVITY)
-
-	engine.CheckOpenGLError()
 
 	//Create scene
 	sc := scene.NewScene(2048)
@@ -125,76 +145,7 @@ func main() {
 
 	input.TrapMouse()
 
-	// Configure global settings
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.CULL_FACE)
-	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
-
-	previousTime := glfw.GetTime()
-
-	//FPS counters
-	var fpsTimer float32
-	var fps, fpsTicks int
-
-	for !window.ShouldClose() {
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-		// Update
-		time := glfw.GetTime()
-		deltaTime := float32(time - previousTime)
-		previousTime = time
-
-		//Calc FPS
-		fpsTimer += deltaTime
-		if fpsTimer > 1.0 {
-			fpsTimer = 0.0
-			fps = fpsTicks
-			fpsTicks = 0
-			fmt.Printf("FPS: %v\n", fps)
-		} else {
-			fpsTicks += 1
-		}
-
-		//Free mouse
-		if input.IsActionJustPressed(ACTION_TRAP_MOUSE) {
-			if input.IsMouseTrapped() {
-				input.UntrapMouse()
-			} else {
-				input.TrapMouse()
-			}
-		}
-
-		//Update scene
-		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
-			ent := iter.Entity()
-			ecomps.UpdateDefaultComps(sc, ent, deltaTime)
-		}
-
-		//Render setup
-		cameraTransform, _ := ecomps.TransformComps.Get(camEnt)
-		camera, _ := ecomps.CameraComps.Get(camEnt)
-		viewMat := cameraTransform.GetMatrix().Inv()
-		projMat := camera.GetProjectionMatrix()
-		renderContext := scene.RenderContext{
-			View:           viewMat,
-			Projection:     projMat,
-			FogStart:       1.0,
-			FogLength:      50.0,
-			LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
-			AmbientColor:   mgl32.Vec3{0.4, 0.4, 0.4},
-		}
-
-		//Draw the scene
-		for iter := sc.EntsIter(); iter.Valid(); iter = iter.Next() {
-			ent := iter.Entity()
-			ecomps.RenderDefaultComps(sc, ent, &renderContext)
-		}
-
-		engine.CheckOpenGLError()
-
-		input.Update()
-		window.SwapBuffers()
-		glfw.PollEvents()
-	}
+	engine.Run(&Game{
+		sc, camEnt,
+	})
 }

@@ -1,0 +1,106 @@
+package engine
+
+import (
+	"fmt"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
+
+	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/input"
+)
+
+type App interface {
+	Update(deltaTime float32)
+	Render()
+}
+
+var window *glfw.Window
+
+func Init(screenWidth, screenHeight int, windowTitle string) error {
+	err := glfw.Init()
+	if err != nil {
+		return err
+	}
+
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
+	window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	window.MakeContextCurrent()
+
+	if err := gl.Init(); err != nil {
+		return err
+	}
+
+	assets.Init()
+
+	// OpenGL settings
+	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.CULL_FACE)
+	gl.DepthFunc(gl.LESS)
+	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
+
+	return nil
+}
+
+func Run(app App) {
+	previousTime := glfw.GetTime()
+	previousTickTime := glfw.GetTime()
+
+	//FPS counters
+	var maxTickRate float32 = 1.0 / 60.0
+	var tickTimer float32 = 0.0
+
+	var fpsTimer float32
+	var fps, fpsTicks int
+	for !window.ShouldClose() {
+		// Update
+		tickTime := glfw.GetTime()
+		tickDelta := float32(tickTime - previousTickTime)
+		previousTickTime = tickTime
+		tickTimer += tickDelta
+		if tickTimer >= maxTickRate {
+			tickTimer = 0.0
+
+			time := glfw.GetTime()
+			deltaTime := float32(time - previousTime)
+			previousTime = time
+
+			//Calc FPS
+			fpsTimer += deltaTime
+			if fpsTimer > 1.0 {
+				fpsTimer = 0.0
+				fps = fpsTicks
+				fpsTicks = 0
+				fmt.Printf("FPS: %v\n", fps)
+			} else {
+				fpsTicks += 1
+			}
+
+			app.Update(deltaTime)
+
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+			app.Render()
+
+			CheckOpenGLError()
+
+			input.Update()
+			window.SwapBuffers()
+			glfw.PollEvents()
+		}
+	}
+}
+
+func DeInit() {
+	assets.FreeAll()
+	glfw.Terminate()
+}
