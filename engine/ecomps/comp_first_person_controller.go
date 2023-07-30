@@ -12,17 +12,16 @@ type FirstPersonController struct {
 	LookHorzAction, LookVertAction      input.Action
 }
 
-func AddFirstPersonController(
-	ent ecs.Entity,
+func NewFirstPersonController(
 	ForwardAction, BackAction,
 	StrafeLeftAction, StrafeRightAction,
 	LookHorzAction, LookVertAction input.Action,
-) {
-	FirstPersonControllers.Assign(ent, FirstPersonController{
+) FirstPersonController {
+	return FirstPersonController{
 		ForwardAction, BackAction,
 		StrafeLeftAction, StrafeRightAction,
 		LookHorzAction, LookVertAction,
-	})
+	}
 }
 
 func (controller *FirstPersonController) Update(movement *Movement, ent ecs.Entity, deltaTime float32) {

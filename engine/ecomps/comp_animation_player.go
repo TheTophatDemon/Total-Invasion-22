@@ -2,7 +2,6 @@ package ecomps
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/ecs"
 )
 
 type AnimationPlayer struct {
@@ -13,14 +12,14 @@ type AnimationPlayer struct {
 	frameTimer   float32
 }
 
-func AddAnimationPlayer(ent ecs.Entity, anim assets.FrameAnimation, autoPlay bool) {
-	AnimationPlayers.Assign(ent, AnimationPlayer{
+func NewAnimationPlayer(anim assets.FrameAnimation, autoPlay bool) AnimationPlayer {
+	return AnimationPlayer{
 		animation:    anim,
 		currentFrame: 0,
 		currentIndex: 0,
 		playing:      autoPlay,
 		frameTimer:   0.0,
-	})
+	}
 }
 
 func (ap *AnimationPlayer) ChangeAnimation(newAnim assets.FrameAnimation) {

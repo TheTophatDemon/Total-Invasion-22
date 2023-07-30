@@ -16,34 +16,30 @@ type MeshRender struct {
 	Group   string
 }
 
-func AddMeshRender(ent ecs.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture) {
-	MeshRenders.Assign(ent, MeshRender{
-		Mesh,
-		Shader,
-		Texture,
-		"",
-	})
+func NewMeshRender(Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture) MeshRender {
+	return NewMeshRenderGroup(Mesh, Shader, Texture, "")
 }
 
-// Add a mesh renderer that only renders a specific group in the mesh.
-func AddMeshRenderGroup(ent ecs.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture, Group string) {
-	MeshRenders.Assign(ent, MeshRender{
+func NewMeshRenderGroup(Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture, Group string) MeshRender {
+	return MeshRender{
 		Mesh,
 		Shader,
 		Texture,
 		Group,
-	})
+	}
 }
 
-func (mr *MeshRender) Render(ent ecs.Entity, context *render.Context) {
+func (mr *MeshRender) Render(
+	transform *Transform,
+	animPlayer *AnimationPlayer,
+	ent ecs.Entity,
+	context *render.Context,
+) {
 	// Set defaults
 	modelMatrix := mgl32.Ident4()
-	transform, ok := Transforms.Get(ent)
-	if ok {
+	if transform != nil {
 		modelMatrix = transform.GetMatrix()
 	}
-
-	animPlayer, hasAnimPlayer := AnimationPlayers.Get(ent)
 
 	// Bind resources
 	if mr.Mesh == nil || mr.Shader == nil {
@@ -56,7 +52,7 @@ func (mr *MeshRender) Render(ent ecs.Entity, context *render.Context) {
 	}
 
 	frame := 0
-	if hasAnimPlayer {
+	if animPlayer != nil {
 		frame = animPlayer.Frame()
 	}
 

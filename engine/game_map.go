@@ -7,7 +7,7 @@ import (
 )
 
 // Creates the entities in the scene required to render a map from the given te3 file.
-func SpawnGameMap(scene *ecs.Scene, te3File *assets.TE3File) ([]ecs.Entity, error) {
+func SpawnGameMap(scene *ecomps.GameScene, te3File *assets.TE3File) ([]ecs.Entity, error) {
 	mesh, err := te3File.BuildMesh()
 	if err != nil {
 		return nil, err
@@ -25,11 +25,11 @@ func SpawnGameMap(scene *ecs.Scene, te3File *assets.TE3File) ([]ecs.Entity, erro
 		tex := assets.GetTexture(groupName)
 		if tex.AnimationCount() > 0 {
 			// Add animations if applicable
-			ecomps.AddAnimationPlayer(mapEnts[g], tex.GetAnimation(0), true)
+			scene.AnimationPlayers.Assign(mapEnts[g], ecomps.NewAnimationPlayer(tex.GetAnimation(0), true))
 		}
 
 		// Add mesh component
-		ecomps.AddMeshRenderGroup(mapEnts[g], mesh, assets.MapShader, tex, groupName)
+		scene.MeshRenders.Assign(mapEnts[g], ecomps.NewMeshRenderGroup(mesh, assets.MapShader, tex, groupName))
 	}
 
 	return mapEnts, nil

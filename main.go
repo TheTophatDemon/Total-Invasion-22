@@ -34,9 +34,14 @@ func init() {
 	runtime.LockOSThread()
 }
 
+type GameScene struct {
+	ecomps.GameScene
+	// Add game specific components here
+}
+
 type Game struct {
-	scene  *ecs.Scene
-	camEnt ecs.Entity
+	gameScene *GameScene
+	camEnt    ecs.Entity
 }
 
 func (game *Game) Update(deltaTime float32) {
@@ -50,16 +55,16 @@ func (game *Game) Update(deltaTime float32) {
 	}
 
 	//Update scene
-	for iter := game.scene.EntsIter(); iter.Valid(); iter = iter.Next() {
+	for iter := game.gameScene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		ent := iter.Entity()
-		ecomps.UpdateDefaultComps(game.scene, ent, deltaTime)
+		game.gameScene.Update(ent, deltaTime)
 	}
 }
 
 func (game *Game) Render() {
 	//Render setup
-	cameraTransform, _ := ecomps.Transforms.Get(game.camEnt)
-	camera, _ := ecomps.Cameras.Get(game.camEnt)
+	cameraTransform, _ := game.gameScene.Transforms.Get(game.camEnt)
+	camera, _ := game.gameScene.Cameras.Get(game.camEnt)
 	viewMat := cameraTransform.GetMatrix().Inv()
 	projMat := camera.GetProjectionMatrix()
 	renderContext := render.Context{
@@ -72,9 +77,9 @@ func (game *Game) Render() {
 	}
 
 	//Draw the scene
-	for iter := game.scene.EntsIter(); iter.Valid(); iter = iter.Next() {
+	for iter := game.gameScene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		ent := iter.Entity()
-		ecomps.RenderDefaultComps(game.scene, ent, &renderContext)
+		game.gameScene.Render(ent, &renderContext)
 	}
 }
 
@@ -94,8 +99,9 @@ func main() {
 	input.BindActionMouseMove(ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, MOUSE_SENSITIVITY)
 
 	//Create scene
-	scene := ecs.NewScene(2048)
-	ecomps.RegisterDefault(scene)
+	scene := GameScene{
+		ecomps.NewGameScene(2048),
+	}
 
 	//Load map
 	var gameMap *assets.TE3File
@@ -103,7 +109,7 @@ func main() {
 		panic(err)
 	}
 
-	if _, err := engine.SpawnGameMap(scene, gameMap); err != nil {
+	if _, err := engine.SpawnGameMap(&scene.GameScene, gameMap); err != nil {
 		panic(err)
 	}
 
@@ -114,39 +120,47 @@ func main() {
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
 		enemyEnt, _ := scene.AddEntity()
 
-		ecomps.AddTransform(enemyEnt,
+		scene.Transforms.Assign(enemyEnt,
 			ecomps.TransformFromTranslationAngles(
 				mapEnt.Position, mapEnt.Angles))
 
 		tex := assets.GetTexture("assets/textures/sprites/wraith.png")
 
-		ecomps.AddMeshRender(
+		scene.MeshRenders.Assign(
 			enemyEnt,
-			assets.SpriteMesh,
-			assets.SpriteShader,
-			tex)
+			ecomps.NewMeshRender(
+				assets.SpriteMesh,
+				assets.SpriteShader,
+				tex,
+			),
+		)
 
-		ecomps.AddAnimationPlayer(enemyEnt, tex.GetAnimation(0), true)
+		scene.AnimationPlayers.Assign(enemyEnt, ecomps.NewAnimationPlayer(tex.GetAnimation(0), true))
 	}
 
 	camEnt, _ := scene.AddEntity()
-	ecomps.AddCamera(camEnt, 70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0)
-	ecomps.AddMovement(camEnt, ecomps.Movement{
+	scene.Cameras.Assign(camEnt, ecomps.NewCamera(70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0))
+	scene.Movements.Assign(camEnt, ecomps.Movement{
 		MaxSpeed:   12.0,
 		YawAngle:   mgl32.DegToRad(playerSpawn.Angles[1]),
 		PitchAngle: 0.0,
 	})
-	ecomps.AddFirstPersonController(camEnt,
-		ACTION_FORWARD, ACTION_BACK,
-		ACTION_LEFT, ACTION_RIGHT,
-		ACTION_LOOK_HORZ, ACTION_LOOK_VERT)
-	ecomps.AddTransform(camEnt,
+	scene.FirstPersonControllers.Assign(camEnt,
+		ecomps.NewFirstPersonController(
+			ACTION_FORWARD, ACTION_BACK,
+			ACTION_LEFT, ACTION_RIGHT,
+			ACTION_LOOK_HORZ, ACTION_LOOK_VERT,
+		),
+	)
+	scene.Transforms.Assign(camEnt,
 		ecomps.TransformFromTranslationAngles(
-			playerSpawn.Position, playerSpawn.Angles))
+			playerSpawn.Position, playerSpawn.Angles,
+		),
+	)
 
 	input.TrapMouse()
 
 	engine.Run(&Game{
-		scene, camEnt,
+		&scene, camEnt,
 	})
 }

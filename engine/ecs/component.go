@@ -5,10 +5,10 @@ type ComponentStorage[C any] struct {
 	user       []Entity // Stores the entity ID using the component. Will be set to ENT_INVALID if the component is unused.
 }
 
-func RegisterComponent[C any](scene *Scene) *ComponentStorage[C] {
+func NewStorage[C any](maxEnts uint) *ComponentStorage[C] {
 	storage := &ComponentStorage[C]{
-		components: make([]C, scene.MaxEntCount()),
-		user:       make([]Entity, scene.MaxEntCount()),
+		components: make([]C, maxEnts),
+		user:       make([]Entity, maxEnts),
 	}
 	for u := range storage.user {
 		storage.user[u] = ENT_INVALID
