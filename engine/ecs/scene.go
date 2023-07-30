@@ -1,4 +1,4 @@
-package scene
+package ecs
 
 import "fmt"
 

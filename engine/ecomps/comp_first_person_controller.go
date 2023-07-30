@@ -1,9 +1,9 @@
 package ecomps
 
 import (
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type FirstPersonController struct {
@@ -13,19 +13,19 @@ type FirstPersonController struct {
 }
 
 func AddFirstPersonController(
-	ent scene.Entity,
+	ent ecs.Entity,
 	ForwardAction, BackAction,
 	StrafeLeftAction, StrafeRightAction,
 	LookHorzAction, LookVertAction input.Action,
 ) {
-	FirstPersonControllerComps.Assign(ent, FirstPersonController{
+	FirstPersonControllers.Assign(ent, FirstPersonController{
 		ForwardAction, BackAction,
 		StrafeLeftAction, StrafeRightAction,
 		LookHorzAction, LookVertAction,
 	})
 }
 
-func (controller *FirstPersonController) Update(movement *Movement, ent scene.Entity, deltaTime float32) {
+func (controller *FirstPersonController) Update(movement *Movement, ent ecs.Entity, deltaTime float32) {
 	if input.IsActionPressed(controller.ForwardAction) {
 		movement.InputForward = 1.0
 	} else if input.IsActionPressed(controller.BackAction) {

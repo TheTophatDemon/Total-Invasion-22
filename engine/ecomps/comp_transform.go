@@ -2,8 +2,8 @@ package ecomps
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type Transform struct {
@@ -12,8 +12,8 @@ type Transform struct {
 	dirty           bool
 }
 
-func AddTransform(ent scene.Entity, transform Transform) {
-	TransformComps.Assign(ent, transform)
+func AddTransform(ent ecs.Entity, transform Transform) {
+	Transforms.Assign(ent, transform)
 }
 
 func TransformFromMatrix(matrix mgl32.Mat4) *Transform {

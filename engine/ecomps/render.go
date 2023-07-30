@@ -1,12 +1,13 @@
 package ecomps
 
 import (
-	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 // Render default components
-func RenderDefaultComps(sc *scene.Scene, ent scene.Entity, context *scene.RenderContext) {
-	meshRender, hasMeshRender := MeshRenderComps.Get(ent)
+func RenderDefaultComps(scene *ecs.Scene, ent ecs.Entity, context *render.Context) {
+	meshRender, hasMeshRender := MeshRenders.Get(ent)
 	if hasMeshRender {
 		meshRender.Render(ent, context)
 	}

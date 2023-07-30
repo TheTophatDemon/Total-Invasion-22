@@ -5,7 +5,8 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 type MeshRender struct {
@@ -15,8 +16,8 @@ type MeshRender struct {
 	Group   string
 }
 
-func AddMeshRender(ent scene.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture) {
-	MeshRenderComps.Assign(ent, MeshRender{
+func AddMeshRender(ent ecs.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture) {
+	MeshRenders.Assign(ent, MeshRender{
 		Mesh,
 		Shader,
 		Texture,
@@ -25,8 +26,8 @@ func AddMeshRender(ent scene.Entity, Mesh *assets.Mesh, Shader *assets.Shader, T
 }
 
 // Add a mesh renderer that only renders a specific group in the mesh.
-func AddMeshRenderGroup(ent scene.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture, Group string) {
-	MeshRenderComps.Assign(ent, MeshRender{
+func AddMeshRenderGroup(ent ecs.Entity, Mesh *assets.Mesh, Shader *assets.Shader, Texture *assets.Texture, Group string) {
+	MeshRenders.Assign(ent, MeshRender{
 		Mesh,
 		Shader,
 		Texture,
@@ -34,15 +35,15 @@ func AddMeshRenderGroup(ent scene.Entity, Mesh *assets.Mesh, Shader *assets.Shad
 	})
 }
 
-func (mr *MeshRender) Render(ent scene.Entity, context *scene.RenderContext) {
+func (mr *MeshRender) Render(ent ecs.Entity, context *render.Context) {
 	// Set defaults
 	modelMatrix := mgl32.Ident4()
-	transform, ok := TransformComps.Get(ent)
+	transform, ok := Transforms.Get(ent)
 	if ok {
 		modelMatrix = transform.GetMatrix()
 	}
 
-	animPlayer, hasAnimPlayer := AnimationPlayerComps.Get(ent)
+	animPlayer, hasAnimPlayer := AnimationPlayers.Get(ent)
 
 	// Bind resources
 	if mr.Mesh == nil || mr.Shader == nil {

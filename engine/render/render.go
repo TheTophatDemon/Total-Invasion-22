@@ -1,4 +1,4 @@
-package scene
+package render
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 )
 
 // Contains global information useful for rendering.
-type RenderContext struct {
+type Context struct {
 	View           mgl32.Mat4
 	Projection     mgl32.Mat4
 	FogStart       float32
@@ -17,7 +17,7 @@ type RenderContext struct {
 	AmbientColor   mgl32.Vec3
 }
 
-func (context *RenderContext) SetUniforms(shader *assets.Shader) error {
+func (context *Context) SetUniforms(shader *assets.Shader) error {
 	return errors.Join(shader.SetUniformMatrix(assets.UniformViewMatrix, context.View),
 		shader.SetUniformMatrix(assets.UniformProjMatrix, context.Projection),
 		shader.SetUniformFloat(assets.UniformFogStart, context.FogStart),

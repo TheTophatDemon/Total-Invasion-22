@@ -1,4 +1,4 @@
-package scene
+package ecs
 
 type Entity uint64
 

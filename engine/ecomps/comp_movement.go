@@ -2,7 +2,7 @@ package ecomps
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
 )
 
 type Movement struct {
@@ -11,11 +11,11 @@ type Movement struct {
 	YawAngle, PitchAngle      float32 //Radians
 }
 
-func AddMovement(ent scene.Entity, movement Movement) {
-	MovementComps.Assign(ent, movement)
+func AddMovement(ent ecs.Entity, movement Movement) {
+	Movements.Assign(ent, movement)
 }
 
-func (m *Movement) Update(transform *Transform, ent scene.Entity, deltaTime float32) {
+func (m *Movement) Update(transform *Transform, ent ecs.Entity, deltaTime float32) {
 
 	strafe := m.InputStrafe * m.MaxSpeed * deltaTime
 	forward := m.InputForward * m.MaxSpeed * deltaTime

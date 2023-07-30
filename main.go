@@ -9,8 +9,9 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/ecomps"
+	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 const (
@@ -34,8 +35,8 @@ func init() {
 }
 
 type Game struct {
-	sc     *scene.Scene
-	camEnt scene.Entity
+	scene  *ecs.Scene
+	camEnt ecs.Entity
 }
 
 func (game *Game) Update(deltaTime float32) {
@@ -49,31 +50,31 @@ func (game *Game) Update(deltaTime float32) {
 	}
 
 	//Update scene
-	for iter := game.sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+	for iter := game.scene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		ent := iter.Entity()
-		ecomps.UpdateDefaultComps(game.sc, ent, deltaTime)
+		ecomps.UpdateDefaultComps(game.scene, ent, deltaTime)
 	}
 }
 
 func (game *Game) Render() {
 	//Render setup
-	cameraTransform, _ := ecomps.TransformComps.Get(game.camEnt)
-	camera, _ := ecomps.CameraComps.Get(game.camEnt)
+	cameraTransform, _ := ecomps.Transforms.Get(game.camEnt)
+	camera, _ := ecomps.Cameras.Get(game.camEnt)
 	viewMat := cameraTransform.GetMatrix().Inv()
 	projMat := camera.GetProjectionMatrix()
-	renderContext := scene.RenderContext{
+	renderContext := render.Context{
 		View:           viewMat,
 		Projection:     projMat,
 		FogStart:       1.0,
 		FogLength:      50.0,
 		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
-		AmbientColor:   mgl32.Vec3{0.4, 0.4, 0.4},
+		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
 
 	//Draw the scene
-	for iter := game.sc.EntsIter(); iter.Valid(); iter = iter.Next() {
+	for iter := game.scene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		ent := iter.Entity()
-		ecomps.RenderDefaultComps(game.sc, ent, &renderContext)
+		ecomps.RenderDefaultComps(game.scene, ent, &renderContext)
 	}
 }
 
@@ -93,8 +94,8 @@ func main() {
 	input.BindActionMouseMove(ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, MOUSE_SENSITIVITY)
 
 	//Create scene
-	sc := scene.NewScene(2048)
-	ecomps.RegisterAll(sc)
+	scene := ecs.NewScene(2048)
+	ecomps.RegisterDefault(scene)
 
 	//Load map
 	var gameMap *assets.TE3File
@@ -102,7 +103,7 @@ func main() {
 		panic(err)
 	}
 
-	if _, err := engine.SpawnGameMap(sc, gameMap); err != nil {
+	if _, err := engine.SpawnGameMap(scene, gameMap); err != nil {
 		panic(err)
 	}
 
@@ -111,7 +112,7 @@ func main() {
 
 	// Spawn sprites
 	for _, mapEnt := range gameMap.FindEntsWithProperty("type", "enemy") {
-		enemyEnt, _ := sc.AddEntity()
+		enemyEnt, _ := scene.AddEntity()
 
 		ecomps.AddTransform(enemyEnt,
 			ecomps.TransformFromTranslationAngles(
@@ -128,7 +129,7 @@ func main() {
 		ecomps.AddAnimationPlayer(enemyEnt, tex.GetAnimation(0), true)
 	}
 
-	camEnt, _ := sc.AddEntity()
+	camEnt, _ := scene.AddEntity()
 	ecomps.AddCamera(camEnt, 70.0, WINDOW_ASPECT_RATIO, 0.1, 1000.0)
 	ecomps.AddMovement(camEnt, ecomps.Movement{
 		MaxSpeed:   12.0,
@@ -146,6 +147,6 @@ func main() {
 	input.TrapMouse()
 
 	engine.Run(&Game{
-		sc, camEnt,
+		scene, camEnt,
 	})
 }

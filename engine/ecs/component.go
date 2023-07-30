@@ -1,4 +1,4 @@
-package scene
+package ecs
 
 type ComponentStorage[C any] struct {
 	components []C
