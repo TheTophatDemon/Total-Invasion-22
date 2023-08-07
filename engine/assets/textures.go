@@ -71,6 +71,15 @@ func (at *Texture) GetAnimation(index int) FrameAnimation {
 	return at.animations[index]
 }
 
+func (at *Texture) GetAnimationByName(name string) (FrameAnimation, bool) {
+	for _, a := range at.animations {
+		if a.Name == name {
+			return a, true
+		}
+	}
+	return FrameAnimation{}, false
+}
+
 func (at *Texture) AnimationCount() int {
 	return len(at.animations)
 }

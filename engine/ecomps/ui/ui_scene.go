@@ -4,19 +4,31 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/ecomps"
 	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 type Scene struct {
 	ecs.Scene
-	Boxes *ecs.ComponentStorage[Box]
+	Boxes            *ecs.ComponentStorage[Box]
+	AnimationPlayers *ecs.ComponentStorage[ecomps.AnimationPlayer]
 }
 
 func NewUIScene(maxEnts uint) Scene {
 	return Scene{
 		ecs.NewScene(maxEnts),
 		ecs.NewStorage[Box](maxEnts),
+		ecs.NewStorage[ecomps.AnimationPlayer](maxEnts),
+	}
+}
+
+func (scene *Scene) UpdateAll(deltaTime float32) {
+	for iter := scene.EntsIter(); iter.Valid(); iter = iter.Next() {
+		animPlayer, hasAnim := scene.AnimationPlayers.Get(iter.Entity())
+		if hasAnim {
+			animPlayer.Update(deltaTime)
+		}
 	}
 }
 
@@ -37,7 +49,11 @@ func (scene *Scene) RenderAll(context *render.Context) {
 
 	for iter := scene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		box, hasBox := scene.Boxes.Get(iter.Entity())
-		// TODO: Animation players
+		animPlayer, hasAnim := scene.AnimationPlayers.Get(iter.Entity())
+
+		if hasAnim {
+			_ = assets.UIShader.SetUniformInt(assets.UniformFrame, animPlayer.Frame())
+		}
 
 		if hasBox {
 			// Set color

@@ -2,6 +2,7 @@ package main
 
 import (
 	"image/color"
+	"log"
 	"math/rand"
 	"runtime"
 
@@ -64,6 +65,7 @@ func (game *Game) Update(deltaTime float32) {
 		ent := iter.Entity()
 		game.gameScene.Update(ent, deltaTime)
 	}
+	game.uiScene.UpdateAll(deltaTime)
 }
 
 func (game *Game) Render() {
@@ -195,12 +197,26 @@ func main() {
 		}
 		uiScene.Boxes.Assign(letterEnt, ui.NewBox(src, dest, fontTex, col))
 	}
+
 	fontEnt, _ := uiScene.AddEntity()
 	uiScene.Boxes.Assign(fontEnt, ui.NewBox(math2.Rect{
 		X: 0.0, Y: 0.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
 	}, math2.Rect{
 		X: 64.0, Y: 64.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
 	}, fontTex, color.White))
+
+	{
+		tex := assets.GetTexture("assets/textures/sprites/wraith.png")
+		wraithEnt, _ := uiScene.AddEntity()
+		uiScene.Boxes.Assign(wraithEnt, ui.NewBoxFull(math2.Rect{
+			X: 512.0, Y: 32.0, Width: 64.0, Height: 64.0,
+		}, tex, color.RGBA{R: 255, G: 255, B: 255, A: 128}))
+		a, hasAnim := tex.GetAnimationByName("die")
+		if !hasAnim {
+			log.Fatalln("Fuck!!!")
+		}
+		uiScene.AnimationPlayers.Assign(wraithEnt, ecomps.NewAnimationPlayer(a, true))
+	}
 
 	input.TrapMouse()
 

@@ -27,6 +27,25 @@ func NewBox(src, dest math2.Rect, texture *assets.Texture, color color.Color) Bo
 	}
 }
 
+func NewBoxFull(dest math2.Rect, texture *assets.Texture, color color.Color) Box {
+	src := math2.Rect{}
+	if texture != nil {
+		src = math2.Rect{
+			X:      0.0,
+			Y:      0.0,
+			Width:  float32(texture.Width()),
+			Height: float32(texture.Height()),
+		}
+	}
+	return Box{
+		Color:          color,
+		Texture:        texture,
+		src:            src,
+		dest:           dest,
+		transformDirty: true,
+	}
+}
+
 func (box *Box) Dest() math2.Rect {
 	return box.dest
 }
