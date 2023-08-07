@@ -16,6 +16,14 @@ type Float interface {
 	float32 | float64
 }
 
+type Rect struct {
+	X, Y, Width, Height float32
+}
+
+func (r Rect) Center() (float32, float32) {
+	return (r.X + r.Width/2.0), (r.Y + r.Height/2.0)
+}
+
 func Clamp[N Number](val, min, max N) N {
 	if val < min {
 		return min

@@ -91,10 +91,11 @@ func (t *Transform) Rotate(pitch, yaw, roll float32) {
 
 func (t *Transform) GetMatrix() mgl32.Mat4 {
 	if t.IsDirty() {
-		t.matrix = mgl32.Translate3D(t.pos.X(), t.pos.Y(), t.pos.Z()).Mul4(
-			mgl32.HomogRotate3DY(t.rot[1]).Mul4(
-				mgl32.HomogRotate3DX(t.rot[0]).Mul4(
-					mgl32.HomogRotate3DZ(t.rot[2]))))
+		t.matrix = mgl32.Scale3D(t.scale.X(), t.scale.Y(), t.scale.Z())
+		t.matrix = mgl32.HomogRotate3DZ(t.rot[2]).Mul4(t.matrix)
+		t.matrix = mgl32.HomogRotate3DX(t.rot[0]).Mul4(t.matrix)
+		t.matrix = mgl32.HomogRotate3DY(t.rot[1]).Mul4(t.matrix)
+		t.matrix = mgl32.Translate3D(t.pos.X(), t.pos.Y(), t.pos.Z()).Mul4(t.matrix)
 	}
 	return t.matrix
 }

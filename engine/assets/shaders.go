@@ -37,6 +37,8 @@ var (
 	UniformAtlasUsed    Uniform[bool]       = Uniform[bool]{"uAtlasUsed"}
 	UniformLightDir     Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uLightDir"}
 	UniformAmbientColor Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uAmbientColor"}
+	UniformDiffuseColor Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uDiffuseColor"}
+	UniformSrcRect      Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uSrcRect"}
 )
 
 type Shader struct {

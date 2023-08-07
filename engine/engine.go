@@ -42,12 +42,6 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 
 	assets.Init()
 
-	// OpenGL settings
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.CULL_FACE)
-	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.0, 0.0, 0.2, 1.0)
-
 	return nil
 }
 
@@ -87,6 +81,12 @@ func Run(app App) {
 
 			app.Update(deltaTime)
 
+			// OpenGL settings
+			gl.Enable(gl.DEPTH_TEST)
+			gl.Enable(gl.CULL_FACE)
+			gl.DepthFunc(gl.LESS)
+			gl.CullFace(gl.BACK)
+			gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			app.Render()

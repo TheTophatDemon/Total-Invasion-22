@@ -25,20 +25,25 @@ func init() {
 
 var (
 	MapShader *Shader
-
 	//go:embed map.vs.glsl
 	mapVertShaderSrc string
 	//go:embed map.fs.glsl
 	mapFragShaderSrc string
 
 	SpriteShader *Shader
-
 	//go:embed sprite.vs.glsl
 	spriteVertShaderSrc string
 	//go:embed sprite.fs.glsl
 	spriteFragShaderSrc string
 
-	SpriteMesh *Mesh
+	UIShader *Shader
+	//go:embed ui_box.vs.glsl
+	uiVertShaderSrc string
+	//go:embed ui_box.fs.glsl
+	uiFragShaderSrc string
+
+	// A quad on the XY plane centered at (0,0) with a width and height of 2.
+	QuadMesh *Mesh
 )
 
 // Initialize built-in assets
@@ -55,7 +60,12 @@ func Init() {
 		log.Fatalln("Couldn't compile sprite shader: ", err)
 	}
 
-	SpriteMesh = CreateMesh(Vertices{
+	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile UI shader: ", err)
+	}
+
+	QuadMesh = CreateMesh(Vertices{
 		Pos: []mgl32.Vec3{
 			{-1.0, -1.0, 0.0},
 			{1.0, -1.0, 0.0},
@@ -83,6 +93,7 @@ func Init() {
 func FreeBuiltInAssets() {
 	MapShader.Free()
 	SpriteShader.Free()
+	UIShader.Free()
 }
 
 // Retrieves the asset's file from one of the available asset packs

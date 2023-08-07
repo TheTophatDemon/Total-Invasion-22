@@ -1,6 +1,8 @@
 package main
 
 import (
+	"image/color"
+	"math/rand"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -9,8 +11,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/ecomps"
+	"tophatdemon.com/total-invasion-ii/engine/ecomps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
@@ -41,6 +45,7 @@ type GameScene struct {
 
 type Game struct {
 	gameScene *GameScene
+	uiScene   *ui.Scene
 	camEnt    ecs.Entity
 }
 
@@ -62,7 +67,7 @@ func (game *Game) Update(deltaTime float32) {
 }
 
 func (game *Game) Render() {
-	//Render setup
+	// Render setup
 	cameraTransform, _ := game.gameScene.Transforms.Get(game.camEnt)
 	camera, _ := game.gameScene.Cameras.Get(game.camEnt)
 	viewMat := cameraTransform.GetMatrix().Inv()
@@ -76,11 +81,19 @@ func (game *Game) Render() {
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
 
-	//Draw the scene
+	// Draw the scene
 	for iter := game.gameScene.EntsIter(); iter.Valid(); iter = iter.Next() {
 		ent := iter.Entity()
 		game.gameScene.Render(ent, &renderContext)
 	}
+
+	// UI render setup
+	renderContext = render.Context{
+		View:       mgl32.Ident4(),
+		Projection: mgl32.Ortho(0.0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0, -1.0, 10.0),
+	}
+
+	game.uiScene.RenderAll(&renderContext)
 }
 
 func main() {
@@ -129,7 +142,7 @@ func main() {
 		scene.MeshRenders.Assign(
 			enemyEnt,
 			ecomps.NewMeshRender(
-				assets.SpriteMesh,
+				assets.QuadMesh,
 				assets.SpriteShader,
 				tex,
 			),
@@ -158,9 +171,40 @@ func main() {
 		),
 	)
 
+	uiScene := ui.NewUIScene(1024)
+	fontTex := assets.GetTexture("assets/textures/atlases/font.png")
+	for i := 1; i < 16; i += 1 {
+		letterEnt, _ := uiScene.AddEntity()
+		src := math2.Rect{
+			X:      float32(i * 16),
+			Y:      0.0,
+			Width:  16.0,
+			Height: 16.0,
+		}
+		dest := math2.Rect{
+			X:      4.0 + float32(i*20),
+			Y:      8.0 + rand.Float32()*32.0,
+			Width:  8.0 + rand.Float32()*16.0,
+			Height: 8.0 + rand.Float32()*16.0,
+		}
+		col := color.RGBA{
+			R: uint8(rand.Intn(256)),
+			G: uint8(rand.Intn(256)),
+			B: uint8(rand.Intn(256)),
+			A: 255,
+		}
+		uiScene.Boxes.Assign(letterEnt, ui.NewBox(src, dest, fontTex, col))
+	}
+	fontEnt, _ := uiScene.AddEntity()
+	uiScene.Boxes.Assign(fontEnt, ui.NewBox(math2.Rect{
+		X: 0.0, Y: 0.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
+	}, math2.Rect{
+		X: 64.0, Y: 64.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
+	}, fontTex, color.White))
+
 	input.TrapMouse()
 
 	engine.Run(&Game{
-		&scene, camEnt,
+		&scene, &uiScene, camEnt,
 	})
 }
