@@ -84,7 +84,9 @@ func Run(app App) {
 			// OpenGL settings
 			gl.Enable(gl.DEPTH_TEST)
 			gl.Enable(gl.CULL_FACE)
+			gl.Enable(gl.BLEND)
 			gl.DepthFunc(gl.LESS)
+			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 			gl.CullFace(gl.BACK)
 			gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
