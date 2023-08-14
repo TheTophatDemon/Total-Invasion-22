@@ -1,5 +1,6 @@
 # TODO
-- Font rendering
+- Text wrapping
+- Text alignment
 - Player movement
 - Player collision
 - Directional sprites

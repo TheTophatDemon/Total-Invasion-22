@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 type Texture struct {
@@ -60,6 +61,15 @@ func (t *Texture) HasFlag(testFlag string) bool {
 		}
 	}
 	return false
+}
+
+func (tex *Texture) Rect() math2.Rect {
+	return math2.Rect{
+		X:      0.0,
+		Y:      0.0,
+		Width:  float32(tex.Width()),
+		Height: float32(tex.Height()),
+	}
 }
 
 func (t *Texture) Free() {

@@ -198,13 +198,6 @@ func main() {
 		uiScene.Boxes.Assign(letterEnt, ui.NewBox(src, dest, fontTex, col))
 	}
 
-	fontEnt, _ := uiScene.AddEntity()
-	uiScene.Boxes.Assign(fontEnt, ui.NewBox(math2.Rect{
-		X: 0.0, Y: 0.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
-	}, math2.Rect{
-		X: 64.0, Y: 64.0, Width: float32(fontTex.Width()), Height: float32(fontTex.Height()),
-	}, fontTex, color.White))
-
 	{
 		tex := assets.GetTexture("assets/textures/sprites/wraith.png")
 		wraithEnt, _ := uiScene.AddEntity()
@@ -216,6 +209,28 @@ func main() {
 			log.Fatalln("Fuck!!!")
 		}
 		uiScene.AnimationPlayers.Assign(wraithEnt, ecomps.NewAnimationPlayer(a, true))
+	}
+
+	// Test text
+	{
+		textEnt1, _ := uiScene.AddEntity()
+		text1, err := ui.NewText("assets/textures/atlases/font.fnt", "\"The Quick Brown Fox \nJumped Over The\n\n Lazy Dog.\"")
+		text1.SetScale(2.0)
+		if err != nil {
+			panic(err)
+		}
+		text1.SetDest(math2.Rect{X: 400.0, Y: 100.0, Width: 500.0, Height: 400.0})
+		uiScene.Texts.Assign(textEnt1, *text1)
+	}
+	{
+		textEnt1, _ := uiScene.AddEntity()
+		text1, err := ui.NewText("assets/textures/atlases/font.fnt", "* Съешь [же] ещё этих мягких\nфранцузских булок ДА ВЫПЕЙ ЧАЮ.")
+		text1.SetScale(0.75).SetColor(color.RGBA{255, 0, 0, 255})
+		if err != nil {
+			panic(err)
+		}
+		text1.SetDest(math2.Rect{X: 400.0, Y: 300.0, Width: 500.0, Height: 400.0})
+		uiScene.Texts.Assign(textEnt1, *text1)
 	}
 
 	input.TrapMouse()

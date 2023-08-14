@@ -18,9 +18,13 @@ var textures map[string]*Texture
 // This caches the meshes loaded from the filesystem by their paths.
 var meshes map[string]*Mesh
 
+// Cache of bitmap fonts, indexed by .fnt file path
+var fonts map[string]*Font
+
 func init() {
 	textures = make(map[string]*Texture)
 	meshes = make(map[string]*Mesh)
+	fonts = make(map[string]*Font)
 }
 
 var (
@@ -126,9 +130,15 @@ func FreeMeshes() {
 	}
 }
 
+// Releases memory for all cached fonts
+func FreeFonts() {
+	clear(fonts)
+}
+
 func FreeAll() {
 	FreeTextures()
 	FreeMeshes()
+	FreeFonts()
 	FreeBuiltInAssets()
 }
 
@@ -149,11 +159,32 @@ func GetMesh(assetPath string) (*Mesh, error) {
 			err = fmt.Errorf("unsupported model file type")
 		}
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		meshes[assetPath] = mesh
 	}
 	return mesh, nil
+}
+
+// Retrieves a font from the game assets, loading it if it doesn't already exist.
+func GetFont(assetPath string) (*Font, error) {
+	var err error
+
+	font, ok := fonts[assetPath]
+	if !ok {
+		// Check file extension
+		if !strings.HasSuffix(assetPath, ".fnt") {
+			return nil, fmt.Errorf("unsupported font file type")
+		}
+
+		font, err = loadAngelcodeFont(assetPath)
+		if err != nil {
+			return nil, err
+		}
+
+		fonts[assetPath] = font
+	}
+	return font, nil
 }
 
 // Loads a JSON file from the given asset-path (relative to assets folder) and returns the json.Unmarshal result as type T.

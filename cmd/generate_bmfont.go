@@ -10,12 +10,13 @@ import (
 )
 
 const TEMPLATE = `info face="Total Invasion II Font" size=16 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=0 aa=1 padding=0,0,0,0 spacing=2,2 outline=0
-common lineheight=20 base=17 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
+common lineHeight=20 base=17 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
 page id=0 file="font.png"
 chars count={{len .Chars}}
 {{range .Chars -}}
 char id={{.ID}} x={{.X}} y={{.Y}} width={{.Width}} height={{.Height}} xoffset=0 yoffset=0 xadvance={{.Width}} page=0 chnl=15
 {{end}}
+{{- /* Delete trailing whitespice or the parser will complain */ -}}
 `
 
 type Char struct {

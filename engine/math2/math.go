@@ -1,6 +1,7 @@
 package math2 //Get ready for MATH 2: Revenge of the Quaternions, coming to theatres this Pi Day.
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -20,8 +21,30 @@ type Rect struct {
 	X, Y, Width, Height float32
 }
 
+// Generate a rectangle that wraps around all of the given points (there must be at least 2).
+func RectFromPoints(point0, point1 mgl32.Vec2, points ...mgl32.Vec2) Rect {
+	minX, minY := min(point0.X(), point1.X()), min(point0.Y(), point1.Y())
+	maxX, maxY := max(point0.X(), point1.X()), max(point0.Y(), point1.Y())
+	for _, p := range points {
+		minX = min(minX, p.X())
+		minY = min(minY, p.Y())
+		maxX = max(maxX, p.X())
+		maxY = max(maxY, p.Y())
+	}
+	return Rect{
+		X:      minX,
+		Y:      minY,
+		Width:  maxX - minX,
+		Height: maxY - minY,
+	}
+}
+
 func (r Rect) Center() (float32, float32) {
 	return (r.X + r.Width/2.0), (r.Y + r.Height/2.0)
+}
+
+func (r Rect) Vec4() mgl32.Vec4 {
+	return mgl32.Vec4{r.X, r.Y, r.Width, r.Height}
 }
 
 func Clamp[N Number](val, min, max N) N {
@@ -71,6 +94,16 @@ func Vec3Zero() mgl32.Vec3 {
 
 func Vec3One() mgl32.Vec3 {
 	return mgl32.Vec3{1.0, 1.0, 1.0}
+}
+
+func ColorToVec4(col color.Color) mgl32.Vec4 {
+	r, g, b, a := col.RGBA()
+	return mgl32.Vec4{
+		float32(r) / float32(0xffff),
+		float32(g) / float32(0xffff),
+		float32(b) / float32(0xffff),
+		float32(a) / float32(0xffff),
+	}
 }
 
 func QuatToEulerAngles(q mgl32.Quat) mgl32.Vec3 {
