@@ -15,7 +15,16 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
+type TextAlign int
+
+const (
+	TEXT_ALIGN_LEFT TextAlign = iota
+	TEXT_ALIGN_CENTER
+	TEXT_ALIGN_RIGHT
+)
+
 type Text struct {
+	alignment      TextAlign
 	color          color.Color
 	text           string
 	textDirty      bool
@@ -30,6 +39,7 @@ type Text struct {
 
 func NewText(fontPath, text string) (*Text, error) {
 	txt := &Text{
+		alignment:      TEXT_ALIGN_LEFT,
 		color:          color.White,
 		text:           text,
 		textDirty:      true,
@@ -44,6 +54,18 @@ func NewText(fontPath, text string) (*Text, error) {
 	return txt, nil
 }
 
+func (txt *Text) SetAlignment(align TextAlign) *Text {
+	if txt.alignment != align {
+		txt.alignment = align
+		txt.textDirty = true
+	}
+	return txt
+}
+
+func (txt *Text) GetAlignment() TextAlign {
+	return txt.alignment
+}
+
 func (txt *Text) SetColor(col color.Color) *Text {
 	txt.color = col
 	return txt
@@ -54,8 +76,10 @@ func (txt *Text) Color() color.Color {
 }
 
 func (txt *Text) SetText(newText string) *Text {
-	txt.text = newText
-	txt.textDirty = true
+	if newText != txt.text {
+		txt.text = newText
+		txt.textDirty = true
+	}
 	return txt
 }
 
@@ -78,10 +102,33 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 	scan.Whitespace ^= (1 << '\n') | (1 << ' ')
 	scan.Mode = scanner.ScanIdents
 
+	numCharsInLine := 0
+	// Applies text alignment to all character boxes in the current line, then starts a new one
+	newLine := func() {
+		// Set cursor to next line position
+		cursorX = originX
+		cursorY += float32(txt.font.Common.LineHeight)
+
+		if txt.alignment != TEXT_ALIGN_LEFT {
+			lastBox := boxes[len(boxes)-1]
+
+			shiftAmount := (txt.dest.Width - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
+			if txt.alignment == TEXT_ALIGN_CENTER {
+				shiftAmount *= 0.5
+			}
+
+			// Shift all characters in the line to the right depending on text alignment
+			for i := 0; i < numCharsInLine; i += 1 {
+				boxes[len(boxes)-1-i].X += shiftAmount
+			}
+		}
+
+		numCharsInLine = 0
+	}
+
 	for token := scan.Scan(); token != scanner.EOF; token = scan.Scan() {
 		if token == '\n' {
-			cursorX = originX
-			cursorY += float32(txt.font.Common.LineHeight)
+			newLine()
 			continue
 		} else if unicode.IsSpace(token) {
 			cursorX += 16
@@ -129,9 +176,8 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 					boxes = boxes[:len(boxes)-runeIndex]
 					chars = chars[:len(chars)-runeIndex]
 
-					// Go to next line
-					cursorX = originX
-					cursorY += float32(txt.font.Common.LineHeight)
+					numCharsInLine -= runeIndex
+					newLine()
 
 					// Restart building the word
 					goto restartPoint
@@ -154,8 +200,10 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 
 			prevRune = r
 			runeIndex += 1
+			numCharsInLine += 1
 		}
 	}
+	newLine()
 
 	return boxes, chars
 }

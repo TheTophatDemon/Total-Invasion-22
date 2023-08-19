@@ -222,14 +222,14 @@ func main() {
 		text1.SetDest(math2.Rect{X: 400.0, Y: 100.0, Width: 500.0, Height: 400.0})
 		uiScene.Texts.Assign(textEnt1, *text1)
 	}
-	{
+	for a := ui.TEXT_ALIGN_LEFT; a <= ui.TEXT_ALIGN_RIGHT; a += 1 {
 		textEnt1, _ := uiScene.AddEntity()
 		text1, err := ui.NewText("assets/textures/atlases/font.fnt", "* Съешь [же] ещё этих мягких французских булок ДА ВЫПЕЙ ЧАЮ.")
-		text1.SetScale(0.75).SetColor(color.RGBA{255, 0, 0, 255})
+		text1.SetScale(0.75).SetColor(color.RGBA{255, 0, 0, 255}).SetAlignment(a)
 		if err != nil {
 			panic(err)
 		}
-		text1.SetDest(math2.Rect{X: 400.0, Y: 300.0, Width: 100.0, Height: 200.0})
+		text1.SetDest(math2.Rect{X: 400.0 + 200.0*float32(a), Y: 300.0, Width: 100.0, Height: 200.0})
 		uiScene.Texts.Assign(textEnt1, *text1)
 	}
 
