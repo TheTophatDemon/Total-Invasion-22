@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"math/rand"
@@ -45,9 +46,10 @@ type GameScene struct {
 }
 
 type Game struct {
-	gameScene *GameScene
-	uiScene   *ui.Scene
-	camEnt    ecs.Entity
+	gameScene  *GameScene
+	uiScene    *ui.Scene
+	camEnt     ecs.Entity
+	fpsCounter ecs.Entity
 }
 
 func (game *Game) Update(deltaTime float32) {
@@ -65,6 +67,9 @@ func (game *Game) Update(deltaTime float32) {
 		ent := iter.Entity()
 		game.gameScene.Update(ent, deltaTime)
 	}
+
+	fpsText, _ := game.uiScene.Texts.Get(game.fpsCounter)
+	fpsText.SetText(fmt.Sprintf("FPS: %v", engine.FPS()))
 	game.uiScene.UpdateAll(deltaTime)
 }
 
@@ -174,7 +179,16 @@ func main() {
 	)
 
 	uiScene := ui.NewUIScene(1024)
+
 	fontTex := assets.GetTexture("assets/textures/atlases/font.png")
+
+	fpsCounter, _ := uiScene.AddEntity()
+	{
+		text, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
+		text.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
+		uiScene.Texts.Assign(fpsCounter, *text)
+	}
+
 	for i := 1; i < 16; i += 1 {
 		letterEnt, _ := uiScene.AddEntity()
 		src := math2.Rect{
@@ -236,6 +250,6 @@ func main() {
 	input.TrapMouse()
 
 	engine.Run(&Game{
-		&scene, &uiScene, camEnt,
+		&scene, &uiScene, camEnt, fpsCounter,
 	})
 }

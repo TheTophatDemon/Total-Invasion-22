@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"fmt"
-
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
@@ -15,7 +13,12 @@ type App interface {
 	Render()
 }
 
+var fps int
 var window *glfw.Window
+
+func FPS() int {
+	return fps
+}
 
 func Init(screenWidth, screenHeight int, windowTitle string) error {
 	err := glfw.Init()
@@ -54,7 +57,7 @@ func Run(app App) {
 	var tickTimer float32 = 0.0
 
 	var fpsTimer float32
-	var fps, fpsTicks int
+	var fpsTicks int
 	for !window.ShouldClose() {
 		// Update
 		tickTime := glfw.GetTime()
@@ -74,7 +77,6 @@ func Run(app App) {
 				fpsTimer = 0.0
 				fps = fpsTicks
 				fpsTicks = 0
-				fmt.Printf("FPS: %v\n", fps)
 			} else {
 				fpsTicks += 1
 			}
