@@ -5,6 +5,9 @@ import (
 	"image/color"
 	"path"
 	"strings"
+	"text/scanner"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
@@ -60,6 +63,103 @@ func (txt *Text) Text() string {
 	return txt.text
 }
 
+// Calculates positions for each character's rectangle
+func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
+	var originX, originY float32 = 0.0, 0.0
+	cursorX, cursorY := originX, originY
+	var prevRune rune = scanner.EOF
+
+	boxes := make([]math2.Rect, 0, len(txt.text))
+	chars := make([]bmfont.Char, 0, len(txt.text))
+
+	var scan scanner.Scanner
+	scan.Init(strings.NewReader(txt.text))
+	// Don't skip spaces or newlines
+	scan.Whitespace ^= (1 << '\n') | (1 << ' ')
+	scan.Mode = scanner.ScanIdents
+
+	for token := scan.Scan(); token != scanner.EOF; token = scan.Scan() {
+		if token == '\n' {
+			cursorX = originX
+			cursorY += float32(txt.font.Common.LineHeight)
+			continue
+		} else if unicode.IsSpace(token) {
+			cursorX += 16
+			continue
+		}
+
+		word := scan.TokenText()
+
+		var firstBox math2.Rect
+	restartPoint:
+		runeIndex := 0
+		for i, w := 0, 0; i < len(word); i += w {
+			var r rune
+			r, w = utf8.DecodeRuneInString(word[i:])
+			char, ok := txt.font.Chars[r]
+			if !ok {
+				// Add blank space for unknown character
+				cursorX += 16
+				continue
+			}
+
+			// Find character position
+			charRect := math2.Rect{
+				X:      originX + cursorX + float32(char.XOffset),
+				Y:      originY + cursorY - float32(txt.font.Common.Base+char.YOffset),
+				Width:  float32(char.Size().X),
+				Height: float32(char.Size().Y),
+			}
+			if i == 0 {
+				firstBox = charRect
+			}
+
+			// Stop drawing when out of bounds
+			if charRect.Y+charRect.Height >= txt.dest.Height {
+				break
+			}
+
+			if i == len(word)-w {
+				// On the last character in the word, determine if the word should go on a new line
+				overflowsBounds := (charRect.X+charRect.Width >= txt.dest.Width)
+				firstWordOnLine := (firstBox.X == originX)
+
+				if overflowsBounds && !firstWordOnLine {
+					// Remove the previous letters in this word
+					boxes = boxes[:len(boxes)-runeIndex]
+					chars = chars[:len(chars)-runeIndex]
+
+					// Go to next line
+					cursorX = originX
+					cursorY += float32(txt.font.Common.LineHeight)
+
+					// Restart building the word
+					goto restartPoint
+				}
+			}
+
+			boxes = append(boxes, charRect)
+			chars = append(chars, char)
+
+			cursorX += float32(char.XAdvance)
+
+			// Add kerning
+			if prevRune != scanner.EOF {
+				pair := bmfont.CharPair{First: prevRune, Second: r}
+				kerning, ok := txt.font.Kerning[pair]
+				if ok {
+					cursorX += float32(kerning.Amount)
+				}
+			}
+
+			prevRune = r
+			runeIndex += 1
+		}
+	}
+
+	return boxes, chars
+}
+
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 func (txt *Text) Mesh() (*assets.Mesh, error) {
 	if txt.font == nil {
@@ -72,9 +172,9 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 			txt.mesh.Free()
 		}
 
-		// Regenerate text mesh
-		// TODO: Text wrapping
+		boxes, chars := txt.generateBoxes()
 
+		// Regenerate text mesh
 		numVertsGuess := len(txt.text) * 4
 		verts := assets.Vertices{
 			Pos:      make([]mgl32.Vec3, 0, numVertsGuess),
@@ -84,30 +184,8 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 
 		inds := make([]uint32, 0, len(txt.text)*2)
 
-		var originX, originY float32 = 0.0, 0.0
-		cursorX, cursorY := originX, originY
-		var prevRune rune
-		for i, r := range txt.text {
-			// Handle newline
-			if r == '\n' {
-				cursorX = originX
-				cursorY += float32(txt.font.Common.LineHeight)
-				continue
-			}
-
-			char, ok := txt.font.Chars[r]
-			if !ok {
-				continue
-			}
-
-			// Find character position
-			charRect := math2.Rect{
-				X:      originX + cursorX + float32(char.XOffset),
-				Y:      originY + cursorY - float32(txt.font.Common.Base+char.YOffset),
-				Width:  float32(char.Size().X),
-				Height: float32(char.Size().Y),
-			}
-
+		// Generate mesh data for the boxes
+		for b, charRect := range boxes {
 			indexBase := uint32(len(verts.Pos))
 
 			// Generate mesh data
@@ -121,10 +199,10 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 			pageW, pageH := float32(txt.font.Common.ScaleW), float32(txt.font.Common.ScaleH)
 
 			srcRect := math2.Rect{
-				X:      1.0 - (float32(char.X+char.Width) / pageW),
-				Y:      float32(char.Y) / pageH,
-				Width:  float32(char.Width) / pageW,
-				Height: float32(char.Height) / pageH,
+				X:      1.0 - (float32(chars[b].X+chars[b].Width) / pageW),
+				Y:      float32(chars[b].Y) / pageH,
+				Width:  float32(chars[b].Width) / pageW,
+				Height: float32(chars[b].Height) / pageH,
 			}
 
 			verts.TexCoord = append(verts.TexCoord,
@@ -142,19 +220,6 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 			)
 
 			inds = append(inds, indexBase+0, indexBase+1, indexBase+2, indexBase+0, indexBase+2, indexBase+3)
-
-			cursorX += float32(char.XAdvance)
-
-			// Add kerning
-			if i > 0 {
-				pair := bmfont.CharPair{First: prevRune, Second: r}
-				kerning, ok := txt.font.Kerning[pair]
-				if ok {
-					cursorX += float32(kerning.Amount)
-				}
-			}
-
-			prevRune = r
 		}
 
 		txt.mesh = assets.CreateMesh(verts, inds)

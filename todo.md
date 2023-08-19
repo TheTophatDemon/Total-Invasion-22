@@ -1,10 +1,10 @@
 # TODO
-- Text wrapping
 - Text alignment
 - Player movement
 - Player collision
 - Directional sprites
 - Doors
-- Debug console
 - Audio
+- Debug console
+- Text hot reloading?
 - Music
