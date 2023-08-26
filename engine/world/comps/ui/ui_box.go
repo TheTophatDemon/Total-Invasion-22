@@ -6,11 +6,13 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
 
 type Box struct {
-	Color   color.Color
-	Texture *assets.Texture
+	Color      color.Color
+	Texture    *assets.Texture
+	AnimPlayer comps.AnimationPlayer
 
 	src, dest      math2.Rect
 	transformDirty bool
@@ -44,6 +46,10 @@ func NewBoxFull(dest math2.Rect, texture *assets.Texture, color color.Color) Box
 		dest:           dest,
 		transformDirty: true,
 	}
+}
+
+func (box *Box) Update(deltaTime float32) {
+	box.AnimPlayer.Update(deltaTime)
 }
 
 func (box *Box) Dest() math2.Rect {

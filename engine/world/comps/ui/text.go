@@ -37,8 +37,8 @@ type Text struct {
 	transformDirty bool
 }
 
-func NewText(fontPath, text string) (*Text, error) {
-	txt := &Text{
+func NewText(fontPath, text string) (Text, error) {
+	txt := Text{
 		alignment:      TEXT_ALIGN_LEFT,
 		color:          color.White,
 		text:           text,
@@ -49,7 +49,7 @@ func NewText(fontPath, text string) (*Text, error) {
 		transformDirty: true,
 	}
 	if err := txt.SetFont(fontPath); err != nil {
-		return nil, err
+		return Text{}, err
 	}
 	return txt, nil
 }

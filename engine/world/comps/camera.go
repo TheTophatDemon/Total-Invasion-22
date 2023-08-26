@@ -1,4 +1,4 @@
-package ecomps
+package comps
 
 import (
 	"github.com/go-gl/mathgl/mgl32"

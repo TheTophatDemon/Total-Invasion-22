@@ -1,4 +1,4 @@
-package ecomps
+package comps
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
@@ -30,7 +30,7 @@ func (ap *AnimationPlayer) ChangeAnimation(newAnim assets.FrameAnimation) {
 }
 
 func (ap *AnimationPlayer) Update(deltaTime float32) {
-	if !ap.playing {
+	if !ap.playing || ap.animation.Frames == nil {
 		return
 	}
 	ap.frameTimer += deltaTime

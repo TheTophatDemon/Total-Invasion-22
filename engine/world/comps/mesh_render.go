@@ -1,11 +1,10 @@
-package ecomps
+package comps
 
 import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/ecs"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
@@ -29,16 +28,18 @@ func NewMeshRenderGroup(Mesh *assets.Mesh, Shader *assets.Shader, Texture *asset
 	}
 }
 
+// Renders the mesh with the given local transform and the optional animation player.
+// If transform is nil, then the model matrix is the identity matrix.
 func (mr *MeshRender) Render(
 	transform *Transform,
 	animPlayer *AnimationPlayer,
-	ent ecs.Entity,
 	context *render.Context,
 ) {
-	// Set defaults
-	modelMatrix := mgl32.Ident4()
+	var modelMatrix mgl32.Mat4
 	if transform != nil {
 		modelMatrix = transform.GetMatrix()
+	} else {
+		modelMatrix = mgl32.Ident4()
 	}
 
 	// Bind resources
