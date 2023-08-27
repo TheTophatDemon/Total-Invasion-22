@@ -2,6 +2,7 @@ package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
@@ -36,7 +37,7 @@ func NewGameMap(te3File *te3.TE3File) (*GameMap, error) {
 		}
 
 		// Add mesh component
-		gameMap.groupRenderers[g] = comps.NewMeshRenderGroup(mesh, assets.MapShader, tex, groupName)
+		gameMap.groupRenderers[g] = comps.NewMeshRenderGroup(mesh, shaders.MapShader, tex, groupName)
 	}
 
 	return gameMap, nil

@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 )
 
 // This map caches the textures loaded from the filesystem by their paths.
@@ -28,46 +28,13 @@ func init() {
 }
 
 var (
-	MapShader *Shader
-	//go:embed map.vs.glsl
-	mapVertShaderSrc string
-	//go:embed map.fs.glsl
-	mapFragShaderSrc string
-
-	SpriteShader *Shader
-	//go:embed sprite.vs.glsl
-	spriteVertShaderSrc string
-	//go:embed sprite.fs.glsl
-	spriteFragShaderSrc string
-
-	UIShader *Shader
-	//go:embed ui_box.vs.glsl
-	uiVertShaderSrc string
-	//go:embed ui_box.fs.glsl
-	uiFragShaderSrc string
-
 	// A quad on the XY plane centered at (0,0) with a width and height of 2.
 	QuadMesh *Mesh
 )
 
 // Initialize built-in assets
 func Init() {
-	var err error
-
-	MapShader, err = CreateShader(mapVertShaderSrc, mapFragShaderSrc)
-	if err != nil {
-		log.Fatalln("Couldn't compile map shader: ", err)
-	}
-
-	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
-	if err != nil {
-		log.Fatalln("Couldn't compile sprite shader: ", err)
-	}
-
-	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)
-	if err != nil {
-		log.Fatalln("Couldn't compile UI shader: ", err)
-	}
+	shaders.Init()
 
 	QuadMesh = CreateMesh(Vertices{
 		Pos: []mgl32.Vec3{
@@ -95,9 +62,7 @@ func Init() {
 }
 
 func FreeBuiltInAssets() {
-	MapShader.Free()
-	SpriteShader.Free()
-	UIShader.Free()
+	shaders.Free()
 }
 
 // Retrieves the asset's file from one of the available asset packs

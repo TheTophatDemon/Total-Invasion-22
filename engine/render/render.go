@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 )
 
 // Contains global information useful for rendering.
@@ -17,11 +17,11 @@ type Context struct {
 	AmbientColor   mgl32.Vec3
 }
 
-func (context *Context) SetUniforms(shader *assets.Shader) error {
-	return errors.Join(shader.SetUniformMatrix(assets.UniformViewMatrix, context.View),
-		shader.SetUniformMatrix(assets.UniformProjMatrix, context.Projection),
-		shader.SetUniformFloat(assets.UniformFogStart, context.FogStart),
-		shader.SetUniformFloat(assets.UniformFogLength, context.FogLength),
-		shader.SetUniformVec3(assets.UniformLightDir, context.LightDirection),
-		shader.SetUniformVec3(assets.UniformAmbientColor, context.AmbientColor))
+func (context *Context) SetUniforms(shader *shaders.Shader) error {
+	return errors.Join(shader.SetUniformMatrix(shaders.UniformViewMatrix, context.View),
+		shader.SetUniformMatrix(shaders.UniformProjMatrix, context.Projection),
+		shader.SetUniformFloat(shaders.UniformFogStart, context.FogStart),
+		shader.SetUniformFloat(shaders.UniformFogLength, context.FogLength),
+		shader.SetUniformVec3(shaders.UniformLightDir, context.LightDirection),
+		shader.SetUniformVec3(shaders.UniformAmbientColor, context.AmbientColor))
 }

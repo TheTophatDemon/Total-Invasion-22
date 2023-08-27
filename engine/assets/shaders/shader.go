@@ -1,8 +1,9 @@
-package assets
+package shaders
 
 import (
 	_ "embed"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -41,9 +42,56 @@ var (
 	UniformSrcRect      Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uSrcRect"}
 )
 
+var (
+	MapShader *Shader
+	//go:embed embed/map.vs.glsl
+	mapVertShaderSrc string
+	//go:embed embed/map.fs.glsl
+	mapFragShaderSrc string
+
+	SpriteShader *Shader
+	//go:embed embed/sprite.vs.glsl
+	spriteVertShaderSrc string
+	//go:embed embed/sprite.fs.glsl
+	spriteFragShaderSrc string
+
+	UIShader *Shader
+	//go:embed embed/ui_box.vs.glsl
+	uiVertShaderSrc string
+	//go:embed embed/ui_box.fs.glsl
+	uiFragShaderSrc string
+)
+
 type Shader struct {
 	id          uint32
 	uniformLocs map[IUniform]int32
+}
+
+// Initialize built-in shaders.
+func Init() {
+	var err error
+
+	MapShader, err = CreateShader(mapVertShaderSrc, mapFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile map shader: ", err)
+	}
+
+	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile sprite shader: ", err)
+	}
+
+	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile UI shader: ", err)
+	}
+}
+
+// Free built-in shaders.
+func Free() {
+	MapShader.Free()
+	SpriteShader.Free()
+	UIShader.Free()
 }
 
 func CreateShader(vertSrc, fragSrc string) (*Shader, error) {
