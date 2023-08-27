@@ -2,17 +2,19 @@ package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
 
 type GameMap struct {
+	tiles          te3.Tiles
 	mesh           *assets.Mesh
 	tileAnims      []comps.AnimationPlayer
 	groupRenderers []comps.MeshRender
 }
 
-func NewGameMap(te3File *assets.TE3File) (*GameMap, error) {
+func NewGameMap(te3File *te3.TE3File) (*GameMap, error) {
 	mesh, err := te3File.BuildMesh()
 	if err != nil {
 		return nil, err
@@ -20,6 +22,7 @@ func NewGameMap(te3File *assets.TE3File) (*GameMap, error) {
 	assets.TakeMesh(te3File.FilePath(), mesh)
 
 	gameMap := &GameMap{
+		tiles:          te3File.Tiles,
 		mesh:           mesh,
 		tileAnims:      make([]comps.AnimationPlayer, mesh.GetGroupCount()),
 		groupRenderers: make([]comps.MeshRender, mesh.GetGroupCount()),

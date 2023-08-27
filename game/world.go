@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world"
@@ -26,7 +26,7 @@ func NewWorld(mapPath string) (*World, error) {
 	UI := ui.NewUIScene(256, 64)
 	Players := world.NewStorage[ents.Player](8)
 
-	te3File, err := assets.LoadTE3File(mapPath)
+	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}

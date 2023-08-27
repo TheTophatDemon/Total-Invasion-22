@@ -1,22 +1,25 @@
-package assets
+package te3
 
 import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
-var NORMAL_EAST = mgl32.Vec3{1.0, 0.0, 0.0}
-var NORMAL_WEST = mgl32.Vec3{-1.0, 0.0, 0.0}
-var NORMAL_NORTH = mgl32.Vec3{0.0, 0.0, -1.0}
-var NORMAL_SOUTH = mgl32.Vec3{0.0, 0.0, 1.0}
-var NORMAL_UP = mgl32.Vec3{0.0, 1.0, 0.0}
-var NORMAL_DOWN = mgl32.Vec3{0.0, -1.0, 0.0}
+var (
+	normalEast  = mgl32.Vec3{1.0, 0.0, 0.0}
+	normalWest  = mgl32.Vec3{-1.0, 0.0, 0.0}
+	normalNorth = mgl32.Vec3{0.0, 0.0, -1.0}
+	normalSouth = mgl32.Vec3{0.0, 0.0, 1.0}
+	normalUp    = mgl32.Vec3{0.0, 1.0, 0.0}
+	normalDown  = mgl32.Vec3{0.0, -1.0, 0.0}
+)
 
-func (te3 *TE3File) BuildMesh() (*Mesh, error) {
+func (te3 *TE3File) BuildMesh() (*assets.Mesh, error) {
 	var err error
 
-	mapVerts := Vertices{
+	mapVerts := assets.Vertices{
 		Pos:      make([]mgl32.Vec3, 0),
 		TexCoord: make([]mgl32.Vec2, 0),
 		Normal:   make([]mgl32.Vec3, 0),
@@ -24,9 +27,9 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 	}
 	mapInds := make([]uint32, 0)
 
-	shapeMeshes := make([]*Mesh, len(te3.Tiles.Shapes))
+	shapeMeshes := make([]*assets.Mesh, len(te3.Tiles.Shapes))
 	for i, path := range te3.Tiles.Shapes {
-		shapeMeshes[i], err = GetMesh(path)
+		shapeMeshes[i], err = assets.GetMesh(path)
 		if err != nil {
 			return nil, fmt.Errorf("shape mesh at %s not found", path)
 		}
@@ -43,7 +46,7 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 		}
 
 		//Exclude tiles with invisible texture flag
-		if GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
+		if assets.GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
 			continue
 		}
 
@@ -55,12 +58,12 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 		groupTiles[tile.TextureID] = append(group, t)
 	}
 
-	meshGroups := make([]Group, 0, len(groupTiles))
+	meshGroups := make([]assets.Group, 0, len(groupTiles))
 	meshGroupNames := make([]string, 0, len(groupTiles))
 
 	//Add vertex data from tiles to map mesh
 	for texID, tileIndices := range groupTiles {
-		group := Group{Offset: len(mapInds), Length: 0}
+		group := assets.Group{Offset: len(mapInds), Length: 0}
 
 		for _, t := range tileIndices {
 			tile := te3.Tiles.Data[t]
@@ -86,17 +89,17 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 
 				//Determine the grid position of the tile neighboring this face
 				nborX, nborY, nborZ := gridX, gridY, gridZ
-				if planeNormal.ApproxEqual(NORMAL_EAST) {
+				if planeNormal.ApproxEqual(normalEast) {
 					nborX += 1
-				} else if planeNormal.ApproxEqual(NORMAL_WEST) {
+				} else if planeNormal.ApproxEqual(normalWest) {
 					nborX -= 1
-				} else if planeNormal.ApproxEqual(NORMAL_NORTH) {
+				} else if planeNormal.ApproxEqual(normalNorth) {
 					nborZ -= 1
-				} else if planeNormal.ApproxEqual(NORMAL_SOUTH) {
+				} else if planeNormal.ApproxEqual(normalSouth) {
 					nborZ += 1
-				} else if planeNormal.ApproxEqual(NORMAL_UP) {
+				} else if planeNormal.ApproxEqual(normalUp) {
 					nborY += 1
-				} else if planeNormal.ApproxEqual(NORMAL_DOWN) {
+				} else if planeNormal.ApproxEqual(normalDown) {
 					nborY -= 1
 				} else {
 					goto nocull
@@ -105,7 +108,7 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 				if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
 					//Check the faces of the neighboring tile
 					nborTile := te3.Tiles.Data[te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)]
-					if nborTile.ShapeID < 0 || GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
+					if nborTile.ShapeID < 0 || assets.GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
 						goto nocull
 					}
 					nRotMatrix := nborTile.GetRotationMatrix()
@@ -157,7 +160,7 @@ func (te3 *TE3File) BuildMesh() (*Mesh, error) {
 		meshGroupNames = append(meshGroupNames, te3.Tiles.Textures[texID])
 	}
 
-	mesh := CreateMesh(mapVerts, mapInds)
+	mesh := assets.CreateMesh(mapVerts, mapInds)
 
 	//Set group names to texture paths
 	for g, group := range meshGroups {

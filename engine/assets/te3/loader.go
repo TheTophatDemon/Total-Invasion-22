@@ -1,4 +1,4 @@
-package assets
+package te3
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
 const GRID_SPACING = 2.0
@@ -112,7 +113,7 @@ func (tiles *Tiles) UnmarshalJSON(b []byte) error {
 
 // Loads a Total Editor 3 map file into a data structure
 func LoadTE3File(assetPath string) (*TE3File, error) {
-	te3, err := LoadAndUnmarshalJSON[TE3File](assetPath)
+	te3, err := assets.LoadAndUnmarshalJSON[TE3File](assetPath)
 	te3.filePath = assetPath
 	if err == nil {
 		log.Println("Loaded TE3 file", assetPath)
