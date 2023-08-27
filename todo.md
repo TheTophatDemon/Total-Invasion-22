@@ -1,6 +1,5 @@
 # TODO
-- Player movement
-- Player collision
+- Collision detection
 - Directional sprites
 - Frustum culling of sprites
 - Doors

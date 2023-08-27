@@ -9,6 +9,7 @@ const (
 	ACTION_BACK       = "MoveBack"
 	ACTION_LEFT       = "StrafeLeft"
 	ACTION_RIGHT      = "StrafeRight"
+	ACTION_SLOW       = "Slow"
 	ACTION_LOOK_HORZ  = "LookHorz"
 	ACTION_LOOK_VERT  = "LookVert"
 	ACTION_TRAP_MOUSE = "TrapMouse"

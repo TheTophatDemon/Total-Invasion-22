@@ -1,8 +1,6 @@
 package main
 
 import (
-	"runtime"
-
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -11,10 +9,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
-
-func init() {
-	runtime.LockOSThread()
-}
 
 type Game struct {
 	world *game.World
@@ -48,6 +42,7 @@ func main() {
 	input.BindActionKey(settings.ACTION_BACK, glfw.KeyS)
 	input.BindActionKey(settings.ACTION_LEFT, glfw.KeyA)
 	input.BindActionKey(settings.ACTION_RIGHT, glfw.KeyD)
+	input.BindActionKey(settings.ACTION_SLOW, glfw.KeyLeftShift)
 	input.BindActionKey(settings.ACTION_TRAP_MOUSE, glfw.KeyEscape)
 	input.BindActionMouseMove(settings.ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, settings.MOUSE_SENSITIVITY)
 	input.BindActionMouseMove(settings.ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, settings.MOUSE_SENSITIVITY)
