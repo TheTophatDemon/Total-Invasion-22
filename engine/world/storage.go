@@ -4,8 +4,38 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
+// This interface represents a type-agnostic Id.
+type Handle interface {
+	Get() any  // Retrieves a pointer to the item that this handle points to.
+	Has() bool // Returns true if the item that this handle points to is active and valid.
+	Remove()   // Removes this handle's item from its storage.
+}
+
 type Id[T any] struct {
 	index, generation uint16
+	storage           *Storage[T]
+}
+
+func (id Id[T]) Get() any {
+	if id.storage == nil {
+		return nil
+	}
+	ptr, _ := id.storage.Get(id)
+	return ptr
+}
+
+func (id Id[T]) Has() bool {
+	if id.storage == nil {
+		return false
+	}
+	return id.storage.Has(id)
+}
+
+func (id Id[T]) Remove() {
+	if id.storage == nil {
+		return
+	}
+	id.storage.Remove(id)
 }
 
 // Manages the allocation of a type of game object, reusing memory where possible and issuing object ids.

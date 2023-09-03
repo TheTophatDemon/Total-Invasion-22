@@ -17,7 +17,7 @@ import (
 type World struct {
 	UI            *ui.Scene
 	Players       *world.Storage[ents.Player]
-	GameMap       *world.GameMap
+	GameMap       *world.Map
 	CurrentPlayer world.Id[ents.Player]
 	FPSCounter    world.Id[ui.Text]
 }
@@ -31,7 +31,7 @@ func NewWorld(mapPath string) (*World, error) {
 		return nil, err
 	}
 
-	GameMap, err := world.NewGameMap(te3File)
+	GameMap, err := world.NewMap(te3File)
 	if err != nil {
 		return nil, err
 	}

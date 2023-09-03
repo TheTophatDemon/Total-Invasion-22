@@ -1,6 +1,8 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -52,6 +54,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	runtime.GC()
+
 	engine.Run(&Game{
 		world,
 	})

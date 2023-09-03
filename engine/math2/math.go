@@ -84,6 +84,10 @@ func CopySign[F Float](mag F, sign F) F {
 	return F(math.Copysign(float64(mag), float64(sign)))
 }
 
+func Pow[F Float](base F, exp F) F {
+	return F(math.Pow(float64(base), float64(exp)))
+}
+
 func Vec3Up() mgl32.Vec3 {
 	return mgl32.Vec3{0.0, 1.0, 0.0}
 }

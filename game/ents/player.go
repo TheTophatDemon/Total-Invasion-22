@@ -22,7 +22,12 @@ func NewPlayer(position, angles mgl32.Vec3) Player {
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
-			Movement:  comps.Movement{},
+			Body: comps.Body{
+				Shape:      comps.COL_SHAPE_SPHERE,
+				Extents:    mgl32.Vec3{0.7, 0.7, 0.7},
+				Unpushable: false,
+				NoClip:     false,
+			},
 			YawAngle:  mgl32.DegToRad(angles[1]),
 			AccelRate: 80.0,
 			Friction:  20.0,

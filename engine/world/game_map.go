@@ -8,21 +8,21 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
 
-type GameMap struct {
+type Map struct {
 	tiles          te3.Tiles
 	mesh           *assets.Mesh
 	tileAnims      []comps.AnimationPlayer
 	groupRenderers []comps.MeshRender
 }
 
-func NewGameMap(te3File *te3.TE3File) (*GameMap, error) {
+func NewMap(te3File *te3.TE3File) (*Map, error) {
 	mesh, err := te3File.BuildMesh()
 	if err != nil {
 		return nil, err
 	}
 	assets.TakeMesh(te3File.FilePath(), mesh)
 
-	gameMap := &GameMap{
+	gameMap := &Map{
 		tiles:          te3File.Tiles,
 		mesh:           mesh,
 		tileAnims:      make([]comps.AnimationPlayer, mesh.GetGroupCount()),
@@ -43,13 +43,13 @@ func NewGameMap(te3File *te3.TE3File) (*GameMap, error) {
 	return gameMap, nil
 }
 
-func (gm *GameMap) Update(deltaTime float32) {
+func (gm *Map) Update(deltaTime float32) {
 	for i := range gm.tileAnims {
 		gm.tileAnims[i].Update(deltaTime)
 	}
 }
 
-func (gm *GameMap) Render(context *render.Context) {
+func (gm *Map) Render(context *render.Context) {
 	for i := range gm.groupRenderers {
 		gm.groupRenderers[i].Render(nil, &gm.tileAnims[i], context)
 	}

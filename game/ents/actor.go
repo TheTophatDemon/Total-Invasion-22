@@ -7,7 +7,7 @@ import (
 
 type Actor struct {
 	Transform                     comps.Transform
-	Movement                      comps.Movement
+	Body                          comps.Body
 	MaxSpeed, AccelRate, Friction float32
 	inputForward, inputStrafe     float32
 	YawAngle                      float32 // Radians
@@ -21,16 +21,16 @@ func (a *Actor) Update(deltaTime float32) {
 	moveDir := mgl32.TransformCoordinate(input, a.Transform.GetMatrix().Mat3().Mat4())
 
 	// Apply acceleration
-	a.Movement.Velocity = a.Movement.Velocity.Add(moveDir.Mul(a.AccelRate * deltaTime))
+	a.Body.Velocity = a.Body.Velocity.Add(moveDir.Mul(a.AccelRate * deltaTime))
 	// Apply friction
-	if speed := a.Movement.Velocity.Len(); speed > mgl32.Epsilon {
-		frictionVec := a.Movement.Velocity.Mul(-min(speed, a.Friction*deltaTime) / speed)
-		a.Movement.Velocity = a.Movement.Velocity.Add(frictionVec)
+	if speed := a.Body.Velocity.Len(); speed > mgl32.Epsilon {
+		frictionVec := a.Body.Velocity.Mul(-min(speed, a.Friction*deltaTime) / speed)
+		a.Body.Velocity = a.Body.Velocity.Add(frictionVec)
 	}
 	// Limit speed
-	if speed := a.Movement.Velocity.Len(); speed > a.MaxSpeed && a.MaxSpeed > mgl32.Epsilon {
-		a.Movement.Velocity = a.Movement.Velocity.Mul(a.MaxSpeed / speed)
+	if speed := a.Body.Velocity.Len(); speed > a.MaxSpeed && a.MaxSpeed > mgl32.Epsilon {
+		a.Body.Velocity = a.Body.Velocity.Mul(a.MaxSpeed / speed)
 	}
 
-	a.Movement.Update(&a.Transform, deltaTime)
+	a.Body.Update(&a.Transform, deltaTime)
 }
