@@ -5,3 +5,5 @@ total-invasion-ii
 .vscode
 *.exe
 settings.json
+*.prof
+__debug*

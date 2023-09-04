@@ -11,12 +11,13 @@ import (
 type Map struct {
 	tiles          te3.Tiles
 	mesh           *assets.Mesh
+	triMap         te3.TriMap
 	tileAnims      []comps.AnimationPlayer
 	groupRenderers []comps.MeshRender
 }
 
 func NewMap(te3File *te3.TE3File) (*Map, error) {
-	mesh, err := te3File.BuildMesh()
+	mesh, triMap, err := te3File.BuildMesh()
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +26,7 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 	gameMap := &Map{
 		tiles:          te3File.Tiles,
 		mesh:           mesh,
+		triMap:         triMap,
 		tileAnims:      make([]comps.AnimationPlayer, mesh.GetGroupCount()),
 		groupRenderers: make([]comps.MeshRender, mesh.GetGroupCount()),
 	}

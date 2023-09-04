@@ -9,17 +9,26 @@ import (
 
 const HALF_PI = 3.14159 / 2.0
 
-type Number interface {
-	int | float32 | float64
-}
+type (
+	Number interface {
+		int | float32 | float64
+	}
 
-type Float interface {
-	float32 | float64
-}
+	Float interface {
+		float32 | float64
+	}
 
-type Rect struct {
-	X, Y, Width, Height float32
-}
+	Rect struct {
+		X, Y, Width, Height float32
+	}
+
+	Triangle [3]mgl32.Vec3
+
+	Plane struct {
+		Normal mgl32.Vec3
+		Dist   float32
+	}
+)
 
 // Generate a rectangle that wraps around all of the given points (there must be at least 2).
 func RectFromPoints(point0, point1 mgl32.Vec2, points ...mgl32.Vec2) Rect {
@@ -45,6 +54,14 @@ func (r Rect) Center() (float32, float32) {
 
 func (r Rect) Vec4() mgl32.Vec4 {
 	return mgl32.Vec4{r.X, r.Y, r.Width, r.Height}
+}
+
+func (t Triangle) Plane() Plane {
+	normal := t[1].Sub(t[0]).Cross(t[2].Sub(t[0])).Normalize()
+	return Plane{
+		Normal: normal,
+		Dist:   -normal.Dot(t[0]),
+	}
 }
 
 func Clamp[N Number](val, min, max N) N {

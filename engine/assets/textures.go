@@ -283,7 +283,7 @@ func loadTexture(assetPath string) *Texture {
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_T, gl.REPEAT)
 	gl.GenerateMipmap(texture.Target())
 
-	log.Println("Texture loaded at ", assetPath, ".")
+	log.Printf("Texture loaded at %v.\n", assetPath)
 
 	return texture
 }

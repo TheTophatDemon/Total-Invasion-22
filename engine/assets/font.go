@@ -3,6 +3,7 @@ package assets
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -40,5 +41,7 @@ func loadAngelcodeFont(path string) (*Font, error) {
 	}
 
 	font := Font(*bmFont.Descriptor)
+
+	log.Printf("Angelcode font loaded at %v.\n", path)
 	return &font, nil
 }

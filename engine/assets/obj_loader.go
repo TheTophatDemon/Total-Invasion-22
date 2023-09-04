@@ -191,6 +191,6 @@ func loadOBJMesh(path string) (*Mesh, error) {
 		mesh.SetGroup(name, group)
 	}
 
-	log.Println("Loaded OBJ file ", path)
+	log.Printf("Loaded OBJ file at %v.\n", path)
 	return mesh, err
 }
