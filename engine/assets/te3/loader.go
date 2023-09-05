@@ -126,13 +126,22 @@ func (te3 *TE3File) FilePath() string {
 }
 
 // Returns the integer grid position (x, y, z) from the given flat index into the Data array
-func (tiles *Tiles) GetGridPos(index int) (int, int, int) {
+func (tiles *Tiles) UnflattenGridPos(index int) (int, int, int) {
 	return (index % tiles.Width), (index / (tiles.Width * tiles.Length)), ((index / tiles.Width) % tiles.Length)
 }
 
 // Returns the flat index into the Data array for the given integer grid position (does not validate).
 func (tiles *Tiles) FlattenGridPos(x, y, z int) int {
 	return x + (z * tiles.Width) + (y * tiles.Width * tiles.Length)
+}
+
+func (tiles *Tiles) WorldToGridPos(worldPos mgl32.Vec3) (int, int, int) {
+	var out [3]int
+	dims := [3]float32{float32(tiles.Width), float32(tiles.Height), float32(tiles.Length)}
+	for i := range out {
+		out[i] = int((worldPos[i] / GRID_SPACING) - (dims[i] / 2.0))
+	}
+	return out[0], out[1], out[2]
 }
 
 // Returns the first entity in the map with the given key value pair in its properties.

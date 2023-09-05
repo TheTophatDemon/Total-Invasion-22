@@ -38,7 +38,7 @@ func (mr *MeshRender) Render(
 ) {
 	var modelMatrix mgl32.Mat4
 	if transform != nil {
-		modelMatrix = transform.GetMatrix()
+		modelMatrix = transform.Matrix()
 	} else {
 		modelMatrix = mgl32.Ident4()
 	}

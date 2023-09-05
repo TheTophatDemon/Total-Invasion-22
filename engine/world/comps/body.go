@@ -1,58 +1,86 @@
 package comps
 
 import (
+	"log"
+
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 type CollisionShape uint8
 
 const (
 	COL_SHAPE_SPHERE CollisionShape = iota
-	COL_SHAPE_BOX
+	COL_SHAPE_MESH
 )
+
+func (cs CollisionShape) String() string {
+	switch cs {
+	case COL_SHAPE_SPHERE:
+		return "Sphere"
+	case COL_SHAPE_MESH:
+		return "Mesh"
+	}
+	return "Unknown"
+}
 
 type HasBody interface {
 	Body() *Body
 }
 
 type Body struct {
-	Velocity   mgl32.Vec3
-	Shape      CollisionShape
-	Extents    mgl32.Vec3 // Describes the size of the collision shape. For spheres, the X axis is the radius. For boxes, it describes the half-dimensions.
-	Unpushable bool       // Prevents the body from moving in response to other colliding bodies.
-	NoClip     bool       // Allows the body to pass through all other bodies.
+	Transform Transform
+	Velocity  mgl32.Vec3
+	Shape     CollisionShape
+	Extents   mgl32.Vec3       // Describes the half-size of the shape on each axis relative to its origin.
+	Triangles []math2.Triangle // Refers to the triangles in a mesh collision shape.
+	Pushiness int              // When two bodies collide, the one with higher Pushiness will not be moved.
+	NoClip    bool             // Allows the body to pass through all other bodies.
 }
 
 func (b *Body) Body() *Body {
 	return b
 }
 
-func (b *Body) Update(transform *Transform, deltaTime float32) {
-	transform.Translate(b.Velocity[0]*deltaTime, b.Velocity[1]*deltaTime, b.Velocity[2]*deltaTime)
+func (b *Body) Update(deltaTime float32) {
+	b.Transform.Translate(b.Velocity[0]*deltaTime, b.Velocity[1]*deltaTime, b.Velocity[2]*deltaTime)
 }
 
-// Change the velocity of this body so that it doesn't collide with the other body.
-func (b *Body) ResolveCollision(myPos, otherPos mgl32.Vec3, otherBody *Body, deltaTime float32) {
-	if otherBody == nil || b == otherBody || b.Unpushable || b.NoClip || otherBody.NoClip {
+// Change the position of this body so that it doesn't collide with the other body.
+func (b *Body) ResolveCollision(otherBody *Body) {
+	if otherBody == nil || b == otherBody || b.Pushiness > otherBody.Pushiness || b.NoClip || otherBody.NoClip {
 		return
 	}
-	myNewPos := myPos.Add(b.Velocity.Mul(deltaTime))
-	otherNewPos := otherPos.Add(otherBody.Velocity.Mul(deltaTime))
-	diff := myNewPos.Sub(otherNewPos)
-	dist := diff.Len()
-	if b.Shape == COL_SHAPE_SPHERE && otherBody.Shape == COL_SHAPE_SPHERE {
-		// Resolve sphere vs. sphere
-		if dist < b.Extents[0]+otherBody.Extents[0] && dist != 0.0 {
-			b.Velocity = b.Velocity.Add(diff.Normalize().Mul(b.Extents[0] + otherBody.Extents[0] - dist))
-		}
-	} else if b.Shape == COL_SHAPE_BOX && otherBody.Shape == COL_SHAPE_SPHERE {
-		// Resolve box vs. sphere
-		panic("not implemented")
-	} else if b.Shape == COL_SHAPE_SPHERE && otherBody.Shape == COL_SHAPE_BOX {
-		// Resolve sphere vs. box
-		panic("not implemented")
-	} else if b.Shape == COL_SHAPE_BOX && otherBody.Shape == COL_SHAPE_BOX {
-		// Resolve box vs. box
-		panic("not implemented")
+
+	// Bounding box check
+	if !math2.BoxIntersect(b.Transform.Position(), b.Extents, otherBody.Transform.Position(), otherBody.Extents) {
+		return
 	}
+
+	// Resolve based on shape
+	if b.Shape == COL_SHAPE_SPHERE {
+		switch otherBody.Shape {
+		case COL_SHAPE_SPHERE:
+			b.ResolveCollisionSphere(otherBody.Transform.Position(), otherBody.Extents[0])
+		case COL_SHAPE_MESH:
+			b.ResolveCollisionTriangles(otherBody.Transform.Position(), otherBody.Triangles)
+		default:
+			log.Printf("collision is not implemented between shapes %s and %s.\n", b.Shape, otherBody.Shape)
+		}
+	} else {
+		log.Printf("collision is not implemented for shape %s.\n", b.Shape)
+	}
+}
+
+func (b *Body) ResolveCollisionSphere(spherePos mgl32.Vec3, sphereRadius float32) {
+	diff := b.Transform.Position().Sub(spherePos)
+	dist := diff.Len()
+	// Resolve sphere vs. sphere
+	if dist < b.Extents[0]+sphereRadius && dist != 0.0 {
+		b.Transform.TranslateV(diff.Normalize().Mul(b.Extents[0] + sphereRadius - dist))
+	}
+}
+
+func (b *Body) ResolveCollisionTriangles(trianglesOffset mgl32.Vec3, triangles []math2.Triangle) {
+	panic("not implemented")
 }

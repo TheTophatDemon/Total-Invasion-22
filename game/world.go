@@ -55,9 +55,15 @@ func NewWorld(mapPath string) (*World, error) {
 }
 
 func (w *World) Update(deltaTime float32) {
+	// Update entities
 	w.GameMap.Update(deltaTime)
 	w.Players.Update((*ents.Player).Update, deltaTime)
 	w.UI.Update(deltaTime)
+
+	// Resolve collisions
+	w.Players.ForEach(func(p *ents.Player) {
+		w.GameMap.ResolveCollision(&p.Body)
+	})
 
 	// Update FPS counter
 	if fpsText, ok := w.UI.Texts.Get(w.FPSCounter); ok {
@@ -71,7 +77,7 @@ func (w *World) Render() {
 	if !ok {
 		panic("missing player")
 	}
-	cameraTransform := player.Transform.GetMatrix()
+	cameraTransform := player.Body.Transform.Matrix()
 	camera := player.Camera
 
 	// Setup 3D game render context

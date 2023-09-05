@@ -39,7 +39,7 @@ func TransformFromTranslationAngles(position mgl32.Vec3, angles mgl32.Vec3) Tran
 	}
 }
 
-func (t *Transform) IsDirty() bool {
+func (t *Transform) Dirty() bool {
 	return t.dirty
 }
 
@@ -48,7 +48,7 @@ func (t *Transform) SetPosition(newPos mgl32.Vec3) {
 	t.dirty = true
 }
 
-func (t *Transform) GetPosition() mgl32.Vec3 {
+func (t *Transform) Position() mgl32.Vec3 {
 	return t.pos
 }
 
@@ -59,6 +59,10 @@ func (t *Transform) Translate(x, y, z float32) {
 	t.dirty = true
 }
 
+func (t *Transform) TranslateV(offset mgl32.Vec3) {
+	t.Translate(offset[0], offset[1], offset[2])
+}
+
 // Sets the rotation in euler angles (radians)
 func (t *Transform) SetRotation(pitch, yaw, roll float32) {
 	t.rot = mgl32.Vec3{pitch, yaw, roll}
@@ -66,19 +70,19 @@ func (t *Transform) SetRotation(pitch, yaw, roll float32) {
 }
 
 // Returns the euler angles of rotation (pitch, yaw, roll)
-func (t *Transform) GetRotation() mgl32.Vec3 {
+func (t *Transform) Rotation() mgl32.Vec3 {
 	return t.rot
 }
 
-func (t *Transform) GetYaw() float32 {
+func (t *Transform) Yaw() float32 {
 	return t.rot[1]
 }
 
-func (t *Transform) GetPitch() float32 {
+func (t *Transform) Pitch() float32 {
 	return t.rot[0]
 }
 
-func (t *Transform) GetRoll() float32 {
+func (t *Transform) Roll() float32 {
 	return t.rot[2]
 }
 
@@ -89,8 +93,8 @@ func (t *Transform) Rotate(pitch, yaw, roll float32) {
 	t.dirty = true
 }
 
-func (t *Transform) GetMatrix() mgl32.Mat4 {
-	if t.IsDirty() {
+func (t *Transform) Matrix() mgl32.Mat4 {
+	if t.dirty {
 		t.matrix = mgl32.Scale3D(t.scale.X(), t.scale.Y(), t.scale.Z())
 		t.matrix = mgl32.HomogRotate3DZ(t.rot[2]).Mul4(t.matrix)
 		t.matrix = mgl32.HomogRotate3DX(t.rot[0]).Mul4(t.matrix)

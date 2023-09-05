@@ -19,14 +19,14 @@ type Player struct {
 func NewPlayer(position, angles mgl32.Vec3) Player {
 	return Player{
 		Actor: Actor{
-			Transform: comps.TransformFromTranslationAngles(
-				position, angles,
-			),
 			Body: comps.Body{
-				Shape:      comps.COL_SHAPE_SPHERE,
-				Extents:    mgl32.Vec3{0.7, 0.7, 0.7},
-				Unpushable: false,
-				NoClip:     false,
+				Transform: comps.TransformFromTranslationAngles(
+					position, angles,
+				),
+				Shape:     comps.COL_SHAPE_SPHERE,
+				Extents:   mgl32.Vec3{0.7, 0.7, 0.7},
+				Pushiness: 10,
+				NoClip:    false,
 			},
 			YawAngle:  mgl32.DegToRad(angles[1]),
 			AccelRate: 80.0,
@@ -77,7 +77,7 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	player.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	player.Transform.SetRotation(0.0, player.YawAngle, 0.0)
+	player.Body.Transform.SetRotation(0.0, player.YawAngle, 0.0)
 
 	player.Actor.Update(deltaTime)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 const (
@@ -103,6 +104,7 @@ type Mesh struct {
 	Verts Vertices
 	Inds  []uint32
 
+	tris   []math2.Triangle
 	groups map[string]Group
 
 	uploaded              bool
@@ -114,6 +116,7 @@ func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
 		Verts:  verts,
 		Inds:   inds,
+		tris:   nil,
 		groups: make(map[string]Group, 0),
 	}
 	mesh.Upload()
@@ -143,6 +146,23 @@ func (m *Mesh) GetGroupNames() []string {
 		out = append(out, name)
 	}
 	return out
+}
+
+// Returns the mathematical triangles that make up the mesh (lazily evaluated).
+func (m *Mesh) Triangles() []math2.Triangle {
+	if m.tris == nil {
+		// Determine the triangles from the indices & vertex positions.
+		m.tris = make([]math2.Triangle, len(m.Inds)/3)
+		for t := range m.tris {
+			m.tris[t] = math2.Triangle{
+				m.Verts.Pos[m.Inds[t*3+0]],
+				m.Verts.Pos[m.Inds[t*3+1]],
+				m.Verts.Pos[m.Inds[t*3+2]],
+			}
+		}
+	}
+
+	return m.tris
 }
 
 func (m *Mesh) Bind() {

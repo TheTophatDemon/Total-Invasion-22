@@ -6,7 +6,6 @@ import (
 )
 
 type Actor struct {
-	Transform                     comps.Transform
 	Body                          comps.Body
 	MaxSpeed, AccelRate, Friction float32
 	inputForward, inputStrafe     float32
@@ -18,7 +17,7 @@ func (a *Actor) Update(deltaTime float32) {
 	if input.LenSqr() != 0.0 {
 		input = input.Normalize()
 	}
-	moveDir := mgl32.TransformCoordinate(input, a.Transform.GetMatrix().Mat3().Mat4())
+	moveDir := mgl32.TransformCoordinate(input, a.Body.Transform.Matrix().Mat3().Mat4())
 
 	// Apply acceleration
 	a.Body.Velocity = a.Body.Velocity.Add(moveDir.Mul(a.AccelRate * deltaTime))
@@ -32,5 +31,5 @@ func (a *Actor) Update(deltaTime float32) {
 		a.Body.Velocity = a.Body.Velocity.Mul(a.MaxSpeed / speed)
 	}
 
-	a.Body.Update(&a.Transform, deltaTime)
+	a.Body.Update(deltaTime)
 }

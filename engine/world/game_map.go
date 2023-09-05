@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -54,5 +55,24 @@ func (gm *Map) Update(deltaTime float32) {
 func (gm *Map) Render(context *render.Context) {
 	for i := range gm.groupRenderers {
 		gm.groupRenderers[i].Render(nil, &gm.tileAnims[i], context)
+	}
+}
+
+// Moves the body in response to collisions with the tiles in this game map.
+func (gm *Map) ResolveCollision(body *comps.Body) {
+	// Iterate over the subset of tiles that the body occupies
+	i, j, k := gm.tiles.WorldToGridPos(body.Transform.Position().Add(body.Extents))
+	l, m, n := gm.tiles.WorldToGridPos(body.Transform.Position().Sub(body.Extents))
+	minX, minY, minZ := min(i, l), min(j, m), min(k, n)
+	maxX, maxY, maxZ := max(i, l), max(j, m), max(k, n)
+	for x := minX; x <= maxX; x += 1 {
+		for y := minY; y <= maxY; y += 1 {
+			for z := minZ; z <= maxZ; z += 1 {
+				t := gm.tiles.FlattenGridPos(x, y, z)
+				if gm.tiles.Data[t].ShapeID >= 0 {
+					body.ResolveCollisionTriangles(mgl32.Vec3{}, gm.triMap[t])
+				}
+			}
+		}
 	}
 }

@@ -64,6 +64,15 @@ func (t Triangle) Plane() Plane {
 	}
 }
 
+// Returns true if two boxes intersect.
+// Each box is described by an origin position and a half-size vector.
+func BoxIntersect(originA, extentsA, originB, extentsB mgl32.Vec3) bool {
+	maxA, minA := originA.Add(extentsA), originA.Sub(extentsA)
+	maxB, minB := originB.Add(extentsB), originB.Sub(extentsB)
+	return maxA[0] > minB[0] && maxA[1] > minB[1] && maxA[2] > minB[2] &&
+		maxB[0] > minA[0] && maxB[1] > minA[1] && maxB[2] > minA[2]
+}
+
 func Clamp[N Number](val, min, max N) N {
 	if val < min {
 		return min
