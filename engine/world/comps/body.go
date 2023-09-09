@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -29,13 +30,14 @@ type HasBody interface {
 }
 
 type Body struct {
-	Transform Transform
-	Velocity  mgl32.Vec3
-	Shape     CollisionShape
-	Extents   mgl32.Vec3       // Describes the half-size of the shape on each axis relative to its origin.
-	Triangles []math2.Triangle // Refers to the triangles in a mesh collision shape.
-	Pushiness int              // When two bodies collide, the one with higher Pushiness will not be moved.
-	NoClip    bool             // Allows the body to pass through all other bodies.
+	Transform     Transform
+	Velocity      mgl32.Vec3
+	Shape         CollisionShape
+	Radius        float32      // The radius of the sphere collision shape.
+	Extents       math2.Box    // Describes the body's bounding box, centered at its origin.
+	CollisionMesh *assets.Mesh // Refers to the mesh used for the mesh collision shape.
+	Pushiness     int          // When two bodies collide, the one with higher Pushiness will not be moved.
+	NoClip        bool         // Allows the body to pass through all other bodies.
 }
 
 func (b *Body) Body() *Body {
@@ -53,7 +55,7 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	}
 
 	// Bounding box check
-	if !math2.BoxIntersect(b.Transform.Position(), b.Extents, otherBody.Transform.Position(), otherBody.Extents) {
+	if !b.Extents.Translate(b.Transform.Position()).Intersects(otherBody.Extents.Translate(otherBody.Transform.Position())) {
 		return
 	}
 
@@ -61,9 +63,9 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	if b.Shape == COL_SHAPE_SPHERE {
 		switch otherBody.Shape {
 		case COL_SHAPE_SPHERE:
-			b.ResolveCollisionSphere(otherBody.Transform.Position(), otherBody.Extents[0])
+			b.ResolveCollisionSphere(otherBody.Transform.Position(), otherBody.Radius)
 		case COL_SHAPE_MESH:
-			b.ResolveCollisionTriangles(otherBody.Transform.Position(), otherBody.Triangles)
+			b.ResolveCollisionTriangles(otherBody.Transform.Position(), otherBody.CollisionMesh, nil, math2.TRIHIT_ALL)
 		default:
 			log.Printf("collision is not implemented between shapes %s and %s.\n", b.Shape, otherBody.Shape)
 		}
@@ -76,11 +78,39 @@ func (b *Body) ResolveCollisionSphere(spherePos mgl32.Vec3, sphereRadius float32
 	diff := b.Transform.Position().Sub(spherePos)
 	dist := diff.Len()
 	// Resolve sphere vs. sphere
-	if dist < b.Extents[0]+sphereRadius && dist != 0.0 {
-		b.Transform.TranslateV(diff.Normalize().Mul(b.Extents[0] + sphereRadius - dist))
+	if dist < b.Radius+sphereRadius && dist != 0.0 {
+		b.Transform.TranslateV(diff.Normalize().Mul(b.Radius + sphereRadius - dist))
 	}
 }
 
-func (b *Body) ResolveCollisionTriangles(trianglesOffset mgl32.Vec3, triangles []math2.Triangle) {
-	panic("not implemented")
+func (b *Body) ResolveCollisionTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter math2.TriangleHit) {
+	if filter == math2.TRIHIT_NONE || mesh == nil {
+		log.Println("Warning: Invalid parameter fed to ResolveCollisionTriangles.")
+		return
+	}
+
+	var tc int
+	if triangleIndices != nil {
+		tc = len(triangleIndices)
+	} else {
+		tc = len(mesh.Triangles())
+	}
+	for tt := 0; tt < tc; tt += 1 {
+		var t int
+		if triangleIndices != nil {
+			t = triangleIndices[tt]
+		} else {
+			t = tt
+		}
+		triangle := mesh.Triangles()[t]
+		// Add offset
+		for i := 0; i < len(triangle); i += 1 {
+			triangle[i] = triangle[i].Add(trianglesOffset)
+		}
+
+		hit, col := math2.SphereTriangleCollision(b.Transform.Position(), b.Radius, triangle)
+		if int(hit)&int(filter) > 0 {
+			b.Transform.TranslateV(col.Normal.Mul(col.Penetration + mgl32.Epsilon))
+		}
+	}
 }

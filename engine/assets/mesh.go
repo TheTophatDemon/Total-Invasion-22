@@ -101,10 +101,10 @@ type Group struct {
 }
 
 type Mesh struct {
-	Verts Vertices
-	Inds  []uint32
+	verts Vertices
+	inds  []uint32
 
-	tris   []math2.Triangle
+	tris   []math2.Triangle // Mathematical representation of the triangles (will be empty until Triangles() is called)
 	groups map[string]Group
 
 	uploaded              bool
@@ -114,12 +114,11 @@ type Mesh struct {
 
 func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
-		Verts:  verts,
-		Inds:   inds,
+		verts:  verts,
+		inds:   inds,
 		tris:   nil,
 		groups: make(map[string]Group, 0),
 	}
-	mesh.Upload()
 	return mesh
 }
 
@@ -132,15 +131,15 @@ func (m *Mesh) HasGroup(name string) bool {
 	return ok
 }
 
-func (m *Mesh) GetGroup(name string) Group {
+func (m *Mesh) Group(name string) Group {
 	return m.groups[name]
 }
 
-func (m *Mesh) GetGroupCount() int {
+func (m *Mesh) GroupCount() int {
 	return len(m.groups)
 }
 
-func (m *Mesh) GetGroupNames() []string {
+func (m *Mesh) GroupNames() []string {
 	out := make([]string, 0, len(m.groups))
 	for name := range m.groups {
 		out = append(out, name)
@@ -148,16 +147,24 @@ func (m *Mesh) GetGroupNames() []string {
 	return out
 }
 
+func (m *Mesh) Verts() Vertices {
+	return m.verts
+}
+
+func (m *Mesh) Inds() []uint32 {
+	return m.inds
+}
+
 // Returns the mathematical triangles that make up the mesh (lazily evaluated).
 func (m *Mesh) Triangles() []math2.Triangle {
 	if m.tris == nil {
 		// Determine the triangles from the indices & vertex positions.
-		m.tris = make([]math2.Triangle, len(m.Inds)/3)
+		m.tris = make([]math2.Triangle, len(m.inds)/3)
 		for t := range m.tris {
 			m.tris[t] = math2.Triangle{
-				m.Verts.Pos[m.Inds[t*3+0]],
-				m.Verts.Pos[m.Inds[t*3+1]],
-				m.Verts.Pos[m.Inds[t*3+2]],
+				m.verts.Pos[m.inds[t*3+0]],
+				m.verts.Pos[m.inds[t*3+1]],
+				m.verts.Pos[m.inds[t*3+2]],
 			}
 		}
 	}
@@ -173,7 +180,7 @@ func (m *Mesh) Bind() {
 	gl.BindVertexArray(m.vertArray)
 	gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
-	m.Verts.BindAttributes()
+	m.verts.BindAttributes()
 }
 
 func (m *Mesh) Upload() {
@@ -182,7 +189,7 @@ func (m *Mesh) Upload() {
 	}
 
 	//Flatten the vertex array into a series of floats
-	data, err := m.Verts.Flatten()
+	data, err := m.verts.Flatten()
 	if err != nil {
 		log.Println("Error: Invalid vertex data for mesh upload.")
 		return
@@ -203,15 +210,15 @@ func (m *Mesh) Upload() {
 	gl.GenBuffers(1, &m.idxBuffer)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
-		len(m.Inds)*int(unsafe.Sizeof(m.Inds[0])), //Size in bytes of buffer data
-		gl.Ptr(m.Inds),
+		len(m.inds)*int(unsafe.Sizeof(m.inds[0])), //Size in bytes of buffer data
+		gl.Ptr(m.inds),
 		gl.STATIC_DRAW)
 
 	m.uploaded = true
 }
 
 func (m *Mesh) DrawAll() {
-	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(len(m.Inds)), gl.UNSIGNED_INT, 0)
+	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
 }
 
 func (m *Mesh) DrawGroup(name string) error {
@@ -219,7 +226,7 @@ func (m *Mesh) DrawGroup(name string) error {
 	if !ok {
 		return fmt.Errorf("Group not found")
 	}
-	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.Inds[0]))
+	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.inds[0]))
 	return nil
 }
 

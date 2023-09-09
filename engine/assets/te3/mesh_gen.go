@@ -17,8 +17,8 @@ var (
 	normalDown  = mgl32.Vec3{0.0, -1.0, 0.0}
 )
 
-// Associates a tile index from a .te3 file with a set of triangles from the generated model.
-type TriMap [][]math2.Triangle
+// Associates a tile index from a .te3 file with a set of triangle indices from the generated model.
+type TriMap [][]int
 
 // Transforms the triangle from a tile's shape mesh into the space of a tile.
 func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, rotation mgl32.Mat4) math2.Triangle {
@@ -63,7 +63,7 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 		}
 		nborRotation := nborTile.GetRotationMatrix()
 		nborMesh := shapeMeshes[nborTile.ShapeID]
-		for nt := 0; nt < len(nborMesh.Inds)/3; nt++ {
+		for nt := 0; nt < len(nborMesh.Inds())/3; nt++ {
 			nborTriangle := transformedTileTriangle(nborX, nborY, nborZ, nborMesh.Triangles()[nt], nborRotation)
 			nborPlane := nborTriangle.Plane()
 
@@ -140,9 +140,9 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 			rotMatrix := tile.GetRotationMatrix()
 
 			// Create triangle map array for this tile
-			triMap[ti] = make([]math2.Triangle, 0, 8)
+			triMap[ti] = make([]int, 0, 8)
 
-			for tri := 0; tri < len(shapeMesh.Inds)/3; tri++ {
+			for tri := 0; tri < len(shapeMesh.Inds())/3; tri++ {
 				// Get triangle coordinates
 				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeMesh.Triangles()[tri], rotMatrix)
 
@@ -152,21 +152,21 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 				}
 
 				// Add to triangle map
-				triMap[ti] = append(triMap[ti], triangle)
+				triMap[ti] = append(triMap[ti], len(mapInds)/3)
 
 				// Add the triangle's indices to the map mesh
 				for i := 0; i < 3; i++ {
-					ind := shapeMesh.Inds[tri*3+i]
+					ind := shapeMesh.Inds()[tri*3+i]
 					mapInds = append(mapInds, uint32(len(mapVerts.Pos)))
 
 					// Add the shape's vertex position to the aggregate mesh, offset by the overall tile position
 					mapVerts.Pos = append(mapVerts.Pos, triangle[i])
 
 					// Append tex coordinates
-					mapVerts.TexCoord = append(mapVerts.TexCoord, shapeMesh.Verts.TexCoord[ind])
+					mapVerts.TexCoord = append(mapVerts.TexCoord, shapeMesh.Verts().TexCoord[ind])
 
 					// Append normal, rotated by the tile orientation
-					normal := mgl32.TransformNormal(shapeMesh.Verts.Normal[ind], rotMatrix)
+					normal := mgl32.TransformNormal(shapeMesh.Verts().Normal[ind], rotMatrix)
 					mapVerts.Normal = append(mapVerts.Normal, normal)
 				}
 				group.Length += 3
@@ -178,6 +178,7 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 	}
 
 	mesh := assets.CreateMesh(mapVerts, mapInds)
+	mesh.Upload()
 
 	// Set group names to texture paths
 	for g, group := range meshGroups {

@@ -5,6 +5,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
@@ -28,11 +29,11 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 		tiles:          te3File.Tiles,
 		mesh:           mesh,
 		triMap:         triMap,
-		tileAnims:      make([]comps.AnimationPlayer, mesh.GetGroupCount()),
-		groupRenderers: make([]comps.MeshRender, mesh.GetGroupCount()),
+		tileAnims:      make([]comps.AnimationPlayer, mesh.GroupCount()),
+		groupRenderers: make([]comps.MeshRender, mesh.GroupCount()),
 	}
 
-	for g, groupName := range mesh.GetGroupNames() {
+	for g, groupName := range mesh.GroupNames() {
 		tex := assets.GetTexture(groupName)
 		// Add animations if applicable
 		if tex.AnimationCount() > 0 {
@@ -60,19 +61,31 @@ func (gm *Map) Render(context *render.Context) {
 
 // Moves the body in response to collisions with the tiles in this game map.
 func (gm *Map) ResolveCollision(body *comps.Body) {
-	// Iterate over the subset of tiles that the body occupies
-	i, j, k := gm.tiles.WorldToGridPos(body.Transform.Position().Add(body.Extents))
-	l, m, n := gm.tiles.WorldToGridPos(body.Transform.Position().Sub(body.Extents))
-	minX, minY, minZ := min(i, l), min(j, m), min(k, n)
-	maxX, maxY, maxZ := max(i, l), max(j, m), max(k, n)
-	for x := minX; x <= maxX; x += 1 {
-		for y := minY; y <= maxY; y += 1 {
-			for z := minZ; z <= maxZ; z += 1 {
-				t := gm.tiles.FlattenGridPos(x, y, z)
-				if gm.tiles.Data[t].ShapeID >= 0 {
-					body.ResolveCollisionTriangles(mgl32.Vec3{}, gm.triMap[t])
+	// Check for triangle hits in the center first, then the edges.
+	// This prevents triangle edges from stopping smooth movement along neighboring triangles.
+	filter := math2.TRIHIT_CENTER
+	for {
+		// Iterate over the subset of tiles that the body occupies
+		bbox := body.Extents.Translate(body.Transform.Position())
+		i, j, k := gm.tiles.WorldToGridPos(bbox.Max)
+		l, m, n := gm.tiles.WorldToGridPos(bbox.Min)
+		minX, minY, minZ := max(0, min(i, l)), max(0, min(j, m)), max(0, min(k, n))
+		maxX, maxY, maxZ := min(max(i, l), gm.tiles.Width-1), min(max(j, m), gm.tiles.Height-1), min(max(k, n), gm.tiles.Length-1)
+		for x := minX; x <= maxX; x += 1 {
+			for y := minY; y <= maxY; y += 1 {
+				for z := minZ; z <= maxZ; z += 1 {
+					t := gm.tiles.FlattenGridPos(x, y, z)
+					if gm.tiles.Data[t].ShapeID >= 0 {
+						body.ResolveCollisionTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], filter)
+					}
 				}
 			}
+		}
+
+		if filter == math2.TRIHIT_CENTER {
+			filter = math2.TRIHIT_EDGE
+		} else {
+			break
 		}
 	}
 }

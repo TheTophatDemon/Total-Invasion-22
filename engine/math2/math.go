@@ -28,6 +28,10 @@ type (
 		Normal mgl32.Vec3
 		Dist   float32
 	}
+
+	Box struct {
+		Min, Max mgl32.Vec3
+	}
 )
 
 // Generate a rectangle that wraps around all of the given points (there must be at least 2).
@@ -64,13 +68,35 @@ func (t Triangle) Plane() Plane {
 	}
 }
 
+func BoxFromRadius(radius float32) Box {
+	return Box{
+		Max: mgl32.Vec3{radius, radius, radius},
+		Min: mgl32.Vec3{-radius, -radius, -radius},
+	}
+}
+
 // Returns true if two boxes intersect.
 // Each box is described by an origin position and a half-size vector.
-func BoxIntersect(originA, extentsA, originB, extentsB mgl32.Vec3) bool {
-	maxA, minA := originA.Add(extentsA), originA.Sub(extentsA)
-	maxB, minB := originB.Add(extentsB), originB.Sub(extentsB)
-	return maxA[0] > minB[0] && maxA[1] > minB[1] && maxA[2] > minB[2] &&
-		maxB[0] > minA[0] && maxB[1] > minA[1] && maxB[2] > minA[2]
+func (box Box) Intersects(other Box) bool {
+	return box.Max[0] > other.Min[0] && box.Max[1] > other.Min[1] && box.Max[2] > other.Min[2] &&
+		other.Max[0] > box.Min[0] && other.Max[1] > box.Min[1] && other.Max[2] > box.Min[2]
+}
+
+func (box Box) Translate(offset mgl32.Vec3) Box {
+	return Box{
+		Min: box.Min.Add(offset),
+		Max: box.Max.Add(offset),
+	}
+}
+
+func (box Box) Size() mgl32.Vec3 {
+	return box.Max.Sub(box.Min)
+}
+
+func ClosestPointOnLine(lineStart, lineEnd, point mgl32.Vec3) mgl32.Vec3 {
+	lineDir := lineEnd.Sub(lineStart)
+	t := point.Sub(lineStart).Dot(lineDir) / lineDir.Dot(lineDir)
+	return lineStart.Add(lineDir.Mul(Clamp(t, 0.0, 1.0)))
 }
 
 func Clamp[N Number](val, min, max N) N {
@@ -112,6 +138,10 @@ func CopySign[F Float](mag F, sign F) F {
 
 func Pow[F Float](base F, exp F) F {
 	return F(math.Pow(float64(base), float64(exp)))
+}
+
+func Sqrt[F Float](x F) F {
+	return F(math.Sqrt(float64(x)))
 }
 
 func Vec3Up() mgl32.Vec3 {

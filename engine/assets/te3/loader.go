@@ -137,9 +137,9 @@ func (tiles *Tiles) FlattenGridPos(x, y, z int) int {
 
 func (tiles *Tiles) WorldToGridPos(worldPos mgl32.Vec3) (int, int, int) {
 	var out [3]int
-	dims := [3]float32{float32(tiles.Width), float32(tiles.Height), float32(tiles.Length)}
+	//dims := [3]float32{float32(tiles.Width), float32(tiles.Height), float32(tiles.Length)}
 	for i := range out {
-		out[i] = int((worldPos[i] / GRID_SPACING) - (dims[i] / 2.0))
+		out[i] = int(worldPos[i] / GRID_SPACING)
 	}
 	return out[0], out[1], out[2]
 }
