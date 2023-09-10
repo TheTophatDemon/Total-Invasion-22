@@ -3,6 +3,7 @@ package assets
 import (
 	"fmt"
 	"log"
+	"math"
 	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -105,6 +106,7 @@ type Mesh struct {
 	inds  []uint32
 
 	tris   []math2.Triangle // Mathematical representation of the triangles (will be empty until Triangles() is called)
+	bbox   math2.Box        // Bounding box over vertices. Lazily evaluated.
 	groups map[string]Group
 
 	uploaded              bool
@@ -170,6 +172,19 @@ func (m *Mesh) Triangles() []math2.Triangle {
 	}
 
 	return m.tris
+}
+
+func (m *Mesh) BoundingBox() math2.Box {
+	if m.bbox.Size().LenSqr() < mgl32.Epsilon {
+		// Calculate the bounding box if it hasn't been calculated already.
+		m.bbox.Max = mgl32.Vec3{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32}
+		m.bbox.Min = mgl32.Vec3{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32}
+		for _, vert := range m.verts.Pos {
+			m.bbox.Min = math2.Vec3Min(m.bbox.Min, vert)
+			m.bbox.Max = math2.Vec3Max(m.bbox.Max, vert)
+		}
+	}
+	return m.bbox
 }
 
 func (m *Mesh) Bind() {

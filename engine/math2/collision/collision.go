@@ -1,12 +1,13 @@
-package math2
+package collision
 
 import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
-type CollisionResult struct {
+type Result struct {
 	Position, Normal mgl32.Vec3
 	Penetration      float32
 }
@@ -20,13 +21,13 @@ const (
 	TRIHIT_ALL = TRIHIT_CENTER + TRIHIT_EDGE
 )
 
-func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangle Triangle) (TriangleHit, CollisionResult) {
+func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangle math2.Triangle) (TriangleHit, Result) {
 	// Check if the sphere intersects the triangle's plane.
 	plane := triangle.Plane()
 	distToPlane := plane.Normal.Dot(spherePos.Sub(triangle[0]))
 	if distToPlane < 0 || distToPlane < -sphereRadius || distToPlane > sphereRadius {
 		// Does not intersect plane of the triangle
-		return TRIHIT_NONE, CollisionResult{}
+		return TRIHIT_NONE, Result{}
 	}
 
 	// Check if the projected sphere center is within the bounds of the triangle.
@@ -36,7 +37,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 	c2 := centerProj.Sub(triangle[2]).Cross(triangle[0].Sub(triangle[2]))
 	if c0.Dot(plane.Normal) <= 0.0 && c1.Dot(plane.Normal) <= 0.0 && c2.Dot(plane.Normal) <= 0.0 {
 		// Center of the sphere is inside of the triangle's edges.
-		return TRIHIT_CENTER, CollisionResult{
+		return TRIHIT_CENTER, Result{
 			Position:    centerProj,
 			Normal:      plane.Normal,
 			Penetration: sphereRadius - distToPlane,
@@ -50,7 +51,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 	}
 	minEdge.distSqr = math.MaxFloat32
 	for e := 0; e < 3; e += 1 {
-		closest := ClosestPointOnLine(triangle[e], triangle[(e+1)%3], spherePos)
+		closest := math2.ClosestPointOnLine(triangle[e], triangle[(e+1)%3], spherePos)
 		diff := spherePos.Sub(closest)
 		distSqr := diff.LenSqr()
 		if distSqr < minEdge.distSqr {
@@ -62,18 +63,18 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 
 	if minEdge.distSqr < sphereRadius*sphereRadius {
 		// Sphere intersects with closest edge.
-		dist := Sqrt(minEdge.distSqr)
+		dist := math2.Sqrt(minEdge.distSqr)
 		if dist == 0.0 {
-			return TRIHIT_NONE, CollisionResult{}
+			return TRIHIT_NONE, Result{}
 		}
 
 		pushNormal := minEdge.diff.Mul(1.0 / dist)
-		return TRIHIT_EDGE, CollisionResult{
+		return TRIHIT_EDGE, Result{
 			Position:    minEdge.closest,
 			Normal:      pushNormal,
 			Penetration: sphereRadius - dist,
 		}
 	}
 
-	return TRIHIT_NONE, CollisionResult{}
+	return TRIHIT_NONE, Result{}
 }

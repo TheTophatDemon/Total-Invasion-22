@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
 
 type CollisionShape uint8
@@ -30,14 +30,11 @@ type HasBody interface {
 }
 
 type Body struct {
-	Transform     Transform
-	Velocity      mgl32.Vec3
-	Shape         CollisionShape
-	Radius        float32      // The radius of the sphere collision shape.
-	Extents       math2.Box    // Describes the body's bounding box, centered at its origin.
-	CollisionMesh *assets.Mesh // Refers to the mesh used for the mesh collision shape.
-	Pushiness     int          // When two bodies collide, the one with higher Pushiness will not be moved.
-	NoClip        bool         // Allows the body to pass through all other bodies.
+	Transform Transform
+	Velocity  mgl32.Vec3
+	Shape     collision.Shape
+	Pushiness int  // When two bodies collide, the one with higher Pushiness will not be moved.
+	NoClip    bool // Allows the body to pass through all other bodies.
 }
 
 func (b *Body) Body() *Body {
@@ -55,36 +52,43 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	}
 
 	// Bounding box check
-	if !b.Extents.Translate(b.Transform.Position()).Intersects(otherBody.Extents.Translate(otherBody.Transform.Position())) {
+	if !b.Shape.Extents().Translate(b.Transform.Position()).Intersects(otherBody.Shape.Extents().Translate(otherBody.Transform.Position())) {
 		return
 	}
 
 	// Resolve based on shape
-	if b.Shape == COL_SHAPE_SPHERE {
-		switch otherBody.Shape {
-		case COL_SHAPE_SPHERE:
-			b.ResolveCollisionSphere(otherBody.Transform.Position(), otherBody.Radius)
-		case COL_SHAPE_MESH:
-			b.ResolveCollisionTriangles(otherBody.Transform.Position(), otherBody.CollisionMesh, nil, math2.TRIHIT_ALL)
+	if _, ok := b.Shape.Radius(); ok {
+		radius, isSphere := otherBody.Shape.Radius()
+		mesh, isMesh := otherBody.Shape.Mesh()
+		switch {
+		case isSphere:
+			b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), radius)
+		case isMesh:
+			b.ResolveCollisionSphereTriangles(otherBody.Transform.Position(), mesh, nil, collision.TRIHIT_ALL)
 		default:
-			log.Printf("collision is not implemented between shapes %s and %s.\n", b.Shape, otherBody.Shape)
+			log.Printf("collision is not implemented between shapes %v and %v.\n", b.Shape, otherBody.Shape)
 		}
 	} else {
-		log.Printf("collision is not implemented for shape %s.\n", b.Shape)
+		log.Printf("collision is not implemented for shape %v.\n", b.Shape)
 	}
 }
 
-func (b *Body) ResolveCollisionSphere(spherePos mgl32.Vec3, sphereRadius float32) {
+func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32) {
+	radius, isSphere := b.Shape.Radius()
+	if !isSphere {
+		return
+	}
 	diff := b.Transform.Position().Sub(spherePos)
 	dist := diff.Len()
 	// Resolve sphere vs. sphere
-	if dist < b.Radius+sphereRadius && dist != 0.0 {
-		b.Transform.TranslateV(diff.Normalize().Mul(b.Radius + sphereRadius - dist))
+	if dist < radius+otherRadius && dist != 0.0 {
+		b.Transform.TranslateV(diff.Normalize().Mul(radius + otherRadius - dist))
 	}
 }
 
-func (b *Body) ResolveCollisionTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter math2.TriangleHit) {
-	if filter == math2.TRIHIT_NONE || mesh == nil {
+func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter collision.TriangleHit) {
+	radius, isSphere := b.Shape.Radius()
+	if filter == collision.TRIHIT_NONE || mesh == nil || !isSphere {
 		log.Println("Warning: Invalid parameter fed to ResolveCollisionTriangles.")
 		return
 	}
@@ -108,7 +112,7 @@ func (b *Body) ResolveCollisionTriangles(trianglesOffset mgl32.Vec3, mesh *asset
 			triangle[i] = triangle[i].Add(trianglesOffset)
 		}
 
-		hit, col := math2.SphereTriangleCollision(b.Transform.Position(), b.Radius, triangle)
+		hit, col := collision.SphereTriangleCollision(b.Transform.Position(), radius, triangle)
 		if int(hit)&int(filter) > 0 {
 			b.Transform.TranslateV(col.Normal.Mul(col.Penetration + mgl32.Epsilon))
 		}

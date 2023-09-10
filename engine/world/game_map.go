@@ -1,11 +1,13 @@
 package world
 
 import (
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
@@ -60,13 +62,18 @@ func (gm *Map) Render(context *render.Context) {
 }
 
 // Moves the body in response to collisions with the tiles in this game map.
-func (gm *Map) ResolveCollision(body *comps.Body) {
+func (gm *Map) ResolveCollision(body *comps.Body) error {
+	_, isSphere := body.Shape.Radius()
+	if !isSphere {
+		return fmt.Errorf("body must have a sphere collision shape")
+	}
+
 	// Check for triangle hits in the center first, then the edges.
 	// This prevents triangle edges from stopping smooth movement along neighboring triangles.
-	filter := math2.TRIHIT_CENTER
+	filter := collision.TRIHIT_CENTER
 	for {
 		// Iterate over the subset of tiles that the body occupies
-		bbox := body.Extents.Translate(body.Transform.Position())
+		bbox := body.Shape.Extents().Translate(body.Transform.Position())
 		i, j, k := gm.tiles.WorldToGridPos(bbox.Max)
 		l, m, n := gm.tiles.WorldToGridPos(bbox.Min)
 		minX, minY, minZ := max(0, min(i, l)), max(0, min(j, m)), max(0, min(k, n))
@@ -76,16 +83,18 @@ func (gm *Map) ResolveCollision(body *comps.Body) {
 				for z := minZ; z <= maxZ; z += 1 {
 					t := gm.tiles.FlattenGridPos(x, y, z)
 					if gm.tiles.Data[t].ShapeID >= 0 {
-						body.ResolveCollisionTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], filter)
+						body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], filter)
 					}
 				}
 			}
 		}
 
-		if filter == math2.TRIHIT_CENTER {
-			filter = math2.TRIHIT_EDGE
+		if filter == collision.TRIHIT_CENTER {
+			filter = collision.TRIHIT_EDGE
 		} else {
 			break
 		}
 	}
+
+	return nil
 }

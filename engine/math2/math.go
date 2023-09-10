@@ -156,6 +156,24 @@ func Vec3One() mgl32.Vec3 {
 	return mgl32.Vec3{1.0, 1.0, 1.0}
 }
 
+// Returns a vector with the element-wise minimum value on each axis.
+func Vec3Min(a, b mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		min(a[0], b[0]),
+		min(a[1], b[1]),
+		min(a[2], b[2]),
+	}
+}
+
+// Returns a vector with the element-wise maximum value on each axis.
+func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		max(a[0], b[0]),
+		max(a[1], b[1]),
+		max(a[2], b[2]),
+	}
+}
+
 func ColorToVec4(col color.Color) mgl32.Vec4 {
 	r, g, b, a := col.RGBA()
 	return mgl32.Vec4{

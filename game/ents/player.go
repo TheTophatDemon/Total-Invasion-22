@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -23,9 +24,7 @@ func NewPlayer(position, angles mgl32.Vec3) Player {
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
 				),
-				Shape:     comps.COL_SHAPE_SPHERE,
-				Radius:    0.7,
-				Extents:   math2.BoxFromRadius(0.7),
+				Shape:     collision.ShapeSphere(0.7),
 				Pushiness: 10,
 				NoClip:    false,
 			},
