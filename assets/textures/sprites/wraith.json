@@ -4,7 +4,7 @@
 	"animations": [
 		{
 			"name": "walk",
-			"frames": [0, 1, 2, 3],
+			"frames": [0, 1, 0, 2],
 			"speed": 0.15,
 			"loop": true
 		},

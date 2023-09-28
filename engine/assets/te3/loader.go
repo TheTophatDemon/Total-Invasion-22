@@ -137,11 +137,28 @@ func (tiles *Tiles) FlattenGridPos(x, y, z int) int {
 
 func (tiles *Tiles) WorldToGridPos(worldPos mgl32.Vec3) (int, int, int) {
 	var out [3]int
-	//dims := [3]float32{float32(tiles.Width), float32(tiles.Height), float32(tiles.Length)}
 	for i := range out {
 		out[i] = int(worldPos[i] / GRID_SPACING)
 	}
 	return out[0], out[1], out[2]
+}
+
+func (tiles *Tiles) OutOfBounds(x, y, z int) bool {
+	return x < 0 || y < 0 || z < 0 || x >= tiles.Width || y >= tiles.Height || z >= tiles.Length
+}
+
+func (tiles *Tiles) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
+	out := mgl32.Vec3{
+		float32(i) * GRID_SPACING,
+		float32(j) * GRID_SPACING,
+		float32(k) * GRID_SPACING,
+	}
+	if center {
+		out[0] += GRID_SPACING / 2.0
+		out[1] += GRID_SPACING / 2.0
+		out[2] += GRID_SPACING / 2.0
+	}
+	return out
 }
 
 // Returns the first entity in the map with the given key value pair in its properties.

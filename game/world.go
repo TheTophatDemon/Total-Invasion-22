@@ -1,12 +1,14 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps/ui"
@@ -17,6 +19,7 @@ import (
 type World struct {
 	UI            *ui.Scene
 	Players       *world.Storage[ents.Player]
+	Enemies       *world.Storage[ents.Enemy]
 	GameMap       *world.Map
 	CurrentPlayer world.Id[ents.Player]
 	FPSCounter    world.Id[ui.Text]
@@ -25,6 +28,7 @@ type World struct {
 func NewWorld(mapPath string) (*World, error) {
 	UI := ui.NewUIScene(256, 64)
 	Players := world.NewStorage[ents.Player](8)
+	Enemies := world.NewStorage[ents.Enemy](256)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -36,9 +40,21 @@ func NewWorld(mapPath string) (*World, error) {
 		return nil, err
 	}
 
+	if err := errors.Join(
+		GameMap.SetTileCollisionShape("assets/models/shapes/cube.obj", collision.ShapeBox(math2.BoxFromRadius(1.0))),
+		GameMap.SetTileCollisionShape("assets/models/shapes/bars.obj", collision.ShapeBox(math2.BoxFromRadius(1.0))),
+	); err != nil {
+		return nil, err
+	}
+
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
 	CurrentPlayer, _, _ := Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles))
+
+	// Spawn enemies
+	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
+		Enemies.New(ents.NewEnemy(spawn.Position, spawn.Angles))
+	}
 
 	// UI
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
@@ -48,6 +64,7 @@ func NewWorld(mapPath string) (*World, error) {
 	return &World{
 		UI,
 		Players,
+		Enemies,
 		GameMap,
 		CurrentPlayer,
 		FPSCounter,
@@ -58,11 +75,18 @@ func (w *World) Update(deltaTime float32) {
 	// Update entities
 	w.GameMap.Update(deltaTime)
 	w.Players.Update((*ents.Player).Update, deltaTime)
+	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.UI.Update(deltaTime)
 
 	// Resolve collisions
 	w.Players.ForEach(func(p *ents.Player) {
-		_ = w.GameMap.ResolveCollision(&p.Body)
+		w.Enemies.ForEach(func(e *ents.Enemy) {
+			p.Body.ResolveCollision(&e.Body)
+		})
+		w.GameMap.ResolveCollision(&p.Body)
+	})
+	w.Enemies.ForEach(func(e *ents.Enemy) {
+		w.GameMap.ResolveCollision(&e.Body)
 	})
 
 	// Update FPS counter
@@ -94,6 +118,7 @@ func (w *World) Render() {
 
 	// Render 3D game elements
 	w.GameMap.Render(&renderContext)
+	w.Enemies.Render((*ents.Enemy).Render, &renderContext)
 
 	// Setup 2D render context
 	renderContext = render.Context{

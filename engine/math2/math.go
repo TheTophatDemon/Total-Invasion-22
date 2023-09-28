@@ -93,6 +93,10 @@ func (box Box) Size() mgl32.Vec3 {
 	return box.Max.Sub(box.Min)
 }
 
+func (box Box) Center() mgl32.Vec3 {
+	return box.Min.Add(box.Size().Mul(0.5))
+}
+
 func ClosestPointOnLine(lineStart, lineEnd, point mgl32.Vec3) mgl32.Vec3 {
 	lineDir := lineEnd.Sub(lineStart)
 	t := point.Sub(lineStart).Dot(lineDir) / lineDir.Dot(lineDir)

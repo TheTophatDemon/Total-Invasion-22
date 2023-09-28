@@ -1,10 +1,12 @@
 package comps
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
 
@@ -24,6 +26,10 @@ func (cs CollisionShape) String() string {
 	}
 	return "Unknown"
 }
+
+var (
+	errBodyNotSphere = fmt.Errorf("body should be a sphere")
+)
 
 type HasBody interface {
 	Body() *Body
@@ -60,11 +66,14 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	if _, ok := b.Shape.Radius(); ok {
 		radius, isSphere := otherBody.Shape.Radius()
 		mesh, isMesh := otherBody.Shape.Mesh()
+		isBox := (otherBody.Shape.Kind() == collision.SHAPE_KIND_BOX)
 		switch {
 		case isSphere:
 			b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), radius)
 		case isMesh:
 			b.ResolveCollisionSphereTriangles(otherBody.Transform.Position(), mesh, nil, collision.TRIHIT_ALL)
+		case isBox:
+			b.ResolveCollisionSphereBox(otherBody.Transform.Position(), otherBody.Shape.Extents(), true)
 		default:
 			log.Printf("collision is not implemented between shapes %v and %v.\n", b.Shape, otherBody.Shape)
 		}
@@ -73,10 +82,10 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	}
 }
 
-func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32) {
+func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32) error {
 	radius, isSphere := b.Shape.Radius()
 	if !isSphere {
-		return
+		return errBodyNotSphere
 	}
 	diff := b.Transform.Position().Sub(spherePos)
 	dist := diff.Len()
@@ -84,13 +93,45 @@ func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius fl
 	if dist < radius+otherRadius && dist != 0.0 {
 		b.Transform.TranslateV(diff.Normalize().Mul(radius + otherRadius - dist))
 	}
+
+	return nil
 }
 
-func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter collision.TriangleHit) {
+func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, hitCorners bool) error {
 	radius, isSphere := b.Shape.Radius()
-	if filter == collision.TRIHIT_NONE || mesh == nil || !isSphere {
-		log.Println("Warning: Invalid parameter fed to ResolveCollisionTriangles.")
-		return
+	if !isSphere {
+		return errBodyNotSphere
+	}
+	pos := b.Transform.Position()
+
+	box = box.Translate(boxOffset)
+	projectedPoint := math2.Vec3Max(math2.Vec3Min(pos, box.Max), box.Min)
+	diff := pos.Sub(projectedPoint)
+	distSq := diff.LenSqr()
+
+	// Ignore corner collisions if specified
+	if !hitCorners && math2.Abs(diff.X()) > mgl32.Epsilon && math2.Abs(diff.Y()) > mgl32.Epsilon {
+		return nil
+	}
+
+	if distSq > 0.0 && distSq < radius*radius {
+		// When the sphere's center touches the edge of the box, push in the direction of the edge.
+		b.Transform.TranslateV(diff.Normalize().Mul(radius - math2.Sqrt(distSq)))
+	}
+
+	return nil
+}
+
+func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter collision.TriangleHit) error {
+	radius, isSphere := b.Shape.Radius()
+	if !isSphere {
+		return errBodyNotSphere
+	}
+	if mesh == nil {
+		return fmt.Errorf("mesh cannot be nil")
+	}
+	if filter == collision.TRIHIT_NONE {
+		return nil
 	}
 
 	var tc int
@@ -117,4 +158,5 @@ func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh 
 			b.Transform.TranslateV(col.Normal.Mul(col.Penetration + mgl32.Epsilon))
 		}
 	}
+	return nil
 }

@@ -1,7 +1,5 @@
 # TODO
-- Bring back enemies, make them move randomly to test collision
-- Make it so that tiles can have cube collision shapes
-    * Make bars have box collision
+- Make it so that individual tiles can have different collision shapes
 - Directional sprites
 - Frustum culling of sprites
 - Doors
