@@ -40,11 +40,37 @@ func NewWorld(mapPath string) (*World, error) {
 		return nil, err
 	}
 
-	if err := errors.Join(
-		GameMap.SetTileCollisionShape("assets/models/shapes/cube.obj", collision.ShapeBox(math2.BoxFromRadius(1.0))),
-		GameMap.SetTileCollisionShape("assets/models/shapes/bars.obj", collision.ShapeBox(math2.BoxFromRadius(1.0))),
-	); err != nil {
-		return nil, err
+	// Set panel collision shapes
+	panelShapeX := collision.ShapeBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
+	panelShapeZ := collision.ShapeBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
+	for _, shapeName := range [...]string{
+		"assets/models/shapes/bars.obj",
+		"assets/models/shapes/panel.obj",
+	} {
+		err = errors.Join(
+			GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
+			GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
+			GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
+			GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
+			GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Set cube collision shapes
+	for _, shapeName := range [...]string{
+		"assets/models/shapes/cube.obj",
+		"assets/models/shapes/cube_2tex.obj",
+		"assets/models/shapes/edge_panel.obj",
+		"assets/models/shapes/cube_marker.obj",
+		"assets/models/shapes/bridge.obj",
+	} {
+		err = GameMap.SetTileCollisionShapes(shapeName, collision.ShapeBox(math2.BoxFromRadius(1.0)))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Spawn player

@@ -17,7 +17,7 @@ type Map struct {
 	tiles          te3.Tiles
 	mesh           *assets.Mesh
 	triMap         te3.TriMap              // Maps a flattened tile index to its indices in the mesh's triangles array.
-	shapeMap       []collision.Shape       // Maps a tile's ShapeID to its collision shape.
+	shapeMap       []collision.Shape       // Maps a tile's index to its collision shape.
 	tileAnims      []comps.AnimationPlayer // Animates each texture group of tiles
 	groupRenderers []comps.MeshRender      // Renders each texture group of tiles
 }
@@ -30,7 +30,7 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 	assets.TakeMesh(te3File.FilePath(), mesh)
 
 	// Set all tile collision shapes to use the triangle mesh by default.
-	shapeMap := make([]collision.Shape, len(te3File.Tiles.Shapes))
+	shapeMap := make([]collision.Shape, len(te3File.Tiles.Data))
 	for s := range shapeMap {
 		shapeMap[s] = collision.ShapeMesh(mesh)
 	}
@@ -58,14 +58,32 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 	return gameMap, nil
 }
 
-func (gm *Map) SetTileCollisionShape(shapeName string, shape collision.Shape) error {
+func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) error {
+	return gm.SetTileCollisionShapesForAngles(shapeName, 0, 360, 0, 360, shape)
+}
+
+// Sets the collision shape of all tiles that have the specified shape, and whose angles are within the designated ranges.
+// 'yawMin' and 'pitchMin' are inclusive bounds, but 'yawMax' and 'pitchMax' are exclusive.
+func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax, pitchMin, pitchMax int32, shape collision.Shape) error {
+	var shapeID te3.ShapeID = -1
 	for id, name := range gm.tiles.Shapes {
 		if name == shapeName {
-			gm.shapeMap[id] = shape
-			return nil
+			shapeID = te3.ShapeID(id)
+			break
 		}
 	}
-	return fmt.Errorf("shape not found")
+	if shapeID < 0 {
+		return fmt.Errorf("shape not found")
+	}
+	for index, tile := range gm.tiles.Data {
+		if tile.ShapeID == shapeID &&
+			tile.Yaw >= yawMin && tile.Yaw < yawMax &&
+			tile.Pitch >= pitchMin && tile.Pitch < pitchMax {
+
+			gm.shapeMap[index] = shape
+		}
+	}
+	return nil
 }
 
 func (gm *Map) Update(deltaTime float32) {
@@ -82,6 +100,10 @@ func (gm *Map) Render(context *render.Context) {
 
 // Moves the body in response to collisions with the tiles in this game map.
 func (gm *Map) ResolveCollision(body *comps.Body) error {
+	if body.NoClip || body.Velocity.LenSqr() == 0.0 {
+		return nil
+	}
+
 	_, isSphere := body.Shape.Radius()
 	if !isSphere {
 		return fmt.Errorf("body must have a sphere collision shape")
@@ -110,15 +132,16 @@ func (gm *Map) ResolveCollision(body *comps.Body) error {
 
 	for pos, empty := visitQueue.Dequeue(); !empty; pos, empty = visitQueue.Dequeue() {
 		t := gm.tiles.FlattenGridPos(pos[0], pos[1], pos[2])
-		if shapeID := gm.tiles.Data[t].ShapeID; shapeID >= 0 {
+		if gm.tiles.Data[t].ShapeID >= 0 {
 			// Resolve collision against this tile
 			tileCenter := gm.tiles.GridToWorldPos(pos[0], pos[1], pos[2], true)
-			switch gm.shapeMap[shapeID].Kind() {
+			tileShape := &gm.shapeMap[t]
+			switch tileShape.Kind() {
 			case collision.SHAPE_KIND_SPHERE:
-				tileRadius, _ := gm.shapeMap[shapeID].Radius()
+				tileRadius, _ := tileShape.Radius()
 				_ = body.ResolveCollisionSphereSphere(tileCenter, tileRadius)
 			case collision.SHAPE_KIND_BOX:
-				_ = body.ResolveCollisionSphereBox(tileCenter, gm.shapeMap[shapeID].Extents(), true)
+				_ = body.ResolveCollisionSphereBox(tileCenter, tileShape.Extents(), true)
 			case collision.SHAPE_KIND_MESH:
 				// Check for triangle hits in the center first, then the edges.
 				// This prevents triangle edges from stopping smooth movement along neighboring triangles.
@@ -147,39 +170,6 @@ func (gm *Map) ResolveCollision(body *comps.Body) error {
 			}
 		}
 	}
-
-	// filter := collision.TRIHIT_CENTER
-	// for {
-	// 	for x := minX; x <= maxX; x += 1 {
-	// 		for y := minY; y <= maxY; y += 1 {
-	// 			for z := minZ; z <= maxZ; z += 1 {
-	// 				t := gm.tiles.FlattenGridPos(x, y, z)
-	// 				if shapeID := gm.tiles.Data[t].ShapeID; shapeID >= 0 {
-	// 					// Resolve collision against this tile
-	// 					tileCenter := gm.tiles.GridToWorldPos(x, y, z, true)
-	// 					switch gm.shapeMap[shapeID].Kind() {
-	// 					case collision.SHAPE_KIND_SPHERE:
-	// 						tileRadius, _ := gm.shapeMap[shapeID].Radius()
-	// 						_ = body.ResolveCollisionSphereSphere(tileCenter, tileRadius)
-	// 					case collision.SHAPE_KIND_BOX:
-	// 						_ = body.ResolveCollisionSphereBox(tileCenter, gm.shapeMap[shapeID].Extents(), true)
-	// 					case collision.SHAPE_KIND_MESH:
-	// 						// Check for triangle hits in the center first, then the edges.
-	// 						// This prevents triangle edges from stopping smooth movement along neighboring triangles.
-	// 						body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRIHIT_CENTER)
-	// 						body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRIHIT_ALL)
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if filter == collision.TRIHIT_CENTER {
-	// 		filter = collision.TRIHIT_EDGE
-	// 	} else {
-	// 		break
-	// 	}
-	// }
 
 	return nil
 }

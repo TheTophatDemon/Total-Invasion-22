@@ -68,6 +68,13 @@ func (t Triangle) Plane() Plane {
 	}
 }
 
+func BoxFromExtents(halfWidth, halfHeight, halfLength float32) Box {
+	return Box{
+		Max: mgl32.Vec3{halfWidth, halfHeight, halfLength},
+		Min: mgl32.Vec3{-halfWidth, -halfHeight, -halfLength},
+	}
+}
+
 func BoxFromRadius(radius float32) Box {
 	return Box{
 		Max: mgl32.Vec3{radius, radius, radius},
