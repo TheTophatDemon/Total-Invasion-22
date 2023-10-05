@@ -31,6 +31,7 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 			AccelRate: 80.0,
 			Friction:  20.0,
 			MaxSpeed:  7.0,
+			RestrictY: position.Y(),
 		},
 		MeshRender: comps.NewMeshRender(
 			assets.QuadMesh,

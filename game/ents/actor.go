@@ -10,6 +10,7 @@ type Actor struct {
 	MaxSpeed, AccelRate, Friction float32
 	inputForward, inputStrafe     float32
 	YawAngle                      float32 // Radians
+	RestrictY                     float32
 }
 
 func (a *Actor) Update(deltaTime float32) {
@@ -32,4 +33,8 @@ func (a *Actor) Update(deltaTime float32) {
 	}
 
 	a.Body.Update(deltaTime)
+
+	// Restrict movement to the XZ plane
+	original := a.Body.Transform.Position()
+	a.Body.Transform.SetPosition(mgl32.Vec3{original.X(), a.RestrictY, original.Z()})
 }

@@ -1,6 +1,4 @@
 # TODO
-- Funny collision bug with the bars
-- Constrain actors to the Y axis
 - Directional sprites
 - Input cheat codes
 - Frustum culling of sprites
