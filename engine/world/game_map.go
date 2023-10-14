@@ -120,6 +120,8 @@ func (gm *Map) ResolveCollision(body *comps.Body) error {
 		return nil
 	}
 
+	// Visit each tile within the movement range, starting from the one closest to the current position and then proceeding to its neighbors.
+	// TODO: Allocate these with a sync.Pool?
 	isChecked := make(map[[3]int]bool)
 	visitQueue := containers.NewRingBuffer(make([][3]int, tileCount))
 	startX, startY, startZ := gm.tiles.WorldToGridPos(body.Transform.Position())
