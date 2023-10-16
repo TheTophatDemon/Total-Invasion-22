@@ -5,9 +5,9 @@ import (
 )
 
 type AnimationPlayer struct {
-	animation    assets.FrameAnimation //Animation currently being played
-	currentFrame int                   //The current frame number from the animation data
-	currentIndex int                   //The current index into the animation data's frames array
+	animation    assets.FrameAnimation // Animation currently being played
+	currentFrame int                   // The current frame number from the animation data
+	currentIndex int                   // The current index into the animation data's frames array
 	playing      bool
 	frameTimer   float32
 }
