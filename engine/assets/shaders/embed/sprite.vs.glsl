@@ -7,12 +7,13 @@ layout(location = 2) in vec3 aNormal;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjMatrix;
 uniform mat4 uModelMatrix;
+uniform vec4 uSourceRect;
 
 out vec2 vTexCoord;
 out vec3 vNormal;
 
 void main() {
-    vTexCoord = aTexCoord;
+    vTexCoord = uSourceRect.xy + vec2(aTexCoord.x * uSourceRect.z, aTexCoord.y * uSourceRect.w);
     
     vec4 pos = uViewMatrix * uModelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
     float scale = sqrt(uModelMatrix[0][0] * uModelMatrix[0][0] + uModelMatrix[1][0] * uModelMatrix[1][0] + uModelMatrix[2][0] * uModelMatrix[2][0]);

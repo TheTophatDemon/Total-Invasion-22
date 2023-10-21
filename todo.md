@@ -1,6 +1,6 @@
 # TODO
-- Replace animation system w/ Aseprite animations
 - Directional sprites
+- Wraiths can push you into walls
 - Input cheat codes
 - Frustum culling of sprites
 - Doors

@@ -9,12 +9,12 @@ uniform mat4 uViewMatrix;
 uniform mat4 uProjMatrix;
 uniform mat4 uModelMatrix;
 
-uniform vec4 uSrcRect;
+uniform vec4 uSourceRect;
 
 out vec2 vTexCoord;
 
 void main() {
-    vTexCoord = uSrcRect.xy + vec2(0.0, 1.0) - (aTexCoord * uSrcRect.zw);
+    vTexCoord = uSourceRect.xy + vec2(0.0, 1.0) - (aTexCoord * uSourceRect.zw);
 
     gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aPos, 1.0);
 }

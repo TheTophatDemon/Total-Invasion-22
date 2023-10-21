@@ -180,6 +180,7 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 			if err != nil {
 				return nil, err
 			}
+			anims[anim.Name] = anim
 		}
 		if ss.Meta.Layers == nil || len(ss.Meta.Layers) == 0 {
 			anim.Name = ss.Meta.FrameTags[t].Name
@@ -188,9 +189,8 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 			if err != nil {
 				return nil, err
 			}
+			anims[anim.Name] = anim
 		}
-
-		anims[anim.Name] = anim
 	}
 
 	return anims, nil

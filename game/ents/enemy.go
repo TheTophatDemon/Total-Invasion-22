@@ -1,12 +1,9 @@
 package ents
 
 import (
-	"log"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
-	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
@@ -20,12 +17,7 @@ type Enemy struct {
 
 func NewEnemy(position, angles mgl32.Vec3) Enemy {
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
-	var anim textures.Animation
-	if wraithTexture.IsAtlas() {
-		anim, _ = wraithTexture.GetFirstAnimation()
-	} else {
-		log.Println("Wraith is missing animations.")
-	}
+	anim, _ := wraithTexture.GetAnimation("walk;side")
 	return Enemy{
 		Actor: Actor{
 			Body: comps.Body{

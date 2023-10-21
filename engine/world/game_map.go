@@ -49,7 +49,7 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 		tex := cache.GetTexture(groupName)
 		// Add animations if applicable
 		if tex.IsAtlas() {
-			anim, _ := tex.GetFirstAnimation()
+			anim, _ := tex.GetAnimation(tex.GetAnimationNames()[0])
 			gameMap.tileAnims[g] = comps.NewAnimationPlayer(anim, true)
 		}
 

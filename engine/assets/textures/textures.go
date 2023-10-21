@@ -1,7 +1,6 @@
 package textures
 
 import (
-	"fmt"
 	_ "image/png"
 	"strings"
 
@@ -75,11 +74,12 @@ func (at *Texture) GetAnimation(name string) (anim Animation, ok bool) {
 	return
 }
 
-func (at *Texture) GetFirstAnimation() (Animation, error) {
-	for _, anim := range at.animations {
-		return anim, nil
+func (at *Texture) GetAnimationNames() []string {
+	result := make([]string, 0, len(at.animations))
+	for name := range at.animations {
+		result = append(result, name)
 	}
-	return Animation{}, fmt.Errorf("attempted to load the first animation from a texture that has none")
+	return result
 }
 
 func (t *Texture) IsAtlas() bool {

@@ -6,7 +6,6 @@ in vec3 vNormal;
 uniform vec3 uLightDir;
 uniform vec3 uAmbientColor;
 uniform sampler2D uTex;
-uniform vec4 uSourceRect;
 
 uniform float uFogStart;
 uniform float uFogLength;
@@ -14,9 +13,8 @@ uniform float uFogLength;
 out vec4 oColor;
 
 void main() {
-    //Sample texture or atlas
-    vec2 realTexCoord = uSourceRect.xy + (vTexCoord * uSourceRect.zw);
-    vec4 diffuse = texture(uTex, realTexCoord);
+    //Sample texture
+    vec4 diffuse = texture(uTex, vTexCoord);
     
     //Discard transparent pixels
     if (diffuse.a < 0.5) {
