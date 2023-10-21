@@ -21,10 +21,18 @@ func NewAnimationPlayer(anim textures.Animation, autoPlay bool) AnimationPlayer 
 	}
 }
 
+// Changes the animation to the given one, resetting the animation counter.
 func (ap *AnimationPlayer) ChangeAnimation(newAnim textures.Animation) {
 	ap.animation = newAnim
 	ap.currentIndex = 0
 	ap.frameTimer = 0.0
+}
+
+// Changes the animation to the given one without resetting the frame counter.
+// If the animations have mismatched lengths, then the frame counter is wrapped around.
+func (ap *AnimationPlayer) SwapAnimation(newAnim textures.Animation) {
+	ap.animation = newAnim
+	ap.currentIndex %= len(newAnim.Frames)
 }
 
 func (ap *AnimationPlayer) Update(deltaTime float32) {
@@ -79,4 +87,8 @@ func (ap *AnimationPlayer) FrameUV() math2.Rect {
 func (ap *AnimationPlayer) Play() {
 	ap.playing = true
 	ap.frameTimer = 0.0
+}
+
+func (ap *AnimationPlayer) IsPlaying() bool {
+	return ap.playing
 }

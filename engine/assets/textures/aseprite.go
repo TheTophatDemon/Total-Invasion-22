@@ -211,7 +211,7 @@ func frameFromAesprite(af aseFrame) Frame {
 
 func layerFromAseprite(af aseLayer) (Layer, error) {
 	var layerData struct {
-		viewRange, flippedViewRange [2]int
+		ViewRange, FlippedViewRange [2]int
 	}
 
 	err := json.Unmarshal([]byte(af.Data), &layerData)
@@ -221,7 +221,7 @@ func layerFromAseprite(af aseLayer) (Layer, error) {
 
 	return Layer{
 		Name:             af.Name,
-		ViewRange:        layerData.viewRange,
-		FlippedViewRange: layerData.flippedViewRange,
+		ViewRange:        layerData.ViewRange,
+		FlippedViewRange: layerData.FlippedViewRange,
 	}, nil
 }

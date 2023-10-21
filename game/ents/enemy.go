@@ -3,7 +3,6 @@ package ents
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
@@ -11,13 +10,13 @@ import (
 
 type Enemy struct {
 	Actor
-	MeshRender comps.MeshRender
-	AnimPlayer comps.AnimationPlayer
+	SpriteRender comps.SpriteRender
+	AnimPlayer   comps.AnimationPlayer
 }
 
 func NewEnemy(position, angles mgl32.Vec3) Enemy {
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
-	anim, _ := wraithTexture.GetAnimation("walk;side")
+	anim, _ := wraithTexture.GetAnimation("walk;front")
 	return Enemy{
 		Actor: Actor{
 			Body: comps.Body{
@@ -34,15 +33,8 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 			MaxSpeed:  7.0,
 			RestrictY: position.Y(),
 		},
-		MeshRender: comps.NewMeshRender(
-			cache.QuadMesh,
-			shaders.SpriteShader,
-			wraithTexture,
-		),
-		AnimPlayer: comps.NewAnimationPlayer(
-			anim,
-			true,
-		),
+		SpriteRender: comps.NewSpriteRender(wraithTexture),
+		AnimPlayer:   comps.NewAnimationPlayer(anim, true),
 	}
 }
 
@@ -55,5 +47,5 @@ func (enemy *Enemy) Update(deltaTime float32) {
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.MeshRender.Render(&enemy.Body.Transform, &enemy.AnimPlayer, context)
+	enemy.SpriteRender.Render(&enemy.Body.Transform, &enemy.AnimPlayer, context, enemy.YawAngle)
 }

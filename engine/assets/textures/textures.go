@@ -82,6 +82,29 @@ func (at *Texture) GetAnimationNames() []string {
 	return result
 }
 
+// Searches for a layer in this texture with the given degrees angle in its range.
+//
+// The first boolean returned indicates whether the angle is within the flipped view range.
+//
+// The second boolean indicates whether the angle is within either view range.
+func (t *Texture) FindLayerWithinAngle(angle int) (Layer, bool, bool) {
+	angle %= 360
+	if angle < 0 {
+		angle += 360
+	}
+	for l := range t.layers {
+		for a := angle; a >= angle-360; a -= 360 {
+			if a >= t.layers[l].ViewRange[0] && a < t.layers[l].ViewRange[1] {
+				return t.layers[l], false, true
+			}
+			if a >= t.layers[l].FlippedViewRange[0] && a < t.layers[l].FlippedViewRange[1] {
+				return t.layers[l], true, true
+			}
+		}
+	}
+	return Layer{}, false, false
+}
+
 func (t *Texture) IsAtlas() bool {
 	return t.animations != nil && len(t.animations) > 0
 }

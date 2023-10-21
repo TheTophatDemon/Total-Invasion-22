@@ -139,6 +139,10 @@ func Asin[F Float](val F) F {
 	return F(math.Asin(float64(val)))
 }
 
+func Acos[F Float](val F) F {
+	return F(math.Acos(float64(val)))
+}
+
 func Atan2[F Float](y F, x F) F {
 	return F(math.Atan2(float64(y), float64(x)))
 }
@@ -165,6 +169,10 @@ func Vec3Zero() mgl32.Vec3 {
 
 func Vec3One() mgl32.Vec3 {
 	return mgl32.Vec3{1.0, 1.0, 1.0}
+}
+
+func Vec3Forward() mgl32.Vec3 {
+	return mgl32.Vec3{0.0, 0.0, -1.0}
 }
 
 // Returns a vector with the element-wise minimum value on each axis.
