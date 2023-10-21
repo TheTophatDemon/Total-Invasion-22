@@ -1,4 +1,4 @@
-package assets
+package geom
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
 type OBJIndex [3]int //The three indices into the .obj's vertex elements (1-based)
@@ -25,9 +26,9 @@ type OBJ struct {
 	groups map[string]*OBJGroup
 }
 
-func loadOBJMesh(path string) (*Mesh, error) {
+func LoadOBJMesh(path string) (*Mesh, error) {
 
-	file, err := getFile(path)
+	file, err := assets.GetFile(path)
 	if err != nil {
 		return nil, err
 	}

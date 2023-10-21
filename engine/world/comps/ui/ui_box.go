@@ -4,14 +4,14 @@ import (
 	"image/color"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
 
 type Box struct {
 	Color      color.Color
-	Texture    *assets.Texture
+	Texture    *textures.Texture
 	AnimPlayer comps.AnimationPlayer
 
 	src, dest      math2.Rect
@@ -19,7 +19,7 @@ type Box struct {
 	transform      mgl32.Mat4
 }
 
-func NewBox(src, dest math2.Rect, texture *assets.Texture, color color.Color) Box {
+func NewBox(src, dest math2.Rect, texture *textures.Texture, color color.Color) Box {
 	return Box{
 		Color:          color,
 		Texture:        texture,
@@ -29,7 +29,7 @@ func NewBox(src, dest math2.Rect, texture *assets.Texture, color color.Color) Bo
 	}
 }
 
-func NewBoxFull(dest math2.Rect, texture *assets.Texture, color color.Color) Box {
+func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) Box {
 	src := math2.Rect{}
 	if texture != nil {
 		src = math2.Rect{
@@ -50,6 +50,9 @@ func NewBoxFull(dest math2.Rect, texture *assets.Texture, color color.Color) Box
 
 func (box *Box) Update(deltaTime float32) {
 	box.AnimPlayer.Update(deltaTime)
+	if frame := box.AnimPlayer.Frame(); frame.Duration > 0.0 {
+		box.src = frame.Rect
+	}
 }
 
 func (box *Box) Dest() math2.Rect {

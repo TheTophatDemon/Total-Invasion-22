@@ -1,4 +1,4 @@
-package assets
+package fonts
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/fzipp/bmfont"
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
 type Font bmfont.Descriptor
@@ -23,8 +24,8 @@ func fileSheets(directory string) bmfont.SheetReaderFunc {
 	}
 }
 
-func loadAngelcodeFont(path string) (*Font, error) {
-	file, err := getFile(path)
+func LoadAngelcodeFont(path string) (*Font, error) {
+	file, err := assets.GetFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
@@ -49,7 +49,7 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 		return err
 	}
 
-	assets.Init()
+	cache.Init()
 
 	return nil
 }
@@ -111,6 +111,6 @@ func Run(app App) {
 }
 
 func DeInit() {
-	assets.FreeAll()
+	cache.FreeAll()
 	glfw.Terminate()
 }

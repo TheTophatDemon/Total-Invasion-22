@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
@@ -122,7 +122,7 @@ func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, hi
 	return nil
 }
 
-func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *assets.Mesh, triangleIndices []int, filter collision.TriangleHit) error {
+func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *geom.Mesh, triangleIndices []int, filter collision.TriangleHit) error {
 	radius, isSphere := b.Shape.Radius()
 	if !isSphere {
 		return errBodyNotSphere

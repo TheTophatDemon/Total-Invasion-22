@@ -33,13 +33,10 @@ var (
 	UniformFogStart     Uniform[float32]    = Uniform[float32]{"uFogStart"}
 	UniformFogLength    Uniform[float32]    = Uniform[float32]{"uFogLength"}
 	UniformTex          Uniform[int]        = Uniform[int]{"uTex"}
-	UniformAtlas        Uniform[int]        = Uniform[int]{"uAtlas"}
-	UniformFrame        Uniform[int]        = Uniform[int]{"uFrame"}
-	UniformAtlasUsed    Uniform[bool]       = Uniform[bool]{"uAtlasUsed"}
 	UniformLightDir     Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uLightDir"}
 	UniformAmbientColor Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uAmbientColor"}
 	UniformDiffuseColor Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uDiffuseColor"}
-	UniformSrcRect      Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uSrcRect"}
+	UniformSrcRect      Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uSourceRect"}
 )
 
 var (

@@ -4,23 +4,24 @@ import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 type MeshRender struct {
-	Mesh    *assets.Mesh
+	Mesh    *geom.Mesh
 	Shader  *shaders.Shader
-	Texture *assets.Texture
+	Texture *textures.Texture
 	Group   string
 }
 
-func NewMeshRender(Mesh *assets.Mesh, Shader *shaders.Shader, Texture *assets.Texture) MeshRender {
+func NewMeshRender(Mesh *geom.Mesh, Shader *shaders.Shader, Texture *textures.Texture) MeshRender {
 	return NewMeshRenderGroup(Mesh, Shader, Texture, "")
 }
 
-func NewMeshRenderGroup(Mesh *assets.Mesh, Shader *shaders.Shader, Texture *assets.Texture, Group string) MeshRender {
+func NewMeshRenderGroup(Mesh *geom.Mesh, Shader *shaders.Shader, Texture *textures.Texture, Group string) MeshRender {
 	return MeshRender{
 		Mesh,
 		Shader,
@@ -53,18 +54,15 @@ func (mr *MeshRender) Render(
 		mr.Texture.Bind()
 	}
 
-	frame := 0
-	if animPlayer != nil {
-		frame = animPlayer.Frame()
-	}
-
 	// Set uniforms
 	_ = context.SetUniforms(mr.Shader)
 	_ = mr.Shader.SetUniformInt(shaders.UniformTex, 0)
-	_ = mr.Shader.SetUniformInt(shaders.UniformAtlas, 1)
-	_ = mr.Shader.SetUniformBool(shaders.UniformAtlasUsed, mr.Texture.IsAtlas())
 	_ = mr.Shader.SetUniformMatrix(shaders.UniformModelMatrix, modelMatrix)
-	_ = mr.Shader.SetUniformInt(shaders.UniformFrame, frame)
+	if animPlayer != nil {
+		_ = mr.Shader.SetUniformVec4(shaders.UniformSrcRect, animPlayer.Frame().Rect.Vec4())
+	} else {
+		_ = mr.Shader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 0.0, 1.0, 1.0})
+	}
 
 	if len(mr.Group) == 0 {
 		mr.Mesh.DrawAll()

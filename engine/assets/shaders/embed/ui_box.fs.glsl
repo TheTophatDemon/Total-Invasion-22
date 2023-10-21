@@ -5,20 +5,14 @@ in vec2 vTexCoord;
 uniform vec4 uDiffuseColor;
 
 uniform sampler2D uTex;
-uniform sampler2DArray uAtlas;
-uniform int uFrame = 0;
-uniform bool uAtlasUsed = false;
+uniform vec4 uSourceRect;
 
 out vec4 oColor;
 
 void main() {
     //Sample texture or atlas
-    vec4 diffuse;
-    if (uAtlasUsed) {
-        diffuse = texture(uAtlas, vec3(vTexCoord, uFrame));
-    } else {
-        diffuse = texture(uTex, vTexCoord);
-    }
+    vec2 realTexCoord = uSourceRect.xy + (vTexCoord * uSourceRect.zw);
+    vec4 diffuse = texture(uTex, realTexCoord);
     
     diffuse *= uDiffuseColor;
     if (diffuse.a <= 0.01) {

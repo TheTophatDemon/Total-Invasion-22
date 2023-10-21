@@ -11,7 +11,10 @@ import (
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -28,9 +31,9 @@ type Text struct {
 	color          color.Color
 	text           string
 	textDirty      bool
-	mesh           *assets.Mesh
-	texture        *assets.Texture
-	font           *assets.Font
+	mesh           *geom.Mesh
+	texture        *textures.Texture
+	font           *fonts.Font
 	dest           math2.Rect
 	scale          float32
 	transform      mgl32.Mat4
@@ -209,7 +212,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 }
 
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
-func (txt *Text) Mesh() (*assets.Mesh, error) {
+func (txt *Text) Mesh() (*geom.Mesh, error) {
 	if txt.font == nil {
 		return nil, fmt.Errorf("font not assigned")
 	}
@@ -224,7 +227,7 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 
 		// Regenerate text mesh
 		numVertsGuess := len(txt.text) * 4
-		verts := assets.Vertices{
+		verts := geom.Vertices{
 			Pos:      make([]mgl32.Vec3, 0, numVertsGuess),
 			TexCoord: make([]mgl32.Vec2, 0, numVertsGuess),
 			Color:    make([]mgl32.Vec4, 0, numVertsGuess),
@@ -270,14 +273,14 @@ func (txt *Text) Mesh() (*assets.Mesh, error) {
 			inds = append(inds, indexBase+0, indexBase+1, indexBase+2, indexBase+0, indexBase+2, indexBase+3)
 		}
 
-		txt.mesh = assets.CreateMesh(verts, inds)
+		txt.mesh = geom.CreateMesh(verts, inds)
 	}
 	return txt.mesh, nil
 }
 
 func (txt *Text) SetFont(fontAssetPath string) error {
 	var err error
-	txt.font, err = assets.GetFont(fontAssetPath)
+	txt.font, err = cache.GetFont(fontAssetPath)
 	if err != nil {
 		return err
 	}
@@ -287,7 +290,7 @@ func (txt *Text) SetFont(fontAssetPath string) error {
 	if !strings.HasSuffix(texturePath, ".png") {
 		return fmt.Errorf("font has invalid texture file type")
 	}
-	txt.texture = assets.GetTexture(texturePath)
+	txt.texture = cache.GetTexture(texturePath)
 
 	return nil
 }

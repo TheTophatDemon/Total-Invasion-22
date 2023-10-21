@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -34,7 +35,7 @@ func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, r
 }
 
 // Returns true if the triangle happens to match with one from a neighboring tile.
-func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, shapeMeshes []*assets.Mesh) bool {
+func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, shapeMeshes []*geom.Mesh) bool {
 	plane := triangle.Plane()
 
 	// Determine the grid position of the tile neighboring this face.
@@ -58,7 +59,7 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 	if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
 		// Check the faces of the neighboring tile
 		nborTile := te3.Tiles.Data[te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)]
-		if nborTile.ShapeID < 0 || assets.GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
+		if nborTile.ShapeID < 0 || cache.GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
 			return false
 		}
 		nborRotation := nborTile.GetRotationMatrix()
@@ -81,10 +82,10 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 	return false
 }
 
-func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
+func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 	var err error
 
-	mapVerts := assets.Vertices{
+	mapVerts := geom.Vertices{
 		Pos:      make([]mgl32.Vec3, 0),
 		TexCoord: make([]mgl32.Vec2, 0),
 		Normal:   make([]mgl32.Vec3, 0),
@@ -92,9 +93,9 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 	}
 	mapInds := make([]uint32, 0)
 
-	shapeMeshes := make([]*assets.Mesh, len(te3.Tiles.Shapes))
+	shapeMeshes := make([]*geom.Mesh, len(te3.Tiles.Shapes))
 	for i, path := range te3.Tiles.Shapes {
-		shapeMeshes[i], err = assets.GetMesh(path)
+		shapeMeshes[i], err = cache.GetMesh(path)
 		if err != nil {
 			return nil, nil, fmt.Errorf("shape mesh at %s not found", path)
 		}
@@ -111,7 +112,7 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 		}
 
 		// Exclude tiles with invisible texture flag
-		if assets.GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
+		if cache.GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
 			continue
 		}
 
@@ -123,14 +124,14 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 		groupTiles[tile.TextureID] = append(group, t)
 	}
 
-	meshGroups := make([]assets.Group, 0, len(groupTiles))
+	meshGroups := make([]geom.Group, 0, len(groupTiles))
 	meshGroupNames := make([]string, 0, len(groupTiles))
 
 	triMap := make(TriMap, len(te3.Tiles.Data))
 
 	// Add vertex data from tiles to map mesh
 	for texID, tileIndices := range groupTiles {
-		group := assets.Group{Offset: len(mapInds), Length: 0}
+		group := geom.Group{Offset: len(mapInds), Length: 0}
 
 		for _, ti := range tileIndices {
 			tile := te3.Tiles.Data[ti]
@@ -177,7 +178,7 @@ func (te3 *TE3File) BuildMesh() (*assets.Mesh, TriMap, error) {
 		meshGroupNames = append(meshGroupNames, te3.Tiles.Textures[texID])
 	}
 
-	mesh := assets.CreateMesh(mapVerts, mapInds)
+	mesh := geom.CreateMesh(mapVerts, mapInds)
 	mesh.Upload()
 
 	// Set group names to texture paths

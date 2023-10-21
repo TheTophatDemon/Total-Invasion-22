@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
@@ -15,7 +16,7 @@ import (
 
 type Map struct {
 	tiles          te3.Tiles
-	mesh           *assets.Mesh
+	mesh           *geom.Mesh
 	triMap         te3.TriMap              // Maps a flattened tile index to its indices in the mesh's triangles array.
 	shapeMap       []collision.Shape       // Maps a tile's index to its collision shape.
 	tileAnims      []comps.AnimationPlayer // Animates each texture group of tiles
@@ -27,7 +28,7 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	assets.TakeMesh(te3File.FilePath(), mesh)
+	cache.TakeMesh(te3File.FilePath(), mesh)
 
 	// Set all tile collision shapes to use the triangle mesh by default.
 	shapeMap := make([]collision.Shape, len(te3File.Tiles.Data))
@@ -45,10 +46,11 @@ func NewMap(te3File *te3.TE3File) (*Map, error) {
 	}
 
 	for g, groupName := range mesh.GroupNames() {
-		tex := assets.GetTexture(groupName)
+		tex := cache.GetTexture(groupName)
 		// Add animations if applicable
-		if tex.AnimationCount() > 0 {
-			gameMap.tileAnims[g] = comps.NewAnimationPlayer(tex.GetAnimation(0), true)
+		if tex.IsAtlas() {
+			anim, _ := tex.GetFirstAnimation()
+			gameMap.tileAnims[g] = comps.NewAnimationPlayer(anim, true)
 		}
 
 		// Add mesh component

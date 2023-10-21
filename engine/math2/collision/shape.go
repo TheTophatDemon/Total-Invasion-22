@@ -1,7 +1,7 @@
 package collision
 
 import (
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -30,9 +30,9 @@ func (sk ShapeKind) String() string {
 
 type Shape struct {
 	kind    ShapeKind
-	radius  float32      // The radius of the sphere collision shape.
-	extents math2.Box    // Describes the body's bounding box, centered at its origin.
-	mesh    *assets.Mesh // Refers to the mesh used for the mesh collision shape.
+	radius  float32    // The radius of the sphere collision shape.
+	extents math2.Box  // Describes the body's bounding box, centered at its origin.
+	mesh    *geom.Mesh // Refers to the mesh used for the mesh collision shape.
 }
 
 func (s *Shape) String() string {
@@ -70,7 +70,7 @@ func ShapeBox(extents math2.Box) Shape {
 	}
 }
 
-func ShapeMesh(mesh *assets.Mesh) Shape {
+func ShapeMesh(mesh *geom.Mesh) Shape {
 	if mesh == nil {
 		panic("mesh must not be nil")
 	}
@@ -82,7 +82,7 @@ func ShapeMesh(mesh *assets.Mesh) Shape {
 }
 
 // Returns the shape's mesh and 'true' if the shape is a mesh.
-func (s *Shape) Mesh() (*assets.Mesh, bool) {
+func (s *Shape) Mesh() (*geom.Mesh, bool) {
 	if s.kind != SHAPE_KIND_MESH {
 		return nil, false
 	}

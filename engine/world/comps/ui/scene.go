@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -33,19 +33,14 @@ func (scene *Scene) Render(context *render.Context) {
 	gl.CullFace(gl.FRONT)
 
 	// Render boxes in one large batch
-	assets.QuadMesh.Bind()
+	cache.QuadMesh.Bind()
 	shaders.UIShader.Use()
 
 	// Box uniforms
 	_ = context.SetUniforms(shaders.UIShader)
 	_ = shaders.UIShader.SetUniformInt(shaders.UniformTex, 0)
-	_ = shaders.UIShader.SetUniformInt(shaders.UniformAtlas, 1)
-	_ = shaders.UIShader.SetUniformInt(shaders.UniformFrame, 0)
 
 	scene.Boxes.ForEach(func(box *Box) {
-		// Set animation frame.
-		_ = shaders.UIShader.SetUniformInt(shaders.UniformFrame, box.AnimPlayer.Frame())
-
 		// Set color.
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, math2.ColorToVec4(box.Color))
 
@@ -53,7 +48,6 @@ func (scene *Scene) Render(context *render.Context) {
 		if box.Texture != nil {
 			box.Texture.Bind()
 			texW, texH := float32(box.Texture.Width()), float32(box.Texture.Height())
-			_ = shaders.UIShader.SetUniformBool(shaders.UniformAtlasUsed, box.Texture.IsAtlas())
 			srcVec := mgl32.Vec4{
 				box.src.X / texW,
 				box.src.Y / texH,
@@ -65,10 +59,8 @@ func (scene *Scene) Render(context *render.Context) {
 
 		// Set uniforms
 		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())
-		assets.QuadMesh.DrawAll()
+		cache.QuadMesh.DrawAll()
 	})
-
-	_ = shaders.UIShader.SetUniformInt(shaders.UniformFrame, 0)
 
 	// Render text
 	scene.Texts.ForEach(func(text *Text) {
@@ -77,7 +69,6 @@ func (scene *Scene) Render(context *render.Context) {
 
 		// Set texture
 		text.texture.Bind()
-		_ = shaders.UIShader.SetUniformBool(shaders.UniformAtlasUsed, text.texture.IsAtlas())
 		srcRect := math2.Rect{X: 0.0, Y: 0.0, Width: 1.0, Height: 1.0}
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, srcRect.Vec4())
 
