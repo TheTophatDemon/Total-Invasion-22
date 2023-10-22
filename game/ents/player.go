@@ -25,7 +25,7 @@ func NewPlayer(position, angles mgl32.Vec3) Player {
 					position, angles,
 				),
 				Shape:     collision.ShapeSphere(0.7),
-				Pushiness: 10,
+				Pushiness: 11,
 				NoClip:    false,
 			},
 			YawAngle:  mgl32.DegToRad(angles[1]),

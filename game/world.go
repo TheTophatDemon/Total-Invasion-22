@@ -106,13 +106,16 @@ func (w *World) Update(deltaTime float32) {
 
 	// Resolve collisions
 	w.Players.ForEach(func(p *ents.Player) {
-		w.Enemies.ForEach(func(e *ents.Enemy) {
-			p.Body.ResolveCollision(&e.Body)
-		})
 		w.GameMap.ResolveCollision(&p.Body)
+		w.Enemies.ForEach(func(e *ents.Enemy) {
+			e.Body.ResolveCollision(&p.Body)
+		})
 	})
-	w.Enemies.ForEach(func(e *ents.Enemy) {
-		w.GameMap.ResolveCollision(&e.Body)
+	w.Enemies.ForEach(func(e1 *ents.Enemy) {
+		w.GameMap.ResolveCollision(&e1.Body)
+		w.Enemies.ForEach(func(e2 *ents.Enemy) {
+			e2.Body.ResolveCollision(&e1.Body)
+		})
 	})
 
 	// Update FPS counter

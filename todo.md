@@ -1,6 +1,5 @@
 # TODO
-- Directional sprites
-- Wraiths can push you into walls
+- Pushing people into walls bug
 - Input cheat codes
 - Frustum culling of sprites
 - Doors

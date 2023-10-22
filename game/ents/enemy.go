@@ -3,6 +3,7 @@ package ents
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
@@ -16,7 +17,12 @@ type Enemy struct {
 
 func NewEnemy(position, angles mgl32.Vec3) Enemy {
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
-	anim, _ := wraithTexture.GetAnimation("walk;front")
+	var anim textures.Animation
+	if int(position.Len()*1000.0)%2 == 0 {
+		anim, _ = wraithTexture.GetAnimation("attack;front")
+	} else {
+		anim, _ = wraithTexture.GetAnimation("walk;front")
+	}
 	return Enemy{
 		Actor: Actor{
 			Body: comps.Body{
@@ -30,7 +36,7 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 			YawAngle:  mgl32.DegToRad(angles[1]),
 			AccelRate: 80.0,
 			Friction:  20.0,
-			MaxSpeed:  7.0,
+			MaxSpeed:  5.0,
 			RestrictY: position.Y(),
 		},
 		SpriteRender: comps.NewSpriteRender(wraithTexture),

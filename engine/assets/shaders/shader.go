@@ -37,6 +37,7 @@ var (
 	UniformAmbientColor Uniform[mgl32.Vec3] = Uniform[mgl32.Vec3]{"uAmbientColor"}
 	UniformDiffuseColor Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uDiffuseColor"}
 	UniformSrcRect      Uniform[mgl32.Vec4] = Uniform[mgl32.Vec4]{"uSourceRect"}
+	UniformFlipHorz     Uniform[bool]       = Uniform[bool]{"uFlipHorz"}
 )
 
 var (

@@ -1,6 +1,8 @@
 package comps
 
 import (
+	"log"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
@@ -29,20 +31,33 @@ func (sr *SpriteRender) Render(
 	context *render.Context,
 	yawAngle float32,
 ) {
+	sr.meshRender.Shader.Use()
+
+	// Change animation layer based on angle to the camera
 	cameraPos := context.View.Inv().Col(3).Vec3()
 	toCamera := cameraPos.Sub(transform.Position())
 	if toCamera.LenSqr() > mgl32.Epsilon {
 		toCamera = toCamera.Normalize()
-		yawMatrix := mgl32.Rotate3DY(yawAngle)
-		radAngleDiff := math2.Acos(toCamera.Dot(mgl32.TransformCoordinate(math2.Vec3Forward(), yawMatrix.Mat4())))
-		angleDifference := mgl32.RadToDeg(radAngleDiff)
-		layer, _, found := sr.meshRender.Texture.FindLayerWithinAngle(int(angleDifference))
+		ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(yawAngle).Mat4())
+		dp := toCamera.Dot(ourDirection)
+		cross := toCamera.Cross(ourDirection)
+		radAngleDiff := math2.Acos(dp)
+		angleDifference := int(mgl32.RadToDeg(radAngleDiff))
+		if cross.Dot(math2.Vec3Up()) < 0.0 {
+			angleDifference *= -1
+		}
+		layer, flip, found := sr.meshRender.Texture.FindLayerWithinAngle(angleDifference)
 		if found {
 			anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
 			if found {
 				animPlayer.SwapAnimation(anim)
 			}
+			err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, flip)
+			if err != nil {
+				log.Println("Error setting uniform in (*SpriteRender).Render", err)
+			}
 		}
 	}
+
 	sr.meshRender.Render(transform, animPlayer, context)
 }
