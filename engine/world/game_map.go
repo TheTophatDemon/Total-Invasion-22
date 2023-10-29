@@ -143,9 +143,9 @@ func (gm *Map) ResolveCollision(body *comps.Body) error {
 			switch tileShape.Kind() {
 			case collision.SHAPE_KIND_SPHERE:
 				tileRadius, _ := tileShape.Radius()
-				_ = body.ResolveCollisionSphereSphere(tileCenter, tileRadius)
+				_ = body.ResolveCollisionSphereSphere(tileCenter, tileRadius, 1.0)
 			case collision.SHAPE_KIND_BOX:
-				_ = body.ResolveCollisionSphereBox(tileCenter, tileShape.Extents(), true)
+				_ = body.ResolveCollisionSphereBox(tileCenter, tileShape.Extents(), 1.0)
 			case collision.SHAPE_KIND_MESH:
 				// Check for triangle hits in the center first, then the edges.
 				// This prevents triangle edges from stopping smooth movement along neighboring triangles.

@@ -11,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world"
+	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game/ents"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -105,18 +106,18 @@ func (w *World) Update(deltaTime float32) {
 	w.UI.Update(deltaTime)
 
 	// Resolve collisions
-	w.Players.ForEach(func(p *ents.Player) {
-		w.GameMap.ResolveCollision(&p.Body)
-		w.Enemies.ForEach(func(e *ents.Enemy) {
-			e.Body.ResolveCollision(&p.Body)
-		})
-	})
-	w.Enemies.ForEach(func(e1 *ents.Enemy) {
-		w.GameMap.ResolveCollision(&e1.Body)
-		w.Enemies.ForEach(func(e2 *ents.Enemy) {
-			e2.Body.ResolveCollision(&e1.Body)
-		})
-	})
+	for i := 0; i < 3; i++ {
+		bodiesIter := w.BodyIter()
+		for body := bodiesIter(); body != nil; body = bodiesIter() {
+			innerBodiesIter := w.BodyIter()
+			for innerBody := innerBodiesIter(); innerBody != nil; innerBody = innerBodiesIter() {
+				if innerBody != body {
+					body.ResolveCollision(innerBody)
+				}
+			}
+			w.GameMap.ResolveCollision(body)
+		}
+	}
 
 	// Update FPS counter
 	if fpsText, ok := w.UI.Texts.Get(w.FPSCounter); ok {
@@ -157,4 +158,18 @@ func (w *World) Render() {
 
 	// Render 2D game elements
 	w.UI.Render(&renderContext)
+}
+
+func (w *World) BodyIter() func() *comps.Body {
+	playerIter := w.Players.Iter()
+	enemiesIter := w.Enemies.Iter()
+	return func() *comps.Body {
+		if player := playerIter(); player != nil {
+			return &player.Body
+		}
+		if enemy := enemiesIter(); enemy != nil {
+			return &enemy.Body
+		}
+		return nil
+	}
 }

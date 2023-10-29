@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
@@ -13,6 +14,7 @@ type Enemy struct {
 	Actor
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
+	timer        float32
 }
 
 func NewEnemy(position, angles mgl32.Vec3) Enemy {
@@ -45,9 +47,10 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 }
 
 func (enemy *Enemy) Update(deltaTime float32) {
-	enemy.inputForward = 1.0
-	enemy.YawAngle += deltaTime * 2.0
-	enemy.Body.Transform.SetRotation(0.0, enemy.YawAngle, 0.0)
+	enemy.timer += deltaTime
+	enemy.inputForward = math2.Sin(enemy.timer)
+	// enemy.YawAngle += deltaTime * 2.0
+	// enemy.Body.Transform.SetRotation(0.0, enemy.YawAngle, 0.0)
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.Actor.Update(deltaTime)
 }

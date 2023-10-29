@@ -62,6 +62,13 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 		return
 	}
 
+	// Only half of the collision is resolved in most cases to prevent bodies being pushed through walls
+	resolveFraction := float32(0.5)
+	// For colliding bodies that can't be pushed, the whole collision must be resolved by the pushed body
+	if otherBody.Pushiness > b.Pushiness {
+		resolveFraction = 1.0
+	}
+
 	// Resolve based on shape
 	if _, ok := b.Shape.Radius(); ok {
 		radius, isSphere := otherBody.Shape.Radius()
@@ -69,11 +76,11 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 		isBox := (otherBody.Shape.Kind() == collision.SHAPE_KIND_BOX)
 		switch {
 		case isSphere:
-			b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), radius)
+			b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), radius, resolveFraction)
 		case isMesh:
 			b.ResolveCollisionSphereTriangles(otherBody.Transform.Position(), mesh, nil, collision.TRIHIT_ALL)
 		case isBox:
-			b.ResolveCollisionSphereBox(otherBody.Transform.Position(), otherBody.Shape.Extents(), true)
+			b.ResolveCollisionSphereBox(otherBody.Transform.Position(), otherBody.Shape.Extents(), resolveFraction)
 		default:
 			log.Printf("collision is not implemented between shapes %v and %v.\n", b.Shape, otherBody.Shape)
 		}
@@ -82,7 +89,7 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 	}
 }
 
-func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32) error {
+func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32, resolveFraction float32) error {
 	radius, isSphere := b.Shape.Radius()
 	if !isSphere {
 		return errBodyNotSphere
@@ -91,13 +98,13 @@ func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius fl
 	dist := diff.Len()
 	// Resolve sphere vs. sphere
 	if dist < radius+otherRadius && dist != 0.0 {
-		b.Transform.TranslateV(diff.Normalize().Mul(radius + otherRadius - dist))
+		b.Transform.TranslateV(diff.Normalize().Mul(radius + otherRadius - dist).Mul(resolveFraction))
 	}
 
 	return nil
 }
 
-func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, hitCorners bool) error {
+func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, resolveFraction float32) error {
 	radius, isSphere := b.Shape.Radius()
 	if !isSphere {
 		return errBodyNotSphere
@@ -109,14 +116,9 @@ func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, hi
 	diff := pos.Sub(projectedPoint)
 	distSq := diff.LenSqr()
 
-	// Ignore corner collisions if specified
-	if !hitCorners && math2.Abs(diff.X()) > mgl32.Epsilon && math2.Abs(diff.Y()) > mgl32.Epsilon {
-		return nil
-	}
-
 	if distSq > 0.0 && distSq < radius*radius {
 		// When the sphere's center touches the edge of the box, push in the direction of the edge.
-		b.Transform.TranslateV(diff.Normalize().Mul(radius - math2.Sqrt(distSq)))
+		b.Transform.TranslateV(diff.Normalize().Mul(radius - math2.Sqrt(distSq)).Mul(resolveFraction))
 	}
 
 	return nil

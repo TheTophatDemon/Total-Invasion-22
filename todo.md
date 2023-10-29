@@ -1,5 +1,4 @@
 # TODO
-- Pushing people into walls bug
 - Input cheat codes
 - Frustum culling of sprites
 - Doors
