@@ -1,5 +1,5 @@
 # TODO
-- Input cheat codes
+- Message text
 - Frustum culling of sprites
 - Doors
 - Audio

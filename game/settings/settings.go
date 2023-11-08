@@ -13,6 +13,7 @@ const (
 	ACTION_LOOK_HORZ  = "LookHorz"
 	ACTION_LOOK_VERT  = "LookVert"
 	ACTION_TRAP_MOUSE = "TrapMouse"
+	ACTION_NOCLIP     = "Noclip"
 
 	MOUSE_SENSITIVITY = 0.005
 )

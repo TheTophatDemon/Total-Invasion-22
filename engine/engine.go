@@ -44,6 +44,7 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 	}
 
 	window.MakeContextCurrent()
+	input.Init()
 
 	if err := gl.Init(); err != nil {
 		return err

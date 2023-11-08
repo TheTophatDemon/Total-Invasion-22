@@ -8,12 +8,6 @@ import (
 )
 
 type Action string
-
-type Binding interface {
-	IsPressed() bool
-	Axis() float32
-}
-
 type MouseAxis uint8
 
 const (
@@ -36,6 +30,10 @@ func init() {
 	bindings = make(map[Action]Binding)
 	bindingsWerePressed = make(map[Action]bool)
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
+}
+
+func Init() {
+	glfw.GetCurrentContext().SetKeyCallback(keyCallback)
 }
 
 func Update() {
@@ -73,6 +71,11 @@ func BindActionMouseMove(action Action, axis MouseAxis, sensitivity float32) {
 	bindingsWerePressed[action] = false
 }
 
+func BindActionCharSequence(action Action, sequence []glfw.Key) {
+	bindings[action] = &CharSequenceBinding{sequence: sequence, progress: 0}
+	bindingsWerePressed[action] = false
+}
+
 func IsActionPressed(action Action) bool {
 	bind, ok := bindings[action]
 	if !ok {
@@ -99,4 +102,15 @@ func ActionAxis(action Action) float32 {
 		return 0.0
 	}
 	return bind.Axis()
+}
+
+func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if action == glfw.Press {
+		for _, binding := range bindings {
+			csb, isCSB := binding.(*CharSequenceBinding)
+			if isCSB {
+				csb.OnKeyPress(key)
+			}
+		}
+	}
 }

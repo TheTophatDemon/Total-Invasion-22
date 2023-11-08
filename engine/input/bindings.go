@@ -2,9 +2,14 @@ package input
 
 import (
 	"math"
-	
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
+
+type Binding interface {
+	IsPressed() bool
+	Axis() float32
+}
 
 type KeyBinding struct {
 	key glfw.Key
@@ -15,11 +20,15 @@ func (kb *KeyBinding) IsPressed() bool {
 }
 
 func (kb *KeyBinding) Axis() float32 {
-	if kb.IsPressed() { return 1.0 } else { return 0.0 }
+	if kb.IsPressed() {
+		return 1.0
+	} else {
+		return 0.0
+	}
 }
 
 type MouseMovementBinding struct {
-	axis MouseAxis
+	axis        MouseAxis
 	sensitivity float32
 }
 
@@ -37,4 +46,25 @@ func (mmb *MouseMovementBinding) Axis() float32 {
 		return float32(mouseDeltaY) * mmb.sensitivity
 	}
 	return 0.0
+}
+
+type CharSequenceBinding struct {
+	sequence []glfw.Key
+	progress int
+}
+
+func (csb *CharSequenceBinding) IsPressed() bool {
+	return csb.progress == len(csb.sequence)
+}
+
+func (csb *CharSequenceBinding) Axis() float32 {
+	return float32(csb.progress) / float32(len(csb.sequence))
+}
+
+func (csb *CharSequenceBinding) OnKeyPress(key glfw.Key) {
+	if csb.progress < len(csb.sequence) && key == csb.sequence[csb.progress] {
+		csb.progress += 1
+	} else {
+		csb.progress = 0
+	}
 }

@@ -60,11 +60,13 @@ func (player *Player) Update(deltaTime float32) {
 		player.inputStrafe = 0.0
 	}
 
+	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
+		player.Body.NoClip = !player.Body.NoClip
+	}
+
 	if input.IsActionPressed(settings.ACTION_SLOW) {
-		player.Body.NoClip = true
 		player.MaxSpeed = player.WalkSpeed
 	} else {
-		player.Body.NoClip = false
 		player.MaxSpeed = player.RunSpeed
 	}
 
