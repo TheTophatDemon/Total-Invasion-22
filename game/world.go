@@ -105,18 +105,25 @@ func (w *World) Update(deltaTime float32) {
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.UI.Update(deltaTime)
 
-	// Resolve collisions
-	for i := 0; i < 3; i++ {
-		bodiesIter := w.BodyIter()
-		for body := bodiesIter(); body != nil; body = bodiesIter() {
+	// Update bodies and resolve collisions
+	bodiesIter := w.BodyIter()
+	for body := bodiesIter(); body != nil; body = bodiesIter() {
+		before := body.Transform.Position()
+		body.Update(deltaTime)
+
+		// Restrict movement to the XZ plane
+		after := body.Transform.Position()
+		body.Transform.SetPosition(mgl32.Vec3{after.X(), before.Y(), after.Z()})
+
+		if before.Sub(after).LenSqr() != 0.0 {
 			innerBodiesIter := w.BodyIter()
 			for innerBody := innerBodiesIter(); innerBody != nil; innerBody = innerBodiesIter() {
 				if innerBody != body {
 					body.ResolveCollision(innerBody)
 				}
 			}
-			w.GameMap.ResolveCollision(body)
 		}
+		w.GameMap.ResolveCollision(body)
 	}
 
 	// Update FPS counter

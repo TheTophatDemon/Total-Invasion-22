@@ -39,7 +39,6 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 			AccelRate: 80.0,
 			Friction:  20.0,
 			MaxSpeed:  5.0,
-			RestrictY: position.Y(),
 		},
 		SpriteRender: comps.NewSpriteRender(wraithTexture),
 		AnimPlayer:   comps.NewAnimationPlayer(anim, true),
