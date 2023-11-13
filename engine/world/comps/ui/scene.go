@@ -42,7 +42,7 @@ func (scene *Scene) Render(context *render.Context) {
 
 	scene.Boxes.ForEach(func(box *Box) {
 		// Set color.
-		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, math2.ColorToVec4(box.Color))
+		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, box.Color.Vector())
 
 		// Set texture.
 		if box.Texture != nil {
@@ -64,8 +64,12 @@ func (scene *Scene) Render(context *render.Context) {
 
 	// Render text
 	scene.Texts.ForEach(func(text *Text) {
+		if len(text.text) == 0 {
+			return
+		}
+
 		// Set color
-		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, math2.ColorToVec4(text.Color()))
+		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, text.Color().Vector())
 
 		// Set texture
 		text.texture.Bind()

@@ -1,7 +1,6 @@
 package math2 //Get ready for MATH 2: Revenge of the Quaternions, coming to theatres this Pi Day.
 
 import (
-	"image/color"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -190,16 +189,6 @@ func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 		max(a[0], b[0]),
 		max(a[1], b[1]),
 		max(a[2], b[2]),
-	}
-}
-
-func ColorToVec4(col color.Color) mgl32.Vec4 {
-	r, g, b, a := col.RGBA()
-	return mgl32.Vec4{
-		float32(r) / float32(0xffff),
-		float32(g) / float32(0xffff),
-		float32(b) / float32(0xffff),
-		float32(a) / float32(0xffff),
 	}
 }
 

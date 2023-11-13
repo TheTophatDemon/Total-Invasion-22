@@ -1,5 +1,5 @@
 # TODO
-- Message text
+- Remove handle interface
 - Frustum culling of sprites
 - Doors
 - Audio

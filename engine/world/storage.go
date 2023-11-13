@@ -93,6 +93,7 @@ func (st *Storage[T]) New(init T) (Id[T], *T, bool) {
 			st.owners[i] = Id[T]{
 				index:      st.owners[i].index,
 				generation: st.owners[i].generation + 1,
+				storage:    st,
 			}
 			st.data[i] = init
 
@@ -104,7 +105,7 @@ func (st *Storage[T]) New(init T) (Id[T], *T, bool) {
 			return st.owners[i], &st.data[i], true
 		}
 	}
-	return Id[T]{index: 0, generation: 0}, nil, false
+	return Id[T]{index: 0, generation: 0, storage: nil}, nil, false
 }
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.

@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -17,26 +18,38 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+const (
+	MESSAGE_FADE_SPEED = 2.0
+)
+
 type World struct {
-	UI            *ui.Scene
-	Players       *world.Storage[ents.Player]
-	Enemies       *world.Storage[ents.Enemy]
-	GameMap       *world.Map
-	CurrentPlayer world.Id[ents.Player]
-	FPSCounter    world.Id[ui.Text]
+	UI              *ui.Scene
+	Players         *world.Storage[ents.Player]
+	Enemies         *world.Storage[ents.Enemy]
+	GameMap         *world.Map
+	CurrentPlayer   world.Id[ents.Player]
+	FPSCounter      world.Id[ui.Text]
+	Message         world.Id[ui.Text]
+	messageTimer    float32
+	messagePriority int
 }
 
 func NewWorld(mapPath string) (*World, error) {
-	UI := ui.NewUIScene(256, 64)
-	Players := world.NewStorage[ents.Player](8)
-	Enemies := world.NewStorage[ents.Enemy](256)
+	w := &World{
+		messageTimer:    2.0,
+		messagePriority: 0,
+	}
+
+	w.UI = ui.NewUIScene(256, 64)
+	w.Players = world.NewStorage[ents.Player](8)
+	w.Enemies = world.NewStorage[ents.Enemy](256)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
-	GameMap, err := world.NewMap(te3File)
+	w.GameMap, err = world.NewMap(te3File)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +62,11 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/panel.obj",
 	} {
 		err = errors.Join(
-			GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
-			GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
-			GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
-			GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
-			GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
+			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
+			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
+			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
+			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
+			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
 		)
 		if err != nil {
 			return nil, err
@@ -68,7 +81,7 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/cube_marker.obj",
 		"assets/models/shapes/bridge.obj",
 	} {
-		err = GameMap.SetTileCollisionShapes(shapeName, collision.ShapeBox(math2.BoxFromRadius(1.0)))
+		err = w.GameMap.SetTileCollisionShapes(shapeName, collision.ShapeBox(math2.BoxFromRadius(1.0)))
 		if err != nil {
 			return nil, err
 		}
@@ -76,26 +89,28 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	CurrentPlayer, _, _ := Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles))
+	w.CurrentPlayer, _, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		Enemies.New(ents.NewEnemy(spawn.Position, spawn.Angles))
+		w.Enemies.New(ents.NewEnemy(spawn.Position, spawn.Angles))
 	}
 
 	// UI
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
-	FPSCounter, _, _ := UI.Texts.New(fpsText)
+	w.FPSCounter, _, _ = w.UI.Texts.New(fpsText)
 
-	return &World{
-		UI,
-		Players,
-		Enemies,
-		GameMap,
-		CurrentPlayer,
-		FPSCounter,
-	}, nil
+	message, _ := ui.NewText("assets/textures/atlases/font.fnt", "This is a test message!")
+	message.SetDest(math2.Rect{
+		X:      float32(settings.WINDOW_WIDTH) / 3.0,
+		Y:      float32(settings.WINDOW_HEIGHT) / 2.0,
+		Width:  float32(settings.WINDOW_WIDTH / 3.0),
+		Height: float32(settings.WINDOW_HEIGHT) / 2.0,
+	}).SetAlignment(ui.TEXT_ALIGN_CENTER).SetColor(color.Red)
+	w.Message, _, _ = w.UI.Texts.New(message)
+
+	return w, nil
 }
 
 func (w *World) Update(deltaTime float32) {
@@ -111,11 +126,7 @@ func (w *World) Update(deltaTime float32) {
 		before := body.Transform.Position()
 		body.Update(deltaTime)
 
-		// Restrict movement to the XZ plane
-		after := body.Transform.Position()
-		body.Transform.SetPosition(mgl32.Vec3{after.X(), before.Y(), after.Z()})
-
-		if before.Sub(after).LenSqr() != 0.0 {
+		if before.Sub(body.Transform.Position()).LenSqr() != 0.0 {
 			innerBodiesIter := w.BodyIter()
 			for innerBody := innerBodiesIter(); innerBody != nil; innerBody = innerBodiesIter() {
 				if innerBody != body {
@@ -124,6 +135,25 @@ func (w *World) Update(deltaTime float32) {
 			}
 		}
 		w.GameMap.ResolveCollision(body)
+
+		// Restrict movement to the XZ plane
+		after := body.Transform.Position()
+		body.Transform.SetPosition(mgl32.Vec3{after.X(), before.Y(), after.Z()})
+	}
+
+	// Update message text
+	if message, ok := w.Message.Get().(*ui.Text); ok {
+		if w.messageTimer > 0.0 {
+			w.messageTimer -= deltaTime
+		} else {
+			message.SetColor(message.Color().Fade(deltaTime * MESSAGE_FADE_SPEED))
+			if message.Color().A <= 0.0 {
+				message.SetColor(color.Transparent)
+				w.messageTimer = 0.0
+				w.messagePriority = 0
+				message.SetText("")
+			}
+		}
 	}
 
 	// Update FPS counter
@@ -178,5 +208,15 @@ func (w *World) BodyIter() func() *comps.Body {
 			return &enemy.Body
 		}
 		return nil
+	}
+}
+
+func (w *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
+	if priority >= w.messagePriority {
+		w.messageTimer = duration
+		w.messagePriority = priority
+		if message, ok := w.Message.Get().(*ui.Text); ok {
+			message.SetText(text).SetColor(colr)
+		}
 	}
 }

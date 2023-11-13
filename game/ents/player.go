@@ -2,6 +2,7 @@ package ents
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -15,9 +16,10 @@ type Player struct {
 	Camera                                   comps.Camera
 	RunSpeed, WalkSpeed                      float32
 	StandFriction, WalkFriction, RunFriction float32
+	world                                    WorldOps
 }
 
-func NewPlayer(position, angles mgl32.Vec3) Player {
+func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 	return Player{
 		Actor: Actor{
 			Body: comps.Body{
@@ -40,6 +42,7 @@ func NewPlayer(position, angles mgl32.Vec3) Player {
 		StandFriction: 80.0,
 		WalkFriction:  1.0,
 		RunFriction:   20.0,
+		world:         world,
 	}
 }
 
@@ -62,6 +65,13 @@ func (player *Player) Update(deltaTime float32) {
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
 		player.Body.NoClip = !player.Body.NoClip
+		message := "No-Clip "
+		if player.Body.NoClip {
+			message += "Activated"
+		} else {
+			message += "Deactivated"
+		}
+		player.world.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
