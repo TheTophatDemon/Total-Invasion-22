@@ -4,24 +4,17 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
-// This interface represents a type-agnostic Id.
-type Handle interface {
-	Get() any  // Retrieves a pointer to the item that this handle points to.
-	Has() bool // Returns true if the item that this handle points to is active and valid.
-	Remove()   // Removes this handle's item from its storage.
-}
-
 type Id[T any] struct {
 	index, generation uint16
 	storage           *Storage[T]
 }
 
-func (id Id[T]) Get() any {
+func (id Id[T]) Get() (*T, bool) {
 	if id.storage == nil {
-		return nil
+		return nil, false
 	}
-	ptr, _ := id.storage.Get(id)
-	return ptr
+	ptr, ok := id.storage.Get(id)
+	return ptr, ok
 }
 
 func (id Id[T]) Has() bool {

@@ -142,7 +142,7 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update message text
-	if message, ok := w.Message.Get().(*ui.Text); ok {
+	if message, ok := w.Message.Get(); ok {
 		if w.messageTimer > 0.0 {
 			w.messageTimer -= deltaTime
 		} else {
@@ -215,7 +215,7 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
 		w.messagePriority = priority
-		if message, ok := w.Message.Get().(*ui.Text); ok {
+		if message, ok := w.Message.Get(); ok {
 			message.SetText(text).SetColor(colr)
 		}
 	}
