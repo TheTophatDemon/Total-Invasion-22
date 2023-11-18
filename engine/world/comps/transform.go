@@ -52,6 +52,10 @@ func (t *Transform) Position() mgl32.Vec3 {
 	return t.pos
 }
 
+func (t *Transform) Scale() mgl32.Vec3 {
+	return t.scale
+}
+
 func (t *Transform) Translate(x, y, z float32) {
 	t.pos[0] += x
 	t.pos[1] += y

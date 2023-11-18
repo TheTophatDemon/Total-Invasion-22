@@ -1,8 +1,8 @@
 # TODO
-- Remove handle interface
-- Frustum culling of sprites
+- Raycasting
+    * Raycast against the map first, then check if any bodies intersect that line
 - Doors
+- Sickle
 - Audio
-- Debug console
-- Text hot reloading?
 - Music
+- Bounding box hierarchy for collisions / raycasting

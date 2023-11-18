@@ -5,6 +5,7 @@ import (
 )
 
 type Camera struct {
+	Transform
 	projection mgl32.Mat4
 }
 
@@ -14,6 +15,6 @@ func NewCamera(fovDegrees, aspectRatio, nearDist, farDist float32) Camera {
 	}
 }
 
-func (c *Camera) GetProjectionMatrix() mgl32.Mat4 {
+func (c *Camera) ProjectionMatrix() mgl32.Mat4 {
 	return c.projection
 }

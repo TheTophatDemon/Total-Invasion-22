@@ -31,6 +31,10 @@ func (sr *SpriteRender) Render(
 	context *render.Context,
 	yawAngle float32,
 ) {
+	if !render.IsSphereVisible(context, transform.Position(), transform.Scale().X()) {
+		return
+	}
+
 	sr.meshRender.Shader.Use()
 
 	// Change animation layer based on angle to the camera
@@ -60,4 +64,6 @@ func (sr *SpriteRender) Render(
 	}
 
 	sr.meshRender.Render(transform, animPlayer, context)
+
+	context.DrawnSpriteCount++
 }

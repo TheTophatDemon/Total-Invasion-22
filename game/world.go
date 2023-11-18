@@ -23,15 +23,15 @@ const (
 )
 
 type World struct {
-	UI              *ui.Scene
-	Players         *world.Storage[ents.Player]
-	Enemies         *world.Storage[ents.Enemy]
-	GameMap         *world.Map
-	CurrentPlayer   world.Id[ents.Player]
-	FPSCounter      world.Id[ui.Text]
-	Message         world.Id[ui.Text]
-	messageTimer    float32
-	messagePriority int
+	UI                        *ui.Scene
+	Players                   *world.Storage[ents.Player]
+	Enemies                   *world.Storage[ents.Enemy]
+	GameMap                   *world.Map
+	CurrentPlayer             world.Id[ents.Player]
+	FPSCounter, SpriteCounter world.Id[ui.Text]
+	Message                   world.Id[ui.Text]
+	messageTimer              float32
+	messagePriority           int
 }
 
 func NewWorld(mapPath string) (*World, error) {
@@ -100,6 +100,15 @@ func NewWorld(mapPath string) (*World, error) {
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
 	w.FPSCounter, _, _ = w.UI.Texts.New(fpsText)
+
+	var spriteCounter *ui.Text
+	w.SpriteCounter, spriteCounter, _ = w.UI.Texts.New(ui.Text{})
+	spriteCounter.
+		SetText("Sprites drawn: 0").
+		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 32.0}).
+		SetScale(1.0).
+		SetColor(color.Blue).
+		SetFont("assets/textures/atlases/font.fnt")
 
 	message, _ := ui.NewText("assets/textures/atlases/font.fnt", "This is a test message!")
 	message.SetDest(math2.Rect{
@@ -173,7 +182,7 @@ func (w *World) Render() {
 
 	// Setup 3D game render context
 	viewMat := cameraTransform.Inv()
-	projMat := camera.GetProjectionMatrix()
+	projMat := camera.ProjectionMatrix()
 	renderContext := render.Context{
 		View:           viewMat,
 		Projection:     projMat,
@@ -186,6 +195,10 @@ func (w *World) Render() {
 	// Render 3D game elements
 	w.GameMap.Render(&renderContext)
 	w.Enemies.Render((*ents.Enemy).Render, &renderContext)
+
+	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
+		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v", renderContext.DrawnSpriteCount))
+	}
 
 	// Setup 2D render context
 	renderContext = render.Context{
