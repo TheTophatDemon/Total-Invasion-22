@@ -26,7 +26,7 @@ func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
 				),
-				Shape:     collision.ShapeSphere(0.7),
+				Shape:     collision.NewSphere(0.7),
 				Pushiness: 10,
 				NoClip:    false,
 			},

@@ -1,8 +1,8 @@
 # TODO
-- Raycasting
-    * Raycast against the map first, then check if any bodies intersect that line
+- Raycasting against enemies
 - Doors
-- Sickle
+- Props
 - Audio
+- Sickle
 - Music
 - Bounding box hierarchy for collisions / raycasting

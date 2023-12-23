@@ -27,6 +27,22 @@ func (kb *KeyBinding) Axis() float32 {
 	}
 }
 
+type MouseButtonBinding struct {
+	button glfw.MouseButton
+}
+
+func (mbb *MouseButtonBinding) IsPressed() bool {
+	return (glfw.GetCurrentContext().GetMouseButton(mbb.button) == glfw.Press)
+}
+
+func (mbb *MouseButtonBinding) Axis() float32 {
+	if mbb.IsPressed() {
+		return 1.0
+	} else {
+		return 0.0
+	}
+}
+
 type MouseMovementBinding struct {
 	axis        MouseAxis
 	sensitivity float32

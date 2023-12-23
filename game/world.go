@@ -55,8 +55,8 @@ func NewWorld(mapPath string) (*World, error) {
 	}
 
 	// Set panel collision shapes
-	panelShapeX := collision.ShapeBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
-	panelShapeZ := collision.ShapeBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
+	panelShapeX := collision.NewBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
+	panelShapeZ := collision.NewBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
 	for _, shapeName := range [...]string{
 		"assets/models/shapes/bars.obj",
 		"assets/models/shapes/panel.obj",
@@ -81,7 +81,7 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/cube_marker.obj",
 		"assets/models/shapes/bridge.obj",
 	} {
-		err = w.GameMap.SetTileCollisionShapes(shapeName, collision.ShapeBox(math2.BoxFromRadius(1.0)))
+		err = w.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
 		if err != nil {
 			return nil, err
 		}
@@ -128,6 +128,14 @@ func (w *World) Update(deltaTime float32) {
 	w.Players.Update((*ents.Player).Update, deltaTime)
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.UI.Update(deltaTime)
+
+	// if input.IsActionJustPressed(settings.ACTION_FIRE) {
+	// 	if player, ok := w.CurrentPlayer.Get(); ok {
+	// 		rayOrigin := player.Body.Transform.Position()
+	// 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body.Transform.Matrix())
+	// 		mapHit := w.GameMap.CastRay(rayOrigin, rayDir)
+	// 	}
+	// }
 
 	// Update bodies and resolve collisions
 	bodiesIter := w.BodyIter()
@@ -232,4 +240,17 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 			message.SetText(text).SetColor(colr)
 		}
 	}
+}
+
+func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody *comps.Body) (collision.RaycastResult, comps.HasBody) {
+	rayBB := math2.BoxFromPoints(rayOrigin, rayDir.Mul(maxDist))
+	mapHit := w.GameMap.CastRay(rayOrigin, rayDir)
+	nextBody := w.BodyIter()
+	for body := nextBody(); body != nil; body = nextBody() {
+		if body == excludeBody || !body.Shape.Extents().Intersects(rayBB) {
+			continue
+		}
+
+	}
+	return mapHit, nil
 }

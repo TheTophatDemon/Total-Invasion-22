@@ -1,90 +1,134 @@
 package collision
 
 import (
+	"math"
+
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
-type ShapeKind uint8
+type Shape interface {
+	Extents() math2.Box                                              // Returns the body's bounding box, centered at its origin.
+	Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult // Test the shape for collision against a ray
+}
 
-const (
-	SHAPE_KIND_NONE ShapeKind = iota
-	SHAPE_KIND_SPHERE
-	SHAPE_KIND_BOX
-	SHAPE_KIND_MESH
-)
+type shape struct {
+	extents math2.Box
+}
 
-func (sk ShapeKind) String() string {
-	switch sk {
-	case SHAPE_KIND_NONE:
-		return "None"
-	case SHAPE_KIND_SPHERE:
-		return "Sphere"
-	case SHAPE_KIND_BOX:
-		return "Box"
-	case SHAPE_KIND_MESH:
-		return "Mesh"
+type Box struct {
+	shape
+}
+
+func NewBox(extents math2.Box) Box {
+	return Box{
+		shape: shape{
+			extents: extents,
+		},
 	}
-	return "Invalid"
 }
 
-type Shape struct {
-	kind    ShapeKind
-	radius  float32    // The radius of the sphere collision shape.
-	extents math2.Box  // Describes the body's bounding box, centered at its origin.
-	mesh    *geom.Mesh // Refers to the mesh used for the mesh collision shape.
+func (b Box) Extents() math2.Box {
+	return b.extents
 }
 
-func (s *Shape) String() string {
-	return s.kind.String()
+func (b Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult {
+	return RayBoxCollision(rayOrigin, rayDir, b.extents.Translate(shapeOffset))
 }
 
-func (s *Shape) Extents() math2.Box {
+type Sphere struct {
+	shape
+	radius float32
+}
+
+func NewSphere(radius float32) Sphere {
+	return Sphere{
+		shape: shape{
+			extents: math2.BoxFromRadius(radius),
+		},
+		radius: radius,
+	}
+}
+
+func (s Sphere) String() string {
+	return "Sphere"
+}
+
+func (s Sphere) Extents() math2.Box {
 	return s.extents
 }
 
-func (s *Shape) Kind() ShapeKind {
-	return s.kind
+func (s Sphere) Radius() float32 {
+	return s.radius
 }
 
-func ShapeSphere(radius float32) Shape {
-	return Shape{
-		kind:    SHAPE_KIND_SPHERE,
-		radius:  radius,
-		extents: math2.BoxFromRadius(radius),
-	}
+func (s Sphere) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult {
+	return RaySphereCollision(rayOrigin, rayDir, shapeOffset, s.radius)
 }
 
-// Returns the shape's radius and 'true' if the shape is a sphere.
-func (s *Shape) Radius() (float32, bool) {
-	if s.kind != SHAPE_KIND_SPHERE {
-		return 0.0, false
-	}
-	return s.radius, true
+type Mesh struct {
+	shape
+	mesh            *geom.Mesh
+	triangleIndices []int
 }
 
-func ShapeBox(extents math2.Box) Shape {
-	return Shape{
-		kind:    SHAPE_KIND_BOX,
-		extents: extents,
-	}
-}
-
-func ShapeMesh(mesh *geom.Mesh) Shape {
+func NewMesh(mesh *geom.Mesh) Mesh {
 	if mesh == nil {
 		panic("mesh must not be nil")
 	}
-	return Shape{
-		kind:    SHAPE_KIND_MESH,
-		extents: mesh.BoundingBox(),
-		mesh:    mesh,
+	return Mesh{
+		shape: shape{
+			extents: mesh.BoundingBox(),
+		},
+		mesh:            mesh,
+		triangleIndices: nil,
 	}
 }
 
-// Returns the shape's mesh and 'true' if the shape is a mesh.
-func (s *Shape) Mesh() (*geom.Mesh, bool) {
-	if s.kind != SHAPE_KIND_MESH {
-		return nil, false
+func NewMeshSubset(mesh *geom.Mesh, triangleIndices []int) Mesh {
+	if mesh == nil {
+		panic("mesh must not be nil")
 	}
-	return s.mesh, true
+	return Mesh{
+		shape: shape{
+			extents: mesh.BoundingBox(),
+		},
+		mesh:            mesh,
+		triangleIndices: triangleIndices,
+	}
+}
+
+func (m Mesh) Mesh() *geom.Mesh {
+	return m.mesh
+}
+
+func (m Mesh) Extents() math2.Box {
+	return m.mesh.BoundingBox()
+}
+
+func (m Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) (cast RaycastResult) {
+	meshTris := m.mesh.Triangles()
+	loopLimit := len(meshTris)
+	if m.triangleIndices != nil {
+		loopLimit = len(m.triangleIndices)
+	}
+	var nearestHitDist float32 = math.MaxFloat32
+	for i := 0; i < loopLimit; i++ {
+		var triangle math2.Triangle
+		if m.triangleIndices == nil {
+			triangle = meshTris[i]
+		} else {
+			triangle = meshTris[m.triangleIndices[i]]
+		}
+
+		newCast := RayTriangleCollision(rayOrigin, rayDir, triangle)
+		if newCast.Hit {
+			if dist := newCast.Position.Sub(rayOrigin).LenSqr(); dist < nearestHitDist {
+				nearestHitDist = dist
+				cast = newCast
+			}
+		}
+	}
+	return
 }

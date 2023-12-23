@@ -7,7 +7,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-type Action string
+type Action uint16
 type MouseAxis uint8
 
 const (
@@ -63,6 +63,11 @@ func IsMouseTrapped() bool {
 
 func BindActionKey(action Action, key glfw.Key) {
 	bindings[action] = &KeyBinding{key}
+	bindingsWerePressed[action] = false
+}
+
+func BindActionMouseButton(action Action, button glfw.MouseButton) {
+	bindings[action] = &MouseButtonBinding{button}
 	bindingsWerePressed[action] = false
 }
 

@@ -10,27 +10,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
 
-type CollisionShape uint8
-
-const (
-	COL_SHAPE_SPHERE CollisionShape = iota
-	COL_SHAPE_MESH
-)
-
-func (cs CollisionShape) String() string {
-	switch cs {
-	case COL_SHAPE_SPHERE:
-		return "Sphere"
-	case COL_SHAPE_MESH:
-		return "Mesh"
-	}
-	return "Unknown"
-}
-
-var (
-	errBodyNotSphere = fmt.Errorf("body should be a sphere")
-)
-
 type HasBody interface {
 	Body() *Body
 }
@@ -69,31 +48,23 @@ func (b *Body) ResolveCollision(otherBody *Body) {
 		resolveFraction = 1.0
 	}
 
-	// Resolve based on shape
-	if _, ok := b.Shape.Radius(); ok {
-		radius, isSphere := otherBody.Shape.Radius()
-		mesh, isMesh := otherBody.Shape.Mesh()
-		isBox := (otherBody.Shape.Kind() == collision.SHAPE_KIND_BOX)
-		switch {
-		case isSphere:
-			b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), radius, resolveFraction)
-		case isMesh:
-			b.ResolveCollisionSphereTriangles(otherBody.Transform.Position(), mesh, nil, collision.TRIHIT_ALL)
-		case isBox:
-			b.ResolveCollisionSphereBox(otherBody.Transform.Position(), otherBody.Shape.Extents(), resolveFraction)
-		default:
-			log.Printf("collision is not implemented between shapes %v and %v.\n", b.Shape, otherBody.Shape)
-		}
-	} else {
+	if _, isSphere := b.Shape.(collision.Sphere); !isSphere {
 		log.Printf("collision is not implemented for shape %v.\n", b.Shape)
+	}
+
+	// Resolve based on shape
+	switch otherShape := otherBody.Shape.(type) {
+	case collision.Box:
+		b.ResolveCollisionSphereBox(otherBody.Transform.Position(), otherShape.Extents(), resolveFraction)
+	case collision.Sphere:
+		b.ResolveCollisionSphereSphere(otherBody.Transform.Position(), otherShape.Radius(), resolveFraction)
+	case collision.Mesh:
+		b.ResolveCollisionSphereTriangles(otherBody.Transform.Position(), otherShape.Mesh(), nil, collision.TRIHIT_ALL)
 	}
 }
 
 func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius float32, resolveFraction float32) error {
-	radius, isSphere := b.Shape.Radius()
-	if !isSphere {
-		return errBodyNotSphere
-	}
+	radius := b.Shape.(collision.Sphere).Radius()
 	diff := b.Transform.Position().Sub(spherePos)
 	dist := diff.Len()
 	// Resolve sphere vs. sphere
@@ -105,10 +76,7 @@ func (b *Body) ResolveCollisionSphereSphere(spherePos mgl32.Vec3, otherRadius fl
 }
 
 func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, resolveFraction float32) error {
-	radius, isSphere := b.Shape.Radius()
-	if !isSphere {
-		return errBodyNotSphere
-	}
+	radius := b.Shape.(collision.Sphere).Radius()
 	pos := b.Transform.Position()
 
 	box = box.Translate(boxOffset)
@@ -125,10 +93,7 @@ func (b *Body) ResolveCollisionSphereBox(boxOffset mgl32.Vec3, box math2.Box, re
 }
 
 func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh *geom.Mesh, triangleIndices []int, filter collision.TriangleHit) error {
-	radius, isSphere := b.Shape.Radius()
-	if !isSphere {
-		return errBodyNotSphere
-	}
+	radius := b.Shape.(collision.Sphere).Radius()
 	if mesh == nil {
 		return fmt.Errorf("mesh cannot be nil")
 	}

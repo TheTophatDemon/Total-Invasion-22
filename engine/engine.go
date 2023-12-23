@@ -75,7 +75,7 @@ func Run(app App) {
 			tickTimer = 0.0
 
 			time := glfw.GetTime()
-			deltaTime := float32(time - previousTime)
+			deltaTime := min(1.0/60.0, float32(time-previousTime))
 			previousTime = time
 
 			//Calc FPS

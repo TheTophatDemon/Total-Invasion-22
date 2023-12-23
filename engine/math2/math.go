@@ -81,6 +81,19 @@ func BoxFromRadius(radius float32) Box {
 	}
 }
 
+func BoxFromPoints(points ...mgl32.Vec3) Box {
+	min := mgl32.Vec3{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32}
+	max := mgl32.Vec3{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32}
+	for i := range points {
+		min = Vec3Min(min, points[i])
+		max = Vec3Max(max, points[i])
+	}
+	return Box{
+		Min: min,
+		Max: max,
+	}
+}
+
 // Returns true if two boxes intersect.
 // Each box is described by an origin position and a half-size vector.
 func (box Box) Intersects(other Box) bool {

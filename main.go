@@ -48,6 +48,7 @@ func main() {
 	input.BindActionKey(settings.ACTION_TRAP_MOUSE, glfw.KeyEscape)
 	input.BindActionMouseMove(settings.ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, settings.MOUSE_SENSITIVITY)
 	input.BindActionMouseMove(settings.ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, settings.MOUSE_SENSITIVITY)
+	input.BindActionMouseButton(settings.ACTION_FIRE, glfw.MouseButton1)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 
 	input.TrapMouse()

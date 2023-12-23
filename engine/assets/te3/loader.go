@@ -147,6 +147,10 @@ func (tiles *Tiles) OutOfBounds(x, y, z int) bool {
 	return x < 0 || y < 0 || z < 0 || x >= tiles.Width || y >= tiles.Height || z >= tiles.Length
 }
 
+func (tiles *Tiles) GridSpacing() float32 {
+	return GRID_SPACING
+}
+
 func (tiles *Tiles) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 	out := mgl32.Vec3{
 		float32(i) * GRID_SPACING,
