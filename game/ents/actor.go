@@ -5,12 +5,19 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/world/comps"
 )
 
+type HasActor interface {
+	comps.HasBody
+	Actor() *Actor
+}
+
 type Actor struct {
 	body                          comps.Body
 	MaxSpeed, AccelRate, Friction float32
 	inputForward, inputStrafe     float32
 	YawAngle                      float32 // Radians
 }
+
+var _ HasActor = (*Actor)(nil)
 
 func (a *Actor) Update(deltaTime float32) {
 	input := mgl32.Vec3{a.inputStrafe, 0.0, -a.inputForward}
@@ -30,6 +37,10 @@ func (a *Actor) Update(deltaTime float32) {
 	if speed := a.body.Velocity.Len(); speed > a.MaxSpeed && a.MaxSpeed > mgl32.Epsilon {
 		a.body.Velocity = a.body.Velocity.Mul(a.MaxSpeed / speed)
 	}
+}
+
+func (a *Actor) Actor() *Actor {
+	return a
 }
 
 func (a *Actor) Body() *comps.Body {

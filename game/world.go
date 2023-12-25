@@ -37,6 +37,8 @@ type World struct {
 	messagePriority           int
 }
 
+var _ ents.WorldOps = (*World)(nil)
+
 func NewWorld(mapPath string) (*World, error) {
 	w := &World{
 		messageTimer:    2.0,
@@ -244,6 +246,20 @@ func (w *World) BodyIter() func() comps.HasBody {
 	}
 }
 
+func (w *World) ActorsIter() func() ents.HasActor {
+	playerIter := w.Players.Iter()
+	enemiesIter := w.Enemies.Iter()
+	return func() ents.HasActor {
+		if player := playerIter(); player != nil {
+			return player
+		}
+		if enemy := enemiesIter(); enemy != nil {
+			return enemy
+		}
+		return nil
+	}
+}
+
 func (w *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
@@ -279,4 +295,36 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDis
 		return closestBodyHit, closestEnt
 	}
 	return mapHit, nil
+}
+
+func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception ents.HasActor) []ents.HasActor {
+	radiusSq := sphereRadius * sphereRadius
+	nextActor := w.ActorsIter()
+	result := make([]ents.HasActor, 0)
+	for actorEnt := nextActor(); actorEnt != nil; actorEnt = nextActor() {
+		if actorEnt == exception {
+			continue
+		}
+		body := actorEnt.Body()
+		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
+			result = append(result, actorEnt)
+		}
+	}
+	return result
+}
+
+func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []comps.HasBody {
+	radiusSq := sphereRadius * sphereRadius
+	nextBody := w.BodyIter()
+	result := make([]comps.HasBody, 0)
+	for bodyEnt := nextBody(); bodyEnt != nil; bodyEnt = nextBody() {
+		if bodyEnt == exception {
+			continue
+		}
+		body := bodyEnt.Body()
+		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
+			result = append(result, bodyEnt)
+		}
+	}
+	return result
 }

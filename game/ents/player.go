@@ -16,16 +16,27 @@ const (
 )
 
 type Player struct {
-	Actor
 	Camera                                   comps.Camera
 	RunSpeed, WalkSpeed                      float32
 	StandFriction, WalkFriction, RunFriction float32
+	actor                                    Actor
 	world                                    WorldOps
+}
+
+var _ HasActor = (*Player)(nil)
+var _ comps.HasBody = (*Player)(nil)
+
+func (p *Player) Actor() *Actor {
+	return &p.actor
+}
+
+func (p *Player) Body() *comps.Body {
+	return &p.actor.body
 }
 
 func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 	return Player{
-		Actor: Actor{
+		actor: Actor{
 			body: comps.Body{
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
@@ -52,25 +63,25 @@ func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 
 func (player *Player) Update(deltaTime float32) {
 	if input.IsActionPressed(settings.ACTION_FORWARD) {
-		player.inputForward = 1.0
+		player.actor.inputForward = 1.0
 	} else if input.IsActionPressed(settings.ACTION_BACK) {
-		player.inputForward = -1.0
+		player.actor.inputForward = -1.0
 	} else {
-		player.inputForward = 0.0
+		player.actor.inputForward = 0.0
 	}
 
 	if input.IsActionPressed(settings.ACTION_RIGHT) {
-		player.inputStrafe = 1.0
+		player.actor.inputStrafe = 1.0
 	} else if input.IsActionPressed(settings.ACTION_LEFT) {
-		player.inputStrafe = -1.0
+		player.actor.inputStrafe = -1.0
 	} else {
-		player.inputStrafe = 0.0
+		player.actor.inputStrafe = 0.0
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
-		player.body.NoClip = !player.body.NoClip
+		player.Body().NoClip = !player.Body().NoClip
 		message := "No-Clip "
-		if player.body.NoClip {
+		if player.Body().NoClip {
 			message += "Activated"
 		} else {
 			message += "Deactivated"
@@ -79,8 +90,8 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionPressed(settings.ACTION_USE) {
-		rayOrigin := player.body.Transform.Position()
-		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.body.Transform.Matrix())
+		rayOrigin := player.Body().Transform.Position()
+		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
 		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)
 		if hit.Hit && closestBody != nil {
 			if usable, isUsable := closestBody.(Usable); isUsable {
@@ -90,23 +101,23 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
-		player.MaxSpeed = player.WalkSpeed
+		player.actor.MaxSpeed = player.WalkSpeed
 	} else {
-		player.MaxSpeed = player.RunSpeed
+		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	if math2.Abs(player.inputForward) > mgl32.Epsilon || math2.Abs(player.inputStrafe) > mgl32.Epsilon {
-		if player.MaxSpeed == player.WalkSpeed {
-			player.Friction = player.WalkFriction
+	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
+		if player.actor.MaxSpeed == player.WalkSpeed {
+			player.actor.Friction = player.WalkFriction
 		} else {
-			player.Friction = player.RunFriction
+			player.actor.Friction = player.RunFriction
 		}
 	} else {
-		player.Friction = player.StandFriction
+		player.actor.Friction = player.StandFriction
 	}
 
-	player.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	player.body.Transform.SetRotation(0.0, player.YawAngle, 0.0)
+	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
+	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 
-	player.Actor.Update(deltaTime)
+	player.actor.Update(deltaTime)
 }

@@ -1,7 +1,5 @@
 # TODO
 - Doors
-    * Going through player
-    * Stop when something's in the way
     * Better model & texture
 - Props
 - Teleporters

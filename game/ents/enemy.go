@@ -11,10 +11,21 @@ import (
 )
 
 type Enemy struct {
-	Actor
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
+	actor        Actor
 	timer        float32
+}
+
+var _ HasActor = (*Enemy)(nil)
+var _ comps.HasBody = (*Enemy)(nil)
+
+func (e *Enemy) Actor() *Actor {
+	return &e.actor
+}
+
+func (e *Enemy) Body() *comps.Body {
+	return &e.actor.body
 }
 
 func NewEnemy(position, angles mgl32.Vec3) Enemy {
@@ -26,7 +37,7 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 		anim, _ = wraithTexture.GetAnimation("walk;front")
 	}
 	return Enemy{
-		Actor: Actor{
+		actor: Actor{
 			body: comps.Body{
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
@@ -47,13 +58,13 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 
 func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.timer += deltaTime
-	enemy.inputForward = math2.Sin(enemy.timer)
+	enemy.actor.inputForward = math2.Sin(enemy.timer)
 	// enemy.YawAngle += deltaTime * 2.0
 	// enemy.Body.Transform.SetRotation(0.0, enemy.YawAngle, 0.0)
 	enemy.AnimPlayer.Update(deltaTime)
-	enemy.Actor.Update(deltaTime)
+	enemy.actor.Update(deltaTime)
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(&enemy.body.Transform, &enemy.AnimPlayer, context, enemy.YawAngle)
+	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.actor.YawAngle)
 }

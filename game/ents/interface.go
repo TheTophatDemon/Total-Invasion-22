@@ -12,6 +12,8 @@ import (
 type WorldOps interface {
 	ShowMessage(text string, duration float32, priority int, colr color.Color)
 	Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody)
+	BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []comps.HasBody
+	ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []HasActor
 }
 
 // Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.

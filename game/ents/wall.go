@@ -179,7 +179,12 @@ func (w *Wall) Update(deltaTime float32) {
 	case MOVE_PHASE_CLOSING:
 		targetDir := w.Origin.Sub(w.body.Transform.Position())
 		targetDist := targetDir.Len()
-		if targetDist <= w.Speed*deltaTime {
+		// Detect if something is standing in the way
+		blockers := w.world.ActorsInSphere(w.Origin, w.body.Shape.Extents().LongestDimension(), nil)
+		if len(blockers) > 0 {
+			w.body.Velocity = mgl32.Vec3{}
+			w.movePhase = MOVE_PHASE_OPENING
+		} else if targetDist <= w.Speed*deltaTime {
 			w.body.Transform.SetPosition(w.Origin)
 			w.movePhase = MOVE_PHASE_CLOSED
 			w.body.Velocity = mgl32.Vec3{}
@@ -189,9 +194,8 @@ func (w *Wall) Update(deltaTime float32) {
 	case MOVE_PHASE_OPEN:
 		w.waitTimer += deltaTime
 		if w.waitTimer > w.WaitTime {
-			// TODO: Detect if something is standing in the way
-			w.waitTimer = 0.0
 			w.movePhase = MOVE_PHASE_CLOSING
+			w.waitTimer = 0.0
 		}
 		fallthrough
 	case MOVE_PHASE_CLOSED:

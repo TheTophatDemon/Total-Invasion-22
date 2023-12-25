@@ -112,6 +112,11 @@ func (box Box) Size() mgl32.Vec3 {
 	return box.Max.Sub(box.Min)
 }
 
+func (box Box) LongestDimension() float32 {
+	var dims [3]float32 = box.Size()
+	return max(dims[0], dims[1], dims[2])
+}
+
 func (box Box) Center() mgl32.Vec3 {
 	return box.Min.Add(box.Size().Mul(0.5))
 }
