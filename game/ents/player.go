@@ -11,6 +11,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+const (
+	USE_DIST float32 = 4.0
+)
+
 type Player struct {
 	Actor
 	Camera                                   comps.Camera
@@ -22,7 +26,7 @@ type Player struct {
 func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 	return Player{
 		Actor: Actor{
-			Body: comps.Body{
+			body: comps.Body{
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
 				),
@@ -64,14 +68,25 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
-		player.Body.NoClip = !player.Body.NoClip
+		player.body.NoClip = !player.body.NoClip
 		message := "No-Clip "
-		if player.Body.NoClip {
+		if player.body.NoClip {
 			message += "Activated"
 		} else {
 			message += "Deactivated"
 		}
 		player.world.ShowMessage(message, 4.0, 100, color.Red)
+	}
+
+	if input.IsActionPressed(settings.ACTION_USE) {
+		rayOrigin := player.body.Transform.Position()
+		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.body.Transform.Matrix())
+		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)
+		if hit.Hit && closestBody != nil {
+			if usable, isUsable := closestBody.(Usable); isUsable {
+				usable.OnUse(player)
+			}
+		}
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
@@ -91,7 +106,7 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	player.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	player.Body.Transform.SetRotation(0.0, player.YawAngle, 0.0)
+	player.body.Transform.SetRotation(0.0, player.YawAngle, 0.0)
 
 	player.Actor.Update(deltaTime)
 }

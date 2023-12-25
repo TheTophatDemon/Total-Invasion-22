@@ -27,7 +27,7 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 	}
 	return Enemy{
 		Actor: Actor{
-			Body: comps.Body{
+			body: comps.Body{
 				Transform: comps.TransformFromTranslationAngles(
 					position, angles,
 				),
@@ -55,5 +55,5 @@ func (enemy *Enemy) Update(deltaTime float32) {
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(&enemy.Body.Transform, &enemy.AnimPlayer, context, enemy.YawAngle)
+	enemy.SpriteRender.Render(&enemy.body.Transform, &enemy.AnimPlayer, context, enemy.YawAngle)
 }

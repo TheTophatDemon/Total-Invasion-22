@@ -187,6 +187,19 @@ func (m *Mesh) BoundingBox() math2.Box {
 	return m.bbox
 }
 
+// Calculates this mesh's axis aligned bounding box if its vertices were transformed by the given matrix.
+func (m *Mesh) TransformedAABB(transform mgl32.Mat4) math2.Box {
+	var bbox math2.Box
+	bbox.Max = mgl32.Vec3{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32}
+	bbox.Min = mgl32.Vec3{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32}
+	for _, vert := range m.verts.Pos {
+		vert = mgl32.TransformCoordinate(vert, transform)
+		bbox.Min = math2.Vec3Min(bbox.Min, vert)
+		bbox.Max = math2.Vec3Max(bbox.Max, vert)
+	}
+	return bbox
+}
+
 func (m *Mesh) Bind() {
 	if !m.uploaded {
 		m.Upload()

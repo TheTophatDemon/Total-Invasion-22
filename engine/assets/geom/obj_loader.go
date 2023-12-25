@@ -191,6 +191,7 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 	for name, group := range meshGroups {
 		mesh.SetGroup(name, group)
 	}
+	mesh.Upload()
 
 	log.Printf("Loaded OBJ file at %v.\n", path)
 	return mesh, err

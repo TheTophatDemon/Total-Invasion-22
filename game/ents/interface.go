@@ -11,5 +11,10 @@ import (
 // As a bonus, this prevents entities from doing things with the world that they shouldn't, like running a full update.
 type WorldOps interface {
 	ShowMessage(text string, duration float32, priority int, colr color.Color)
-	Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody *comps.Body) (collision.RaycastResult, comps.HasBody)
+	Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody)
+}
+
+// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
+type Usable interface {
+	OnUse(p *Player)
 }

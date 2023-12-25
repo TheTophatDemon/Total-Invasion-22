@@ -1,0 +1,231 @@
+package ents
+
+import (
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
+	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+)
+
+type MovePhase uint8
+
+const (
+	MOVE_PHASE_CLOSED MovePhase = iota
+	MOVE_PHASE_OPENING
+	MOVE_PHASE_OPEN
+	MOVE_PHASE_CLOSING
+)
+
+type Activator int8
+
+const (
+	ACTIVATOR_NONE Activator = iota - 1
+	ACTIVATOR_ALL
+	ACTIVATOR_KEY
+	ACTIVATOR_TRIGGER
+)
+
+// A moving wall. Could be a door, a switch, or any other dynamic level geometry.
+type Wall struct {
+	MeshRender  comps.MeshRender
+	AnimPlayer  comps.AnimationPlayer
+	Origin      mgl32.Vec3 // The position in global space that the wall starts in.
+	Destination mgl32.Vec3 // The position in global space that the wall will move to.
+	WaitTime    float32    // Time the ent remains at its destination position before moving back.
+	Speed       float32
+	body        comps.Body
+	waitTimer   float32
+	movePhase   MovePhase
+	world       WorldOps
+	activator   Activator
+}
+
+var _ Usable = (*Wall)(nil)
+
+func NewWallFromTE3(ent te3.Ent, world WorldOps) (Wall, error) {
+	var (
+		wall Wall
+		err  error
+		bbox math2.Box
+	)
+
+	wall.world = world
+
+	transform := comps.TransformFromTranslationAngles(
+		ent.Position, mgl32.Vec3(ent.Angles).Mul(math.Pi/180.0),
+	)
+
+	if ent.Display != te3.ENT_DISPLAY_MODEL {
+		return Wall{}, fmt.Errorf("te3 ent display mode should be 'model'")
+	}
+
+	if len(ent.Model) > 0 {
+		wall.MeshRender.Mesh, err = cache.GetMesh(ent.Model)
+		if err != nil {
+			return Wall{}, err
+		}
+		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
+		wall.MeshRender.Shader = shaders.MapShader
+	} else {
+		bbox = math2.BoxFromRadius(1.0)
+	}
+
+	if len(ent.Texture) > 0 {
+		wall.MeshRender.Texture = cache.GetTexture(ent.Texture)
+	}
+
+	wall.Origin = ent.Position
+	wall.body = comps.Body{
+		Transform: transform,
+		Shape:     collision.NewBox(bbox),
+		Pushiness: 10_000,
+		NoClip:    false,
+	}
+
+	if typ, ok := ent.Properties["type"]; !ok {
+		return Wall{}, fmt.Errorf("no type property")
+	} else {
+		switch typ {
+		case "door":
+			if err := wall.configureForDoor(ent); err != nil {
+				return Wall{}, err
+			}
+		default:
+			wall.Destination = wall.Origin
+		}
+	}
+	return wall, nil
+}
+
+func (w *Wall) configureForDoor(ent te3.Ent) error {
+	// Determine the door's destination position
+	unopenable, _ := ent.BoolProperty("unopenable")
+	if !unopenable {
+		dist, err := ent.FloatProperty("distance")
+		if err != nil {
+			return err
+		}
+
+		dirStr, ok := ent.Properties["direction"]
+		if !ok {
+			return fmt.Errorf("need direction property")
+		}
+
+		var moveOffset mgl32.Vec3
+		switch dirStr {
+		case "down", "dn", "d":
+			moveOffset = mgl32.Vec3{0.0, -dist, 0.0}
+		case "up", "u":
+			moveOffset = mgl32.Vec3{0.0, dist, 0.0}
+		case "right", "rg", "r":
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{dist, 0.0, 0.0}, w.body.Transform.Matrix())
+		case "left", "lf", "l":
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{-dist, 0.0, 0.0}, w.body.Transform.Matrix())
+		case "forward", "fw", "f":
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -dist}, w.body.Transform.Matrix())
+		case "backward", "back", "b":
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, dist}, w.body.Transform.Matrix())
+		}
+		w.Destination = w.Origin.Add(moveOffset)
+
+		// Get waiting time
+		if waitStr, ok := ent.Properties["wait"]; ok {
+			if l := strings.ToLower(waitStr); l == "inf" || l == "infinity" {
+				w.WaitTime = float32(math.Inf(1))
+			} else if wait, err := ent.FloatProperty("wait"); err != nil {
+				w.WaitTime = wait
+			} else {
+				w.WaitTime = 0.0
+			}
+		} else {
+			w.WaitTime = 3.0
+		}
+
+		// Get speed
+		if speed, err := ent.FloatProperty("speed"); err == nil {
+			w.Speed = speed
+		} else {
+			w.Speed = 2.0
+		}
+	} else {
+		w.Destination = w.Origin
+		w.activator = ACTIVATOR_NONE
+	}
+
+	return nil
+}
+
+func (w *Wall) Update(deltaTime float32) {
+	switch w.movePhase {
+	case MOVE_PHASE_OPENING:
+		targetDir := w.Destination.Sub(w.body.Transform.Position())
+		targetDist := targetDir.Len()
+		if targetDist <= w.Speed*deltaTime {
+			w.body.Transform.SetPosition(w.Destination)
+			w.movePhase = MOVE_PHASE_OPEN
+			w.body.Velocity = mgl32.Vec3{}
+		} else {
+			w.body.Velocity = targetDir.Mul(w.Speed / targetDist)
+		}
+	case MOVE_PHASE_CLOSING:
+		targetDir := w.Origin.Sub(w.body.Transform.Position())
+		targetDist := targetDir.Len()
+		if targetDist <= w.Speed*deltaTime {
+			w.body.Transform.SetPosition(w.Origin)
+			w.movePhase = MOVE_PHASE_CLOSED
+			w.body.Velocity = mgl32.Vec3{}
+		} else {
+			w.body.Velocity = targetDir.Mul(w.Speed / targetDist)
+		}
+	case MOVE_PHASE_OPEN:
+		w.waitTimer += deltaTime
+		if w.waitTimer > w.WaitTime {
+			// TODO: Detect if something is standing in the way
+			w.waitTimer = 0.0
+			w.movePhase = MOVE_PHASE_CLOSING
+		}
+		fallthrough
+	case MOVE_PHASE_CLOSED:
+		w.body.Velocity = mgl32.Vec3{}
+	}
+
+	w.body.Update(deltaTime)
+}
+
+func (w *Wall) Render(context *render.Context) {
+	w.MeshRender.Render(&w.body.Transform, &w.AnimPlayer, context)
+}
+
+func (w *Wall) Body() *comps.Body {
+	return &w.body
+}
+
+func (w *Wall) OnUse(player *Player) {
+	switch w.activator {
+	case ACTIVATOR_NONE:
+		w.world.ShowMessage("The door can't move...", 2.0, 10, color.Red)
+	case ACTIVATOR_ALL:
+		if !w.Origin.ApproxEqual(w.Destination) {
+			switch w.movePhase {
+			case MOVE_PHASE_CLOSED:
+				w.movePhase = MOVE_PHASE_OPENING
+				w.waitTimer = 0
+			case MOVE_PHASE_OPEN:
+				w.movePhase = MOVE_PHASE_CLOSING
+			}
+		}
+	case ACTIVATOR_KEY:
+		w.world.ShowMessage("I need a key...", 2.0, 10, color.Red)
+	case ACTIVATOR_TRIGGER:
+		w.world.ShowMessage("This door opens elsewhere...", 2.0, 10, color.Red)
+	}
+}

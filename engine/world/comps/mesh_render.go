@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
@@ -37,6 +35,10 @@ func (mr *MeshRender) Render(
 	animPlayer *AnimationPlayer,
 	context *render.Context,
 ) {
+	if mr.Mesh == nil || mr.Shader == nil {
+		return
+	}
+
 	var modelMatrix mgl32.Mat4
 	if transform != nil {
 		modelMatrix = transform.Matrix()
@@ -45,9 +47,6 @@ func (mr *MeshRender) Render(
 	}
 
 	// Bind resources
-	if mr.Mesh == nil || mr.Shader == nil {
-		fmt.Println("WARNING: MeshRender is missing mesh or shader.")
-	}
 	mr.Mesh.Bind()
 	mr.Shader.Use()
 	if mr.Texture != nil {

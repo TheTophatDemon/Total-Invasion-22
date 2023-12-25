@@ -3,6 +3,8 @@ package game
 import (
 	"errors"
 	"fmt"
+	"log"
+	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -26,6 +28,7 @@ type World struct {
 	UI                        *ui.Scene
 	Players                   *world.Storage[ents.Player]
 	Enemies                   *world.Storage[ents.Enemy]
+	Walls                     *world.Storage[ents.Wall]
 	GameMap                   *world.Map
 	CurrentPlayer             world.Id[ents.Player]
 	FPSCounter, SpriteCounter world.Id[ui.Text]
@@ -43,6 +46,7 @@ func NewWorld(mapPath string) (*World, error) {
 	w.UI = ui.NewUIScene(256, 64)
 	w.Players = world.NewStorage[ents.Player](8)
 	w.Enemies = world.NewStorage[ents.Enemy](256)
+	w.Walls = world.NewStorage[ents.Wall](256)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -96,6 +100,15 @@ func NewWorld(mapPath string) (*World, error) {
 		w.Enemies.New(ents.NewEnemy(spawn.Position, spawn.Angles))
 	}
 
+	// Spawn dynamic tiles
+	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
+		if wall, err := ents.NewWallFromTE3(spawn, w); err == nil {
+			w.Walls.New(wall)
+		} else {
+			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+		}
+	}
+
 	// UI
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
@@ -127,27 +140,21 @@ func (w *World) Update(deltaTime float32) {
 	w.GameMap.Update(deltaTime)
 	w.Players.Update((*ents.Player).Update, deltaTime)
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
+	w.Walls.Update((*ents.Wall).Update, deltaTime)
 	w.UI.Update(deltaTime)
-
-	// if input.IsActionJustPressed(settings.ACTION_FIRE) {
-	// 	if player, ok := w.CurrentPlayer.Get(); ok {
-	// 		rayOrigin := player.Body.Transform.Position()
-	// 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body.Transform.Matrix())
-	// 		mapHit := w.GameMap.CastRay(rayOrigin, rayDir)
-	// 	}
-	// }
 
 	// Update bodies and resolve collisions
 	bodiesIter := w.BodyIter()
-	for body := bodiesIter(); body != nil; body = bodiesIter() {
+	for bodyEnt := bodiesIter(); bodyEnt != nil; bodyEnt = bodiesIter() {
+		body := bodyEnt.Body()
 		before := body.Transform.Position()
 		body.Update(deltaTime)
 
 		if before.Sub(body.Transform.Position()).LenSqr() != 0.0 {
 			innerBodiesIter := w.BodyIter()
-			for innerBody := innerBodiesIter(); innerBody != nil; innerBody = innerBodiesIter() {
-				if innerBody != body {
-					body.ResolveCollision(innerBody)
+			for innerBodyEnt := innerBodiesIter(); innerBodyEnt != nil; innerBodyEnt = innerBodiesIter() {
+				if innerBodyEnt != body {
+					body.ResolveCollision(innerBodyEnt.Body())
 				}
 			}
 		}
@@ -185,7 +192,7 @@ func (w *World) Render() {
 	if !ok {
 		panic("missing player")
 	}
-	cameraTransform := player.Body.Transform.Matrix()
+	cameraTransform := player.Body().Transform.Matrix()
 	camera := player.Camera
 
 	// Setup 3D game render context
@@ -203,6 +210,7 @@ func (w *World) Render() {
 	// Render 3D game elements
 	w.GameMap.Render(&renderContext)
 	w.Enemies.Render((*ents.Enemy).Render, &renderContext)
+	w.Walls.Render((*ents.Wall).Render, &renderContext)
 
 	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v", renderContext.DrawnSpriteCount))
@@ -218,15 +226,19 @@ func (w *World) Render() {
 	w.UI.Render(&renderContext)
 }
 
-func (w *World) BodyIter() func() *comps.Body {
+func (w *World) BodyIter() func() comps.HasBody {
 	playerIter := w.Players.Iter()
 	enemiesIter := w.Enemies.Iter()
-	return func() *comps.Body {
+	wallsIter := w.Walls.Iter()
+	return func() comps.HasBody {
 		if player := playerIter(); player != nil {
-			return &player.Body
+			return player
 		}
 		if enemy := enemiesIter(); enemy != nil {
-			return &enemy.Body
+			return enemy
+		}
+		if wall := wallsIter(); wall != nil {
+			return wall
 		}
 		return nil
 	}
@@ -242,15 +254,29 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	}
 }
 
-func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody *comps.Body) (collision.RaycastResult, comps.HasBody) {
-	rayBB := math2.BoxFromPoints(rayOrigin, rayDir.Mul(maxDist))
+func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody) {
+	rayBB := math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	mapHit := w.GameMap.CastRay(rayOrigin, rayDir)
+	var closestEnt comps.HasBody
+	var closestBodyHit collision.RaycastResult
+	closestBodyHit.Distance = math.MaxFloat32
 	nextBody := w.BodyIter()
-	for body := nextBody(); body != nil; body = nextBody() {
-		if body == excludeBody || !body.Shape.Extents().Intersects(rayBB) {
+	for bodyEnt := nextBody(); bodyEnt != nil; bodyEnt = nextBody() {
+		body := bodyEnt.Body()
+		if bodyEnt == excludeBody || !body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
 			continue
 		}
-
+		bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position())
+		if mapHit.Hit && bodyHit.Distance > mapHit.Distance {
+			continue
+		}
+		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
+			closestBodyHit = bodyHit
+			closestEnt = bodyEnt
+		}
+	}
+	if closestEnt != nil {
+		return closestBodyHit, closestEnt
 	}
 	return mapHit, nil
 }
