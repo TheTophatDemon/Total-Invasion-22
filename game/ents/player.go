@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	USE_DIST float32 = 4.0
+	USE_DIST float32 = 6.0
 )
 
 type Player struct {

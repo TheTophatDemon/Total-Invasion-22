@@ -1,6 +1,4 @@
 # TODO
-- Doors
-    * Better model & texture
 - Props
 - Teleporters
 - Audio
