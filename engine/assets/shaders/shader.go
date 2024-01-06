@@ -47,6 +47,12 @@ var (
 	//go:embed embed/map.fs.glsl
 	mapFragShaderSrc string
 
+	DebugShader *Shader
+	//go:embed embed/debug.vs.glsl
+	debugVertShaderSrc string
+	//go:embed embed/debug.fs.glsl
+	debugFragShaderSrc string
+
 	SpriteShader *Shader
 	//go:embed embed/sprite.vs.glsl
 	spriteVertShaderSrc string
@@ -74,6 +80,11 @@ func Init() {
 		log.Fatalln("Couldn't compile map shader: ", err)
 	}
 
+	DebugShader, err = CreateShader(debugVertShaderSrc, debugFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile debug shader: ", err)
+	}
+
 	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
 	if err != nil {
 		log.Fatalln("Couldn't compile sprite shader: ", err)
@@ -88,6 +99,7 @@ func Init() {
 // Free built-in shaders.
 func Free() {
 	MapShader.Free()
+	DebugShader.Free()
 	SpriteShader.Free()
 	UIShader.Free()
 }

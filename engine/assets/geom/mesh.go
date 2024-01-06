@@ -105,9 +105,10 @@ type Mesh struct {
 	verts Vertices
 	inds  []uint32
 
-	tris   []math2.Triangle // Mathematical representation of the triangles (will be empty until Triangles() is called)
-	bbox   math2.Box        // Bounding box over vertices. Lazily evaluated.
-	groups map[string]Group
+	tris          []math2.Triangle // Mathematical representation of the triangles (will be empty until Triangles() is called)
+	bbox          math2.Box        // Bounding box over vertices. Lazily evaluated.
+	groups        map[string]Group
+	primitiveType uint32
 
 	uploaded              bool
 	vertBuffer, idxBuffer uint32 //VBOs
@@ -116,12 +117,54 @@ type Mesh struct {
 
 func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
-		verts:  verts,
-		inds:   inds,
-		tris:   nil,
-		groups: make(map[string]Group, 0),
+		verts:         verts,
+		inds:          inds,
+		tris:          nil,
+		groups:        make(map[string]Group, 0),
+		primitiveType: gl.TRIANGLES,
 	}
 	return mesh
+}
+
+func CreateWireMesh(verts Vertices, inds []uint32) *Mesh {
+	return &Mesh{
+		verts:         verts,
+		inds:          inds,
+		tris:          nil,
+		groups:        make(map[string]Group, 0),
+		primitiveType: gl.LINES,
+	}
+}
+
+func WireMeshFromBoundingBox(bbox math2.Box) *Mesh {
+	corners := bbox.Corners()
+	boxVerts := Vertices{
+		Pos: corners[:],
+		Color: []mgl32.Vec4{
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+			{1.0, 0.0, 1.0, 1.0},
+		},
+	}
+	return CreateWireMesh(boxVerts, []uint32{
+		math2.CORNER_BLT, math2.CORNER_BRT,
+		math2.CORNER_BLT, math2.CORNER_BLB,
+		math2.CORNER_BRT, math2.CORNER_BRB,
+		math2.CORNER_BRB, math2.CORNER_BLB,
+		math2.CORNER_FLT, math2.CORNER_FRT,
+		math2.CORNER_FLT, math2.CORNER_FLB,
+		math2.CORNER_FRT, math2.CORNER_FRB,
+		math2.CORNER_FRB, math2.CORNER_FLB,
+		math2.CORNER_FLT, math2.CORNER_BLT,
+		math2.CORNER_FRT, math2.CORNER_BRT,
+		math2.CORNER_FLB, math2.CORNER_BLB,
+		math2.CORNER_FRB, math2.CORNER_BRB,
+	})
 }
 
 func (m *Mesh) SetGroup(name string, group Group) {
@@ -159,7 +202,7 @@ func (m *Mesh) Inds() []uint32 {
 
 // Returns the mathematical triangles that make up the mesh (lazily evaluated).
 func (m *Mesh) Triangles() []math2.Triangle {
-	if m.tris == nil {
+	if m.tris == nil && m.primitiveType == gl.TRIANGLES {
 		// Determine the triangles from the indices & vertex positions.
 		m.tris = make([]math2.Triangle, len(m.inds)/3)
 		for t := range m.tris {
@@ -246,7 +289,7 @@ func (m *Mesh) Upload() {
 }
 
 func (m *Mesh) DrawAll() {
-	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
+	gl.DrawElementsWithOffset(m.primitiveType, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
 }
 
 func (m *Mesh) DrawGroup(name string) error {
@@ -254,7 +297,7 @@ func (m *Mesh) DrawGroup(name string) error {
 	if !ok {
 		return fmt.Errorf("Group not found")
 	}
-	gl.DrawElementsWithOffset(gl.TRIANGLES, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.inds[0]))
+	gl.DrawElementsWithOffset(m.primitiveType, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.inds[0]))
 	return nil
 }
 

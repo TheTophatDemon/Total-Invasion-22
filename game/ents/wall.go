@@ -40,7 +40,7 @@ type Wall struct {
 	AnimPlayer  comps.AnimationPlayer
 	Origin      mgl32.Vec3 // The position in global space that the wall starts in.
 	Destination mgl32.Vec3 // The position in global space that the wall will move to.
-	WaitTime    float32    // Time the ent remains at its destination position before moving back.
+	WaitTime    float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
 	Speed       float32
 	body        comps.Body
 	waitTimer   float32
@@ -139,8 +139,8 @@ func (w *Wall) configureForDoor(ent te3.Ent) error {
 
 		// Get waiting time
 		if waitStr, ok := ent.Properties["wait"]; ok {
-			if l := strings.ToLower(waitStr); l == "inf" || l == "infinity" {
-				w.WaitTime = float32(math.Inf(1))
+			if l := strings.ToLower(waitStr); l == "inf" || l == "infinity" || l == "-1" {
+				w.WaitTime = -1.0
 			} else if wait, err := ent.FloatProperty("wait"); err != nil {
 				w.WaitTime = wait
 			} else {
@@ -193,7 +193,7 @@ func (w *Wall) Update(deltaTime float32) {
 		}
 	case MOVE_PHASE_OPEN:
 		w.waitTimer += deltaTime
-		if w.waitTimer > w.WaitTime {
+		if w.waitTimer > w.WaitTime && w.WaitTime >= 0.0 {
 			w.movePhase = MOVE_PHASE_CLOSING
 			w.waitTimer = 0.0
 		}
@@ -206,6 +206,11 @@ func (w *Wall) Update(deltaTime float32) {
 }
 
 func (w *Wall) Render(context *render.Context) {
+	if !render.IsBoxVisible(context, w.Body().Shape.Extents().Translate(w.body.Transform.Position())) {
+		return
+	}
+	context.DrawnSpriteCount++
+
 	w.MeshRender.Render(&w.body.Transform, &w.AnimPlayer, context)
 }
 
@@ -224,7 +229,9 @@ func (w *Wall) OnUse(player *Player) {
 				w.movePhase = MOVE_PHASE_OPENING
 				w.waitTimer = 0
 			case MOVE_PHASE_OPEN:
-				w.movePhase = MOVE_PHASE_CLOSING
+				if w.WaitTime >= 0.0 {
+					w.movePhase = MOVE_PHASE_CLOSING
+				}
 			}
 		}
 	case ACTIVATOR_KEY:

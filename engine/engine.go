@@ -20,10 +20,15 @@ type App interface {
 }
 
 var fps int
+var updateRate float32 = 1.0 / 60.0
 var window *glfw.Window
 
 func FPS() int {
 	return fps
+}
+
+func SetUpdateRate(fps int) {
+	updateRate = 1.0 / float32(fps)
 }
 
 func Init(screenWidth, screenHeight int, windowTitle string) error {
@@ -60,7 +65,6 @@ func Run(app App) {
 	previousTickTime := glfw.GetTime()
 
 	//FPS counters
-	var maxTickRate float32 = 1.0 / 60.0
 	var tickTimer float32 = 0.0
 
 	var fpsTimer float32
@@ -71,11 +75,11 @@ func Run(app App) {
 		tickDelta := float32(tickTime - previousTickTime)
 		previousTickTime = tickTime
 		tickTimer += tickDelta
-		if tickTimer >= maxTickRate {
+		if tickTimer >= updateRate {
 			tickTimer = 0.0
 
 			time := glfw.GetTime()
-			deltaTime := min(1.0/60.0, float32(time-previousTime))
+			deltaTime := min(updateRate, float32(time-previousTime))
 			previousTime = time
 
 			//Calc FPS

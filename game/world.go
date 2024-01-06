@@ -10,6 +10,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -35,6 +36,7 @@ type World struct {
 	Message                   world.Id[ui.Text]
 	messageTimer              float32
 	messagePriority           int
+	frustumTrans              mgl32.Mat4
 }
 
 var _ ents.WorldOps = (*World)(nil)
@@ -95,7 +97,9 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	w.CurrentPlayer, _, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
+	var player *ents.Player
+	w.CurrentPlayer, player, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
+	w.frustumTrans = player.Body().Transform.Matrix()
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
@@ -144,6 +148,11 @@ func (w *World) Update(deltaTime float32) {
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.Walls.Update((*ents.Wall).Update, deltaTime)
 	w.UI.Update(deltaTime)
+
+	if player, ok := w.Players.Get(w.CurrentPlayer); ok && input.IsActionJustPressed(settings.ACTION_FIRE) {
+		w.frustumTrans = player.Body().Transform.Matrix()
+		fmt.Printf("%v", player.Body().Transform.Position())
+	}
 
 	// Update bodies and resolve collisions
 	bodiesIter := w.BodyIter()
@@ -203,10 +212,12 @@ func (w *World) Render() {
 	renderContext := render.Context{
 		View:           viewMat,
 		Projection:     projMat,
+		AspectRatio:    settings.WINDOW_ASPECT_RATIO,
 		FogStart:       1.0,
 		FogLength:      50.0,
 		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
+		// FrustumOverride: math2.FrustumFromMatrices(projMat.Mul4(w.frustumTrans.Inv()).Inv()),
 	}
 
 	// Render 3D game elements

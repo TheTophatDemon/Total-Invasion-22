@@ -1,5 +1,7 @@
 # TODO
+- Fix frustum culling for sprites
 - Props
+- Door raycasting bug?
 - Teleporters
 - Audio
 - Sickle
