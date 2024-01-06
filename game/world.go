@@ -30,6 +30,7 @@ type World struct {
 	Players                   *world.Storage[ents.Player]
 	Enemies                   *world.Storage[ents.Enemy]
 	Walls                     *world.Storage[ents.Wall]
+	Props                     *world.Storage[ents.Prop]
 	GameMap                   *world.Map
 	CurrentPlayer             world.Id[ents.Player]
 	FPSCounter, SpriteCounter world.Id[ui.Text]
@@ -51,6 +52,7 @@ func NewWorld(mapPath string) (*World, error) {
 	w.Players = world.NewStorage[ents.Player](8)
 	w.Enemies = world.NewStorage[ents.Enemy](256)
 	w.Walls = world.NewStorage[ents.Wall](256)
+	w.Props = world.NewStorage[ents.Prop](256)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -115,6 +117,15 @@ func NewWorld(mapPath string) (*World, error) {
 		}
 	}
 
+	// Spawn props
+	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
+		if prop, err := ents.NewPropFromTE3(spawn, w); err == nil {
+			w.Props.New(prop)
+		} else {
+			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+		}
+	}
+
 	// UI
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
@@ -147,6 +158,7 @@ func (w *World) Update(deltaTime float32) {
 	w.Players.Update((*ents.Player).Update, deltaTime)
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.Walls.Update((*ents.Wall).Update, deltaTime)
+	w.Props.Update((*ents.Prop).Update, deltaTime)
 	w.UI.Update(deltaTime)
 
 	if player, ok := w.Players.Get(w.CurrentPlayer); ok && input.IsActionJustPressed(settings.ACTION_FIRE) {
@@ -224,6 +236,7 @@ func (w *World) Render() {
 	w.GameMap.Render(&renderContext)
 	w.Enemies.Render((*ents.Enemy).Render, &renderContext)
 	w.Walls.Render((*ents.Wall).Render, &renderContext)
+	w.Props.Render((*ents.Prop).Render, &renderContext)
 
 	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v", renderContext.DrawnSpriteCount))
@@ -243,6 +256,7 @@ func (w *World) BodyIter() func() comps.HasBody {
 	playerIter := w.Players.Iter()
 	enemiesIter := w.Enemies.Iter()
 	wallsIter := w.Walls.Iter()
+	propsIter := w.Props.Iter()
 	return func() comps.HasBody {
 		if player := playerIter(); player != nil {
 			return player
@@ -252,6 +266,9 @@ func (w *World) BodyIter() func() comps.HasBody {
 		}
 		if wall := wallsIter(); wall != nil {
 			return wall
+		}
+		if prop := propsIter(); prop != nil {
+			return prop
 		}
 		return nil
 	}
@@ -303,8 +320,10 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDis
 		}
 	}
 	if closestEnt != nil {
+		fmt.Println("Ding!!")
 		return closestBodyHit, closestEnt
 	}
+	fmt.Println("Dong!!")
 	return mapHit, nil
 }
 

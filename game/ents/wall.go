@@ -2,7 +2,6 @@ package ents
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -60,9 +59,7 @@ func NewWallFromTE3(ent te3.Ent, world WorldOps) (Wall, error) {
 
 	wall.world = world
 
-	transform := comps.TransformFromTranslationAngles(
-		ent.Position, mgl32.Vec3(ent.Angles).Mul(math.Pi/180.0),
-	)
+	transform := ent.Transform(true)
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
 		return Wall{}, fmt.Errorf("te3 ent display mode should be 'model'")

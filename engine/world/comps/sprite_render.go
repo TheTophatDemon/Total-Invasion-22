@@ -37,29 +37,36 @@ func (sr *SpriteRender) Render(
 
 	sr.meshRender.Shader.Use()
 
-	// Change animation layer based on angle to the camera
-	cameraPos := context.View.Inv().Col(3).Vec3()
-	toCamera := cameraPos.Sub(transform.Position())
-	if toCamera.LenSqr() > mgl32.Epsilon {
-		toCamera = toCamera.Normalize()
-		ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(yawAngle).Mat4())
-		dp := toCamera.Dot(ourDirection)
-		cross := toCamera.Cross(ourDirection)
-		radAngleDiff := math2.Acos(dp)
-		angleDifference := int(mgl32.RadToDeg(radAngleDiff))
-		if cross.Dot(math2.Vec3Up()) < 0.0 {
-			angleDifference *= -1
-		}
-		layer, flip, found := sr.meshRender.Texture.FindLayerWithinAngle(angleDifference)
-		if found {
-			anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
+	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
+		// Change animation layer based on angle to the camera
+		cameraPos := context.View.Inv().Col(3).Vec3()
+		toCamera := cameraPos.Sub(transform.Position())
+		if toCamera.LenSqr() > mgl32.Epsilon {
+			toCamera = toCamera.Normalize()
+			ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(yawAngle).Mat4())
+			dp := toCamera.Dot(ourDirection)
+			cross := toCamera.Cross(ourDirection)
+			radAngleDiff := math2.Acos(dp)
+			angleDifference := int(mgl32.RadToDeg(radAngleDiff))
+			if cross.Dot(math2.Vec3Up()) < 0.0 {
+				angleDifference *= -1
+			}
+			layer, flip, found := sr.meshRender.Texture.FindLayerWithinAngle(angleDifference)
 			if found {
-				animPlayer.SwapAnimation(anim)
+				anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
+				if found {
+					animPlayer.SwapAnimation(anim)
+				}
+				err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, flip)
+				if err != nil {
+					log.Println("Error setting uniform in (*SpriteRender).Render", err)
+				}
 			}
-			err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, flip)
-			if err != nil {
-				log.Println("Error setting uniform in (*SpriteRender).Render", err)
-			}
+		}
+	} else {
+		err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, false)
+		if err != nil {
+			log.Println("Error setting uniform in (*SpriteRender).Render", err)
 		}
 	}
 

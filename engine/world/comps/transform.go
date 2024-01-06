@@ -39,6 +39,15 @@ func TransformFromTranslationAngles(position mgl32.Vec3, angles mgl32.Vec3) Tran
 	}
 }
 
+func TransformFromTranslationAnglesScale(position, angles, scale mgl32.Vec3) Transform {
+	return Transform{
+		pos:   position,
+		rot:   angles,
+		scale: scale,
+		dirty: true,
+	}
+}
+
 func (t *Transform) Dirty() bool {
 	return t.dirty
 }

@@ -82,6 +82,10 @@ func (at *Texture) GetAnimationNames() []string {
 	return result
 }
 
+func (t *Texture) LayerCount() int {
+	return len(t.layers)
+}
+
 // Searches for a layer in this texture with the given degrees angle in its range.
 //
 // The first boolean returned indicates whether the angle is within the flipped view range.

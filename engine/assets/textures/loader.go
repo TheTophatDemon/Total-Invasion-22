@@ -5,7 +5,7 @@ import (
 	"image"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -14,14 +14,14 @@ import (
 
 // Loads an image from a file and flips it to be loaded into a texture.
 func loadImage(assetPath string) (*image.RGBA, error) {
-	if strings.ToLower(path.Ext(assetPath)) != ".png" {
+	if strings.ToLower(filepath.Ext(assetPath)) != ".png" {
 		return nil, fmt.Errorf("cannot load %s; only .png images are supported", assetPath)
 	}
 
 	//Load image
 	imgFile, err := assets.GetFile(assetPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading image at %s", assetPath)
+		return nil, fmt.Errorf("image not found at %s", assetPath)
 	}
 	defer imgFile.Close()
 
@@ -71,7 +71,7 @@ func LoadTexture(assetPath string) *Texture {
 	// Load atlas image file listed in the metadata, or else use the image itself.
 	var img *image.RGBA
 	if metadata != nil {
-		img, err = loadImage(path.Join(path.Dir(assetPath), metadata.atlasPath()))
+		img, err = loadImage(filepath.Join(filepath.Dir(assetPath), metadata.atlasPath()))
 	} else {
 		img, err = loadImage(assetPath)
 	}
