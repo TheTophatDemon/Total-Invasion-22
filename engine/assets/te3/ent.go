@@ -40,6 +40,18 @@ func (ent *Ent) FloatProperty(key string) (float32, error) {
 	return float32(valF64), nil
 }
 
+func (ent *Ent) IntProperty(key string) (int, error) {
+	prop, ok := ent.Properties[key]
+	if !ok {
+		return 0, fmt.Errorf("ent property not found: %v", key)
+	}
+	valI64, err := strconv.ParseInt(prop, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int(valI64), nil
+}
+
 func (ent *Ent) BoolProperty(key string) (bool, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {

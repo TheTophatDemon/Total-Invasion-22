@@ -14,9 +14,15 @@ type WorldOps interface {
 	Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody)
 	BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []comps.HasBody
 	ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []HasActor
+	LinkablesIter(linkNumber int) func() Linkable
 }
 
 // Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
 type Usable interface {
 	OnUse(p *Player)
+}
+
+// Represents an entity that can be activated.
+type Linkable interface {
+	LinkNumber() int
 }

@@ -10,7 +10,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -31,6 +30,7 @@ type World struct {
 	Enemies                   *world.Storage[ents.Enemy]
 	Walls                     *world.Storage[ents.Wall]
 	Props                     *world.Storage[ents.Prop]
+	Triggers                  *world.Storage[ents.Trigger]
 	GameMap                   *world.Map
 	CurrentPlayer             world.Id[ents.Player]
 	FPSCounter, SpriteCounter world.Id[ui.Text]
@@ -53,6 +53,7 @@ func NewWorld(mapPath string) (*World, error) {
 	w.Enemies = world.NewStorage[ents.Enemy](256)
 	w.Walls = world.NewStorage[ents.Wall](256)
 	w.Props = world.NewStorage[ents.Prop](256)
+	w.Triggers = world.NewStorage[ents.Trigger](64)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -126,6 +127,15 @@ func NewWorld(mapPath string) (*World, error) {
 		}
 	}
 
+	// Spawn triggers
+	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
+		if tr, err := ents.NewTriggerFromTE3(spawn, w); err == nil {
+			w.Triggers.New(tr)
+		} else {
+			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+		}
+	}
+
 	// UI
 	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
@@ -159,12 +169,8 @@ func (w *World) Update(deltaTime float32) {
 	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
 	w.Walls.Update((*ents.Wall).Update, deltaTime)
 	w.Props.Update((*ents.Prop).Update, deltaTime)
+	w.Triggers.Update((*ents.Trigger).Update, deltaTime)
 	w.UI.Update(deltaTime)
-
-	if player, ok := w.Players.Get(w.CurrentPlayer); ok && input.IsActionJustPressed(settings.ACTION_FIRE) {
-		w.frustumTrans = player.Body().Transform.Matrix()
-		fmt.Printf("%v", player.Body().Transform.Position())
-	}
 
 	// Update bodies and resolve collisions
 	bodiesIter := w.BodyIter()
@@ -229,7 +235,6 @@ func (w *World) Render() {
 		FogLength:      50.0,
 		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
-		// FrustumOverride: math2.FrustumFromMatrices(projMat.Mul4(w.frustumTrans.Inv()).Inv()),
 	}
 
 	// Render 3D game elements
@@ -283,6 +288,16 @@ func (w *World) ActorsIter() func() ents.HasActor {
 		}
 		if enemy := enemiesIter(); enemy != nil {
 			return enemy
+		}
+		return nil
+	}
+}
+
+func (w *World) LinkablesIter(linkNumber int) func() ents.Linkable {
+	triggerIter := w.Triggers.Iter()
+	return func() ents.Linkable {
+		if trigger := triggerIter(); trigger != nil {
+			return trigger
 		}
 		return nil
 	}

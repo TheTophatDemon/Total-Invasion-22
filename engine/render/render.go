@@ -18,7 +18,6 @@ type Context struct {
 	AmbientColor                     mgl32.Vec3
 	AspectRatio                      float32
 	DrawnSpriteCount, DrawnWallCount uint32
-	FrustumOverride                  math2.Frustum
 
 	viewProjection mgl32.Mat4
 	cameraFrustum  math2.Frustum
@@ -43,9 +42,6 @@ func (context *Context) ViewProjection() mgl32.Mat4 {
 }
 
 func (context *Context) CameraFrustum() math2.Frustum {
-	if context.FrustumOverride.Planes[0].Normal.LenSqr() != 0.0 {
-		return context.FrustumOverride
-	}
 	if context.cameraFrustum.Planes[0].Normal.LenSqr() == 0.0 {
 		context.cameraFrustum = math2.FrustumFromMatrices(context.ViewProjection().Inv())
 	}
