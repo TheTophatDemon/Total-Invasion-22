@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 )
 
 // Retrieves the asset's file from one of the available asset packs
 func GetFile(assetPath string) (*os.File, error) {
-	return os.Open(assetPath)
+	return os.Open(strings.ReplaceAll(assetPath, "\\", "/"))
 }
 
 // Loads a JSON file from the given asset-path (relative to assets folder) and returns the json.Unmarshal result as type T.

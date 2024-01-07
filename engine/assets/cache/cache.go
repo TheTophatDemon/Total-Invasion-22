@@ -66,6 +66,7 @@ func FreeBuiltInAssets() {
 }
 
 func GetTexture(assetPath string) *textures.Texture {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
 	texture, ok := loadedTextures[assetPath]
 	if !ok {
 		loadedTextures[assetPath] = textures.LoadTexture(assetPath)
@@ -104,10 +105,12 @@ func FreeAll() {
 
 // Takes ownership of an already loaded mesh. Will dispose of its resources along with the other meshes.
 func TakeMesh(assetPath string, mesh *geom.Mesh) {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
 	loadedMeshes[assetPath] = mesh
 }
 
 func GetMesh(assetPath string) (*geom.Mesh, error) {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
 	var err error
 
 	mesh, ok := loadedMeshes[assetPath]
@@ -128,6 +131,7 @@ func GetMesh(assetPath string) (*geom.Mesh, error) {
 
 // Retrieves a font from the game assets, loading it if it doesn't already exist.
 func GetFont(assetPath string) (*fonts.Font, error) {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
 	var err error
 
 	font, ok := loadedFonts[assetPath]
