@@ -59,7 +59,7 @@ func NewWallFromTE3(ent te3.Ent, world WorldOps) (Wall, error) {
 
 	wall.world = world
 
-	transform := ent.Transform(true)
+	transform := ent.Transform(false, false)
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
 		return Wall{}, fmt.Errorf("te3 ent display mode should be 'model'")
@@ -206,7 +206,7 @@ func (w *Wall) Render(context *render.Context) {
 	if !render.IsBoxVisible(context, w.Body().Shape.Extents().Translate(w.body.Transform.Position())) {
 		return
 	}
-	context.DrawnSpriteCount++
+	context.DrawnWallCount++
 
 	w.MeshRender.Render(&w.body.Transform, &w.AnimPlayer, context)
 }

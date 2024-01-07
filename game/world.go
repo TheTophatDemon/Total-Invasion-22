@@ -134,8 +134,8 @@ func NewWorld(mapPath string) (*World, error) {
 	var spriteCounter *ui.Text
 	w.SpriteCounter, spriteCounter, _ = w.UI.Texts.New(ui.Text{})
 	spriteCounter.
-		SetText("Sprites drawn: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 32.0}).
+		SetText("Sprites drawn: 0\nWalls drawn: 0").
+		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
 		SetScale(1.0).
 		SetColor(color.Blue).
 		SetFont("assets/textures/atlases/font.fnt")
@@ -239,7 +239,7 @@ func (w *World) Render() {
 	w.Props.Render((*ents.Prop).Render, &renderContext)
 
 	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
-		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v", renderContext.DrawnSpriteCount))
+		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
 	// Setup 2D render context

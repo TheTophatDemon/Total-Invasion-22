@@ -72,7 +72,7 @@ func (ap *AnimationPlayer) Frame() textures.Frame {
 func (ap *AnimationPlayer) FrameUV() math2.Rect {
 	if ap.animation.Frames == nil || ap.currentIndex >= len(ap.animation.Frames) {
 		return math2.Rect{
-			X: 0.0, Y: 0.0, Width: 1.0, Height: 1.0,
+			X: 0.0, Y: 1.0, Width: 1.0, Height: 1.0,
 		}
 	}
 	pixelRect := ap.animation.Frames[ap.currentIndex].Rect
@@ -80,7 +80,7 @@ func (ap *AnimationPlayer) FrameUV() math2.Rect {
 		X:      pixelRect.X / float32(ap.animation.AtlasSize[0]),
 		Y:      1.0 - (pixelRect.Y / float32(ap.animation.AtlasSize[1])),
 		Width:  pixelRect.Width / float32(ap.animation.AtlasSize[0]),
-		Height: -pixelRect.Height / float32(ap.animation.AtlasSize[1]),
+		Height: pixelRect.Height / float32(ap.animation.AtlasSize[1]),
 	}
 }
 

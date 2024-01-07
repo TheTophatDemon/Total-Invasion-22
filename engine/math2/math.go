@@ -140,6 +140,25 @@ func (frustum Frustum) ContainsPoint(point mgl32.Vec3) bool {
 	return true
 }
 
+// Returns true if the given box intersects the frustum.
+func (frustum Frustum) IntersectsBox(box Box) bool {
+	for i := range frustum.Planes {
+		if !box.IntersectsPlane(frustum.Planes[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (frustum Frustum) IntersectsSphere(point mgl32.Vec3, radius float32) bool {
+	for i := range frustum.Planes {
+		if frustum.Planes[i].SignedDistance(point) > radius {
+			return false
+		}
+	}
+	return true
+}
+
 func BoxFromExtents(halfWidth, halfHeight, halfLength float32) Box {
 	return Box{
 		Max: mgl32.Vec3{halfWidth, halfHeight, halfLength},
@@ -181,16 +200,6 @@ func (box Box) IntersectsPlane(plane Plane) bool {
 		extents.Z()*Abs(plane.Normal.Z())
 
 	return plane.SignedDistance(center) <= r
-}
-
-// Returns true if the box intersects the given frustum.
-func (box Box) IntersectsFrustum(frustum Frustum) bool {
-	for i := range frustum.Planes {
-		if !box.IntersectsPlane(frustum.Planes[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 // Returns vectors representing all 8 corners of the box.

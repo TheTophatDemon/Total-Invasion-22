@@ -37,11 +37,11 @@ func TestBoxInFrustum(t *testing.T) {
 	invViewProj := viewProj.Inv()
 	frustum := FrustumFromMatrices(invViewProj)
 	box := BoxFromRadius(1.0).Translate(mgl32.Vec3{0.0, 0.0, -5.0})
-	if !box.IntersectsFrustum(frustum) {
+	if !frustum.IntersectsBox(box) {
 		t.Errorf("Box from %v to %v should intersect frustum", box.Min, box.Max)
 	}
 	box = box.Translate(mgl32.Vec3{-50.0, 0.0, 0.0})
-	if box.IntersectsFrustum(frustum) {
+	if !frustum.IntersectsBox(box) {
 		t.Errorf("Box from %v to %v shouldn't intersect the frustum", box.Min, box.Max)
 	}
 }

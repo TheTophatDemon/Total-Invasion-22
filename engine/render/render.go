@@ -10,15 +10,15 @@ import (
 
 // Contains global information useful for rendering.
 type Context struct {
-	View             mgl32.Mat4
-	Projection       mgl32.Mat4
-	FogStart         float32
-	FogLength        float32
-	LightDirection   mgl32.Vec3
-	AmbientColor     mgl32.Vec3
-	AspectRatio      float32
-	DrawnSpriteCount uint32
-	FrustumOverride  math2.Frustum
+	View                             mgl32.Mat4
+	Projection                       mgl32.Mat4
+	FogStart                         float32
+	FogLength                        float32
+	LightDirection                   mgl32.Vec3
+	AmbientColor                     mgl32.Vec3
+	AspectRatio                      float32
+	DrawnSpriteCount, DrawnWallCount uint32
+	FrustumOverride                  math2.Frustum
 
 	viewProjection mgl32.Mat4
 	cameraFrustum  math2.Frustum
@@ -57,14 +57,9 @@ func IsPointVisible(context *Context, point mgl32.Vec3) bool {
 }
 
 func IsBoxVisible(context *Context, box math2.Box) bool {
-	return box.IntersectsFrustum(context.CameraFrustum())
+	return context.CameraFrustum().IntersectsBox(box)
 }
 
 func IsSphereVisible(context *Context, point mgl32.Vec3, radius float32) bool {
-	var projPoint mgl32.Vec4 = context.Projection.Mul4(context.View).Mul4x1(point.Vec4(1.0))
-	radius /= projPoint.W() * 0.5
-	screenSpacePoint := projPoint.Vec3().Mul(1.0 / projPoint.W())
-	return (screenSpacePoint.Z()+radius > -1.0 && screenSpacePoint.Z()-radius < 1.0 &&
-		screenSpacePoint.X()+radius > -1.0 && screenSpacePoint.X()-radius < 1.0 &&
-		screenSpacePoint.Y()+radius > -1.0 && screenSpacePoint.Y()-radius < 1.0)
+	return context.CameraFrustum().IntersectsSphere(point, radius)
 }

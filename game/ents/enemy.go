@@ -39,8 +39,8 @@ func NewEnemy(position, angles mgl32.Vec3) Enemy {
 	return Enemy{
 		actor: Actor{
 			body: comps.Body{
-				Transform: comps.TransformFromTranslationAngles(
-					position, angles,
+				Transform: comps.TransformFromTranslationAnglesScale(
+					mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), angles, mgl32.Vec3{0.9, 0.9, 0.9},
 				),
 				Shape:     collision.NewSphere(0.7),
 				Pushiness: 10,
