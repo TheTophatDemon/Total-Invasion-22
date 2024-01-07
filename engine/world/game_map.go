@@ -105,12 +105,14 @@ func (gm *Map) Render(context *render.Context) {
 	}
 }
 
-func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3) collision.RaycastResult {
+func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) collision.RaycastResult {
 	if lenSqr := rayDir.LenSqr(); lenSqr == 0.0 {
 		return collision.RaycastResult{}
 	} else if lenSqr != 1.0 {
 		rayDir = rayDir.Normalize()
 	}
+
+	maxDistSqr := maxDist * maxDist
 
 	pos := rayOrigin
 	for {
@@ -204,6 +206,12 @@ func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3) collision.RaycastResult {
 			break
 		}
 
+		// Check if distance is exceeded
+		if nextPos.Sub(rayOrigin).LenSqr() > maxDistSqr {
+			break
+		}
+
+		// Respond to hit tile
 		tileIndex := gm.tiles.FlattenGridPos(i, j, k)
 		if tileShape := gm.shapeMap[tileIndex]; tileShape != nil {
 			// Exclude tiles with invisible texture flag
@@ -217,7 +225,7 @@ func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3) collision.RaycastResult {
 			}
 			rayDir = rayDir.Normalize()
 			tileCenter := gm.tiles.GridToWorldPos(i, j, k, true)
-			if cast := tileShape.Raycast(pos, rayDir, tileCenter); cast.Hit {
+			if cast := tileShape.Raycast(rayOrigin, rayDir, tileCenter); cast.Hit {
 				return cast
 			}
 		}

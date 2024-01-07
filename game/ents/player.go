@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	USE_DIST float32 = 6.0
+	USE_DIST float32 = 3.0
 )
 
 type Player struct {
@@ -89,7 +89,7 @@ func (player *Player) Update(deltaTime float32) {
 		player.world.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
-	if input.IsActionPressed(settings.ACTION_USE) {
+	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
 		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)

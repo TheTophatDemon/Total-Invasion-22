@@ -300,7 +300,7 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 
 func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody) {
 	rayBB := math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
-	mapHit := w.GameMap.CastRay(rayOrigin, rayDir)
+	mapHit := w.GameMap.CastRay(rayOrigin, rayDir, maxDist)
 	var closestEnt comps.HasBody
 	var closestBodyHit collision.RaycastResult
 	closestBodyHit.Distance = math.MaxFloat32
@@ -320,10 +320,8 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDis
 		}
 	}
 	if closestEnt != nil {
-		fmt.Println("Ding!!")
 		return closestBodyHit, closestEnt
 	}
-	fmt.Println("Dong!!")
 	return mapHit, nil
 }
 
