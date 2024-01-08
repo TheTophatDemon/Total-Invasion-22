@@ -70,6 +70,7 @@ func NewPropFromTE3(ent te3.Ent, world WorldOps) (prop Prop, err error) {
 	radius, err := ent.FloatProperty("radius")
 	if err != nil {
 		radius = ent.Radius
+		err = nil
 	}
 
 	prop.body = comps.Body{
