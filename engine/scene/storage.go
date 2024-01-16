@@ -1,12 +1,45 @@
-package world
+package scene
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
+// TODO: Have the handle be a struct instead..? Would have to make a Storage interface.
+type Handle interface {
+	GetUntyped() (any, bool)
+	Exists() bool
+	Remove()
+	Equals(Handle) bool
+	Index() uint16
+	Generation() uint16
+}
+
 type Id[T any] struct {
 	index, generation uint16
 	storage           *Storage[T]
+}
+
+var _ Handle = (*Id[int])(nil)
+
+func GetTyped[T any](handle Handle) (T, bool) {
+	var empty T
+	data, exists := handle.GetUntyped()
+	if !exists {
+		return empty, false
+	}
+	typedData, isType := data.(T)
+	if !isType {
+		return empty, false
+	}
+	return typedData, true
+}
+
+func (id Id[T]) Index() uint16 {
+	return id.index
+}
+
+func (id Id[T]) Generation() uint16 {
+	return id.generation
 }
 
 func (id Id[T]) Get() (*T, bool) {
@@ -17,7 +50,15 @@ func (id Id[T]) Get() (*T, bool) {
 	return ptr, ok
 }
 
-func (id Id[T]) Has() bool {
+func (id Id[T]) Equals(handle Handle) bool {
+	return id.index == handle.Index() && id.generation == handle.Generation()
+}
+
+func (id Id[T]) GetUntyped() (any, bool) {
+	return id.Get()
+}
+
+func (id Id[T]) Exists() bool {
 	if id.storage == nil {
 		return false
 	}
@@ -29,6 +70,10 @@ func (id Id[T]) Remove() {
 		return
 	}
 	id.storage.Remove(id)
+}
+
+func (id Id[T]) IsNil() bool {
+	return id.storage == nil
 }
 
 // Manages the allocation of a type of game object, reusing memory where possible and issuing object ids.
@@ -143,16 +188,16 @@ func (st *Storage[T]) Render(renderFunc RenderFunc[T], context *render.Context) 
 }
 
 // Returns a closure that returns pointers to each item in storage sequentially, returning nil when the end is reached.
-func (st *Storage[T]) Iter() func() *T {
+func (st *Storage[T]) Iter() func() (*T, Id[T]) {
 	i := 0
-	return func() *T {
+	return func() (*T, Id[T]) {
 		for {
 			if i >= len(st.data) || i > st.lastActive {
-				return nil
+				return nil, Id[T]{}
 			}
 			defer func() { i++ }()
 			if st.active[i] {
-				return &st.data[i]
+				return &st.data[i], st.owners[i]
 			}
 		}
 	}

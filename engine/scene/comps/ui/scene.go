@@ -9,7 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/world"
+	world "tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type Scene struct {

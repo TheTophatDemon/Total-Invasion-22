@@ -6,7 +6,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -94,7 +95,7 @@ func (player *Player) Update(deltaTime float32) {
 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
 		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)
 		if hit.Hit && closestBody != nil {
-			if usable, isUsable := closestBody.(Usable); isUsable {
+			if usable, isUsable := scene.GetTyped[Usable](closestBody); isUsable {
 				usable.OnUse(player)
 			}
 		}

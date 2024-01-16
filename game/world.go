@@ -13,9 +13,9 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/world"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game/ents"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -26,18 +26,17 @@ const (
 
 type World struct {
 	UI                        *ui.Scene
-	Players                   *world.Storage[ents.Player]
-	Enemies                   *world.Storage[ents.Enemy]
-	Walls                     *world.Storage[ents.Wall]
-	Props                     *world.Storage[ents.Prop]
-	Triggers                  *world.Storage[ents.Trigger]
-	GameMap                   *world.Map
-	CurrentPlayer             world.Id[ents.Player]
-	FPSCounter, SpriteCounter world.Id[ui.Text]
-	Message                   world.Id[ui.Text]
+	Players                   *scene.Storage[ents.Player]
+	Enemies                   *scene.Storage[ents.Enemy]
+	Walls                     *scene.Storage[ents.Wall]
+	Props                     *scene.Storage[ents.Prop]
+	Triggers                  *scene.Storage[ents.Trigger]
+	GameMap                   *scene.Map
+	CurrentPlayer             scene.Id[ents.Player]
+	FPSCounter, SpriteCounter scene.Id[ui.Text]
+	Message                   scene.Id[ui.Text]
 	messageTimer              float32
 	messagePriority           int
-	frustumTrans              mgl32.Mat4
 }
 
 var _ ents.WorldOps = (*World)(nil)
@@ -49,18 +48,18 @@ func NewWorld(mapPath string) (*World, error) {
 	}
 
 	w.UI = ui.NewUIScene(256, 64)
-	w.Players = world.NewStorage[ents.Player](8)
-	w.Enemies = world.NewStorage[ents.Enemy](256)
-	w.Walls = world.NewStorage[ents.Wall](256)
-	w.Props = world.NewStorage[ents.Prop](256)
-	w.Triggers = world.NewStorage[ents.Trigger](64)
+	w.Players = scene.NewStorage[ents.Player](8)
+	w.Enemies = scene.NewStorage[ents.Enemy](256)
+	w.Walls = scene.NewStorage[ents.Wall](256)
+	w.Props = scene.NewStorage[ents.Prop](256)
+	w.Triggers = scene.NewStorage[ents.Trigger](64)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
-	w.GameMap, err = world.NewMap(te3File)
+	w.GameMap, err = scene.NewMap(te3File)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +99,7 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	var player *ents.Player
-	w.CurrentPlayer, player, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
-	w.frustumTrans = player.Body().Transform.Matrix()
+	w.CurrentPlayer, _, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
@@ -173,15 +170,15 @@ func (w *World) Update(deltaTime float32) {
 	w.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
-	bodiesIter := w.BodyIter()
-	for bodyEnt := bodiesIter(); bodyEnt != nil; bodyEnt = bodiesIter() {
+	bodiesIter := w.BodiesIter()
+	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
 		body := bodyEnt.Body()
 		before := body.Transform.Position()
 		body.Update(deltaTime)
 
 		if before.Sub(body.Transform.Position()).LenSqr() != 0.0 {
-			innerBodiesIter := w.BodyIter()
-			for innerBodyEnt := innerBodiesIter(); innerBodyEnt != nil; innerBodyEnt = innerBodiesIter() {
+			innerBodiesIter := w.BodiesIter()
+			for innerBodyEnt, _ := innerBodiesIter(); innerBodyEnt != nil; innerBodyEnt, _ = innerBodiesIter() {
 				if innerBodyEnt != body {
 					body.ResolveCollision(innerBodyEnt.Body())
 				}
@@ -257,52 +254,6 @@ func (w *World) Render() {
 	w.UI.Render(&renderContext)
 }
 
-func (w *World) BodyIter() func() comps.HasBody {
-	playerIter := w.Players.Iter()
-	enemiesIter := w.Enemies.Iter()
-	wallsIter := w.Walls.Iter()
-	propsIter := w.Props.Iter()
-	return func() comps.HasBody {
-		if player := playerIter(); player != nil {
-			return player
-		}
-		if enemy := enemiesIter(); enemy != nil {
-			return enemy
-		}
-		if wall := wallsIter(); wall != nil {
-			return wall
-		}
-		if prop := propsIter(); prop != nil {
-			return prop
-		}
-		return nil
-	}
-}
-
-func (w *World) ActorsIter() func() ents.HasActor {
-	playerIter := w.Players.Iter()
-	enemiesIter := w.Enemies.Iter()
-	return func() ents.HasActor {
-		if player := playerIter(); player != nil {
-			return player
-		}
-		if enemy := enemiesIter(); enemy != nil {
-			return enemy
-		}
-		return nil
-	}
-}
-
-func (w *World) LinkablesIter(linkNumber int) func() ents.Linkable {
-	triggerIter := w.Triggers.Iter()
-	return func() ents.Linkable {
-		if trigger := triggerIter(); trigger != nil {
-			return trigger
-		}
-		return nil
-	}
-}
-
 func (w *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
@@ -313,60 +264,63 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	}
 }
 
-func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, comps.HasBody) {
+func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
 	rayBB := math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	mapHit := w.GameMap.CastRay(rayOrigin, rayDir, maxDist)
-	var closestEnt comps.HasBody
-	var closestBodyHit collision.RaycastResult
-	closestBodyHit.Distance = math.MaxFloat32
-	nextBody := w.BodyIter()
-	for bodyEnt := nextBody(); bodyEnt != nil; bodyEnt = nextBody() {
-		body := bodyEnt.Body()
-		if bodyEnt == excludeBody || !body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
-			continue
+	if includeBodies {
+		var closestEnt scene.Handle
+		var closestBodyHit collision.RaycastResult
+		closestBodyHit.Distance = math.MaxFloat32
+		nextBody := w.BodiesIter()
+		for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
+			body := bodyEnt.Body()
+			if bodyEnt == excludeBody || !body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
+				continue
+			}
+			bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position())
+			if mapHit.Hit && bodyHit.Distance > mapHit.Distance {
+				continue
+			}
+			if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
+				closestBodyHit = bodyHit
+				closestEnt = bodyId
+			}
 		}
-		bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position())
-		if mapHit.Hit && bodyHit.Distance > mapHit.Distance {
-			continue
+		if closestEnt != nil {
+			return closestBodyHit, closestEnt
 		}
-		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
-			closestBodyHit = bodyHit
-			closestEnt = bodyEnt
-		}
-	}
-	if closestEnt != nil {
-		return closestBodyHit, closestEnt
 	}
 	return mapHit, nil
 }
 
-func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception ents.HasActor) []ents.HasActor {
+func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception ents.HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
 	nextActor := w.ActorsIter()
-	result := make([]ents.HasActor, 0)
-	for actorEnt := nextActor(); actorEnt != nil; actorEnt = nextActor() {
+	result := make([]scene.Handle, 0)
+	for actorEnt, actorId := nextActor(); actorEnt != nil; actorEnt, actorId = nextActor() {
 		if actorEnt == exception {
 			continue
 		}
 		body := actorEnt.Body()
 		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
-			result = append(result, actorEnt)
+			result = append(result, actorId)
 		}
 	}
 	return result
 }
 
-func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []comps.HasBody {
-	radiusSq := sphereRadius * sphereRadius
-	nextBody := w.BodyIter()
-	result := make([]comps.HasBody, 0)
-	for bodyEnt := nextBody(); bodyEnt != nil; bodyEnt = nextBody() {
+func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
+	nextBody := w.BodiesIter()
+	result := make([]scene.Handle, 0)
+	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		if bodyEnt == exception {
 			continue
 		}
 		body := bodyEnt.Body()
-		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
-			result = append(result, bodyEnt)
+		bodySphere, isSphere := body.Shape.(collision.Sphere)
+		// TODO: Make this work with other shapes
+		if isSphere && body.Transform.Position().Sub(spherePos).Len() < sphereRadius+bodySphere.Radius() {
+			result = append(result, bodyId)
 		}
 	}
 	return result

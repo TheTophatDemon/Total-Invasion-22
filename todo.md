@@ -1,5 +1,7 @@
 # TODO
 - Teleporters
+- Refactor handles
+- Add support for other shapes to BodiesInSphere
 - Audio
 - Sickle
 - Text shadow

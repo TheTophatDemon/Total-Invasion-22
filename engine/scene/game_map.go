@@ -1,4 +1,4 @@
-package world
+package scene
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
 type Map struct {

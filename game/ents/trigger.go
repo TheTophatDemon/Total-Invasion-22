@@ -3,16 +3,22 @@ package ents
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
+const TRIGGER_TOUCH_MAX = 3
+
 type Trigger struct {
-	Sphere     collision.Sphere
-	Transform  comps.Transform
-	filter     func(comps.HasBody) bool
-	onEnter    func(*Trigger, comps.HasBody)
-	world      WorldOps
-	linkNumber int
+	Sphere        collision.Sphere
+	Transform     comps.Transform
+	filter        func(comps.HasBody) bool
+	onEnter       func(*Trigger, scene.Handle)
+	whileTouching func(*Trigger, scene.Handle)
+	onExit        func(*Trigger, scene.Handle)
+	world         WorldOps
+	linkNumber    int
+	touching      [TRIGGER_TOUCH_MAX]scene.Handle
 }
 
 var _ Linkable = (*Trigger)(nil)
@@ -33,15 +39,32 @@ func NewTriggerFromTE3(ent te3.Ent, world WorldOps) (tr Trigger, err error) {
 }
 
 func (tr *Trigger) Update(deltaTime float32) {
-	if tr.onEnter == nil {
-		return
-	}
-
-	intersectionists := tr.world.BodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
-	for _, bodyHaver := range intersectionists {
+	// Call callbacks for new & already touching entities
+	touchingNow := tr.world.BodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
+	var stillTouching [TRIGGER_TOUCH_MAX]bool
+	for _, handle := range touchingNow {
+		bodyHaver, _ := scene.GetTyped[comps.HasBody](handle)
 		if tr.filter == nil || tr.filter(bodyHaver) {
-			// TODO: Track bodies that have already entered
-			tr.onEnter(tr, bodyHaver)
+			if added, index := tr.addToTouching(handle); added {
+				if tr.onEnter != nil {
+					tr.onEnter(tr, handle)
+				}
+				stillTouching[index] = true
+			} else if index >= 0 {
+				if tr.whileTouching != nil {
+					tr.whileTouching(tr, handle)
+				}
+				stillTouching[index] = true
+			}
+		}
+	}
+	// Remove entities no longer being touched
+	for i := range stillTouching {
+		if !stillTouching[i] && tr.touching[i] != nil {
+			if tr.onExit != nil && tr.touching[i].Exists() {
+				tr.onExit(tr, tr.touching[i])
+			}
+			tr.touching[i] = nil
 		}
 	}
 }
@@ -50,14 +73,35 @@ func (tr *Trigger) LinkNumber() int {
 	return tr.linkNumber
 }
 
-func teleportAction(tr *Trigger, e comps.HasBody) {
+// Returns a bool that is true if the handle was added to a new slot.
+// The int returned is the index of the handle in the array if found, or -1.
+func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {
+	for i := range tr.touching {
+		if tr.touching[i] != nil && tr.touching[i].Equals(handle) {
+			return false, i
+		}
+	}
+	for i := range tr.touching {
+		if tr.touching[i] == nil || !tr.touching[i].Exists() {
+			tr.touching[i] = handle
+			return true, i
+		}
+	}
+	return false, -1
+}
+
+func teleportAction(tr *Trigger, handle scene.Handle) {
 	links := tr.world.LinkablesIter(tr.linkNumber)
-	for link := links(); link != nil; link = links() {
-		if link != tr {
-			if bodyHaver, hasBody := link.(comps.HasBody); hasBody {
-				e.Body().Transform.SetPosition(bodyHaver.Body().Transform.Position())
+	for link, _ := links(); link != nil; link, _ = links() {
+		if link != tr && link.LinkNumber() == tr.linkNumber {
+			if trOther, isTrigger := link.(*Trigger); isTrigger {
+				bodyHaver, _ := scene.GetTyped[comps.HasBody](handle)
+				bodyHaver.Body().Transform.SetPosition(trOther.Transform.Position())
+				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
+				// which would cause the destination teleporter to immediately teleport the body back.
+				trOther.addToTouching(handle)
+				break
 			}
-			break
 		}
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
 type Enemy struct {

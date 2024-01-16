@@ -2,7 +2,7 @@ package ents
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/world/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
 type HasActor interface {
