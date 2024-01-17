@@ -94,8 +94,8 @@ func (player *Player) Update(deltaTime float32) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
 		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)
-		if hit.Hit && closestBody != nil {
-			if usable, isUsable := scene.GetTyped[Usable](closestBody); isUsable {
+		if hit.Hit && !closestBody.IsNil() {
+			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
 			}
 		}

@@ -32,9 +32,9 @@ type World struct {
 	Props                     *scene.Storage[ents.Prop]
 	Triggers                  *scene.Storage[ents.Trigger]
 	GameMap                   *scene.Map
-	CurrentPlayer             scene.Id[ents.Player]
-	FPSCounter, SpriteCounter scene.Id[ui.Text]
-	Message                   scene.Id[ui.Text]
+	CurrentPlayer             scene.Handle
+	FPSCounter, SpriteCounter scene.Handle
+	Message                   scene.Handle
 	messageTimer              float32
 	messagePriority           int
 }
@@ -192,7 +192,7 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update message text
-	if message, ok := w.Message.Get(); ok {
+	if message, ok := scene.Get[*ui.Text](w.Message); ok {
 		if w.messageTimer > 0.0 {
 			w.messageTimer -= deltaTime
 		} else {
@@ -240,7 +240,7 @@ func (w *World) Render() {
 	w.Walls.Render((*ents.Wall).Render, &renderContext)
 	w.Props.Render((*ents.Prop).Render, &renderContext)
 
-	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
+	if sprCountTxt, ok := scene.Get[*ui.Text](w.SpriteCounter); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
@@ -258,7 +258,7 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
 		w.messagePriority = priority
-		if message, ok := w.Message.Get(); ok {
+		if message, ok := scene.Get[*ui.Text](w.Message); ok {
 			message.SetText(text).SetColor(colr)
 		}
 	}
@@ -286,11 +286,11 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDis
 				closestEnt = bodyId
 			}
 		}
-		if closestEnt != nil {
+		if !closestEnt.IsNil() {
 			return closestBodyHit, closestEnt
 		}
 	}
-	return mapHit, nil
+	return mapHit, scene.Handle{}
 }
 
 func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception ents.HasActor) []scene.Handle {

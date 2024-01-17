@@ -24,7 +24,7 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 		if prop, id := propsIter(); prop != nil {
 			return prop, id
 		}
-		return nil, nil
+		return nil, scene.Handle{}
 	}
 }
 
@@ -38,7 +38,7 @@ func (w *World) ActorsIter() func() (ents.HasActor, scene.Handle) {
 		if enemy, id := enemiesIter(); enemy != nil {
 			return enemy, id
 		}
-		return nil, nil
+		return nil, scene.Handle{}
 	}
 }
 
@@ -48,6 +48,6 @@ func (w *World) LinkablesIter(linkNumber int) func() (ents.Linkable, scene.Handl
 		if trigger, id := triggerIter(); trigger != nil {
 			return trigger, id
 		}
-		return nil, nil
+		return nil, scene.Handle{}
 	}
 }
