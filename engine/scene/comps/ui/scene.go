@@ -31,6 +31,7 @@ func (scene *Scene) Update(deltaTime float32) {
 func (scene *Scene) Render(context *render.Context) {
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 	gl.CullFace(gl.FRONT)
+	gl.Disable(gl.DEPTH_TEST)
 
 	// Render boxes in one large batch
 	cache.QuadMesh.Bind()
@@ -46,6 +47,7 @@ func (scene *Scene) Render(context *render.Context) {
 
 		// Set texture.
 		if box.Texture != nil {
+			_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 			box.Texture.Bind()
 			texW, texH := float32(box.Texture.Width()), float32(box.Texture.Height())
 			srcVec := mgl32.Vec4{
@@ -55,12 +57,16 @@ func (scene *Scene) Render(context *render.Context) {
 				box.src.Height / texH,
 			}
 			_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, srcVec)
+		} else {
+			_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
 		}
 
 		// Set uniforms
 		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())
 		cache.QuadMesh.DrawAll()
 	})
+
+	_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 
 	// Render text
 	scene.Texts.ForEach(func(text *Text) {
@@ -87,4 +93,6 @@ func (scene *Scene) Render(context *render.Context) {
 			log.Println(err)
 		}
 	})
+
+	gl.Enable(gl.DEPTH_TEST)
 }

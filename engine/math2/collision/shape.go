@@ -21,6 +21,8 @@ type Box struct {
 	shape
 }
 
+var _ Shape = (*Box)(nil)
+
 func NewBox(extents math2.Box) Box {
 	return Box{
 		shape: shape{
@@ -41,6 +43,8 @@ type Sphere struct {
 	shape
 	radius float32
 }
+
+var _ Shape = (*Sphere)(nil)
 
 func NewSphere(radius float32) Sphere {
 	return Sphere{
@@ -72,6 +76,8 @@ type Mesh struct {
 	mesh            *geom.Mesh
 	triangleIndices []int
 }
+
+var _ Shape = (*Mesh)(nil)
 
 func NewMesh(mesh *geom.Mesh) Mesh {
 	if mesh == nil {

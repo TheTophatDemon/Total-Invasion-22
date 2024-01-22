@@ -21,7 +21,9 @@ const (
 	TRIHIT_ALL = TRIHIT_CENTER + TRIHIT_EDGE
 )
 
-func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangle math2.Triangle) (TriangleHit, Result) {
+func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangle math2.Triangle, trianglesOffset mgl32.Vec3) (TriangleHit, Result) {
+	spherePos = spherePos.Sub(trianglesOffset)
+
 	// Check if the sphere intersects the triangle's plane.
 	plane := triangle.Plane()
 	distToPlane := plane.Normal.Dot(spherePos.Sub(triangle[0]))
@@ -77,4 +79,20 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 	}
 
 	return TRIHIT_NONE, Result{}
+}
+
+func SphereTouchesBox(spherePos mgl32.Vec3, sphereRadius float32, box math2.Box) bool {
+	projectedPoint := math2.Vec3Max(math2.Vec3Min(spherePos, box.Max), box.Min)
+	diff := spherePos.Sub(projectedPoint)
+	distSq := diff.LenSqr()
+
+	if distSq > 0.0 && distSq < sphereRadius*sphereRadius {
+		return true
+	}
+
+	return false
+}
+
+func SphereTouchesSphere(pos1 mgl32.Vec3, radius1 float32, pos2 mgl32.Vec3, radius2 float32) bool {
+	return pos1.Sub(pos2).LenSqr() < (radius1+radius2)*(radius1+radius2)
 }

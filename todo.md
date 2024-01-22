@@ -1,8 +1,4 @@
 # TODO
-- Teleporters
-    * Orientation when exiting
-    * Flashing
-- Add support for other shapes to BodiesInSphere
 - Audio
 - Quake movement
 - Sickle

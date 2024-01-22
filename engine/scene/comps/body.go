@@ -116,11 +116,11 @@ func (b *Body) ResolveCollisionSphereTriangles(trianglesOffset mgl32.Vec3, mesh 
 		}
 		triangle := mesh.Triangles()[t]
 		// Add offset
-		for i := 0; i < len(triangle); i += 1 {
-			triangle[i] = triangle[i].Add(trianglesOffset)
-		}
+		// for i := 0; i < len(triangle); i += 1 {
+		// 	triangle[i] = triangle[i].Add(trianglesOffset)
+		// }
 
-		hit, col := collision.SphereTriangleCollision(b.Transform.Position(), radius, triangle)
+		hit, col := collision.SphereTriangleCollision(b.Transform.Position(), radius, triangle, trianglesOffset)
 		if int(hit)&int(filter) > 0 {
 			b.Transform.TranslateV(col.Normal.Mul(col.Penetration + mgl32.Epsilon))
 		}

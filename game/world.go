@@ -34,9 +34,11 @@ type World struct {
 	GameMap                   *scene.Map
 	CurrentPlayer             scene.Handle
 	FPSCounter, SpriteCounter scene.Handle
-	Message                   scene.Handle
+	messageText               scene.Handle
 	messageTimer              float32
 	messagePriority           int
+	flashRect                 scene.Handle
+	flashSpeed                float32
 }
 
 var _ ents.WorldOps = (*World)(nil)
@@ -154,7 +156,10 @@ func NewWorld(mapPath string) (*World, error) {
 		Width:  float32(settings.WINDOW_WIDTH / 3.0),
 		Height: float32(settings.WINDOW_HEIGHT) / 2.0,
 	}).SetAlignment(ui.TEXT_ALIGN_CENTER).SetColor(color.Red)
-	w.Message, _, _ = w.UI.Texts.New(message)
+	w.messageText, _, _ = w.UI.Texts.New(message)
+
+	w.flashRect, _, _ = w.UI.Boxes.New(ui.NewBoxFull(math2.Rect{X: 0.0, Y: 0.0, Width: settings.WINDOW_WIDTH, Height: settings.WINDOW_HEIGHT}, nil, color.Blue.WithAlpha(0.5)))
+	w.flashSpeed = 0.5
 
 	return w, nil
 }
@@ -192,7 +197,7 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update message text
-	if message, ok := scene.Get[*ui.Text](w.Message); ok {
+	if message, ok := scene.Get[*ui.Text](w.messageText); ok {
 		if w.messageTimer > 0.0 {
 			w.messageTimer -= deltaTime
 		} else {
@@ -204,6 +209,11 @@ func (w *World) Update(deltaTime float32) {
 				message.SetText("")
 			}
 		}
+	}
+
+	// Update screen flash
+	if flash, ok := scene.Get[*ui.Box](w.flashRect); ok {
+		flash.Color = flash.Color.Fade(w.flashSpeed * deltaTime)
 	}
 
 	// Update FPS counter
@@ -258,9 +268,16 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
 		w.messagePriority = priority
-		if message, ok := scene.Get[*ui.Text](w.Message); ok {
+		if message, ok := scene.Get[*ui.Text](w.messageText); ok {
 			message.SetText(text).SetColor(colr)
 		}
+	}
+}
+
+func (w *World) FlashScreen(color color.Color, fadeSpeed float32) {
+	if flash, ok := scene.Get[*ui.Box](w.flashRect); ok {
+		flash.Color = color
+		w.flashSpeed = fadeSpeed
 	}
 }
 
@@ -317,9 +334,22 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 			continue
 		}
 		body := bodyEnt.Body()
-		bodySphere, isSphere := body.Shape.(collision.Sphere)
-		// TODO: Make this work with other shapes
-		if isSphere && body.Transform.Position().Sub(spherePos).Len() < sphereRadius+bodySphere.Radius() {
+
+		var hit bool
+		switch shape := body.Shape.(type) {
+		case collision.Sphere:
+			hit = collision.SphereTouchesSphere(spherePos, sphereRadius, body.Transform.Position(), shape.Radius())
+		case collision.Box:
+			hit = collision.SphereTouchesBox(spherePos, sphereRadius, shape.Extents().Translate(body.Transform.Position()))
+		case collision.Mesh:
+			for _, tri := range shape.Mesh().Triangles() {
+				if h, _ := collision.SphereTriangleCollision(spherePos, sphereRadius, tri, body.Transform.Position()); h != collision.TRIHIT_NONE {
+					hit = true
+					break
+				}
+			}
+		}
+		if hit {
 			result = append(result, bodyId)
 		}
 	}

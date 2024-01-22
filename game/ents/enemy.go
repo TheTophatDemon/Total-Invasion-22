@@ -68,3 +68,6 @@ func (enemy *Enemy) Update(deltaTime float32) {
 func (enemy *Enemy) Render(context *render.Context) {
 	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.actor.YawAngle)
 }
+
+func (enemy *Enemy) ProcessSignal(s Signal, params any) {
+}

@@ -122,3 +122,10 @@ func (player *Player) Update(deltaTime float32) {
 
 	player.actor.Update(deltaTime)
 }
+
+func (p *Player) ProcessSignal(s Signal, params any) {
+	switch s {
+	case SIGNAL_TELEPORTED:
+		p.world.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+	}
+}

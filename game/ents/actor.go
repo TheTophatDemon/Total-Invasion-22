@@ -7,6 +7,7 @@ import (
 
 type HasActor interface {
 	comps.HasBody
+	Observer
 	Actor() *Actor
 }
 
@@ -16,8 +17,6 @@ type Actor struct {
 	inputForward, inputStrafe     float32
 	YawAngle                      float32 // Radians
 }
-
-var _ HasActor = (*Actor)(nil)
 
 func (a *Actor) Update(deltaTime float32) {
 	input := mgl32.Vec3{a.inputStrafe, 0.0, -a.inputForward}
@@ -39,8 +38,8 @@ func (a *Actor) Update(deltaTime float32) {
 	}
 }
 
-func (a *Actor) Actor() *Actor {
-	return a
+func (a *Actor) SetYaw(newYaw float32) {
+	a.YawAngle = newYaw
 }
 
 func (a *Actor) Body() *comps.Body {

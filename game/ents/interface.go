@@ -8,22 +8,29 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-// In order to prevent a circular dependency of packages, entities interact with the World through this interface.
-// As a bonus, this prevents entities from doing things with the world that they shouldn't, like running a full update.
-type WorldOps interface {
-	ShowMessage(text string, duration float32, priority int, colr color.Color)
-	Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle)
-	BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle
-	ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle
-	LinkablesIter(linkNumber int) func() (Linkable, scene.Handle)
-}
+type (
+	// In order to prevent a circular dependency of packages, entities interact with the World through this interface.
+	// As a bonus, this prevents entities from doing things with the world that they shouldn't, like running a full update.
+	WorldOps interface {
+		ShowMessage(text string, duration float32, priority int, colr color.Color)
+		FlashScreen(color color.Color, fadeSpeed float32)
+		Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle)
+		BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle
+		ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle
+		LinkablesIter(linkNumber int) func() (Linkable, scene.Handle)
+	}
 
-// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
-type Usable interface {
-	OnUse(p *Player)
-}
+	// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
+	Usable interface {
+		OnUse(p *Player)
+	}
 
-// Represents an entity that can be activated by another entity.
-type Linkable interface {
-	LinkNumber() int
-}
+	Observer interface {
+		ProcessSignal(Signal, any)
+	}
+
+	// Represents an entity that can be activated by another entity.
+	Linkable interface {
+		LinkNumber() int
+	}
+)

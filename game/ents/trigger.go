@@ -95,8 +95,10 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 	for link, _ := links(); link != nil; link, _ = links() {
 		if link != tr && link.LinkNumber() == tr.linkNumber {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
-				bodyHaver, _ := scene.Get[comps.HasBody](handle)
-				bodyHaver.Body().Transform.SetPosition(trOther.Transform.Position())
+				actorHaver, _ := scene.Get[HasActor](handle)
+				actorHaver.Body().Transform.SetPosition(trOther.Transform.Position())
+				actorHaver.Actor().SetYaw(trOther.Transform.Yaw())
+				actorHaver.ProcessSignal(SIGNAL_TELEPORTED, nil)
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)

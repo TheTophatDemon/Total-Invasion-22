@@ -82,6 +82,11 @@ func (t *Transform) SetRotation(pitch, yaw, roll float32) {
 	t.dirty = true
 }
 
+func (t *Transform) SetRotationV(v mgl32.Vec3) {
+	t.rot = v
+	t.dirty = true
+}
+
 // Returns the euler angles of rotation (pitch, yaw, roll)
 func (t *Transform) Rotation() mgl32.Vec3 {
 	return t.rot

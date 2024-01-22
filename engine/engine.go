@@ -64,7 +64,7 @@ func Run(app App) {
 	previousTime := glfw.GetTime()
 	previousTickTime := glfw.GetTime()
 
-	//FPS counters
+	// FPS counters
 	var tickTimer float32 = 0.0
 
 	var fpsTimer float32
@@ -99,7 +99,7 @@ func Run(app App) {
 			gl.Enable(gl.CULL_FACE)
 			gl.Enable(gl.BLEND)
 			gl.DepthFunc(gl.LESS)
-			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+			gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE_MINUS_DST_ALPHA, gl.ONE)
 			gl.CullFace(gl.BACK)
 			gl.ClearColor(0.0, 0.0, 0.2, 1.0)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

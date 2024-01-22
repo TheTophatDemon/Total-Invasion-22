@@ -22,7 +22,7 @@ func Get[T any](handle Handle) (T, bool) {
 }
 
 func (h1 Handle) Equals(h2 Handle) bool {
-	return h1.index == h2.index && h1.generation == h2.generation && h1.dataType == h2.dataType
+	return h1.index == h2.index && h1.generation == h2.generation && h1.storage == h2.storage
 }
 
 func (h Handle) Exists() bool {

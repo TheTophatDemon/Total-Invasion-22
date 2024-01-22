@@ -22,6 +22,13 @@ func (c Color) Fade(amount float32) Color {
 	}
 }
 
+func (c Color) WithAlpha(alpha float32) Color {
+	return Color{
+		R: c.R, G: c.G, B: c.B,
+		A: alpha,
+	}
+}
+
 func (c Color) Vector() mgl32.Vec4 {
 	return mgl32.Vec4{c.R, c.G, c.B, c.A}
 }
