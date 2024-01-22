@@ -1,6 +1,7 @@
 package ents
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -96,8 +97,12 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		if link != tr && link.LinkNumber() == tr.linkNumber {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				actorHaver, _ := scene.Get[HasActor](handle)
-				actorHaver.Body().Transform.SetPosition(trOther.Transform.Position())
-				actorHaver.Actor().SetYaw(trOther.Transform.Yaw())
+				body := actorHaver.Body()
+				body.Transform.SetPosition(trOther.Transform.Position())
+				body.Velocity = mgl32.Vec3{}
+				actor := actorHaver.Actor()
+				actor.SetYaw(trOther.Transform.Yaw())
+				actor.inputForward, actor.inputStrafe = 0.0, 0.0
 				actorHaver.ProcessSignal(SIGNAL_TELEPORTED, nil)
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
