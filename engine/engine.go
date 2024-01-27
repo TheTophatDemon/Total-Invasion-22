@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
@@ -50,6 +51,10 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 
 	window.MakeContextCurrent()
 	input.Init()
+
+	if err := audio.Init(); err != nil {
+		return err
+	}
 
 	if err := gl.Init(); err != nil {
 		return err
