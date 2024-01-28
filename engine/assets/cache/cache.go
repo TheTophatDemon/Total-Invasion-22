@@ -9,7 +9,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 )
+
+// TODO: Refactor this
 
 // This map caches the loadedTextures loaded from the filesystem by their paths.
 var loadedTextures map[string]*textures.Texture
@@ -20,10 +23,14 @@ var loadedMeshes map[string]*geom.Mesh
 // Cache of bitmap fonts, indexed by .fnt file path
 var loadedFonts map[string]*fonts.Font
 
+// Cache of sound effects, indexed by .wav file path
+var loadedSfx map[string]*audio.Sfx
+
 func init() {
 	loadedTextures = make(map[string]*textures.Texture)
 	loadedMeshes = make(map[string]*geom.Mesh)
 	loadedFonts = make(map[string]*fonts.Font)
+	loadedSfx = make(map[string]*audio.Sfx)
 }
 
 var (
@@ -96,10 +103,16 @@ func FreeFonts() {
 	clear(loadedFonts)
 }
 
+// Releases memory for all cached sounds
+func FreeSounds() {
+	clear(loadedSfx)
+}
+
 func FreeAll() {
 	FreeTextures()
 	FreeMeshes()
 	FreeFonts()
+	FreeSounds()
 	FreeBuiltInAssets()
 }
 
@@ -149,4 +162,26 @@ func GetFont(assetPath string) (*fonts.Font, error) {
 		loadedFonts[assetPath] = font
 	}
 	return font, nil
+}
+
+// Retrieves a sound effect from the game assets, loading it if it doesn't already exist.
+func GetSfx(assetPath string) (*audio.Sfx, error) {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
+	var err error
+
+	sfx, ok := loadedSfx[assetPath]
+	if !ok {
+		// Check file extension
+		if !strings.HasSuffix(assetPath, ".wav") {
+			return nil, fmt.Errorf("unsupported sfx file type")
+		}
+
+		sfx, err = audio.LoadSfx(assetPath)
+		if err != nil {
+			return nil, err
+		}
+
+		loadedSfx[assetPath] = sfx
+	}
+	return sfx, nil
 }

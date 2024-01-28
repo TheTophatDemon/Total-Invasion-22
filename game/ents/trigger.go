@@ -1,7 +1,10 @@
 package ents
 
 import (
+	"log"
+
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -107,6 +110,11 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
+				if sfx, err := cache.GetSfx("assets/sounds/teleport.wav"); err == nil {
+					sfx.Play()
+				} else {
+					log.Println(err)
+				}
 				break
 			}
 		}

@@ -3,7 +3,7 @@ package audio
 import "github.com/ebitengine/oto/v3"
 
 const (
-	SAMPLE_RATE   = 48000
+	SAMPLE_RATE   = 44100
 	CHANNEL_COUNT = 2
 )
 

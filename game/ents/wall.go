@@ -2,6 +2,7 @@ package ents
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -229,6 +230,15 @@ func (w *Wall) OnUse(player *Player) {
 				if w.WaitTime >= 0.0 {
 					w.movePhase = MOVE_PHASE_CLOSING
 				}
+			}
+			sfxPath := "assets/sounds/opendoor.wav"
+			if w.WaitTime < 0 {
+				sfxPath = "assets/sounds/secretwall.wav"
+			}
+			if sfx, err := cache.GetSfx(sfxPath); err == nil {
+				sfx.Play()
+			} else {
+				log.Println(err)
 			}
 		}
 	case ACTIVATOR_KEY:
