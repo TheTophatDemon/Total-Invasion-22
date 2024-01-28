@@ -60,7 +60,7 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 		return err
 	}
 
-	cache.Init()
+	cache.InitBuiltInAssets()
 
 	return nil
 }

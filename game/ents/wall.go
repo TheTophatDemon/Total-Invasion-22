@@ -2,13 +2,13 @@ package ents
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -36,17 +36,18 @@ const (
 
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
 type Wall struct {
-	MeshRender  comps.MeshRender
-	AnimPlayer  comps.AnimationPlayer
-	Origin      mgl32.Vec3 // The position in global space that the wall starts in.
-	Destination mgl32.Vec3 // The position in global space that the wall will move to.
-	WaitTime    float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
-	Speed       float32
-	body        comps.Body
-	waitTimer   float32
-	movePhase   MovePhase
-	world       WorldOps
-	activator   Activator
+	MeshRender    comps.MeshRender
+	AnimPlayer    comps.AnimationPlayer
+	Origin        mgl32.Vec3 // The position in global space that the wall starts in.
+	Destination   mgl32.Vec3 // The position in global space that the wall will move to.
+	WaitTime      float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
+	Speed         float32
+	body          comps.Body
+	waitTimer     float32
+	movePhase     MovePhase
+	world         WorldOps
+	activator     Activator
+	activateSound *audio.Sfx
 }
 
 var _ Usable = (*Wall)(nil)
@@ -159,6 +160,16 @@ func (w *Wall) configureForDoor(ent te3.Ent) error {
 		w.activator = ACTIVATOR_NONE
 	}
 
+	if sfxStr, ok := ent.Properties["activateSound"]; ok {
+		if len(sfxStr) > 0 {
+			w.activateSound, _ = cache.GetSfx("assets/sounds/" + sfxStr)
+		} else {
+			w.activateSound = nil
+		}
+	} else {
+		w.activateSound, _ = cache.GetSfx("assets/sounds/opendoor.wav")
+	}
+
 	return nil
 }
 
@@ -226,19 +237,13 @@ func (w *Wall) OnUse(player *Player) {
 			case MOVE_PHASE_CLOSED:
 				w.movePhase = MOVE_PHASE_OPENING
 				w.waitTimer = 0
+				if w.activateSound != nil {
+					w.activateSound.Play()
+				}
 			case MOVE_PHASE_OPEN:
 				if w.WaitTime >= 0.0 {
 					w.movePhase = MOVE_PHASE_CLOSING
 				}
-			}
-			sfxPath := "assets/sounds/opendoor.wav"
-			if w.WaitTime < 0 {
-				sfxPath = "assets/sounds/secretwall.wav"
-			}
-			if sfx, err := cache.GetSfx(sfxPath); err == nil {
-				sfx.Play()
-			} else {
-				log.Println(err)
 			}
 		}
 	case ACTIVATOR_KEY:

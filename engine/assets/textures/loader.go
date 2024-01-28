@@ -45,20 +45,7 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 	return rgba, nil
 }
 
-// Creates a new image representing the rectangle subsection of the source image.
-func subImageCopy(src *image.RGBA, x, y, w, h int) *image.RGBA {
-	dest := image.NewRGBA(image.Rect(0, 0, w, h))
-
-	for i := 0; i < w; i++ {
-		for j := 0; j < h; j++ {
-			dest.Set(i, j, src.At(i+x, j+y))
-		}
-	}
-
-	return dest
-}
-
-func LoadTexture(assetPath string) *Texture {
+func LoadTexture(assetPath string) (*Texture, error) {
 
 	// Look for metadata file
 	metaPath := strings.TrimSuffix(assetPath, ".png") + ".json"
@@ -76,8 +63,7 @@ func LoadTexture(assetPath string) *Texture {
 		img, err = loadImage(assetPath)
 	}
 	if err != nil {
-		log.Println(err)
-		return ErrorTexture()
+		return ErrorTexture(), err
 	}
 
 	texture := &Texture{
@@ -114,5 +100,5 @@ func LoadTexture(assetPath string) *Texture {
 
 	log.Printf("Texture loaded at %v.\n", assetPath)
 
-	return texture
+	return texture, nil
 }

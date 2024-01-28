@@ -2,186 +2,145 @@ package cache
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
-	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/audio"
 )
 
-// TODO: Refactor this
+type cache[T any] struct {
+	storage        map[string]T
+	fileExtensions []string
+	loadFunc       func(string) (T, error)
+	freeFunc       func(T)
+	resourceName   string
+}
 
 // This map caches the loadedTextures loaded from the filesystem by their paths.
-var loadedTextures map[string]*textures.Texture
+var loadedTextures cache[*textures.Texture]
 
 // This caches the meshes loaded from the filesystem by their paths.
-var loadedMeshes map[string]*geom.Mesh
+var loadedMeshes cache[*geom.Mesh]
 
 // Cache of bitmap fonts, indexed by .fnt file path
-var loadedFonts map[string]*fonts.Font
+var loadedFonts cache[*fonts.Font]
 
 // Cache of sound effects, indexed by .wav file path
-var loadedSfx map[string]*audio.Sfx
+var loadedSfx cache[*audio.Sfx]
 
 func init() {
-	loadedTextures = make(map[string]*textures.Texture)
-	loadedMeshes = make(map[string]*geom.Mesh)
-	loadedFonts = make(map[string]*fonts.Font)
-	loadedSfx = make(map[string]*audio.Sfx)
+	loadedTextures = cache[*textures.Texture]{
+		storage:        make(map[string]*textures.Texture),
+		fileExtensions: []string{".png"},
+		loadFunc:       textures.LoadTexture,
+		freeFunc:       (*textures.Texture).Free,
+		resourceName:   "texture",
+	}
+	loadedMeshes = cache[*geom.Mesh]{
+		storage:        make(map[string]*geom.Mesh),
+		fileExtensions: []string{".obj"},
+		loadFunc:       geom.LoadOBJMesh,
+		freeFunc:       (*geom.Mesh).Free,
+		resourceName:   "mesh",
+	}
+	loadedFonts = cache[*fonts.Font]{
+		storage:        make(map[string]*fonts.Font),
+		fileExtensions: []string{".fnt"},
+		loadFunc:       fonts.LoadAngelcodeFont,
+		freeFunc:       nil,
+		resourceName:   "font",
+	}
+	loadedSfx = cache[*audio.Sfx]{
+		storage:        make(map[string]*audio.Sfx),
+		fileExtensions: []string{".wav"},
+		loadFunc:       audio.LoadSfx,
+		freeFunc:       (*audio.Sfx).Free,
+		resourceName:   "sfx",
+	}
 }
 
-var (
-	// A quad on the XY plane centered at (0,0) with a width and height of 2.
-	QuadMesh *geom.Mesh
-)
-
-// Initialize built-in assets
-func Init() {
-	shaders.Init()
-
-	QuadMesh = geom.CreateMesh(geom.Vertices{
-		Pos: []mgl32.Vec3{
-			{-1.0, -1.0, 0.0},
-			{1.0, -1.0, 0.0},
-			{-1.0, 1.0, 0.0},
-			{1.0, 1.0, 0.0},
-		},
-		TexCoord: []mgl32.Vec2{
-			{0.0, 1.0},
-			{1.0, 1.0},
-			{0.0, 0.0},
-			{1.0, 0.0},
-		},
-		Normal: []mgl32.Vec3{
-			{0.0, 0.0, 1.0},
-			{0.0, 0.0, 1.0},
-			{0.0, 0.0, 1.0},
-			{0.0, 0.0, 1.0},
-		},
-		Color: nil,
-	}, []uint32{
-		1, 2, 0, 1, 3, 2,
-	})
-
+func (c *cache[T]) get(assetPath string) (T, error) {
+	var err error
+	var empty T
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
+	resource, ok := c.storage[assetPath]
+	if !ok {
+		for _, extension := range c.fileExtensions {
+			if strings.HasSuffix(assetPath, extension) {
+				resource, err = c.loadFunc(assetPath)
+				if err != nil {
+					return empty, err
+				}
+				c.storage[assetPath] = resource
+				return resource, nil
+			}
+		}
+		return empty, fmt.Errorf("unsupported file type for %v", c.resourceName)
+	}
+	return resource, nil
 }
 
-func FreeBuiltInAssets() {
-	shaders.Free()
+func (c *cache[T]) freeAll() {
+	if c.freeFunc != nil {
+		for i := range c.storage {
+			c.freeFunc(c.storage[i])
+		}
+	}
+	clear(c.storage)
+}
+
+func (c *cache[T]) take(assetPath string, resource T) {
+	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
+	c.storage[assetPath] = resource
 }
 
 func GetTexture(assetPath string) *textures.Texture {
-	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
-	texture, ok := loadedTextures[assetPath]
-	if !ok {
-		loadedTextures[assetPath] = textures.LoadTexture(assetPath)
-		return loadedTextures[assetPath]
+	texture, err := loadedTextures.get(assetPath)
+	if err != nil {
+		log.Println(err)
+		return textures.ErrorTexture()
 	}
 	return texture
 }
 
-// Releases memory for all cached textures
-func FreeTextures() {
-	for p := range loadedTextures {
-		loadedTextures[p].Free()
-		delete(loadedTextures, p)
-	}
-}
-
-// Releases memory for all cached meshes
-func FreeMeshes() {
-	for p := range loadedMeshes {
-		loadedMeshes[p].Free()
-		delete(loadedMeshes, p)
-	}
-}
-
-// Releases memory for all cached fonts
-func FreeFonts() {
-	clear(loadedFonts)
-}
-
-// Releases memory for all cached sounds
-func FreeSounds() {
-	clear(loadedSfx)
-}
-
-func FreeAll() {
-	FreeTextures()
-	FreeMeshes()
-	FreeFonts()
-	FreeSounds()
-	FreeBuiltInAssets()
-}
-
 // Takes ownership of an already loaded mesh. Will dispose of its resources along with the other meshes.
 func TakeMesh(assetPath string, mesh *geom.Mesh) {
-	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
-	loadedMeshes[assetPath] = mesh
+	loadedMeshes.take(assetPath, mesh)
 }
 
 func GetMesh(assetPath string) (*geom.Mesh, error) {
-	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
-	var err error
-
-	mesh, ok := loadedMeshes[assetPath]
-	if !ok {
-		switch {
-		case strings.HasSuffix(assetPath, ".obj"):
-			mesh, err = geom.LoadOBJMesh(assetPath)
-		default:
-			err = fmt.Errorf("unsupported model file type")
-		}
-		if err != nil {
-			return nil, err
-		}
-		loadedMeshes[assetPath] = mesh
+	mesh, err := loadedMeshes.get(assetPath)
+	if err != nil {
+		log.Println(err)
 	}
-	return mesh, nil
+	return mesh, err
 }
 
 // Retrieves a font from the game assets, loading it if it doesn't already exist.
 func GetFont(assetPath string) (*fonts.Font, error) {
-	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
-	var err error
-
-	font, ok := loadedFonts[assetPath]
-	if !ok {
-		// Check file extension
-		if !strings.HasSuffix(assetPath, ".fnt") {
-			return nil, fmt.Errorf("unsupported font file type")
-		}
-
-		font, err = fonts.LoadAngelcodeFont(assetPath)
-		if err != nil {
-			return nil, err
-		}
-
-		loadedFonts[assetPath] = font
+	fnt, err := loadedFonts.get(assetPath)
+	if err != nil {
+		log.Println(err)
 	}
-	return font, nil
+	return fnt, err
 }
 
 // Retrieves a sound effect from the game assets, loading it if it doesn't already exist.
 func GetSfx(assetPath string) (*audio.Sfx, error) {
-	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
-	var err error
-
-	sfx, ok := loadedSfx[assetPath]
-	if !ok {
-		// Check file extension
-		if !strings.HasSuffix(assetPath, ".wav") {
-			return nil, fmt.Errorf("unsupported sfx file type")
-		}
-
-		sfx, err = audio.LoadSfx(assetPath)
-		if err != nil {
-			return nil, err
-		}
-
-		loadedSfx[assetPath] = sfx
+	sfx, err := loadedSfx.get(assetPath)
+	if err != nil {
+		log.Println(err)
 	}
-	return sfx, nil
+	return sfx, err
+}
+
+func FreeAll() {
+	loadedTextures.freeAll()
+	loadedMeshes.freeAll()
+	loadedFonts.freeAll()
+	loadedSfx.freeAll()
+	FreeBuiltInAssets()
 }

@@ -104,3 +104,12 @@ func (sfx *Sfx) Play() bool {
 	}
 	return false
 }
+
+func (sfx *Sfx) Free() {
+	for i := range sfx.players {
+		err := sfx.players[i].Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
