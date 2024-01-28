@@ -15,18 +15,33 @@ import (
 )
 
 type Sfx struct {
-	Loop       bool
 	Cooldown   float32
 	Polyphony  uint8
+	loop       bool
 	decoder    wav.Decoder
-	players    []oto.Player
+	players    []sfxPlayer
 	lastPlayed time.Time
+}
+
+type PlayingId uint32
+
+type sfxPlayer struct {
+	oto.Player
+	playCount uint16
 }
 
 type sfxMetadata struct {
 	Loop      bool
 	Cooldown  float32
 	Polyphony int
+}
+
+func (pid PlayingId) index() uint16 {
+	return uint16(pid & 0xFF00)
+}
+
+func (pid PlayingId) generation() uint16 {
+	return uint16(pid & 0x00FF)
 }
 
 func LoadSfx(assetPath string) (*Sfx, error) {
@@ -61,7 +76,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 	}
 
 	if metadata != nil {
-		sfx.Loop = metadata.Loop
+		sfx.loop = metadata.Loop
 	}
 
 	wavBuffer, err := sfx.decoder.FullPCMBuffer()
@@ -81,28 +96,49 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 			wavBytes = binary.LittleEndian.AppendUint16(wavBytes, uint16(wavBuffer.Data[i]))
 		}
 	}
-	sfx.players = make([]oto.Player, sfx.Polyphony)
+	sfx.players = make([]sfxPlayer, sfx.Polyphony)
 	for i := range sfx.players {
-		sfx.players[i] = *context.NewPlayer(bytes.NewReader(wavBytes))
+		var reader io.Reader
+		if sfx.loop {
+			reader = NewLoopReader(wavBytes)
+		} else {
+			reader = bytes.NewReader(wavBytes)
+		}
+		sfx.players[i] = sfxPlayer{
+			Player:    *context.NewPlayer(reader),
+			playCount: 0,
+		}
 	}
 	log.Printf("Sfx loaded at %v.\n", assetPath)
 	return sfx, nil
 }
 
-func (sfx *Sfx) Play() bool {
+func (sfx *Sfx) Play() PlayingId {
 	if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
-		return false
+		return PlayingId(0)
 	}
-	// TODO: Implement looping
+
 	for i := range sfx.players {
 		if !sfx.players[i].IsPlaying() {
 			sfx.players[i].Seek(0, io.SeekStart)
 			sfx.players[i].Play()
 			sfx.lastPlayed = time.Now()
-			return true
+			sfx.players[i].playCount++
+			pid := PlayingId(uint32(sfx.players[i].playCount&0x00FF) & uint32(i) << 8)
+			return pid
 		}
 	}
-	return false
+	return PlayingId(0)
+}
+
+func (sfx *Sfx) Stop(pid PlayingId) {
+	if pid == 0 {
+		return
+	}
+	idx := pid.index()
+	if sfx.players[pid].playCount == pid.generation() {
+		sfx.players[idx].Pause()
+	}
 }
 
 func (sfx *Sfx) Free() {

@@ -2,6 +2,8 @@ package ents
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -22,6 +24,7 @@ type Player struct {
 	StandFriction, WalkFriction, RunFriction float32
 	actor                                    Actor
 	world                                    WorldOps
+	sickleSound                              audio.PlayingId
 }
 
 var _ HasActor = (*Player)(nil)
@@ -97,6 +100,16 @@ func (player *Player) Update(deltaTime float32) {
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
+			}
+		}
+	}
+
+	if input.IsActionJustPressed(settings.ACTION_FIRE) {
+		if sickleSfx, err := cache.GetSfx("assets/sounds/sickle.wav"); err == nil {
+			if player.sickleSound != 0 {
+				sickleSfx.Stop(player.sickleSound)
+			} else {
+				player.sickleSound = sickleSfx.Play()
 			}
 		}
 	}
