@@ -124,7 +124,7 @@ func (sfx *Sfx) Play() PlayingId {
 			sfx.players[i].Play()
 			sfx.lastPlayed = time.Now()
 			sfx.players[i].playCount++
-			pid := PlayingId(uint32(sfx.players[i].playCount&0x00FF) & uint32(i) << 8)
+			pid := PlayingId(uint32(sfx.players[i].playCount&0x00FF) | uint32(i)<<8)
 			return pid
 		}
 	}
@@ -136,7 +136,7 @@ func (sfx *Sfx) Stop(pid PlayingId) {
 		return
 	}
 	idx := pid.index()
-	if sfx.players[pid].playCount == pid.generation() {
+	if sfx.players[idx].playCount == pid.generation() {
 		sfx.players[idx].Pause()
 	}
 }

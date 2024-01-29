@@ -1,5 +1,4 @@
 # TODO
-- Looping Audio
 - Quake movement
 - Sickle
 - Text shadow

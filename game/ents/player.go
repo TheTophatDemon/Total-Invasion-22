@@ -108,6 +108,7 @@ func (player *Player) Update(deltaTime float32) {
 		if sickleSfx, err := cache.GetSfx("assets/sounds/sickle.wav"); err == nil {
 			if player.sickleSound != 0 {
 				sickleSfx.Stop(player.sickleSound)
+				player.sickleSound = 0
 			} else {
 				player.sickleSound = sickleSfx.Play()
 			}
