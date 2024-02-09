@@ -10,6 +10,9 @@ type Handle struct {
 
 func Get[T any](handle Handle) (T, bool) {
 	var empty T
+	if handle.IsNil() {
+		return empty, false
+	}
 	data, exists := handle.storage.GetUntyped(handle)
 	if !exists {
 		return empty, false

@@ -1,9 +1,8 @@
 package ents
 
 import (
+	"github.com/Southclaws/opt"
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -24,7 +23,8 @@ type Player struct {
 	StandFriction, WalkFriction, RunFriction float32
 	actor                                    Actor
 	world                                    WorldOps
-	sickleSound                              audio.PlayingId
+	weapons                                  [WEAPON_ORDER_MAX]opt.Optional[Weapon]
+	selectedWeapon                           int
 }
 
 var _ HasActor = (*Player)(nil)
@@ -105,14 +105,7 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_FIRE) {
-		if sickleSfx, err := cache.GetSfx("assets/sounds/sickle.wav"); err == nil {
-			if player.sickleSound != 0 {
-				sickleSfx.Stop(player.sickleSound)
-				player.sickleSound = 0
-			} else {
-				player.sickleSound = sickleSfx.Play()
-			}
-		}
+		//TODO: Fire weapon
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
@@ -141,5 +134,29 @@ func (p *Player) ProcessSignal(s Signal, params any) {
 	switch s {
 	case SIGNAL_TELEPORTED:
 		p.world.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+	}
+}
+
+func (p *Player) SelectWeapon(order int) {
+	if order == p.selectedWeapon ||
+		order >= len(p.weapons) ||
+		(order >= 0 && !p.weapons[order].Ok()) {
+		return
+	}
+	if p.selectedWeapon >= 0 {
+		p.weapons[p.selectedWeapon].Call((Weapon).OnDeselect)
+	}
+	p.selectedWeapon = order
+	if p.selectedWeapon >= 0 {
+		p.weapons[p.selectedWeapon].Call((Weapon).OnSelect)
+	}
+}
+
+func (p *Player) EquipWeapon(order int) {
+	switch order {
+	case WEAPON_ORDER_SICKLE:
+		// w := NewSickle(, p.world)
+		// p.weapons[WEAPON_ORDER_SICKLE] = opt.New(Weapon(w))
+		// w.OnEquip()
 	}
 }

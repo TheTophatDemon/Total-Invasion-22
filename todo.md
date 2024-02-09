@@ -1,6 +1,8 @@
 # TODO
-- Quake movement
 - Sickle
+- Ui scalability
+- Update for loops
+- Quake movement
 - Text shadow
 - Music
 - Localization

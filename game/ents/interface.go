@@ -6,6 +6,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 		BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle
 		ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle
 		LinkablesIter(linkNumber int) func() (Linkable, scene.Handle)
+		AddUiBox(box ui.Box) (scene.Id[ui.Box], bool)
 	}
 
 	// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
@@ -32,5 +34,15 @@ type (
 	// Represents an entity that can be activated by another entity.
 	Linkable interface {
 		LinkNumber() int
+	}
+
+	// Represents a weapon that a player / actor uses to attack
+	Weapon interface {
+		Order() int
+		OnEquip()
+		OnSelect()
+		OnFire()
+		OnDeselect()
+		Update(deltaTime float32)
 	}
 )

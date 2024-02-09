@@ -92,7 +92,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 
 	wavBytes := make([]byte, 0, len(wavBuffer.Data)*2)
 	for i := range wavBuffer.Data {
-		for r := 0; r < sampleTimes; r++ {
+		for range sampleTimes {
 			wavBytes = binary.LittleEndian.AppendUint16(wavBytes, uint16(wavBuffer.Data[i]))
 		}
 	}

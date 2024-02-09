@@ -22,6 +22,7 @@ import (
 
 const (
 	MESSAGE_FADE_SPEED = 2.0
+	DEFAULT_FONT_PATH  = "assets/textures/ui/font.fnt"
 )
 
 type World struct {
@@ -32,12 +33,12 @@ type World struct {
 	Props                     *scene.Storage[ents.Prop]
 	Triggers                  *scene.Storage[ents.Trigger]
 	GameMap                   *scene.Map
-	CurrentPlayer             scene.Handle
-	FPSCounter, SpriteCounter scene.Handle
-	messageText               scene.Handle
+	CurrentPlayer             scene.Id[ents.Player]
+	FPSCounter, SpriteCounter scene.Id[ui.Text]
+	messageText               scene.Id[ui.Text]
 	messageTimer              float32
 	messagePriority           int
-	flashRect                 scene.Handle
+	flashRect                 scene.Id[ui.Box]
 	flashSpeed                float32
 }
 
@@ -136,7 +137,7 @@ func NewWorld(mapPath string) (*World, error) {
 	}
 
 	// UI
-	fpsText, _ := ui.NewText("assets/textures/atlases/font.fnt", "FPS: 0")
+	fpsText, _ := ui.NewText(DEFAULT_FONT_PATH, "FPS: 0")
 	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
 	w.FPSCounter, _, _ = w.UI.Texts.New(fpsText)
 
@@ -147,9 +148,9 @@ func NewWorld(mapPath string) (*World, error) {
 		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
 		SetScale(1.0).
 		SetColor(color.Blue).
-		SetFont("assets/textures/atlases/font.fnt")
+		SetFont(DEFAULT_FONT_PATH)
 
-	message, _ := ui.NewText("assets/textures/atlases/font.fnt", "This is a test message!")
+	message, _ := ui.NewText(DEFAULT_FONT_PATH, "This is a test message!")
 	message.SetDest(math2.Rect{
 		X:      float32(settings.WINDOW_WIDTH) / 3.0,
 		Y:      float32(settings.WINDOW_HEIGHT) / 2.0,
@@ -197,7 +198,7 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update message text
-	if message, ok := scene.Get[*ui.Text](w.messageText); ok {
+	if message, ok := w.messageText.Get(); ok {
 		if w.messageTimer > 0.0 {
 			w.messageTimer -= deltaTime
 		} else {
@@ -212,19 +213,19 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update screen flash
-	if flash, ok := scene.Get[*ui.Box](w.flashRect); ok {
+	if flash, ok := w.flashRect.Get(); ok {
 		flash.Color = flash.Color.Fade(w.flashSpeed * deltaTime)
 	}
 
 	// Update FPS counter
-	if fpsText, ok := w.UI.Texts.Get(w.FPSCounter); ok {
+	if fpsText, ok := w.FPSCounter.Get(); ok {
 		fpsText.SetText(fmt.Sprintf("FPS: %v", engine.FPS()))
 	}
 }
 
 func (w *World) Render() {
 	// Find camera
-	player, ok := w.Players.Get(w.CurrentPlayer)
+	player, ok := w.CurrentPlayer.Get()
 	if !ok {
 		panic("missing player")
 	}
@@ -250,7 +251,7 @@ func (w *World) Render() {
 	w.Walls.Render((*ents.Wall).Render, &renderContext)
 	w.Props.Render((*ents.Prop).Render, &renderContext)
 
-	if sprCountTxt, ok := scene.Get[*ui.Text](w.SpriteCounter); ok {
+	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
@@ -268,14 +269,14 @@ func (w *World) ShowMessage(text string, duration float32, priority int, colr co
 	if priority >= w.messagePriority {
 		w.messageTimer = duration
 		w.messagePriority = priority
-		if message, ok := scene.Get[*ui.Text](w.messageText); ok {
+		if message, ok := w.messageText.Get(); ok {
 			message.SetText(text).SetColor(colr)
 		}
 	}
 }
 
 func (w *World) FlashScreen(color color.Color, fadeSpeed float32) {
-	if flash, ok := scene.Get[*ui.Box](w.flashRect); ok {
+	if flash, ok := w.flashRect.Get(); ok {
 		flash.Color = color
 		w.flashSpeed = fadeSpeed
 	}
@@ -354,4 +355,9 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 		}
 	}
 	return result
+}
+
+func (w *World) AddUiBox(box ui.Box) (scene.Id[ui.Box], bool) {
+	id, _, ok := w.UI.Boxes.New(box)
+	return id, ok
 }

@@ -74,7 +74,7 @@ func (st *Storage[T]) Has(h Handle) bool {
 }
 
 // Creates a new entity, returning its Id and a pointer to it. The last result is false if the storage is full.
-func (st *Storage[T]) New(init T) (Handle, *T, bool) {
+func (st *Storage[T]) New(init T) (Id[T], *T, bool) {
 	for i, active := range st.active {
 		if !active {
 			st.active[i] = true
@@ -91,10 +91,10 @@ func (st *Storage[T]) New(init T) (Handle, *T, bool) {
 				st.lastActive = i
 			}
 
-			return st.owners[i], &st.data[i], true
+			return Id[T]{st.owners[i]}, &st.data[i], true
 		}
 	}
-	return Handle{}, nil, false
+	return Id[T]{}, nil, false
 }
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.
