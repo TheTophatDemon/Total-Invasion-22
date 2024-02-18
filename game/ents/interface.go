@@ -35,14 +35,4 @@ type (
 	Linkable interface {
 		LinkNumber() int
 	}
-
-	// Represents a weapon that a player / actor uses to attack
-	Weapon interface {
-		Order() int
-		OnEquip()
-		OnSelect()
-		OnFire()
-		OnDeselect()
-		Update(deltaTime float32)
-	}
 )

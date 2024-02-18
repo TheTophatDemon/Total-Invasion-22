@@ -1,7 +1,6 @@
 package ents
 
 import (
-	"github.com/Southclaws/opt"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -23,7 +22,7 @@ type Player struct {
 	StandFriction, WalkFriction, RunFriction float32
 	actor                                    Actor
 	world                                    WorldOps
-	weapons                                  [WEAPON_ORDER_MAX]opt.Optional[Weapon]
+	weapons                                  [WEAPON_ORDER_MAX]Weapon
 	selectedWeapon                           int
 }
 
@@ -39,7 +38,7 @@ func (p *Player) Body() *comps.Body {
 }
 
 func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
-	return Player{
+	p := Player{
 		actor: Actor{
 			body: comps.Body{
 				Transform: comps.TransformFromTranslationAngles(
@@ -50,7 +49,7 @@ func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 				NoClip:    false,
 			},
 			YawAngle:  mgl32.DegToRad(angles[1]),
-			AccelRate: 80.0,
+			AccelRate: 100.0,
 			Friction:  20.0,
 		},
 		Camera: comps.NewCamera(
@@ -62,72 +61,85 @@ func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
 		WalkFriction:  1.0,
 		RunFriction:   20.0,
 		world:         world,
+		weapons: [...]Weapon{
+			WEAPON_ORDER_SICKLE:      NewSickle(world),
+			WEAPON_ORDER_CHICKEN:     {},
+			WEAPON_ORDER_GRENADE:     {},
+			WEAPON_ORDER_PARUSU:      {},
+			WEAPON_ORDER_DBL_GRENADE: {},
+			WEAPON_ORDER_SIGN:        {},
+			WEAPON_ORDER_AIRHORN:     {},
+		},
+		selectedWeapon: WEAPON_ORDER_NONE,
 	}
+	p.EquipWeapon(WEAPON_ORDER_SICKLE)
+	p.SelectWeapon(WEAPON_ORDER_SICKLE)
+	return p
 }
 
-func (player *Player) Update(deltaTime float32) {
+func (p *Player) Update(deltaTime float32) {
 	if input.IsActionPressed(settings.ACTION_FORWARD) {
-		player.actor.inputForward = 1.0
+		p.actor.inputForward = 1.0
 	} else if input.IsActionPressed(settings.ACTION_BACK) {
-		player.actor.inputForward = -1.0
+		p.actor.inputForward = -1.0
 	} else {
-		player.actor.inputForward = 0.0
+		p.actor.inputForward = 0.0
 	}
 
 	if input.IsActionPressed(settings.ACTION_RIGHT) {
-		player.actor.inputStrafe = 1.0
+		p.actor.inputStrafe = 1.0
 	} else if input.IsActionPressed(settings.ACTION_LEFT) {
-		player.actor.inputStrafe = -1.0
+		p.actor.inputStrafe = -1.0
 	} else {
-		player.actor.inputStrafe = 0.0
+		p.actor.inputStrafe = 0.0
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
-		player.Body().NoClip = !player.Body().NoClip
+		p.Body().NoClip = !p.Body().NoClip
 		message := "No-Clip "
-		if player.Body().NoClip {
+		if p.Body().NoClip {
 			message += "Activated"
 		} else {
 			message += "Deactivated"
 		}
-		player.world.ShowMessage(message, 4.0, 100, color.Red)
+		p.world.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_USE) {
-		rayOrigin := player.Body().Transform.Position()
-		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
-		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, true, USE_DIST, player)
+		rayOrigin := p.Body().Transform.Position()
+		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), p.Body().Transform.Matrix())
+		hit, closestBody := p.world.Raycast(rayOrigin, rayDir, true, USE_DIST, p)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
-				usable.OnUse(player)
+				usable.OnUse(p)
 			}
 		}
 	}
 
-	if input.IsActionJustPressed(settings.ACTION_FIRE) {
-		//TODO: Fire weapon
+	if input.IsActionJustPressed(settings.ACTION_FIRE) && p.selectedWeapon >= 0 {
+		p.weapons[p.selectedWeapon].Fire()
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
-		player.actor.MaxSpeed = player.WalkSpeed
+		p.actor.MaxSpeed = p.WalkSpeed
 	} else {
-		player.actor.MaxSpeed = player.RunSpeed
+		p.actor.MaxSpeed = p.RunSpeed
 	}
 
-	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
-		if player.actor.MaxSpeed == player.WalkSpeed {
-			player.actor.Friction = player.WalkFriction
+	if math2.Abs(p.actor.inputForward) > mgl32.Epsilon || math2.Abs(p.actor.inputStrafe) > mgl32.Epsilon {
+		if p.actor.MaxSpeed == p.WalkSpeed {
+			p.actor.Friction = p.WalkFriction
 		} else {
-			player.actor.Friction = player.RunFriction
+			p.actor.Friction = p.RunFriction
 		}
 	} else {
-		player.actor.Friction = player.StandFriction
+		p.actor.Friction = p.StandFriction
 	}
 
-	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
+	p.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
+	p.Body().Transform.SetRotation(0.0, p.actor.YawAngle, 0.0)
 
-	player.actor.Update(deltaTime)
+	p.actor.Update(deltaTime)
 }
 
 func (p *Player) ProcessSignal(s Signal, params any) {
@@ -138,25 +150,21 @@ func (p *Player) ProcessSignal(s Signal, params any) {
 }
 
 func (p *Player) SelectWeapon(order int) {
-	if order == p.selectedWeapon ||
-		order >= len(p.weapons) ||
-		(order >= 0 && !p.weapons[order].Ok()) {
+	if order == p.selectedWeapon || order >= len(p.weapons) || !p.weapons[order].equipped {
 		return
 	}
 	if p.selectedWeapon >= 0 {
-		p.weapons[p.selectedWeapon].Call((Weapon).OnDeselect)
+		p.weapons[p.selectedWeapon].Deselect()
 	}
 	p.selectedWeapon = order
 	if p.selectedWeapon >= 0 {
-		p.weapons[p.selectedWeapon].Call((Weapon).OnSelect)
+		p.weapons[p.selectedWeapon].Select()
 	}
 }
 
 func (p *Player) EquipWeapon(order int) {
-	switch order {
-	case WEAPON_ORDER_SICKLE:
-		// w := NewSickle(, p.world)
-		// p.weapons[WEAPON_ORDER_SICKLE] = opt.New(Weapon(w))
-		// w.OnEquip()
+	if order >= len(p.weapons) || order < 0 {
+		return
 	}
+	p.weapons[order].Equip()
 }

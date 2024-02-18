@@ -1,4 +1,5 @@
 # TODO
+- Refactor initialization of entities
 - Sickle
 - Ui scalability
 - Update for loops

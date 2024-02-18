@@ -10,11 +10,16 @@ uniform mat4 uProjMatrix;
 uniform mat4 uModelMatrix;
 
 uniform vec4 uSourceRect;
+uniform bool uFlipHorz;
 
 out vec2 vTexCoord;
 
 void main() {
-    vTexCoord = uSourceRect.xy + vec2(0.0, 1.0) - (aTexCoord * uSourceRect.zw);
+    float sOfs = aTexCoord.x * uSourceRect.z;
+    if (uFlipHorz) {
+        sOfs = uSourceRect.z - sOfs;
+    }
+    vTexCoord = uSourceRect.xy + vec2(sOfs, aTexCoord.y * uSourceRect.w);
 
     gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aPos, 1.0);
 }

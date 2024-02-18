@@ -50,9 +50,16 @@ func (scene *Scene) Render(context *render.Context) {
 			_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 			box.Texture.Bind()
 			texW, texH := float32(box.Texture.Width()), float32(box.Texture.Height())
+
+			// srcVec := mgl32.Vec4{
+			// 	box.src.X / texW,
+			// 	box.src.Y / texH,
+			// 	box.src.Width / texW,
+			// 	box.src.Height / texH,
+			// }
 			srcVec := mgl32.Vec4{
 				box.src.X / texW,
-				box.src.Y / texH,
+				1.0 - (box.src.Y / texH),
 				box.src.Width / texW,
 				box.src.Height / texH,
 			}
@@ -60,6 +67,8 @@ func (scene *Scene) Render(context *render.Context) {
 		} else {
 			_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
 		}
+
+		_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
 
 		// Set uniforms
 		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())

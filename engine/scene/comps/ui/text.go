@@ -250,8 +250,8 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 			pageW, pageH := float32(txt.font.Common.ScaleW), float32(txt.font.Common.ScaleH)
 
 			srcRect := math2.Rect{
-				X:      1.0 - (float32(chars[b].X+chars[b].Width) / pageW),
-				Y:      float32(chars[b].Y) / pageH,
+				X:      float32(chars[b].X+chars[b].Width) / pageW,
+				Y:      1.0 - float32(chars[b].Y)/pageH,
 				Width:  float32(chars[b].Width) / pageW,
 				Height: float32(chars[b].Height) / pageH,
 			}
