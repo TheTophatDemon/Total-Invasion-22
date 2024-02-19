@@ -1,10 +1,10 @@
 # TODO
 - Refactor initialization of entities
-- Sickle
-- Ui scalability
+- Merge world into ents package
+- Move atlas textures
+- Sickle throwing
 - Update for loops
-- Quake movement
 - Text shadow
 - Music
 - Localization
-- Bounding box hierarchy for collisions / raycasting
+- Bounding box hierarchy for collisions / raycasting with entities?
