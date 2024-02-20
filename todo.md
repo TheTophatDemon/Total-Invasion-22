@@ -1,5 +1,4 @@
 # TODO
-- Refactor initialization of entities
 - Merge world into ents package
 - Move atlas textures
 - Sickle throwing

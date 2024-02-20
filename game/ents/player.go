@@ -37,44 +37,48 @@ func (p *Player) Body() *comps.Body {
 	return &p.actor.body
 }
 
-func NewPlayer(position, angles mgl32.Vec3, world WorldOps) Player {
-	p := Player{
-		actor: Actor{
-			body: comps.Body{
-				Transform: comps.TransformFromTranslationAngles(
-					position, angles,
-				),
-				Shape:     collision.NewSphere(0.7),
-				Pushiness: 10,
-				NoClip:    false,
-			},
-			YawAngle:  mgl32.DegToRad(angles[1]),
-			AccelRate: 100.0,
-			Friction:  20.0,
-		},
-		Camera: comps.NewCamera(
-			70.0, settings.WINDOW_ASPECT_RATIO, 0.1, 1000.0,
-		),
-		RunSpeed:      12.0,
-		WalkSpeed:     7.0,
-		StandFriction: 80.0,
-		WalkFriction:  1.0,
-		RunFriction:   20.0,
-		world:         world,
-		weapons: [...]Weapon{
-			WEAPON_ORDER_SICKLE:      NewSickle(world),
-			WEAPON_ORDER_CHICKEN:     {},
-			WEAPON_ORDER_GRENADE:     {},
-			WEAPON_ORDER_PARUSU:      {},
-			WEAPON_ORDER_DBL_GRENADE: {},
-			WEAPON_ORDER_SIGN:        {},
-			WEAPON_ORDER_AIRHORN:     {},
-		},
-		selectedWeapon: WEAPON_ORDER_NONE,
+func SpawnPlayer(st *scene.Storage[Player], world WorldOps, position, angles mgl32.Vec3) (id scene.Id[Player], p *Player, err error) {
+	id, p, err = st.New()
+	if err != nil {
+		return
 	}
+
+	p.actor = Actor{
+		body: comps.Body{
+			Transform: comps.TransformFromTranslationAngles(
+				position, angles,
+			),
+			Shape:     collision.NewSphere(0.7),
+			Pushiness: 10,
+			NoClip:    false,
+		},
+		YawAngle:  mgl32.DegToRad(angles[1]),
+		AccelRate: 100.0,
+		Friction:  20.0,
+	}
+	p.Camera = comps.NewCamera(
+		70.0, settings.WINDOW_ASPECT_RATIO, 0.1, 1000.0,
+	)
+	p.RunSpeed = 12.0
+	p.WalkSpeed = 7.0
+	p.StandFriction = 80.0
+	p.WalkFriction = 1.0
+	p.RunFriction = 20.0
+	p.world = world
+	p.weapons = [...]Weapon{
+		WEAPON_ORDER_SICKLE:      NewSickle(world),
+		WEAPON_ORDER_CHICKEN:     {},
+		WEAPON_ORDER_GRENADE:     {},
+		WEAPON_ORDER_PARUSU:      {},
+		WEAPON_ORDER_DBL_GRENADE: {},
+		WEAPON_ORDER_SIGN:        {},
+		WEAPON_ORDER_AIRHORN:     {},
+	}
+	p.selectedWeapon = WEAPON_ORDER_NONE
 	p.EquipWeapon(WEAPON_ORDER_SICKLE)
 	p.SelectWeapon(WEAPON_ORDER_SICKLE)
-	return p
+
+	return
 }
 
 func (p *Player) Update(deltaTime float32) {

@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"fmt"
 	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -74,7 +75,7 @@ func (st *Storage[T]) Has(h Handle) bool {
 }
 
 // Creates a new entity, returning its Id and a pointer to it. The last result is false if the storage is full.
-func (st *Storage[T]) New(init T) (Id[T], *T, bool) {
+func (st *Storage[T]) New() (Id[T], *T, error) {
 	for i, active := range st.active {
 		if !active {
 			st.active[i] = true
@@ -84,17 +85,18 @@ func (st *Storage[T]) New(init T) (Id[T], *T, bool) {
 				storage:    st,
 				dataType:   st.owners[i].dataType,
 			}
-			st.data[i] = init
+			var empty T
+			st.data[i] = empty
 
 			// Update last active index.
 			if i >= st.lastActive {
 				st.lastActive = i
 			}
 
-			return Id[T]{st.owners[i]}, &st.data[i], true
+			return Id[T]{st.owners[i]}, &st.data[i], nil
 		}
 	}
-	return Id[T]{}, nil, false
+	return Id[T]{}, nil, fmt.Errorf("no room in storage")
 }
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.

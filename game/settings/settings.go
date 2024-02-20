@@ -6,6 +6,8 @@ const (
 	WINDOW_WIDTH        = 1280
 	WINDOW_HEIGHT       = 720
 	WINDOW_ASPECT_RATIO = float32(WINDOW_WIDTH) / WINDOW_HEIGHT
+	UI_HEIGHT           = 480
+	UI_WIDTH            = 800
 )
 
 const (

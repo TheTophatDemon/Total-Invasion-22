@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"path"
 	"strings"
 	"text/scanner"
 	"unicode"
@@ -38,23 +37,6 @@ type Text struct {
 	scale          float32
 	transform      mgl32.Mat4
 	transformDirty bool
-}
-
-func NewText(fontPath, text string) (Text, error) {
-	txt := Text{
-		alignment:      TEXT_ALIGN_LEFT,
-		color:          color.White,
-		text:           text,
-		textDirty:      true,
-		dest:           math2.Rect{},
-		scale:          1.0,
-		transform:      mgl32.Ident4(),
-		transformDirty: true,
-	}
-	if err := txt.SetFont(fontPath); err != nil {
-		return Text{}, err
-	}
-	return txt, nil
 }
 
 func (txt *Text) SetAlignment(align TextAlign) *Text {
@@ -241,26 +223,26 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 
 			// Generate mesh data
 			verts.Pos = append(verts.Pos,
+				mgl32.Vec3{charRect.X, charRect.Y + charRect.Height, 0.0},
+				mgl32.Vec3{charRect.X + charRect.Width, charRect.Y + charRect.Height, 0.0},
 				mgl32.Vec3{charRect.X, charRect.Y, 0.0},
 				mgl32.Vec3{charRect.X + charRect.Width, charRect.Y, 0.0},
-				mgl32.Vec3{charRect.X + charRect.Width, charRect.Y + charRect.Height, 0.0},
-				mgl32.Vec3{charRect.X, charRect.Y + charRect.Height, 0.0},
 			)
 
 			pageW, pageH := float32(txt.font.Common.ScaleW), float32(txt.font.Common.ScaleH)
 
 			srcRect := math2.Rect{
 				X:      float32(chars[b].X+chars[b].Width) / pageW,
-				Y:      1.0 - float32(chars[b].Y)/pageH,
+				Y:      1.0 - (float32(chars[b].Y) / pageH),
 				Width:  float32(chars[b].Width) / pageW,
 				Height: float32(chars[b].Height) / pageH,
 			}
 
 			verts.TexCoord = append(verts.TexCoord,
-				mgl32.Vec2{srcRect.X + srcRect.Width, srcRect.Y},
+				mgl32.Vec2{srcRect.X - srcRect.Width, srcRect.Y - srcRect.Height},
+				mgl32.Vec2{srcRect.X, srcRect.Y - srcRect.Height},
+				mgl32.Vec2{srcRect.X - srcRect.Width, srcRect.Y},
 				mgl32.Vec2{srcRect.X, srcRect.Y},
-				mgl32.Vec2{srcRect.X, srcRect.Y + srcRect.Height},
-				mgl32.Vec2{srcRect.X + srcRect.Width, srcRect.Y + srcRect.Height},
 			)
 
 			verts.Color = append(verts.Color,
@@ -270,7 +252,7 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 				mgl32.Vec4{1.0, 1.0, 1.0, 1.0},
 			)
 
-			inds = append(inds, indexBase+0, indexBase+1, indexBase+2, indexBase+0, indexBase+2, indexBase+3)
+			inds = append(inds, indexBase+0, indexBase+2, indexBase+1, indexBase+2, indexBase+3, indexBase+1)
 		}
 
 		txt.mesh = geom.CreateMesh(verts, inds)
@@ -278,21 +260,10 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 	return txt.mesh, nil
 }
 
-func (txt *Text) SetFont(fontAssetPath string) error {
-	var err error
-	txt.font, err = cache.GetFont(fontAssetPath)
-	if err != nil {
-		return err
-	}
-
-	// Set the texture to the font's page
-	texturePath := path.Join(path.Dir(fontAssetPath), txt.font.Pages[0].File)
-	if !strings.HasSuffix(texturePath, ".png") {
-		return fmt.Errorf("font has invalid texture file type")
-	}
-	txt.texture = cache.GetTexture(texturePath)
-
-	return nil
+func (txt *Text) SetFont(fontAssetPath string) *Text {
+	txt.font, _ = cache.GetFont(fontAssetPath)
+	txt.texture = cache.GetTexture(txt.font.TexturePath())
+	return txt
 }
 
 func (txt *Text) SetDest(dest math2.Rect) *Text {

@@ -19,7 +19,7 @@ type (
 		BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle
 		ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle
 		LinkablesIter(linkNumber int) func() (Linkable, scene.Handle)
-		AddUiBox(box ui.Box) (scene.Id[ui.Box], bool)
+		AddUiBox(box ui.Box) (scene.Id[ui.Box], error)
 	}
 
 	// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.

@@ -102,64 +102,78 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	w.CurrentPlayer, _, _ = w.Players.New(ents.NewPlayer(playerSpawn.Position, playerSpawn.Angles, w))
+	w.CurrentPlayer, _, _ = ents.SpawnPlayer(w.Players, w, playerSpawn.Position, playerSpawn.Angles)
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		w.Enemies.New(ents.NewEnemy(spawn.Position, spawn.Angles))
+		ents.SpawnEnemy(w.Enemies, spawn.Position, spawn.Angles)
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
-		if wall, err := ents.NewWallFromTE3(spawn, w); err == nil {
-			w.Walls.New(wall)
-		} else {
+		if _, _, err := ents.SpawnWallFromTE3(w.Walls, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
-		if prop, err := ents.NewPropFromTE3(spawn, w); err == nil {
-			w.Props.New(prop)
-		} else {
+		if _, _, err := ents.SpawnPropFromTE3(w.Props, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
-		if tr, err := ents.NewTriggerFromTE3(spawn, w); err == nil {
-			w.Triggers.New(tr)
-		} else {
+		if _, _, err := ents.SpawnTriggerFromTE3(w.Triggers, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// UI
-	fpsText, _ := ui.NewText(DEFAULT_FONT_PATH, "FPS: 0")
-	fpsText.SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0})
-	w.FPSCounter, _, _ = w.UI.Texts.New(fpsText)
+	var fpsText *ui.Text
+	w.FPSCounter, fpsText, _ = w.UI.Texts.New()
+	fpsText.
+		SetFont(DEFAULT_FONT_PATH).
+		SetText("FPS: 0").
+		SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}).
+		SetScale(1.0).
+		SetColor(color.White)
 
 	var spriteCounter *ui.Text
-	w.SpriteCounter, spriteCounter, _ = w.UI.Texts.New(ui.Text{})
+	w.SpriteCounter, spriteCounter, _ = w.UI.Texts.New()
 	spriteCounter.
+		SetFont(DEFAULT_FONT_PATH).
 		SetText("Sprites drawn: 0\nWalls drawn: 0").
 		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
 		SetScale(1.0).
-		SetColor(color.Blue).
-		SetFont(DEFAULT_FONT_PATH)
+		SetColor(color.Blue)
 
-	message, _ := ui.NewText(DEFAULT_FONT_PATH, "This is a test message!")
-	message.SetDest(math2.Rect{
-		X:      float32(settings.WINDOW_WIDTH) / 3.0,
-		Y:      float32(settings.WINDOW_HEIGHT) / 2.0,
-		Width:  float32(settings.WINDOW_WIDTH / 3.0),
-		Height: float32(settings.WINDOW_HEIGHT) / 2.0,
-	}).SetAlignment(ui.TEXT_ALIGN_CENTER).SetColor(color.Red)
-	w.messageText, _, _ = w.UI.Texts.New(message)
+	var message *ui.Text
+	w.messageText, message, _ = w.UI.Texts.New()
+	message.
+		SetFont(DEFAULT_FONT_PATH).
+		SetText("This is a test message! Это подопытное сообщение!").
+		SetDest(math2.Rect{
+			X:      float32(settings.UI_WIDTH) / 3.0,
+			Y:      float32(settings.UI_HEIGHT) / 2.0,
+			Width:  float32(settings.UI_WIDTH / 3.0),
+			Height: float32(settings.UI_HEIGHT) / 2.0,
+		}).
+		SetAlignment(ui.TEXT_ALIGN_CENTER).
+		SetColor(color.Red).
+		SetScale(1.0)
 
-	w.flashRect, _, _ = w.UI.Boxes.New(ui.NewBoxFull(math2.Rect{X: 0.0, Y: 0.0, Width: settings.WINDOW_WIDTH, Height: settings.WINDOW_HEIGHT}, nil, color.Blue.WithAlpha(0.5)))
+	var flashBox *ui.Box
+	w.flashRect, flashBox, _ = w.UI.Boxes.New()
+	flashBox.
+		SetDest(math2.Rect{
+			X:      -settings.WINDOW_WIDTH,
+			Y:      -settings.WINDOW_HEIGHT,
+			Width:  settings.WINDOW_WIDTH * 2,
+			Height: settings.WINDOW_HEIGHT * 2,
+		}).
+		SetColor(color.Blue.WithAlpha(0.5))
 	w.flashSpeed = 0.5
 
 	return w, nil
@@ -255,10 +269,12 @@ func (w *World) Render() {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
+	uiMargin := ((float32(settings.WINDOW_WIDTH) * (float32(settings.UI_HEIGHT) / float32(settings.WINDOW_HEIGHT))) - float32(settings.UI_WIDTH)) / 2.0
+
 	// Setup 2D render context
 	renderContext = render.Context{
 		View:       mgl32.Ident4(),
-		Projection: mgl32.Ortho(0.0, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, 0.0, -1.0, 10.0),
+		Projection: mgl32.Ortho(-uiMargin, settings.UI_WIDTH+uiMargin, settings.UI_HEIGHT, 0.0, -1.0, 10.0),
 	}
 
 	// Render 2D game elements
@@ -357,7 +373,11 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 	return result
 }
 
-func (w *World) AddUiBox(box ui.Box) (scene.Id[ui.Box], bool) {
-	id, _, ok := w.UI.Boxes.New(box)
-	return id, ok
+func (w *World) AddUiBox(box ui.Box) (scene.Id[ui.Box], error) {
+	id, b, err := w.UI.Boxes.New()
+	if err != nil {
+		return scene.Id[ui.Box]{}, err
+	}
+	*b = box
+	return id, nil
 }

@@ -13,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -52,25 +53,25 @@ type Wall struct {
 
 var _ Usable = (*Wall)(nil)
 
-func NewWallFromTE3(ent te3.Ent, world WorldOps) (Wall, error) {
-	var (
-		wall Wall
-		err  error
-		bbox math2.Box
-	)
+func SpawnWallFromTE3(st *scene.Storage[Wall], world WorldOps, ent te3.Ent) (id scene.Id[Wall], wall *Wall, err error) {
+	id, wall, err = st.New()
+	if err != nil {
+		return
+	}
 
 	wall.world = world
 
 	transform := ent.Transform(false, false)
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
-		return Wall{}, fmt.Errorf("te3 ent display mode should be 'model'")
+		return scene.Id[Wall]{}, nil, fmt.Errorf("te3 ent display mode should be 'model'")
 	}
 
+	var bbox math2.Box
 	if len(ent.Model) > 0 {
 		wall.MeshRender.Mesh, err = cache.GetMesh(ent.Model)
 		if err != nil {
-			return Wall{}, err
+			return scene.Id[Wall]{}, nil, err
 		}
 		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
 		wall.MeshRender.Shader = shaders.MapShader
@@ -91,18 +92,19 @@ func NewWallFromTE3(ent te3.Ent, world WorldOps) (Wall, error) {
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
-		return Wall{}, fmt.Errorf("no type property")
+		return scene.Id[Wall]{}, nil, fmt.Errorf("no type property")
 	} else {
 		switch typ {
 		case "door":
 			if err := wall.configureForDoor(ent); err != nil {
-				return Wall{}, err
+				return scene.Id[Wall]{}, nil, err
 			}
 		default:
 			wall.Destination = wall.Origin
 		}
 	}
-	return wall, nil
+
+	return
 }
 
 func (w *Wall) configureForDoor(ent te3.Ent) error {

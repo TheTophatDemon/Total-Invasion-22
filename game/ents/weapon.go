@@ -71,12 +71,12 @@ func NewSickle(world WorldOps) Weapon {
 		onSelect: func(w *Weapon) {
 			w.sprite, _ = world.AddUiBox(ui.NewBox(
 				math2.Rect{
-					X: 0.0, Y: 0.0,
+					X: 256.0, Y: 0.0,
 					Width: 256.0, Height: 192.0,
 				}, math2.Rect{
-					X:     settings.WINDOW_WIDTH - 256.0,
-					Y:     settings.WINDOW_HEIGHT - 192.0,
-					Width: 256.0, Height: 192.0,
+					X:     settings.UI_WIDTH - 256.0*2.0,
+					Y:     settings.UI_HEIGHT - 192.0*2.0,
+					Width: 256.0 * 2.0, Height: 192.0 * 2.0,
 				},
 				cache.GetTexture(TEX_SICKLE_HUD),
 				color.White))
@@ -92,6 +92,9 @@ func NewSickle(world WorldOps) Weapon {
 				} else {
 					w.fireSound = sickleSfx.Play()
 				}
+			}
+			if box, ok := w.sprite.Get(); ok {
+				box.FlippedHorz = !box.FlippedHorz
 			}
 		},
 	}

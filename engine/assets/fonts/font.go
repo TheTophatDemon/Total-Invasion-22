@@ -5,13 +5,18 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/fzipp/bmfont"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
-type Font bmfont.Descriptor
+type Font struct {
+	bmfont.Descriptor
+	texturePath string
+}
 
 func fileSheets(directory string) bmfont.SheetReaderFunc {
 	return func(filename string) (io.ReadCloser, error) {
@@ -24,14 +29,14 @@ func fileSheets(directory string) bmfont.SheetReaderFunc {
 	}
 }
 
-func LoadAngelcodeFont(path string) (*Font, error) {
-	file, err := assets.GetFile(path)
+func LoadAngelcodeFont(assetPath string) (*Font, error) {
+	file, err := assets.GetFile(assetPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	dir, _ := filepath.Split(path)
+	dir, _ := filepath.Split(assetPath)
 	bmFont, err := bmfont.Read(file, fileSheets(dir))
 	if err != nil {
 		return nil, err
@@ -41,8 +46,20 @@ func LoadAngelcodeFont(path string) (*Font, error) {
 		return nil, fmt.Errorf("fonts with multiple pages are not supported")
 	}
 
-	font := Font(*bmFont.Descriptor)
+	font := &Font{
+		Descriptor: *bmFont.Descriptor,
+	}
 
-	log.Printf("Angelcode font loaded at %v.\n", path)
-	return &font, nil
+	// Set the texture to the font's page
+	font.texturePath = path.Join(path.Dir(assetPath), font.Pages[0].File)
+	if !strings.HasSuffix(font.texturePath, ".png") {
+		return nil, fmt.Errorf("font has invalid texture file type")
+	}
+
+	log.Printf("Angelcode font loaded at %v.\n", assetPath)
+	return font, nil
+}
+
+func (f *Font) TexturePath() string {
+	return f.texturePath
 }

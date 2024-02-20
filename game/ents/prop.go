@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -42,7 +43,7 @@ func (p *Prop) OnUse(player *Player) {
 	}
 }
 
-func NewPropFromTE3(ent te3.Ent, world WorldOps) (prop Prop, err error) {
+func SpawnPropFromTE3(st *scene.Storage[Prop], world WorldOps, ent te3.Ent) (id scene.Id[Prop], prop *Prop, err error) {
 	if ent.Display != te3.ENT_DISPLAY_SPHERE && ent.Display != te3.ENT_DISPLAY_SPRITE {
 		err = fmt.Errorf("te3 ent display mode should be 'sprite' or 'sphere'")
 		return
@@ -54,6 +55,11 @@ func NewPropFromTE3(ent te3.Ent, world WorldOps) (prop Prop, err error) {
 		return
 	} else if !ok {
 		texturePath = ent.Texture
+	}
+
+	id, prop, err = st.New()
+	if err != nil {
+		return
 	}
 
 	prop.world = world

@@ -9,9 +9,10 @@ import (
 )
 
 type Box struct {
-	Color      color.Color
-	Texture    *textures.Texture
-	AnimPlayer comps.AnimationPlayer
+	Color       color.Color
+	Texture     *textures.Texture
+	AnimPlayer  comps.AnimationPlayer
+	FlippedHorz bool
 
 	src, dest      math2.Rect
 	transformDirty bool
@@ -33,7 +34,7 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 	if texture != nil {
 		src = math2.Rect{
 			X:      0.0,
-			Y:      0.0,
+			Y:      1.0,
 			Width:  float32(texture.Width()),
 			Height: float32(texture.Height()),
 		}
@@ -58,18 +59,35 @@ func (box *Box) Dest() math2.Rect {
 	return box.dest
 }
 
-func (box *Box) SetDest(dest math2.Rect) {
+func (box *Box) SetDest(dest math2.Rect) *Box {
 	box.dest = dest
 	box.transformDirty = true
+	return box
 }
 
 func (box *Box) Src() math2.Rect {
 	return box.src
 }
 
-func (box *Box) SetSrc(src math2.Rect) {
+func (box *Box) SetSrc(src math2.Rect) *Box {
 	box.src = src
 	box.transformDirty = true
+	return box
+}
+
+func (box *Box) SetColor(clr color.Color) *Box {
+	box.Color = clr
+	return box
+}
+
+func (box *Box) SetTexture(t *textures.Texture) *Box {
+	box.Texture = t
+	return box
+}
+
+func (box *Box) SetFlipHorz(f bool) *Box {
+	box.FlippedHorz = f
+	return box
 }
 
 func (box *Box) Transform() mgl32.Mat4 {

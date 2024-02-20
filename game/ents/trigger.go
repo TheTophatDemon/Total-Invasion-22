@@ -27,7 +27,12 @@ type Trigger struct {
 
 var _ Linkable = (*Trigger)(nil)
 
-func NewTriggerFromTE3(ent te3.Ent, world WorldOps) (tr Trigger, err error) {
+func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world WorldOps, ent te3.Ent) (id scene.Id[Trigger], tr *Trigger, err error) {
+	id, tr, err = st.New()
+	if err != nil {
+		return
+	}
+
 	tr.world = world
 	tr.Sphere = collision.NewSphere(ent.Radius)
 	tr.Transform = ent.Transform(false, false)
