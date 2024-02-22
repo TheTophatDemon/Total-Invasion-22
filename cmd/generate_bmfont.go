@@ -10,7 +10,7 @@ import (
 )
 
 const TEMPLATE = `info face="Total Invasion II Font" size=16 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=0 aa=1 padding=0,0,0,0 spacing=2,2 outline=0
-common lineHeight=20 base=17 scaleW=256 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
+common lineHeight=24 base=19 scaleW=256 scaleH=288 pages=1 packed=0 alphaChnl=0 redChnl=4 greenChnl=4 blueChnl=4
 page id=0 file="font.png"
 chars count={{len .Chars}}
 {{range .Chars -}}
@@ -26,7 +26,7 @@ type Char struct {
 
 func main() {
 	if len(os.Args) != 3 {
-		panic("Missing arguments!")
+		panic("Missing arguments! Argument 1: Output file path, argument 2: texture width")
 	}
 
 	imgWidth, err := strconv.ParseUint(os.Args[2], 10, 64)
@@ -37,14 +37,14 @@ func main() {
 	chars := make([]Char, 0)
 
 	// Include all ASCII characters
-	for c := 32; c < 127; c++ {
-		i := c - 32
+	for i := range 95 {
+		c := i + 32
 		chars = append(chars, Char{
 			ID:     uint(c),
 			X:      ((i * 16) % int(imgWidth)),
-			Y:      ((i * 16) / int(imgWidth)) * 20,
+			Y:      ((i * 16) / int(imgWidth)) * 24,
 			Width:  16,
-			Height: 20,
+			Height: 24,
 		})
 	}
 
@@ -57,9 +57,9 @@ func main() {
 		chars = append(chars, Char{
 			ID:     uint(r),
 			X:      ((i * 16) % int(imgWidth)),
-			Y:      120 + ((i*16)/int(imgWidth))*20,
+			Y:      144 + ((i*16)/int(imgWidth))*24,
 			Width:  16,
-			Height: 20,
+			Height: 24,
 		})
 	}
 
