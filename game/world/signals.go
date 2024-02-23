@@ -1,4 +1,4 @@
-package ents
+package world
 
 type Signal uint16
 

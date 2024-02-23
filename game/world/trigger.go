@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"log"
@@ -20,14 +20,14 @@ type Trigger struct {
 	onEnter       func(*Trigger, scene.Handle)
 	whileTouching func(*Trigger, scene.Handle)
 	onExit        func(*Trigger, scene.Handle)
-	world         WorldOps
+	world         *World
 	linkNumber    int
 	touching      [TRIGGER_TOUCH_MAX]scene.Handle
 }
 
 var _ Linkable = (*Trigger)(nil)
 
-func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world WorldOps, ent te3.Ent) (id scene.Id[Trigger], tr *Trigger, err error) {
+func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) (id scene.Id[Trigger], tr *Trigger, err error) {
 	id, tr, err = st.New()
 	if err != nil {
 		return

@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -21,7 +21,7 @@ type Player struct {
 	RunSpeed, WalkSpeed                      float32
 	StandFriction, WalkFriction, RunFriction float32
 	actor                                    Actor
-	world                                    WorldOps
+	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
 	selectedWeapon                           int
 }
@@ -37,7 +37,7 @@ func (p *Player) Body() *comps.Body {
 	return &p.actor.body
 }
 
-func SpawnPlayer(st *scene.Storage[Player], world WorldOps, position, angles mgl32.Vec3) (id scene.Id[Player], p *Player, err error) {
+func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[Player], p *Player, err error) {
 	id, p, err = st.New()
 	if err != nil {
 		return

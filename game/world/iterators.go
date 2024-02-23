@@ -1,9 +1,8 @@
-package game
+package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/game/ents"
 )
 
 func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
@@ -28,10 +27,10 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 	}
 }
 
-func (w *World) ActorsIter() func() (ents.HasActor, scene.Handle) {
+func (w *World) ActorsIter() func() (HasActor, scene.Handle) {
 	playerIter := w.Players.Iter()
 	enemiesIter := w.Enemies.Iter()
-	return func() (ents.HasActor, scene.Handle) {
+	return func() (HasActor, scene.Handle) {
 		if player, id := playerIter(); player != nil {
 			return player, id
 		}
@@ -42,9 +41,9 @@ func (w *World) ActorsIter() func() (ents.HasActor, scene.Handle) {
 	}
 }
 
-func (w *World) LinkablesIter(linkNumber int) func() (ents.Linkable, scene.Handle) {
+func (w *World) LinkablesIter(linkNumber int) func() (Linkable, scene.Handle) {
 	triggerIter := w.Triggers.Iter()
-	return func() (ents.Linkable, scene.Handle) {
+	return func() (Linkable, scene.Handle) {
 		if trigger, id := triggerIter(); trigger != nil {
 			return trigger, id
 		}

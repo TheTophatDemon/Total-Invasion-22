@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"github.com/go-gl/mathgl/mgl32"

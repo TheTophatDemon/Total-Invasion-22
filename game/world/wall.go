@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"fmt"
@@ -46,14 +46,14 @@ type Wall struct {
 	body          comps.Body
 	waitTimer     float32
 	movePhase     MovePhase
-	world         WorldOps
+	world         *World
 	activator     Activator
 	activateSound *audio.Sfx
 }
 
 var _ Usable = (*Wall)(nil)
 
-func SpawnWallFromTE3(st *scene.Storage[Wall], world WorldOps, ent te3.Ent) (id scene.Id[Wall], wall *Wall, err error) {
+func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id scene.Id[Wall], wall *Wall, err error) {
 	id, wall, err = st.New()
 	if err != nil {
 		return

@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -62,24 +62,33 @@ func (w *Weapon) Equip() {
 	w.equipped = true
 }
 
-func NewSickle(world WorldOps) Weapon {
+func NewSickle(world *World) Weapon {
 	return Weapon{
 		onEquip: func(w *Weapon) {
 			cache.GetSfx(SFX_SICKLE_THROW)
 			cache.GetTexture(TEX_SICKLE_HUD)
 		},
 		onSelect: func(w *Weapon) {
-			w.sprite, _ = world.AddUiBox(ui.NewBox(
-				math2.Rect{
+			var (
+				spriteBox *ui.Box
+				err       error
+			)
+			w.sprite, spriteBox, err = world.UI.Boxes.New()
+			if err != nil {
+				return
+			}
+			spriteBox.
+				SetSrc(math2.Rect{
 					X: 256.0, Y: 0.0,
 					Width: 256.0, Height: 192.0,
-				}, math2.Rect{
+				}).
+				SetDest(math2.Rect{
 					X:     settings.UI_WIDTH - 256.0*2.0,
 					Y:     settings.UI_HEIGHT - 192.0*2.0,
 					Width: 256.0 * 2.0, Height: 192.0 * 2.0,
-				},
-				cache.GetTexture(TEX_SICKLE_HUD),
-				color.White))
+				}).
+				SetTexture(cache.GetTexture(TEX_SICKLE_HUD)).
+				SetColor(color.White)
 		},
 		onDeselect: func(w *Weapon) {
 			w.sprite.Remove()

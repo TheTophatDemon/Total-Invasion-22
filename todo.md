@@ -1,5 +1,4 @@
 # TODO
-- Merge world into ents package
 - Move atlas textures
 - Sickle throwing
 - Update for loops

@@ -1,4 +1,4 @@
-package ents
+package world
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ type Prop struct {
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
 	body         comps.Body
-	world        WorldOps
+	world        *World
 	propType     PropType
 }
 
@@ -43,7 +43,7 @@ func (p *Prop) OnUse(player *Player) {
 	}
 }
 
-func SpawnPropFromTE3(st *scene.Storage[Prop], world WorldOps, ent te3.Ent) (id scene.Id[Prop], prop *Prop, err error) {
+func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id scene.Id[Prop], prop *Prop, err error) {
 	if ent.Display != te3.ENT_DISPLAY_SPHERE && ent.Display != te3.ENT_DISPLAY_SPRITE {
 		err = fmt.Errorf("te3 ent display mode should be 'sprite' or 'sphere'")
 		return

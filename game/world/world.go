@@ -1,4 +1,4 @@
-package game
+package world
 
 import (
 	"errors"
@@ -16,7 +16,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/game/ents"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -27,13 +26,13 @@ const (
 
 type World struct {
 	UI                        *ui.Scene
-	Players                   *scene.Storage[ents.Player]
-	Enemies                   *scene.Storage[ents.Enemy]
-	Walls                     *scene.Storage[ents.Wall]
-	Props                     *scene.Storage[ents.Prop]
-	Triggers                  *scene.Storage[ents.Trigger]
+	Players                   *scene.Storage[Player]
+	Enemies                   *scene.Storage[Enemy]
+	Walls                     *scene.Storage[Wall]
+	Props                     *scene.Storage[Prop]
+	Triggers                  *scene.Storage[Trigger]
 	GameMap                   *scene.Map
-	CurrentPlayer             scene.Id[ents.Player]
+	CurrentPlayer             scene.Id[Player]
 	FPSCounter, SpriteCounter scene.Id[ui.Text]
 	messageText               scene.Id[ui.Text]
 	messageTimer              float32
@@ -42,8 +41,6 @@ type World struct {
 	flashSpeed                float32
 }
 
-var _ ents.WorldOps = (*World)(nil)
-
 func NewWorld(mapPath string) (*World, error) {
 	w := &World{
 		messageTimer:    2.0,
@@ -51,11 +48,11 @@ func NewWorld(mapPath string) (*World, error) {
 	}
 
 	w.UI = ui.NewUIScene(256, 64)
-	w.Players = scene.NewStorage[ents.Player](8)
-	w.Enemies = scene.NewStorage[ents.Enemy](256)
-	w.Walls = scene.NewStorage[ents.Wall](256)
-	w.Props = scene.NewStorage[ents.Prop](256)
-	w.Triggers = scene.NewStorage[ents.Trigger](64)
+	w.Players = scene.NewStorage[Player](8)
+	w.Enemies = scene.NewStorage[Enemy](256)
+	w.Walls = scene.NewStorage[Wall](256)
+	w.Props = scene.NewStorage[Prop](256)
+	w.Triggers = scene.NewStorage[Trigger](64)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -102,30 +99,30 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	w.CurrentPlayer, _, _ = ents.SpawnPlayer(w.Players, w, playerSpawn.Position, playerSpawn.Angles)
+	w.CurrentPlayer, _, _ = SpawnPlayer(w.Players, w, playerSpawn.Position, playerSpawn.Angles)
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		ents.SpawnEnemy(w.Enemies, spawn.Position, spawn.Angles)
+		SpawnEnemy(w.Enemies, spawn.Position, spawn.Angles)
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
-		if _, _, err := ents.SpawnWallFromTE3(w.Walls, w, spawn); err != nil {
+		if _, _, err := SpawnWallFromTE3(w.Walls, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
-		if _, _, err := ents.SpawnPropFromTE3(w.Props, w, spawn); err != nil {
+		if _, _, err := SpawnPropFromTE3(w.Props, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
-		if _, _, err := ents.SpawnTriggerFromTE3(w.Triggers, w, spawn); err != nil {
+		if _, _, err := SpawnTriggerFromTE3(w.Triggers, w, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
@@ -182,11 +179,11 @@ func NewWorld(mapPath string) (*World, error) {
 func (w *World) Update(deltaTime float32) {
 	// Update entities
 	w.GameMap.Update(deltaTime)
-	w.Players.Update((*ents.Player).Update, deltaTime)
-	w.Enemies.Update((*ents.Enemy).Update, deltaTime)
-	w.Walls.Update((*ents.Wall).Update, deltaTime)
-	w.Props.Update((*ents.Prop).Update, deltaTime)
-	w.Triggers.Update((*ents.Trigger).Update, deltaTime)
+	w.Players.Update((*Player).Update, deltaTime)
+	w.Enemies.Update((*Enemy).Update, deltaTime)
+	w.Walls.Update((*Wall).Update, deltaTime)
+	w.Props.Update((*Prop).Update, deltaTime)
+	w.Triggers.Update((*Trigger).Update, deltaTime)
 	w.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
@@ -261,9 +258,9 @@ func (w *World) Render() {
 
 	// Render 3D game elements
 	w.GameMap.Render(&renderContext)
-	w.Enemies.Render((*ents.Enemy).Render, &renderContext)
-	w.Walls.Render((*ents.Wall).Render, &renderContext)
-	w.Props.Render((*ents.Prop).Render, &renderContext)
+	w.Enemies.Render((*Enemy).Render, &renderContext)
+	w.Walls.Render((*Wall).Render, &renderContext)
+	w.Props.Render((*Prop).Render, &renderContext)
 
 	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
@@ -327,7 +324,7 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDis
 	return mapHit, scene.Handle{}
 }
 
-func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception ents.HasActor) []scene.Handle {
+func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
 	nextActor := w.ActorsIter()
 	result := make([]scene.Handle, 0)
@@ -371,13 +368,4 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 		}
 	}
 	return result
-}
-
-func (w *World) AddUiBox(box ui.Box) (scene.Id[ui.Box], error) {
-	id, b, err := w.UI.Boxes.New()
-	if err != nil {
-		return scene.Id[ui.Box]{}, err
-	}
-	*b = box
-	return id, nil
 }

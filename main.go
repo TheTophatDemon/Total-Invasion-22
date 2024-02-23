@@ -8,12 +8,12 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 
-	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
+	"tophatdemon.com/total-invasion-ii/game/world"
 )
 
 type Game struct {
-	world *game.World
+	world *world.World
 }
 
 func (game *Game) Update(deltaTime float32) {
@@ -52,7 +52,7 @@ func main() {
 	input.BindActionMouseButton(settings.ACTION_FIRE, glfw.MouseButton1)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 
-	world, err := game.NewWorld("assets/maps/ti2-malicious-intents.te3")
+	world, err := world.NewWorld("assets/maps/ti2-malicious-intents.te3")
 	if err != nil {
 		panic(err)
 	}
