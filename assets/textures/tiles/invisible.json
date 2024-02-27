@@ -16,8 +16,6 @@
   "format": "RGBA8888",
   "size": { "w": 64, "h": 64 },
   "scale": "1",
-  "frameTags": [
-   { "name": "flags", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff", "data": "[\"invisible\"]" }
-  ]
+  "data": "[\"invisible\"]"
  }
 }

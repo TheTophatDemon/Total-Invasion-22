@@ -22,6 +22,7 @@ type aseMeta struct {
 	}
 	FrameTags []aseTag
 	Layers    []aseLayer
+	Data      string
 }
 
 type aseFrame struct {
@@ -72,30 +73,20 @@ func (af *aseFrame) getFrameNo() (uint, error) {
 
 // Returns the path to the texture atlas relative to the directory of the sprite sheet .json file.
 func (ss *aseSpriteSheet) atlasPath() string {
-	if len(ss.Frames) > 0 {
-		firstSemicolonLoc := strings.IndexRune(ss.Frames[0].FileName, ';')
-		if firstSemicolonLoc < 0 {
-			return ss.Frames[0].FileName
-		}
-		return ss.Frames[0].FileName[:firstSemicolonLoc]
-	}
 	return ss.Meta.Image
 }
 
 func (ss *aseSpriteSheet) loadFlags() ([]string, error) {
-	if ss.Meta.FrameTags == nil {
+	if len(ss.Meta.Data) == 0 {
 		return []string{}, nil
 	}
+
 	var flags []string
-	for t := range ss.Meta.FrameTags {
-		if ss.Meta.FrameTags[t].Name == "flags" {
-			err := json.Unmarshal([]byte(ss.Meta.FrameTags[t].Data), &flags)
-			if err != nil {
-				return nil, err
-			}
-			break
-		}
+	err := json.Unmarshal([]byte(ss.Meta.Data), &flags)
+	if err != nil {
+		return nil, err
 	}
+
 	return flags, nil
 }
 

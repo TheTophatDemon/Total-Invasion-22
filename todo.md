@@ -1,5 +1,4 @@
 # TODO
-- Move atlas textures
 - Sickle throwing
 - Update for loops
 - Text shadow
