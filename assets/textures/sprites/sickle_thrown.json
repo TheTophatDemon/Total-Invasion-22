@@ -1,0 +1,53 @@
+{ "frames": [
+   {
+    "filename": "sickle_thrown.png;front;0",
+    "frame": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 50
+   },
+   {
+    "filename": "sickle_thrown.png;front;1",
+    "frame": { "x": 64, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 50
+   },
+   {
+    "filename": "sickle_thrown.png;front;2",
+    "frame": { "x": 0, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 50
+   },
+   {
+    "filename": "sickle_thrown.png;front;3",
+    "frame": { "x": 64, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 50
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.2-x64",
+  "image": "sickle_thrown.png",
+  "format": "RGBA8888",
+  "size": { "w": 128, "h": 128 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "throw", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "front", "opacity": 255, "blendMode": "normal", "data": "{\"viewRange\": [-90, 90], \"flippedViewRange\": [90, 270]}" }
+  ]
+ }
+}

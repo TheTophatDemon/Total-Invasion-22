@@ -1,7 +1,8 @@
 # TODO
 - Sickle throwing
-- Update for loops
 - Text shadow
 - Music
+- Particle effects
 - Localization
-- Bounding box hierarchy for collisions / raycasting with entities?
+- Wraith AI
+- Bounding box hierarchy
