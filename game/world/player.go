@@ -20,6 +20,7 @@ type Player struct {
 	Camera                                   comps.Camera
 	RunSpeed, WalkSpeed                      float32
 	StandFriction, WalkFriction, RunFriction float32
+	id                                       scene.Id[*Player]
 	actor                                    Actor
 	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
@@ -37,12 +38,12 @@ func (p *Player) Body() *comps.Body {
 	return &p.actor.body
 }
 
-func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[Player], p *Player, err error) {
+func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], p *Player, err error) {
 	id, p, err = st.New()
 	if err != nil {
 		return
 	}
-
+	p.id = id
 	p.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAngles(
@@ -66,7 +67,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	p.RunFriction = 20.0
 	p.world = world
 	p.weapons = [...]Weapon{
-		WEAPON_ORDER_SICKLE:      NewSickle(world),
+		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](p.id)),
 		WEAPON_ORDER_CHICKEN:     {},
 		WEAPON_ORDER_GRENADE:     {},
 		WEAPON_ORDER_PARUSU:      {},

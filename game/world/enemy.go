@@ -29,7 +29,7 @@ func (e *Enemy) Body() *comps.Body {
 	return &e.actor.body
 }
 
-func SpawnEnemy(st *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene.Id[Enemy], wr *Enemy, err error) {
+func SpawnEnemy(st *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene.Id[*Enemy], wr *Enemy, err error) {
 	id, wr, err = st.New()
 	if err != nil {
 		return

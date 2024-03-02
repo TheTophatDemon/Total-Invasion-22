@@ -9,6 +9,7 @@ import (
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -37,6 +38,15 @@ type Text struct {
 	scale          float32
 	transform      mgl32.Mat4
 	transformDirty bool
+}
+
+var _ engine.HasDefault = (*Text)(nil)
+
+func (txt *Text) InitDefault() {
+	var zero Text
+	*txt = zero
+	txt.color = color.White
+	txt.scale = 1.0
 }
 
 func (txt *Text) SetAlignment(align TextAlign) *Text {
@@ -289,7 +299,7 @@ func (txt *Text) Scale() float32 {
 func (txt *Text) Transform() mgl32.Mat4 {
 	if txt.transformDirty {
 		txt.transformDirty = false
-		txt.transform = mgl32.Translate3D(txt.dest.X, txt.dest.Y, 0.0).Mul4(mgl32.Scale3D(txt.scale, txt.scale, 1.0))
+		txt.transform = mgl32.Translate3D(txt.dest.X, txt.dest.Y, 0.0).Mul4(mgl32.Scale3D(txt.Scale(), txt.Scale(), 1.0))
 	}
 	return txt.transform
 }

@@ -2,15 +2,14 @@ package scene
 
 import (
 	"fmt"
-	"reflect"
 
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 // Type-agnostic abstraction of Storage
 type StorageOps interface {
 	GetUntyped(Handle) (any, bool)
-	Type() reflect.Type
 	Has(Handle) bool
 	Remove(Handle)
 }
@@ -45,7 +44,7 @@ func NewStorage[T any](capacity uint) *Storage[T] {
 		lastActive: -1,
 	}
 	for i := range storage.owners {
-		storage.owners[i] = Handle{index: uint16(i), generation: 0, storage: storage, dataType: reflect.TypeOf(storage.data[0])}
+		storage.owners[i] = Handle{index: uint16(i), generation: 0, storage: storage}
 	}
 	return storage
 }
@@ -65,17 +64,13 @@ func (st *Storage[T]) GetUntyped(h Handle) (any, bool) {
 	return st.Get(h)
 }
 
-func (st *Storage[T]) Type() reflect.Type {
-	return reflect.TypeOf(st.data[0])
-}
-
 // Returns whether the given Id corresponds to an active object in the storage.
 func (st *Storage[T]) Has(h Handle) bool {
 	return st.active[h.index] && st.owners[h.index] == h
 }
 
 // Creates a new entity, returning its Id and a pointer to it. The last result is false if the storage is full.
-func (st *Storage[T]) New() (Id[T], *T, error) {
+func (st *Storage[T]) New() (Id[*T], *T, error) {
 	for i, active := range st.active {
 		if !active {
 			st.active[i] = true
@@ -83,20 +78,24 @@ func (st *Storage[T]) New() (Id[T], *T, error) {
 				index:      st.owners[i].index,
 				generation: st.owners[i].generation + 1,
 				storage:    st,
-				dataType:   st.owners[i].dataType,
 			}
-			var empty T
-			st.data[i] = empty
+
+			if hasDefault, ok := any(&st.data[i]).(engine.HasDefault); ok {
+				hasDefault.InitDefault()
+			} else {
+				var empty T
+				st.data[i] = empty
+			}
 
 			// Update last active index.
 			if i >= st.lastActive {
 				st.lastActive = i
 			}
 
-			return Id[T]{st.owners[i]}, &st.data[i], nil
+			return Id[*T]{st.owners[i]}, &st.data[i], nil
 		}
 	}
-	return Id[T]{}, nil, fmt.Errorf("no room in storage")
+	return Id[*T]{}, nil, fmt.Errorf("no room in storage")
 }
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.

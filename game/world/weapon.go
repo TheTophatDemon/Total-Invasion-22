@@ -28,7 +28,8 @@ const (
 )
 
 type Weapon struct {
-	sprite     scene.Id[ui.Box]
+	owner      scene.Id[HasActor]
+	sprite     scene.Id[*ui.Box]
 	equipped   bool
 	onEquip    func(w *Weapon)
 	onSelect   func(w *Weapon)
@@ -62,8 +63,9 @@ func (w *Weapon) Equip() {
 	w.equipped = true
 }
 
-func NewSickle(world *World) Weapon {
+func NewSickle(world *World, owner scene.Id[HasActor]) Weapon {
 	return Weapon{
+		owner: owner,
 		onEquip: func(w *Weapon) {
 			cache.GetSfx(SFX_SICKLE_THROW)
 			cache.GetTexture(TEX_SICKLE_HUD)
@@ -100,6 +102,9 @@ func NewSickle(world *World) Weapon {
 					w.fireSound = audio.PlayingId(0)
 				} else {
 					w.fireSound = sickleSfx.Play()
+					if ownerActor, ok := w.owner.Get(); ok {
+						SpawnSickle(world.Projectiles, ownerActor.Body().Transform.Position(), ownerActor.Body().Transform.Rotation(), w.owner.Handle)
+					}
 				}
 			}
 			if box, ok := w.sprite.Get(); ok {

@@ -31,13 +31,14 @@ type World struct {
 	Walls                     *scene.Storage[Wall]
 	Props                     *scene.Storage[Prop]
 	Triggers                  *scene.Storage[Trigger]
+	Projectiles               *scene.Storage[Projectile]
 	GameMap                   *scene.Map
-	CurrentPlayer             scene.Id[Player]
-	FPSCounter, SpriteCounter scene.Id[ui.Text]
-	messageText               scene.Id[ui.Text]
+	CurrentPlayer             scene.Id[*Player]
+	FPSCounter, SpriteCounter scene.Id[*ui.Text]
+	messageText               scene.Id[*ui.Text]
 	messageTimer              float32
 	messagePriority           int
-	flashRect                 scene.Id[ui.Box]
+	flashRect                 scene.Id[*ui.Box]
 	flashSpeed                float32
 }
 
@@ -53,6 +54,7 @@ func NewWorld(mapPath string) (*World, error) {
 	w.Walls = scene.NewStorage[Wall](256)
 	w.Props = scene.NewStorage[Prop](256)
 	w.Triggers = scene.NewStorage[Trigger](64)
+	w.Projectiles = scene.NewStorage[Projectile](256)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -158,8 +160,7 @@ func NewWorld(mapPath string) (*World, error) {
 			Height: float32(settings.UI_HEIGHT) / 2.0,
 		}).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Red).
-		SetScale(1.0)
+		SetColor(color.Red)
 
 	var flashBox *ui.Box
 	w.flashRect, flashBox, _ = w.UI.Boxes.New()
@@ -184,6 +185,7 @@ func (w *World) Update(deltaTime float32) {
 	w.Walls.Update((*Wall).Update, deltaTime)
 	w.Props.Update((*Prop).Update, deltaTime)
 	w.Triggers.Update((*Trigger).Update, deltaTime)
+	w.Projectiles.Update((*Projectile).Update, deltaTime)
 	w.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
@@ -261,6 +263,7 @@ func (w *World) Render() {
 	w.Enemies.Render((*Enemy).Render, &renderContext)
 	w.Walls.Render((*Wall).Render, &renderContext)
 	w.Props.Render((*Prop).Render, &renderContext)
+	w.Projectiles.Render((*Projectile).Render, &renderContext)
 
 	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))

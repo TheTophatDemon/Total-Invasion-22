@@ -1,9 +1,6 @@
 package scene
 
-import "reflect"
-
 type Handle struct {
-	dataType          reflect.Type
 	index, generation uint16
 	storage           StorageOps
 }

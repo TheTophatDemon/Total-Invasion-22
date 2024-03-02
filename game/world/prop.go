@@ -43,7 +43,7 @@ func (p *Prop) OnUse(player *Player) {
 	}
 }
 
-func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id scene.Id[Prop], prop *Prop, err error) {
+func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 	if ent.Display != te3.ENT_DISPLAY_SPHERE && ent.Display != te3.ENT_DISPLAY_SPRITE {
 		err = fmt.Errorf("te3 ent display mode should be 'sprite' or 'sphere'")
 		return

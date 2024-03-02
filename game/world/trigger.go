@@ -27,7 +27,7 @@ type Trigger struct {
 
 var _ Linkable = (*Trigger)(nil)
 
-func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) (id scene.Id[Trigger], tr *Trigger, err error) {
+func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
 	id, tr, err = st.New()
 	if err != nil {
 		return

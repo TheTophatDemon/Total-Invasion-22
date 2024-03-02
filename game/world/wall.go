@@ -53,7 +53,7 @@ type Wall struct {
 
 var _ Usable = (*Wall)(nil)
 
-func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id scene.Id[Wall], wall *Wall, err error) {
+func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 	id, wall, err = st.New()
 	if err != nil {
 		return
@@ -64,14 +64,14 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 	transform := ent.Transform(false, false)
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
-		return scene.Id[Wall]{}, nil, fmt.Errorf("te3 ent display mode should be 'model'")
+		return scene.Id[*Wall]{}, nil, fmt.Errorf("te3 ent display mode should be 'model'")
 	}
 
 	var bbox math2.Box
 	if len(ent.Model) > 0 {
 		wall.MeshRender.Mesh, err = cache.GetMesh(ent.Model)
 		if err != nil {
-			return scene.Id[Wall]{}, nil, err
+			return scene.Id[*Wall]{}, nil, err
 		}
 		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
 		wall.MeshRender.Shader = shaders.MapShader
@@ -92,12 +92,12 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
-		return scene.Id[Wall]{}, nil, fmt.Errorf("no type property")
+		return scene.Id[*Wall]{}, nil, fmt.Errorf("no type property")
 	} else {
 		switch typ {
 		case "door":
 			if err := wall.configureForDoor(ent); err != nil {
-				return scene.Id[Wall]{}, nil, err
+				return scene.Id[*Wall]{}, nil, err
 			}
 		default:
 			wall.Destination = wall.Origin

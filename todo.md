@@ -1,5 +1,8 @@
 # TODO
 - Sickle throwing
+    - Selective collision
+    - Sickle return
+    - HUD animation state machine
 - Text shadow
 - Music
 - Particle effects

@@ -10,6 +10,7 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 	enemiesIter := w.Enemies.Iter()
 	wallsIter := w.Walls.Iter()
 	propsIter := w.Props.Iter()
+	projsIter := w.Projectiles.Iter()
 	return func() (comps.HasBody, scene.Handle) {
 		if player, id := playerIter(); player != nil {
 			return player, id
@@ -22,6 +23,9 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 		}
 		if prop, id := propsIter(); prop != nil {
 			return prop, id
+		}
+		if proj, id := projsIter(); proj != nil {
+			return proj, id
 		}
 		return nil, scene.Handle{}
 	}
