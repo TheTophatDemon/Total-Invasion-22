@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -103,7 +104,8 @@ func NewSickle(world *World, owner scene.Id[HasActor]) Weapon {
 				} else {
 					w.fireSound = sickleSfx.Play()
 					if ownerActor, ok := w.owner.Get(); ok {
-						SpawnSickle(world.Projectiles, ownerActor.Body().Transform.Position(), ownerActor.Body().Transform.Rotation(), w.owner.Handle)
+						firePos := mgl32.TransformCoordinate(math2.Vec3Forward(), ownerActor.Body().Transform.Matrix())
+						SpawnSickle(world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), w.owner.Handle)
 					}
 				}
 			}

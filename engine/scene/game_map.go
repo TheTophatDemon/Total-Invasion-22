@@ -139,6 +139,10 @@ func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) collision.
 		var smallestDist float32 = math.MaxFloat32
 		var nextPos mgl32.Vec3
 
+		defer func() {
+			pos = nextPos
+		}()
+
 		// Find next YZ plane
 		var skip bool
 		if rayDir.X() > 0.0 {
@@ -216,7 +220,7 @@ func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) collision.
 		if tileShape := gm.shapeMap[tileIndex]; tileShape != nil {
 			// Exclude tiles with invisible texture flag
 			if cache.GetTexture(gm.tiles.Textures[gm.tiles.Data[tileIndex].TextureID]).HasFlag("invisible") {
-				goto next
+				continue
 			}
 
 			rayDir := nextPos.Sub(pos)
@@ -229,9 +233,6 @@ func (gm *Map) CastRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) collision.
 				return cast
 			}
 		}
-
-	next:
-		pos = nextPos
 	}
 
 	return collision.RaycastResult{}
@@ -283,8 +284,8 @@ func (gm *Map) ResolveCollision(body *comps.Body) error {
 			case collision.Mesh:
 				// Check for triangle hits in the center first, then the edges.
 				// This prevents triangle edges from stopping smooth movement along neighboring triangles.
-				body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRIHIT_CENTER)
-				body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRIHIT_ALL)
+				body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRI_PART_CENTER)
+				body.ResolveCollisionSphereTriangles(mgl32.Vec3{}, gm.mesh, gm.triMap[t], collision.TRI_PART_ALL)
 			}
 		}
 

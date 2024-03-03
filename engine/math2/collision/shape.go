@@ -11,6 +11,7 @@ import (
 type Shape interface {
 	Extents() math2.Box                                              // Returns the body's bounding box, centered at its origin.
 	Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult // Test the shape for collision against a ray
+	ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result
 }
 
 type shape struct {
@@ -37,6 +38,10 @@ func (b Box) Extents() math2.Box {
 
 func (b Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult {
 	return RayBoxCollision(rayOrigin, rayDir, b.extents.Translate(shapeOffset))
+}
+
+func (b Box) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	panic("collision resolution not implemented for boxes")
 }
 
 type Sphere struct {
@@ -69,6 +74,18 @@ func (s Sphere) Radius() float32 {
 
 func (s Sphere) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) RaycastResult {
 	return RaySphereCollision(rayOrigin, rayDir, shapeOffset, s.radius)
+}
+
+func (s Sphere) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	switch otherShape := theirShape.(type) {
+	case Sphere:
+		return ResolveSphereSphere(myPosition, theirPosition, s, otherShape)
+	case Box:
+		return ResolveSphereBox(myPosition, theirPosition, s, otherShape)
+	case Mesh:
+		return ResolveSphereTriangles(myPosition, theirPosition, s, otherShape, otherShape.triangleIndices, TRI_PART_ALL)
+	}
+	return Result{}
 }
 
 type Mesh struct {
@@ -137,4 +154,8 @@ func (m Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3) (cast RaycastRe
 		}
 	}
 	return
+}
+
+func (m Mesh) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	panic("collision resolution not implemented for mesh")
 }
