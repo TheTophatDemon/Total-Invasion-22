@@ -49,9 +49,9 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
-			Shape:     collision.NewSphere(0.7),
-			Pushiness: 10,
-			NoClip:    false,
+			Shape:  collision.NewSphere(0.7),
+			Layer:  COL_LAYER_ACTORS,
+			Filter: COL_FILTER_ACTORS,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 100.0,
@@ -100,11 +100,14 @@ func (p *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
-		p.Body().NoClip = !p.Body().NoClip
 		message := "No-Clip "
-		if p.Body().NoClip {
+		if p.Body().Layer != COL_LAYER_NONE {
+			p.Body().Layer = COL_LAYER_NONE
+			p.Body().Filter = COL_LAYER_NONE
 			message += "Activated"
 		} else {
+			p.Body().Layer = COL_LAYER_ACTORS
+			p.Body().Filter = COL_FILTER_ACTORS
 			message += "Deactivated"
 		}
 		p.world.ShowMessage(message, 4.0, 100, color.Red)
@@ -113,7 +116,7 @@ func (p *Player) Update(deltaTime float32) {
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := p.Body().Transform.Position()
 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), p.Body().Transform.Matrix())
-		hit, closestBody := p.world.Raycast(rayOrigin, rayDir, true, USE_DIST, p)
+		hit, closestBody := p.world.Raycast(rayOrigin, rayDir, COL_FILTER_ACTORS, USE_DIST, p)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(p)

@@ -5,6 +5,10 @@ type Handle struct {
 	storage           StorageOps
 }
 
+func NewHandle(index, generation uint16, storage StorageOps) Handle {
+	return Handle{index, generation, storage}
+}
+
 func Get[T any](handle Handle) (T, bool) {
 	var empty T
 	if handle.IsNil() {

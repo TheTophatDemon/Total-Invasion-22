@@ -35,7 +35,7 @@ func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) 
 
 	tr.world = world
 	tr.Sphere = collision.NewSphere(ent.Radius)
-	tr.Transform = ent.Transform(false, false)
+	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
 
 	switch ent.Properties["action"] {

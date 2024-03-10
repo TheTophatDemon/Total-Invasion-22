@@ -1,6 +1,7 @@
 # TODO
+- Grid collision refactor
+    - Fix triangle mesh collision
 - Sickle throwing
-    - Selective collision
     - Sickle return
     - HUD animation state machine
 - Text shadow

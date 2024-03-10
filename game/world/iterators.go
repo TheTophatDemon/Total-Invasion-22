@@ -11,6 +11,7 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 	wallsIter := w.Walls.Iter()
 	propsIter := w.Props.Iter()
 	projsIter := w.Projectiles.Iter()
+	var mapVisited bool
 	return func() (comps.HasBody, scene.Handle) {
 		if player, id := playerIter(); player != nil {
 			return player, id
@@ -26,6 +27,10 @@ func (w *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
 		}
 		if proj, id := projsIter(); proj != nil {
 			return proj, id
+		}
+		if !mapVisited {
+			mapVisited = true
+			return w.GameMap, scene.NewHandle(0, 0, w.GameMap)
 		}
 		return nil, scene.Handle{}
 	}

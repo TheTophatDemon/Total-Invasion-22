@@ -24,6 +24,17 @@ const (
 	DEFAULT_FONT_PATH  = "assets/textures/ui/font.fnt"
 )
 
+const (
+	COL_LAYER_NONE collision.Mask = 0
+	COL_LAYER_MAP  collision.Mask = 1 << (iota - 1)
+	COL_LAYER_ACTORS
+	COL_LAYER_PROJECTILES
+)
+
+const (
+	COL_FILTER_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
+)
+
 type World struct {
 	UI                        *ui.Scene
 	Players                   *scene.Storage[Player]
@@ -32,7 +43,7 @@ type World struct {
 	Props                     *scene.Storage[Prop]
 	Triggers                  *scene.Storage[Trigger]
 	Projectiles               *scene.Storage[Projectile]
-	GameMap                   *scene.Map
+	GameMap                   *comps.Map
 	CurrentPlayer             scene.Id[*Player]
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
 	messageText               scene.Id[*ui.Text]
@@ -61,7 +72,7 @@ func NewWorld(mapPath string) (*World, error) {
 		return nil, err
 	}
 
-	w.GameMap, err = scene.NewMap(te3File)
+	w.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +95,8 @@ func NewWorld(mapPath string) (*World, error) {
 			return nil, err
 		}
 	}
+
+	//TODO: Set invisible tile shapes to nil
 
 	// Set cube collision shapes
 	for _, shapeName := range [...]string{
@@ -203,8 +216,6 @@ func (w *World) Update(deltaTime float32) {
 				}
 			}
 		}
-		w.GameMap.ResolveCollision(body)
-
 		// Restrict movement to the XZ plane
 		after := body.Transform.Position()
 		body.Transform.SetPosition(mgl32.Vec3{after.X(), before.Y(), after.Z()})
@@ -298,33 +309,29 @@ func (w *World) FlashScreen(color color.Color, fadeSpeed float32) {
 	}
 }
 
-func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, includeBodies bool, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
-	rayBB := math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
-	mapHit := w.GameMap.CastRay(rayOrigin, rayDir, maxDist)
-	if includeBodies {
-		var closestEnt scene.Handle
-		var closestBodyHit collision.RaycastResult
-		closestBodyHit.Distance = math.MaxFloat32
-		nextBody := w.BodiesIter()
-		for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
-			body := bodyEnt.Body()
-			if bodyEnt == excludeBody || !body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
-				continue
-			}
-			bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position())
-			if mapHit.Hit && bodyHit.Distance > mapHit.Distance {
-				continue
-			}
-			if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
-				closestBodyHit = bodyHit
-				closestEnt = bodyId
-			}
+func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
+	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
+	var closestEnt scene.Handle
+	var closestBodyHit collision.RaycastResult
+	var nextBody func() (comps.HasBody, scene.Handle) = w.BodiesIter()
+	closestBodyHit.Distance = math.MaxFloat32
+	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
+		body := bodyEnt.Body()
+		if bodyEnt == excludeBody ||
+			bodyEnt.Body().Layer&filter == 0 ||
+			!body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
+			continue
 		}
-		if !closestEnt.IsNil() {
-			return closestBodyHit, closestEnt
+		bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position(), maxDist)
+		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
+			closestBodyHit = bodyHit
+			closestEnt = bodyId
 		}
 	}
-	return mapHit, scene.Handle{}
+	if !closestEnt.IsNil() {
+		return closestBodyHit, closestEnt
+	}
+	return collision.RaycastResult{}, scene.Handle{}
 }
 
 func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {

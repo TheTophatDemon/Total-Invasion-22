@@ -26,10 +26,10 @@ const (
 	MOVE_PHASE_CLOSING
 )
 
-type Activator int8
+type ActivationType int8
 
 const (
-	ACTIVATOR_NONE Activator = iota - 1
+	ACTIVATOR_NONE ActivationType = iota - 1
 	ACTIVATOR_ALL
 	ACTIVATOR_KEY
 	ACTIVATOR_TRIGGER
@@ -47,7 +47,7 @@ type Wall struct {
 	waitTimer     float32
 	movePhase     MovePhase
 	world         *World
-	activator     Activator
+	activator     ActivationType
 	activateSound *audio.Sfx
 }
 
@@ -61,7 +61,7 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 
 	wall.world = world
 
-	transform := ent.Transform(false, false)
+	transform := comps.TransformFromTE3Ent(ent, false, false)
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
 		return scene.Id[*Wall]{}, nil, fmt.Errorf("te3 ent display mode should be 'model'")
@@ -87,8 +87,8 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 	wall.body = comps.Body{
 		Transform: transform,
 		Shape:     collision.NewBox(bbox),
-		Pushiness: 10_000,
-		NoClip:    false,
+		Layer:     COL_LAYER_MAP,
+		Filter:    COL_LAYER_NONE,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {

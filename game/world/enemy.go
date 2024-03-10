@@ -21,16 +21,16 @@ type Enemy struct {
 var _ HasActor = (*Enemy)(nil)
 var _ comps.HasBody = (*Enemy)(nil)
 
-func (e *Enemy) Actor() *Actor {
-	return &e.actor
+func (enemy *Enemy) Actor() *Actor {
+	return &enemy.actor
 }
 
-func (e *Enemy) Body() *comps.Body {
-	return &e.actor.body
+func (enemy *Enemy) Body() *comps.Body {
+	return &enemy.actor.body
 }
 
-func SpawnEnemy(st *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene.Id[*Enemy], wr *Enemy, err error) {
-	id, wr, err = st.New()
+func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene.Id[*Enemy], enemy *Enemy, err error) {
+	id, enemy, err = storage.New()
 	if err != nil {
 		return
 	}
@@ -43,22 +43,22 @@ func SpawnEnemy(st *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene
 		anim, _ = wraithTexture.GetAnimation("walk;front")
 	}
 
-	wr.actor = Actor{
+	enemy.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), angles, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
-			Shape:     collision.NewSphere(0.7),
-			Pushiness: 10,
-			NoClip:    false,
+			Shape:  collision.NewSphere(0.7),
+			Layer:  COL_LAYER_ACTORS,
+			Filter: COL_FILTER_ACTORS,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 80.0,
 		Friction:  20.0,
 		MaxSpeed:  5.0,
 	}
-	wr.SpriteRender = comps.NewSpriteRender(wraithTexture)
-	wr.AnimPlayer = comps.NewAnimationPlayer(anim, true)
+	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
+	enemy.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 
 	return
 }
@@ -66,8 +66,6 @@ func SpawnEnemy(st *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene
 func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.timer += deltaTime
 	enemy.actor.inputForward = math2.Sin(enemy.timer)
-	// enemy.YawAngle += deltaTime * 2.0
-	// enemy.Body.Transform.SetRotation(0.0, enemy.YawAngle, 0.0)
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
 }
@@ -76,5 +74,5 @@ func (enemy *Enemy) Render(context *render.Context) {
 	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.actor.YawAngle)
 }
 
-func (enemy *Enemy) ProcessSignal(s Signal, params any) {
+func (enemy *Enemy) ProcessSignal(signal Signal, params any) {
 }

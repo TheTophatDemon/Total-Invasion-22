@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -33,7 +34,9 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 
 	proj.body.Transform = comps.TransformFromTranslationAngles(position, rotation)
 	proj.body.Shape = collision.NewSphere(0.7)
-	proj.body.Pushiness = 10
+	proj.body.Layer = COL_LAYER_PROJECTILES
+	proj.body.Filter = COL_LAYER_NONE
+	proj.body.OnIntersect = proj.OnIntersect
 
 	sickleTex := cache.GetTexture("assets/textures/sprites/sickle_thrown.png")
 	proj.SpriteRender = comps.NewSpriteRender(sickleTex)
@@ -60,4 +63,8 @@ func (proj *Projectile) Update(deltaTime float32) {
 
 func (proj *Projectile) Render(context *render.Context) {
 	proj.SpriteRender.Render(&proj.body.Transform, &proj.AnimPlayer, context, proj.body.Transform.Yaw())
+}
+
+func (proj *Projectile) OnIntersect(body *comps.Body, result collision.Result) {
+	fmt.Println("Oy blin!")
 }

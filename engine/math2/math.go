@@ -1,4 +1,5 @@
-package math2 //Get ready for MATH 2: Revenge of the Quaternions, coming to theatres this Pi Day.
+// Get ready for MATH 2: Revenge of the Quaternions, coming to theatres this Pi Day.
+package math2
 
 import (
 	"math"

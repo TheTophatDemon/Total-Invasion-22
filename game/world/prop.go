@@ -80,9 +80,10 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 	}
 
 	prop.body = comps.Body{
-		Transform: ent.Transform(true, true),
+		Transform: comps.TransformFromTE3Ent(ent, true, true),
 		Shape:     collision.NewSphere(radius),
-		Pushiness: 10_000,
+		Layer:     COL_LAYER_MAP,
+		Filter:    COL_LAYER_NONE,
 	}
 
 	switch strings.ToLower(ent.Properties["prop"]) {

@@ -2,11 +2,7 @@ package te3
 
 import (
 	"fmt"
-	"math"
 	"strconv"
-
-	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
 type EntDisplay uint8
@@ -58,21 +54,4 @@ func (ent *Ent) BoolProperty(key string) (bool, error) {
 		return false, fmt.Errorf("ent property not found: %v", prop)
 	}
 	return strconv.ParseBool(prop)
-}
-
-func (ent *Ent) Transform(scaleByRadius, stayOnFloor bool) comps.Transform {
-	angles := mgl32.Vec3(ent.Angles).Mul(math.Pi / 180.0)
-	if scaleByRadius {
-		pos := mgl32.Vec3(ent.Position)
-		if stayOnFloor {
-			pos = pos.Add(mgl32.Vec3{0.0, ent.Radius - 1.0, 0.0})
-		}
-		return comps.TransformFromTranslationAnglesScale(
-			pos, angles, mgl32.Vec3{ent.Radius, ent.Radius, ent.Radius},
-		)
-	} else {
-		return comps.TransformFromTranslationAngles(
-			ent.Position, angles,
-		)
-	}
 }
