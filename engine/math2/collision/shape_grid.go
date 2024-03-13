@@ -264,7 +264,7 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec
 	var firstHitPosition mgl32.Vec3
 	var numberOfHits uint
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
-	var theirFinalPosition mgl32.Vec3 = theirPosition
+	var theirOriginalPositionRelative mgl32.Vec3 = theirPositionRelative
 
 	// Iterate over the subset of tiles that the body occupies
 	bbox := theirShape.Extents().Translate(theirPositionRelative)
@@ -294,11 +294,11 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec
 		t := grid.FlattenGridPos(pos[0], pos[1], pos[2])
 		if grid.cels[t] != nil {
 			// Resolve collision against this tile
-			tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true).Add(myPosition)
+			tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
 			tileShape := grid.cels[t]
-			var res Result = theirShape.ResolveCollision(theirPosition, tileCenter, tileShape)
+			var res Result = theirShape.ResolveCollision(theirPositionRelative, tileCenter, tileShape)
 			if res.Hit {
-				theirFinalPosition = theirFinalPosition.Add(res.Normal.Mul(res.Penetration))
+				theirPositionRelative = theirPositionRelative.Add(res.Normal.Mul(res.Penetration))
 				if numberOfHits == 0 {
 					firstHitPosition = res.Position
 				}
@@ -327,7 +327,7 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec
 		}
 	}
 
-	var overallMovement mgl32.Vec3 = theirFinalPosition.Sub(theirPosition)
+	var overallMovement mgl32.Vec3 = theirPositionRelative.Sub(theirOriginalPositionRelative)
 	var overallDistance float32 = overallMovement.Len()
 	var overallNormal mgl32.Vec3
 	if overallDistance > 0.0 {
@@ -335,7 +335,7 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec
 	}
 	return Result{
 		Hit:         numberOfHits > 0,
-		Position:    firstHitPosition,
+		Position:    firstHitPosition.Add(myPosition),
 		Normal:      overallNormal,
 		Penetration: overallDistance,
 	}

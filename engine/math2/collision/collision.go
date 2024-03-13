@@ -141,28 +141,13 @@ func ResolveSphereBox(spherePos, boxPos mgl32.Vec3, sphere Sphere, box Box) (res
 	return
 }
 
-func ResolveSphereTriangles(spherePos, meshPos mgl32.Vec3, sphere Sphere, mesh Mesh, triangleIndices []int, filter TriParts) (result Result) {
+func ResolveSphereTriangles(spherePos, meshPos mgl32.Vec3, sphere Sphere, mesh Mesh, filter TriParts) (result Result) {
 	if filter == TRI_PART_NONE {
 		return
 	}
-
-	var tc int
-	if triangleIndices != nil {
-		tc = len(triangleIndices)
-	} else {
-		tc = len(mesh.Mesh().Triangles())
-	}
-	for tt := 0; tt < tc; tt += 1 {
-		var t int
-		if triangleIndices != nil {
-			t = triangleIndices[tt]
-		} else {
-			t = tt
-		}
-		triangle := mesh.Mesh().Triangles()[t]
-
+	for _, triangle := range mesh.triangles {
 		hit, col := SphereTriangleCollision(spherePos, sphere.Radius(), triangle, meshPos)
-		if hit&filter > 0 {
+		if hit&filter != 0 {
 			result = col
 			result.Penetration += mgl32.Epsilon
 			return

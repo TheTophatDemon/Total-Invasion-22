@@ -1,12 +1,13 @@
 # TODO
-- Grid collision refactor
-    - Fix triangle mesh collision
+- Find solution for raycasting through invisible tiles
 - Sickle throwing
     - Sickle return
     - HUD animation state machine
 - Text shadow
+- Attenuated sounds
 - Music
 - Particle effects
 - Localization
 - Wraith AI
+- Investigate stuttering
 - Bounding box hierarchy

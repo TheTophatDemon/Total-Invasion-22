@@ -366,7 +366,7 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 		case collision.Box:
 			hit = collision.SphereTouchesBox(spherePos, sphereRadius, shape.Extents().Translate(body.Transform.Position()))
 		case collision.Mesh:
-			for _, tri := range shape.Mesh().Triangles() {
+			for _, tri := range shape.Triangles() {
 				if h, _ := collision.SphereTriangleCollision(spherePos, sphereRadius, tri, body.Transform.Position()); h != collision.TRI_PART_NONE {
 					hit = true
 					break

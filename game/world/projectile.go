@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -66,5 +65,5 @@ func (proj *Projectile) Render(context *render.Context) {
 }
 
 func (proj *Projectile) OnIntersect(body *comps.Body, result collision.Result) {
-	fmt.Println("Oy blin!")
+	// fmt.Println("Oy blin!")
 }

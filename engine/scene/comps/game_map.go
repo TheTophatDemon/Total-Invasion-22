@@ -3,10 +3,12 @@ package comps
 import (
 	"fmt"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -32,17 +34,27 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (*Map, error) {
 	}
 	cache.TakeMesh(te3File.FilePath(), mesh)
 
+	var gridShape *collision.Grid = collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3File.Tiles.GridSpacing())
+
 	// Set all tile collision shapes to use the triangle mesh by default.
-	shapeMap := make([]collision.Shape, len(te3File.Tiles.Data))
-	for s := range shapeMap {
-		if te3File.Tiles.Data[s].ShapeID >= 0 {
-			shapeMap[s] = collision.NewMeshSubset(mesh, triMap[s])
-		} else {
-			shapeMap[s] = nil
+	for i := range len(te3File.Tiles.Data) {
+		if shapeID := te3File.Tiles.Data[i].ShapeID; shapeID >= 0 {
+			var shapeMesh *geom.Mesh
+			shapeMesh, err = cache.GetMesh(te3File.Tiles.Shapes[shapeID])
+			if err != nil {
+				return nil, err
+			}
+			tileTransform := te3File.Tiles.Data[i].GetRotationMatrix()
+			// Transform the shape by the tile's transform
+			trisCopy := append([]math2.Triangle{}, shapeMesh.Triangles()...)
+			for i := range trisCopy {
+				for p := range trisCopy[i] {
+					trisCopy[i][p] = mgl32.TransformNormal(trisCopy[i][p], tileTransform)
+				}
+			}
+			gridShape.SetShapeAtFlatIndex(i, collision.NewMeshFromTriangles(trisCopy))
 		}
 	}
-
-	var gridShape *collision.Grid = collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3File.Tiles.GridSpacing())
 
 	gameMap := &Map{
 		body: Body{

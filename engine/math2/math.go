@@ -85,11 +85,19 @@ func (r Rect) Vec4() mgl32.Vec4 {
 	return mgl32.Vec4{r.X, r.Y, r.Width, r.Height}
 }
 
-func (t Triangle) Plane() Plane {
-	normal := t[1].Sub(t[0]).Cross(t[2].Sub(t[0])).Normalize()
+func (tri Triangle) Plane() Plane {
+	normal := tri[1].Sub(tri[0]).Cross(tri[2].Sub(tri[0])).Normalize()
 	return Plane{
 		Normal: normal,
-		Dist:   -normal.Dot(t[0]),
+		Dist:   -normal.Dot(tri[0]),
+	}
+}
+
+func (tri Triangle) OffsetBy(offset mgl32.Vec3) Triangle {
+	return Triangle{
+		tri[0].Add(offset),
+		tri[1].Add(offset),
+		tri[2].Add(offset),
 	}
 }
 

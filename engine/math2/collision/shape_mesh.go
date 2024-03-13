@@ -10,8 +10,7 @@ import (
 
 type Mesh struct {
 	shape
-	mesh            *geom.Mesh
-	triangleIndices []int
+	triangles []math2.Triangle
 }
 
 var _ Shape = (*Mesh)(nil)
@@ -24,47 +23,40 @@ func NewMesh(mesh *geom.Mesh) Mesh {
 		shape: shape{
 			extents: mesh.BoundingBox(),
 		},
-		mesh:            mesh,
-		triangleIndices: nil,
+		triangles: mesh.Triangles(),
 	}
 }
 
-func NewMeshSubset(mesh *geom.Mesh, triangleIndices []int) Mesh {
-	if mesh == nil {
-		panic("mesh must not be nil")
+func NewMeshFromTriangles(triangles []math2.Triangle) Mesh {
+	if triangles == nil {
+		panic("triangles must not be nil")
+	}
+	points := make([]mgl32.Vec3, len(triangles)*3)
+	for i, tri := range triangles {
+		points[i*3] = tri[0]
+		points[i*3+1] = tri[1]
+		points[i*3+2] = tri[2]
 	}
 	return Mesh{
 		shape: shape{
-			extents: mesh.BoundingBox(),
+			extents: math2.BoxFromPoints(points...),
 		},
-		mesh:            mesh,
-		triangleIndices: triangleIndices,
+		triangles: triangles,
 	}
 }
 
-func (m Mesh) Mesh() *geom.Mesh {
-	return m.mesh
+func (m Mesh) Triangles() []math2.Triangle {
+	return m.triangles
 }
 
 func (m Mesh) Extents() math2.Box {
-	return m.mesh.BoundingBox()
+	return m.extents
 }
 
 func (m Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) (cast RaycastResult) {
-	meshTris := m.mesh.Triangles()
-	loopLimit := len(meshTris)
-	if m.triangleIndices != nil {
-		loopLimit = len(m.triangleIndices)
-	}
 	var nearestHitDist float32 = math.MaxFloat32
-	for i := 0; i < loopLimit; i++ {
-		var triangle math2.Triangle
-		if m.triangleIndices == nil {
-			triangle = meshTris[i]
-		} else {
-			triangle = meshTris[m.triangleIndices[i]]
-		}
-
+	for _, triangle := range m.triangles {
+		triangle = triangle.OffsetBy(shapeOffset)
 		newCast := RayTriangleCollision(rayOrigin, rayDir, triangle)
 		if newCast.Hit && newCast.Distance <= maxDist {
 			if dist := newCast.Position.Sub(rayOrigin).LenSqr(); dist < nearestHitDist {

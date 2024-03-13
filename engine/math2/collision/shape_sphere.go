@@ -56,12 +56,12 @@ func (sphere Sphere) ResolveCollision(myPosition, theirPosition mgl32.Vec3, thei
 		var overallDistance float32
 
 		originalPosition = myPosition
-		res1 = ResolveSphereTriangles(myPosition, theirPosition, sphere, otherShape, otherShape.triangleIndices, TRI_PART_CENTER)
+		res1 = ResolveSphereTriangles(myPosition, theirPosition, sphere, otherShape, TRI_PART_CENTER)
 		if res1.Hit {
 			firstHitPosition = res1.Position
 			myPosition = myPosition.Add(res1.Normal.Mul(res1.Penetration))
 		}
-		res2 = ResolveSphereTriangles(myPosition, theirPosition, sphere, otherShape, otherShape.triangleIndices, TRI_PART_ALL)
+		res2 = ResolveSphereTriangles(myPosition, theirPosition, sphere, otherShape, TRI_PART_ALL)
 		if res2.Hit {
 			if !res1.Hit {
 				firstHitPosition = res2.Position
