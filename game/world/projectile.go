@@ -13,11 +13,13 @@ import (
 )
 
 type Projectile struct {
+	id           scene.Id[*Projectile]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
 	body         comps.Body
 	owner        scene.Handle
 	moveFunc     func(deltaTime float32)
+	speed        float32
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -29,6 +31,7 @@ func (proj *Projectile) Body() *comps.Body {
 func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = st.New()
 
+	proj.id = id
 	proj.owner = owner
 
 	proj.body.Transform = comps.TransformFromTranslationAngles(position, rotation)
@@ -45,9 +48,17 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 		log.Println("could not find animation for thrown sickle sprite")
 	}
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
+	proj.speed = 35.0
 
 	proj.moveFunc = func(deltaTime float32) {
-		proj.body.Velocity = mgl32.TransformNormal(math2.Vec3Forward(), proj.body.Transform.Matrix())
+		proj.speed = max(-35.0, proj.speed-deltaTime*50.0)
+		if owner, ok := scene.Get[HasActor](proj.owner); ok && proj.speed < 0.0 {
+			//TODO: Set rotation to face player
+			ownerPos := owner.Body().Transform.Position()
+			projPos := proj.body.Transform.Position()
+			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
+		}
+		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 	}
 
 	return
@@ -65,5 +76,10 @@ func (proj *Projectile) Render(context *render.Context) {
 }
 
 func (proj *Projectile) OnIntersect(body *comps.Body, result collision.Result) {
-	// fmt.Println("Oy blin!")
+	if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+		proj.id.Remove()
+	}
+	if body.Layer&COL_LAYER_MAP != 0 && proj.speed > 0.0 {
+		proj.speed = -proj.speed / 2.0
+	}
 }
