@@ -1,8 +1,8 @@
 # TODO
-- Find solution for raycasting through invisible tiles
 - Sickle throwing
-    - Sickle return
     - HUD animation state machine
+- Refactor projectiles to use more interfaces
+- Find solution for raycasting through invisible tiles
 - Text shadow
 - Attenuated sounds
 - Music

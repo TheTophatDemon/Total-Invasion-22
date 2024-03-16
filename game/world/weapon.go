@@ -104,7 +104,7 @@ func NewSickle(world *World, owner scene.Id[HasActor]) Weapon {
 				} else {
 					w.fireSound = sickleSfx.Play()
 					if ownerActor, ok := w.owner.Get(); ok {
-						firePos := mgl32.TransformCoordinate(math2.Vec3Forward(), ownerActor.Body().Transform.Matrix())
+						firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, ownerActor.Body().Transform.Matrix())
 						SpawnSickle(world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), w.owner.Handle)
 					}
 				}

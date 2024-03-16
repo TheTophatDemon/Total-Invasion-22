@@ -141,16 +141,15 @@ func (st *Storage[T]) Render(renderFunc RenderFunc[T], context *render.Context) 
 
 // Returns a closure that returns pointers to each item in storage sequentially, returning nil when the end is reached.
 func (st *Storage[T]) Iter() func() (*T, Handle) {
-	i := 0
+	var i int
 	return func() (*T, Handle) {
-		for {
-			if i >= len(st.data) || i > st.lastActive {
-				return nil, Handle{}
-			}
-			defer func() { i++ }()
+		for ; i < len(st.data) && i <= st.lastActive; i++ {
 			if st.active[i] {
-				return &st.data[i], st.owners[i]
+				data, owner := &st.data[i], st.owners[i]
+				i++
+				return data, owner
 			}
 		}
+		return nil, Handle{}
 	}
 }

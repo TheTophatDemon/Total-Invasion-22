@@ -35,7 +35,7 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 	proj.owner = owner
 
 	proj.body.Transform = comps.TransformFromTranslationAngles(position, rotation)
-	proj.body.Shape = collision.NewSphere(0.7)
+	proj.body.Shape = collision.NewSphere(0.5)
 	proj.body.Layer = COL_LAYER_PROJECTILES
 	proj.body.Filter = COL_LAYER_NONE
 	proj.body.OnIntersect = proj.OnIntersect
@@ -76,8 +76,10 @@ func (proj *Projectile) Render(context *render.Context) {
 }
 
 func (proj *Projectile) OnIntersect(body *comps.Body, result collision.Result) {
-	if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
-		proj.id.Remove()
+	if proj.speed < 0.0 {
+		if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+			proj.id.Remove()
+		}
 	}
 	if body.Layer&COL_LAYER_MAP != 0 && proj.speed > 0.0 {
 		proj.speed = -proj.speed / 2.0
