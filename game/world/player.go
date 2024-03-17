@@ -24,6 +24,7 @@ type Player struct {
 	actor                                    Actor
 	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
+	weaponSickle                             WeaponSickle
 	selectedWeapon                           int
 }
 
@@ -66,14 +67,17 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	p.WalkFriction = 1.0
 	p.RunFriction = 20.0
 	p.world = world
+
+	// Initialize weapons
+	p.weaponSickle = NewSickle(world, scene.Id[HasActor](p.id))
 	p.weapons = [...]Weapon{
-		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](p.id)),
-		WEAPON_ORDER_CHICKEN:     {},
-		WEAPON_ORDER_GRENADE:     {},
-		WEAPON_ORDER_PARUSU:      {},
-		WEAPON_ORDER_DBL_GRENADE: {},
-		WEAPON_ORDER_SIGN:        {},
-		WEAPON_ORDER_AIRHORN:     {},
+		WEAPON_ORDER_SICKLE:      &p.weaponSickle,
+		WEAPON_ORDER_CHICKEN:     nil,
+		WEAPON_ORDER_GRENADE:     nil,
+		WEAPON_ORDER_PARUSU:      nil,
+		WEAPON_ORDER_DBL_GRENADE: nil,
+		WEAPON_ORDER_SIGN:        nil,
+		WEAPON_ORDER_AIRHORN:     nil,
 	}
 	p.selectedWeapon = WEAPON_ORDER_NONE
 	p.EquipWeapon(WEAPON_ORDER_SICKLE)
@@ -124,8 +128,17 @@ func (p *Player) Update(deltaTime float32) {
 		}
 	}
 
-	if input.IsActionJustPressed(settings.ACTION_FIRE) && p.selectedWeapon >= 0 {
-		p.weapons[p.selectedWeapon].Fire()
+	if p.selectedWeapon >= 0 {
+		var weapon Weapon = p.weapons[p.selectedWeapon]
+		weapon.Update(deltaTime)
+		if input.IsActionJustPressed(settings.ACTION_FIRE) {
+			// Don't fire if there is a wall to close in front
+			var cast collision.RaycastResult
+			cast, _ = p.world.Raycast(p.Body().Transform.Position(), p.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, p)
+			if !cast.Hit {
+				weapon.Fire()
+			}
+		}
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
@@ -158,7 +171,7 @@ func (p *Player) ProcessSignal(s Signal, params any) {
 }
 
 func (p *Player) SelectWeapon(order int) {
-	if order == p.selectedWeapon || order >= len(p.weapons) || !p.weapons[order].equipped {
+	if order == p.selectedWeapon || order >= len(p.weapons) || !p.weapons[order].Equipped() {
 		return
 	}
 	if p.selectedWeapon >= 0 {

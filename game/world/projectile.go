@@ -5,11 +5,13 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type Projectile struct {
@@ -19,6 +21,7 @@ type Projectile struct {
 	body         comps.Body
 	owner        scene.Handle
 	moveFunc     func(deltaTime float32)
+	onIntersect  func(*comps.Body, collision.Result)
 	speed        float32
 }
 
@@ -38,7 +41,6 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 	proj.body.Shape = collision.NewSphere(0.5)
 	proj.body.Layer = COL_LAYER_PROJECTILES
 	proj.body.Filter = COL_LAYER_NONE
-	proj.body.OnIntersect = proj.OnIntersect
 
 	sickleTex := cache.GetTexture("assets/textures/sprites/sickle_thrown.png")
 	proj.SpriteRender = comps.NewSpriteRender(sickleTex)
@@ -51,9 +53,12 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 	proj.speed = 35.0
 
 	proj.moveFunc = func(deltaTime float32) {
-		proj.speed = max(-35.0, proj.speed-deltaTime*50.0)
+		var decelerationRate float32 = 50.0
+		if !input.IsActionPressed(settings.ACTION_FIRE) {
+			decelerationRate = 100.0
+		}
+		proj.speed = max(-35.0, proj.speed-deltaTime*decelerationRate)
 		if owner, ok := scene.Get[HasActor](proj.owner); ok && proj.speed < 0.0 {
-			//TODO: Set rotation to face player
 			ownerPos := owner.Body().Transform.Position()
 			projPos := proj.body.Transform.Position()
 			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
@@ -61,6 +66,16 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 	}
 
+	proj.onIntersect = func(body *comps.Body, result collision.Result) {
+		if proj.speed <= 0.0 {
+			if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+				proj.id.Remove()
+			}
+		} else if body.Layer&COL_LAYER_MAP != 0 {
+			proj.speed = -proj.speed / 2.0
+		}
+	}
+	proj.body.OnIntersect = proj.onIntersect
 	return
 }
 
@@ -73,15 +88,4 @@ func (proj *Projectile) Update(deltaTime float32) {
 
 func (proj *Projectile) Render(context *render.Context) {
 	proj.SpriteRender.Render(&proj.body.Transform, &proj.AnimPlayer, context, proj.body.Transform.Yaw())
-}
-
-func (proj *Projectile) OnIntersect(body *comps.Body, result collision.Result) {
-	if proj.speed < 0.0 {
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
-			proj.id.Remove()
-		}
-	}
-	if body.Layer&COL_LAYER_MAP != 0 && proj.speed > 0.0 {
-		proj.speed = -proj.speed / 2.0
-	}
 }

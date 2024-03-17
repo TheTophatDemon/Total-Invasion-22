@@ -14,4 +14,14 @@ type (
 	Linkable interface {
 		LinkNumber() int
 	}
+
+	Weapon interface {
+		Order() int
+		Equip()
+		Select()
+		Deselect()
+		Fire()
+		Equipped() bool
+		Update(deltaTime float32)
+	}
 )

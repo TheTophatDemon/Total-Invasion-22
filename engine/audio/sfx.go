@@ -23,7 +23,7 @@ type Sfx struct {
 	lastPlayed time.Time
 }
 
-type PlayingId uint32
+type VoiceId uint32
 
 type sfxPlayer struct {
 	oto.Player
@@ -36,11 +36,11 @@ type sfxMetadata struct {
 	Polyphony int
 }
 
-func (pid PlayingId) index() uint16 {
+func (pid VoiceId) index() uint16 {
 	return uint16(pid & 0xFF00)
 }
 
-func (pid PlayingId) generation() uint16 {
+func (pid VoiceId) generation() uint16 {
 	return uint16(pid & 0x00FF)
 }
 
@@ -113,9 +113,9 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 	return sfx, nil
 }
 
-func (sfx *Sfx) Play() PlayingId {
+func (sfx *Sfx) Play() VoiceId {
 	if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
-		return PlayingId(0)
+		return VoiceId(0)
 	}
 
 	for i := range sfx.players {
@@ -124,14 +124,14 @@ func (sfx *Sfx) Play() PlayingId {
 			sfx.players[i].Play()
 			sfx.lastPlayed = time.Now()
 			sfx.players[i].playCount++
-			pid := PlayingId(uint32(sfx.players[i].playCount&0x00FF) | uint32(i)<<8)
+			pid := VoiceId(uint32(sfx.players[i].playCount&0x00FF) | uint32(i)<<8)
 			return pid
 		}
 	}
-	return PlayingId(0)
+	return VoiceId(0)
 }
 
-func (sfx *Sfx) Stop(pid PlayingId) {
+func (sfx *Sfx) Stop(pid VoiceId) {
 	if pid == 0 {
 		return
 	}

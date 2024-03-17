@@ -1,7 +1,5 @@
 # TODO
-- Sickle throwing
-    - HUD animation state machine
-- Refactor projectiles to use more interfaces
+- Fix raycasting on triangle meshes
 - Find solution for raycasting through invisible tiles
 - Text shadow
 - Attenuated sounds

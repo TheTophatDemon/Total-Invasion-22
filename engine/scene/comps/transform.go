@@ -124,6 +124,10 @@ func (t *Transform) Roll() float32 {
 	return t.rot[2]
 }
 
+func (t *Transform) Forward() mgl32.Vec3 {
+	return mgl32.TransformNormal(math2.Vec3Forward(), t.Matrix())
+}
+
 func (t *Transform) Rotate(pitch, yaw, roll float32) {
 	t.rot[0] += pitch
 	t.rot[1] += yaw
