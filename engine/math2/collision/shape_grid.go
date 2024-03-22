@@ -134,13 +134,37 @@ func (grid *Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist flo
 	var pos mgl32.Vec3 = rayOrigin
 	var nextPos mgl32.Vec3 = pos
 
-	for {
-		pos = nextPos
-		i, j, k := grid.WorldToGridPos(pos)
+	var i, j, k int
+	i, j, k = grid.WorldToGridPos(pos)
 
-		if !grid.AreCoordsValid(i, j, k) {
+	if !grid.AreCoordsValid(i, j, k) {
+		return RaycastResult{}
+	}
+
+	for {
+		// Respond to hit tile
+		tileIndex := grid.FlattenGridPos(i, j, k)
+		if tileShape := grid.cels[tileIndex]; tileShape != nil {
+			tileCenter := grid.GridToWorldPos(i, j, k, true)
+			if cast := tileShape.Raycast(rayOrigin, rayDir, tileCenter, maxDist); cast.Hit {
+				if cast.Distance*cast.Distance > maxDistSqr {
+					return RaycastResult{}
+				}
+				return RaycastResult{
+					Hit:      true,
+					Position: cast.Position.Add(shapeOffset),
+					Normal:   cast.Normal,
+					Distance: cast.Distance,
+				}
+			}
+		}
+
+		// Check if distance is exceeded
+		if nextPos.Sub(rayOrigin).LenSqr() > maxDistSqr {
 			break
 		}
+
+		pos = nextPos
 
 		// Find positions on the XZ, XY, and YZ planes that will be hit next by the ray.
 		offsetFromCorner := pos.Sub(grid.GridToWorldPos(i, j, k, false))
@@ -224,30 +248,6 @@ func (grid *Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist flo
 		}
 		if !grid.AreCoordsValid(i, j, k) {
 			break
-		}
-
-		// Check if distance is exceeded
-		if nextPos.Sub(rayOrigin).LenSqr() > maxDistSqr {
-			break
-		}
-
-		// Respond to hit tile
-		tileIndex := grid.FlattenGridPos(i, j, k)
-		if tileShape := grid.cels[tileIndex]; tileShape != nil {
-			rayDir := nextPos.Sub(pos)
-			if rayDir.LenSqr() <= 0.0 {
-				break
-			}
-			rayDir = rayDir.Normalize()
-			tileCenter := grid.GridToWorldPos(i, j, k, true)
-			if cast := tileShape.Raycast(rayOrigin, rayDir, tileCenter, maxDist); cast.Hit {
-				return RaycastResult{
-					Hit:      true,
-					Position: cast.Position.Add(shapeOffset),
-					Normal:   cast.Normal,
-					Distance: cast.Distance,
-				}
-			}
 		}
 	}
 

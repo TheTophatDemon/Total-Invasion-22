@@ -1,10 +1,8 @@
 # TODO
-- Fix raycasting bug
-    - The raycast is going through triangle tiles when facing diagonally, but only within a grid shape
-    - Might have something to do with maxDist
 - Find solution for raycasting through invisible tiles
 - Text shadow
 - Attenuated sounds
+    - Add ching sound when sickle hits the wall
 - Music
 - Particle effects
 - Localization
