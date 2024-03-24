@@ -16,6 +16,7 @@ import (
 )
 
 type Projectile struct {
+	world        *World
 	id           scene.Id[*Projectile]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
@@ -24,7 +25,7 @@ type Projectile struct {
 	moveFunc     func(deltaTime float32)
 	onIntersect  func(*comps.Body, collision.Result)
 	speed        float32
-	voice        audio.VoiceId
+	voices       [4]audio.VoiceId
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -36,6 +37,7 @@ func (proj *Projectile) Body() *comps.Body {
 func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = st.New()
 
+	proj.world = world
 	proj.id = id
 	proj.owner = owner
 
@@ -54,16 +56,19 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
 	proj.speed = 35.0
 
-	var sfxThrow *audio.Sfx
+	var sfxThrow, sfxClink *audio.Sfx
 	sfxThrow, err = cache.GetSfx("assets/sounds/sickle.wav")
 	if err != nil {
 		log.Println(err)
 	} else {
-		proj.voice = sfxThrow.Play()
+		proj.voices[0] = sfxThrow.Play()
+	}
+	sfxClink, err = cache.GetSfx("assets/sounds/sickle_clink.wav")
+	if err != nil {
+		log.Println(err)
 	}
 
 	proj.moveFunc = func(deltaTime float32) {
-		sfxThrow.Attenuate(proj.voice, proj.Body().Transform.Position(), world.ListenerPosition())
 		var decelerationRate float32 = 50.0
 		if !input.IsActionPressed(settings.ACTION_FIRE) {
 			decelerationRate = 100.0
@@ -80,11 +85,14 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.onIntersect = func(body *comps.Body, result collision.Result) {
 		if proj.speed <= 0.0 {
 			if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
-				sfxThrow.Stop(proj.voice)
+				for _, v := range proj.voices {
+					sfxThrow.Stop(v)
+				}
 				proj.id.Remove()
 			}
 		} else if body.Layer&COL_LAYER_MAP != 0 {
 			proj.speed = -proj.speed / 2.0
+			proj.voices[1] = sfxClink.Play()
 		}
 	}
 	proj.body.OnIntersect = proj.onIntersect
@@ -94,6 +102,9 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 
 func (proj *Projectile) Update(deltaTime float32) {
 	proj.AnimPlayer.Update(deltaTime)
+	for _, vid := range proj.voices {
+		vid.Attenuate(proj.Body().Transform.Position(), proj.world.ListenerPosition())
+	}
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)
 	}

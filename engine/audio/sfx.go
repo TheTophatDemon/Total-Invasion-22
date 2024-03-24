@@ -26,7 +26,10 @@ type Sfx struct {
 	lastPlayed       time.Time
 }
 
-type VoiceId uint32
+type VoiceId struct {
+	index, generation uint16
+	sfx               *Sfx
+}
 
 type sfxPlayer struct {
 	oto.Player
@@ -41,12 +44,16 @@ type sfxMetadata struct {
 	AttenuationPower float32
 }
 
-func (pid VoiceId) index() uint16 {
-	return uint16(pid & 0xFF00)
+func (vid VoiceId) IsValid() bool {
+	return vid.generation > 0 && vid.sfx != nil
 }
 
-func (pid VoiceId) generation() uint16 {
-	return uint16(pid & 0x00FF)
+func (vid VoiceId) Attenuate(sourcePos, listenPos mgl32.Vec3) {
+	if !vid.IsValid() {
+		return
+	}
+
+	vid.sfx.Attenuate(vid, sourcePos, listenPos)
 }
 
 func LoadSfx(assetPath string) (*Sfx, error) {
@@ -127,7 +134,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 
 func (sfx *Sfx) Play() VoiceId {
 	if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
-		return VoiceId(0)
+		return VoiceId{}
 	}
 
 	for i := range sfx.players {
@@ -136,18 +143,21 @@ func (sfx *Sfx) Play() VoiceId {
 			sfx.players[i].Play()
 			sfx.lastPlayed = time.Now()
 			sfx.players[i].playCount++
-			pid := VoiceId(uint32(sfx.players[i].playCount&0x00FF) | uint32(i)<<8)
-			return pid
+			return VoiceId{
+				generation: sfx.players[i].playCount,
+				index:      uint16(i),
+				sfx:        sfx,
+			}
 		}
 	}
-	return VoiceId(0)
+	return VoiceId{}
 }
 
 func (sfx *Sfx) SetVolume(pid VoiceId, targetVolume float32) {
-	if pid == 0 {
+	if !pid.IsValid() {
 		return
 	}
-	player := &sfx.players[pid.index()]
+	player := &sfx.players[pid.index]
 	if player.IsPlaying() {
 		player.maxVolume = targetVolume
 		player.SetVolume(float64(targetVolume))
@@ -155,10 +165,10 @@ func (sfx *Sfx) SetVolume(pid VoiceId, targetVolume float32) {
 }
 
 func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos, listenPos mgl32.Vec3) {
-	if pid == 0 {
+	if !pid.IsValid() {
 		return
 	}
-	player := &sfx.players[pid.index()]
+	player := &sfx.players[pid.index]
 	if player.IsPlaying() {
 		distance := max(1.0, sourcePos.Sub(listenPos).Len())
 		player.SetVolume(float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower)))
@@ -166,12 +176,11 @@ func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos, listenPos mgl32.Vec3) {
 }
 
 func (sfx *Sfx) Stop(pid VoiceId) {
-	if pid == 0 {
+	if !pid.IsValid() {
 		return
 	}
-	idx := pid.index()
-	if sfx.players[idx].playCount == pid.generation() {
-		sfx.players[idx].Pause()
+	if sfx.players[pid.index].playCount == pid.generation {
+		sfx.players[pid.index].Pause()
 	}
 }
 
