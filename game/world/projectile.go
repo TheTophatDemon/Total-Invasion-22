@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -23,6 +24,7 @@ type Projectile struct {
 	moveFunc     func(deltaTime float32)
 	onIntersect  func(*comps.Body, collision.Result)
 	speed        float32
+	voice        audio.VoiceId
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -31,7 +33,7 @@ func (proj *Projectile) Body() *comps.Body {
 	return &proj.body
 }
 
-func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = st.New()
 
 	proj.id = id
@@ -52,7 +54,16 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
 	proj.speed = 35.0
 
+	var sfxThrow *audio.Sfx
+	sfxThrow, err = cache.GetSfx("assets/sounds/sickle.wav")
+	if err != nil {
+		log.Println(err)
+	} else {
+		proj.voice = sfxThrow.Play()
+	}
+
 	proj.moveFunc = func(deltaTime float32) {
+		sfxThrow.Attenuate(proj.voice, proj.Body().Transform.Position(), world.ListenerPosition())
 		var decelerationRate float32 = 50.0
 		if !input.IsActionPressed(settings.ACTION_FIRE) {
 			decelerationRate = 100.0
@@ -69,6 +80,7 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 	proj.onIntersect = func(body *comps.Body, result collision.Result) {
 		if proj.speed <= 0.0 {
 			if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+				sfxThrow.Stop(proj.voice)
 				proj.id.Remove()
 			}
 		} else if body.Layer&COL_LAYER_MAP != 0 {
@@ -76,6 +88,7 @@ func SpawnSickle(st *scene.Storage[Projectile], position, rotation mgl32.Vec3, o
 		}
 	}
 	proj.body.OnIntersect = proj.onIntersect
+
 	return
 }
 

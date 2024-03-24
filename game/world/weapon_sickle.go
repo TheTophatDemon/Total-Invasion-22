@@ -16,7 +16,7 @@ import (
 
 type WeaponSickle struct {
 	weaponBase
-	sfxThrow, sfxCatch   *audio.Sfx
+	sfxCatch             *audio.Sfx
 	hudTexture           *textures.Texture
 	throwAnim, catchAnim textures.Animation
 	thrownSickle         scene.Id[*Projectile]
@@ -37,10 +37,6 @@ func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 		ok  bool
 	)
 
-	sickle.sfxThrow, err = cache.GetSfx("assets/sounds/sickle.wav")
-	if err != nil {
-		log.Println(err)
-	}
 	sickle.sfxCatch, err = cache.GetSfx("assets/sounds/sickle_return.wav")
 	if err != nil {
 		log.Println(err)
@@ -107,14 +103,10 @@ func (sickle *WeaponSickle) Update(deltaTime float32) {
 
 	sprite.AnimPlayer.Update(deltaTime)
 
-	if !sickle.thrownSickle.Exists() && sickle.fireVoice > 0 {
-		sickle.sfxThrow.Stop(sickle.fireVoice)
-		sickle.fireVoice = audio.VoiceId(0)
-		if sprite.AnimPlayer.CurrentAnimation().Name == sickle.throwAnim.Name {
-			sprite.AnimPlayer.ChangeAnimation(sickle.catchAnim)
-			sprite.AnimPlayer.PlayFromStart()
-			sickle.sfxCatch.Play()
-		}
+	if !sickle.thrownSickle.Exists() && sprite.AnimPlayer.CurrentAnimation().Name == sickle.throwAnim.Name {
+		sprite.AnimPlayer.ChangeAnimation(sickle.catchAnim)
+		sprite.AnimPlayer.PlayFromStart()
+		sickle.sfxCatch.Play()
 	}
 }
 
@@ -122,8 +114,7 @@ func (sickle *WeaponSickle) Fire() {
 	if !sickle.thrownSickle.Exists() {
 		if ownerActor, ok := sickle.owner.Get(); ok {
 			firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, ownerActor.Body().Transform.Matrix())
-			sickle.thrownSickle, _, _ = SpawnSickle(sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
-			sickle.fireVoice = sickle.sfxThrow.Play()
+			sickle.thrownSickle, _, _ = SpawnSickle(sickle.world, sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
 			if box, ok := sickle.sprite.Get(); ok {
 				box.AnimPlayer.ChangeAnimation(sickle.throwAnim)
 				box.AnimPlayer.PlayFromStart()

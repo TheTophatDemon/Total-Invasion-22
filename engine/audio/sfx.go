@@ -11,29 +11,34 @@ import (
 
 	"github.com/ebitengine/oto/v3"
 	"github.com/go-audio/wav"
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 type Sfx struct {
-	Cooldown   float32
-	Polyphony  uint8
-	loop       bool
-	decoder    wav.Decoder
-	players    []sfxPlayer
-	lastPlayed time.Time
+	Cooldown         float32
+	Polyphony        uint8
+	AttenuationPower float32
+	loop             bool
+	decoder          wav.Decoder
+	players          []sfxPlayer
+	lastPlayed       time.Time
 }
 
 type VoiceId uint32
 
 type sfxPlayer struct {
 	oto.Player
+	maxVolume float32
 	playCount uint16
 }
 
 type sfxMetadata struct {
-	Loop      bool
-	Cooldown  float32
-	Polyphony int
+	Loop             bool
+	Cooldown         float32
+	Polyphony        int
+	AttenuationPower float32
 }
 
 func (pid VoiceId) index() uint16 {
@@ -75,6 +80,12 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		sfx.Cooldown = 0.1
 	}
 
+	if metadata != nil && metadata.AttenuationPower > 0.01 && metadata.AttenuationPower < 10.0 {
+		sfx.AttenuationPower = metadata.AttenuationPower
+	} else {
+		sfx.AttenuationPower = 1.0
+	}
+
 	if metadata != nil {
 		sfx.loop = metadata.Loop
 	}
@@ -107,6 +118,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		sfx.players[i] = sfxPlayer{
 			Player:    *context.NewPlayer(reader),
 			playCount: 0,
+			maxVolume: 1.0,
 		}
 	}
 	log.Printf("Sfx loaded at %v.\n", assetPath)
@@ -129,6 +141,28 @@ func (sfx *Sfx) Play() VoiceId {
 		}
 	}
 	return VoiceId(0)
+}
+
+func (sfx *Sfx) SetVolume(pid VoiceId, targetVolume float32) {
+	if pid == 0 {
+		return
+	}
+	player := &sfx.players[pid.index()]
+	if player.IsPlaying() {
+		player.maxVolume = targetVolume
+		player.SetVolume(float64(targetVolume))
+	}
+}
+
+func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos, listenPos mgl32.Vec3) {
+	if pid == 0 {
+		return
+	}
+	player := &sfx.players[pid.index()]
+	if player.IsPlaying() {
+		distance := max(1.0, sourcePos.Sub(listenPos).Len())
+		player.SetVolume(float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower)))
+	}
 }
 
 func (sfx *Sfx) Stop(pid VoiceId) {

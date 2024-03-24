@@ -1,8 +1,8 @@
 # TODO
+- Add ching sound when sickle hits the wall
+- Implement panning somehow
 - Find solution for raycasting through invisible tiles
 - Text shadow
-- Attenuated sounds
-    - Add ching sound when sickle hits the wall
 - Music
 - Particle effects
 - Localization

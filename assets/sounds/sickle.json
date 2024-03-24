@@ -1,3 +1,4 @@
 {
-	"loop": true
+	"loop": true,
+	"attenuationPower": 0.5
 }

@@ -190,26 +190,26 @@ func NewWorld(mapPath string) (*World, error) {
 	return w, nil
 }
 
-func (w *World) Update(deltaTime float32) {
+func (world *World) Update(deltaTime float32) {
 	// Update entities
-	w.GameMap.Update(deltaTime)
-	w.Players.Update((*Player).Update, deltaTime)
-	w.Enemies.Update((*Enemy).Update, deltaTime)
-	w.Walls.Update((*Wall).Update, deltaTime)
-	w.Props.Update((*Prop).Update, deltaTime)
-	w.Triggers.Update((*Trigger).Update, deltaTime)
-	w.Projectiles.Update((*Projectile).Update, deltaTime)
-	w.UI.Update(deltaTime)
+	world.GameMap.Update(deltaTime)
+	world.Players.Update((*Player).Update, deltaTime)
+	world.Enemies.Update((*Enemy).Update, deltaTime)
+	world.Walls.Update((*Wall).Update, deltaTime)
+	world.Props.Update((*Prop).Update, deltaTime)
+	world.Triggers.Update((*Trigger).Update, deltaTime)
+	world.Projectiles.Update((*Projectile).Update, deltaTime)
+	world.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
-	bodiesIter := w.BodiesIter()
+	bodiesIter := world.BodiesIter()
 	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
 		body := bodyEnt.Body()
 		before := body.Transform.Position()
 		body.Update(deltaTime)
 
 		if before.Sub(body.Transform.Position()).LenSqr() != 0.0 {
-			innerBodiesIter := w.BodiesIter()
+			innerBodiesIter := world.BodiesIter()
 			for innerBodyEnt, _ := innerBodiesIter(); innerBodyEnt != nil; innerBodyEnt, _ = innerBodiesIter() {
 				if innerBodyEnt != body {
 					body.ResolveCollision(innerBodyEnt.Body())
@@ -222,34 +222,34 @@ func (w *World) Update(deltaTime float32) {
 	}
 
 	// Update message text
-	if message, ok := w.messageText.Get(); ok {
-		if w.messageTimer > 0.0 {
-			w.messageTimer -= deltaTime
+	if message, ok := world.messageText.Get(); ok {
+		if world.messageTimer > 0.0 {
+			world.messageTimer -= deltaTime
 		} else {
 			message.SetColor(message.Color().Fade(deltaTime * MESSAGE_FADE_SPEED))
 			if message.Color().A <= 0.0 {
 				message.SetColor(color.Transparent)
-				w.messageTimer = 0.0
-				w.messagePriority = 0
+				world.messageTimer = 0.0
+				world.messagePriority = 0
 				message.SetText("")
 			}
 		}
 	}
 
 	// Update screen flash
-	if flash, ok := w.flashRect.Get(); ok {
-		flash.Color = flash.Color.Fade(w.flashSpeed * deltaTime)
+	if flash, ok := world.flashRect.Get(); ok {
+		flash.Color = flash.Color.Fade(world.flashSpeed * deltaTime)
 	}
 
 	// Update FPS counter
-	if fpsText, ok := w.FPSCounter.Get(); ok {
+	if fpsText, ok := world.FPSCounter.Get(); ok {
 		fpsText.SetText(fmt.Sprintf("FPS: %v", engine.FPS()))
 	}
 }
 
-func (w *World) Render() {
+func (world *World) Render() {
 	// Find camera
-	player, ok := w.CurrentPlayer.Get()
+	player, ok := world.CurrentPlayer.Get()
 	if !ok {
 		panic("missing player")
 	}
@@ -270,13 +270,13 @@ func (w *World) Render() {
 	}
 
 	// Render 3D game elements
-	w.GameMap.Render(&renderContext)
-	w.Enemies.Render((*Enemy).Render, &renderContext)
-	w.Walls.Render((*Wall).Render, &renderContext)
-	w.Props.Render((*Prop).Render, &renderContext)
-	w.Projectiles.Render((*Projectile).Render, &renderContext)
+	world.GameMap.Render(&renderContext)
+	world.Enemies.Render((*Enemy).Render, &renderContext)
+	world.Walls.Render((*Wall).Render, &renderContext)
+	world.Props.Render((*Prop).Render, &renderContext)
+	world.Projectiles.Render((*Projectile).Render, &renderContext)
 
-	if sprCountTxt, ok := w.SpriteCounter.Get(); ok {
+	if sprCountTxt, ok := world.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
@@ -289,31 +289,31 @@ func (w *World) Render() {
 	}
 
 	// Render 2D game elements
-	w.UI.Render(&renderContext)
+	world.UI.Render(&renderContext)
 }
 
-func (w *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
-	if priority >= w.messagePriority {
-		w.messageTimer = duration
-		w.messagePriority = priority
-		if message, ok := w.messageText.Get(); ok {
+func (world *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
+	if priority >= world.messagePriority {
+		world.messageTimer = duration
+		world.messagePriority = priority
+		if message, ok := world.messageText.Get(); ok {
 			message.SetText(text).SetColor(colr)
 		}
 	}
 }
 
-func (w *World) FlashScreen(color color.Color, fadeSpeed float32) {
-	if flash, ok := w.flashRect.Get(); ok {
+func (world *World) FlashScreen(color color.Color, fadeSpeed float32) {
+	if flash, ok := world.flashRect.Get(); ok {
 		flash.Color = color
-		w.flashSpeed = fadeSpeed
+		world.flashSpeed = fadeSpeed
 	}
 }
 
-func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
+func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
 	var closestBodyHit collision.RaycastResult
-	var nextBody func() (comps.HasBody, scene.Handle) = w.BodiesIter()
+	var nextBody func() (comps.HasBody, scene.Handle) = world.BodiesIter()
 	closestBodyHit.Distance = math.MaxFloat32
 	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		body := bodyEnt.Body()
@@ -334,9 +334,9 @@ func (w *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, max
 	return collision.RaycastResult{}, scene.Handle{}
 }
 
-func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
+func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
-	nextActor := w.ActorsIter()
+	nextActor := world.ActorsIter()
 	result := make([]scene.Handle, 0)
 	for actorEnt, actorId := nextActor(); actorEnt != nil; actorEnt, actorId = nextActor() {
 		if actorEnt == exception {
@@ -350,8 +350,8 @@ func (w *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 	return result
 }
 
-func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
-	nextBody := w.BodiesIter()
+func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
+	nextBody := world.BodiesIter()
 	result := make([]scene.Handle, 0)
 	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		if bodyEnt == exception {
@@ -378,4 +378,11 @@ func (w *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, excep
 		}
 	}
 	return result
+}
+
+func (world *World) ListenerPosition() mgl32.Vec3 {
+	if player, ok := world.CurrentPlayer.Get(); ok {
+		return player.Body().Transform.Position()
+	}
+	return mgl32.Vec3{}
 }
