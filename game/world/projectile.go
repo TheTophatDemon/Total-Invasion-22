@@ -74,11 +74,14 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 			decelerationRate = 100.0
 		}
 		proj.speed = max(-35.0, proj.speed-deltaTime*decelerationRate)
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && proj.speed < 0.0 {
-			ownerPos := owner.Body().Transform.Position()
-			projPos := proj.body.Transform.Position()
-			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
+		if owner, ok := scene.Get[HasActor](proj.owner); ok {
+			if proj.speed < 0.0 {
+				ownerPos := owner.Body().Transform.Position()
+				projPos := proj.body.Transform.Position()
+				proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
+			}
 		}
+
 		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 	}
 
@@ -91,7 +94,7 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 				proj.id.Remove()
 			}
 		} else if body.Layer&COL_LAYER_MAP != 0 {
-			proj.speed = -proj.speed / 2.0
+			proj.speed = -math2.Abs(proj.speed) / 2.0
 			proj.voices[1] = sfxClink.Play()
 		}
 	}

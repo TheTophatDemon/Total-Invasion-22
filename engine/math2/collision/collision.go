@@ -37,7 +37,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 	// Check if the sphere intersects the triangle's plane.
 	plane := triangle.Plane()
 	distToPlane := plane.Normal.Dot(spherePos.Sub(triangle[0]))
-	if distToPlane < 0 || distToPlane < -sphereRadius || distToPlane > sphereRadius {
+	if distToPlane < 0 || distToPlane > sphereRadius {
 		// Does not intersect plane of the triangle
 		return TRI_PART_NONE, Result{}
 	}
@@ -51,7 +51,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 		// Center of the sphere is inside of the triangle's edges.
 		return TRI_PART_CENTER, Result{
 			Hit:         true,
-			Position:    centerProj,
+			Position:    centerProj.Add(trianglesOffset),
 			Normal:      plane.Normal,
 			Penetration: sphereRadius - distToPlane,
 		}
@@ -63,7 +63,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 		distSqr       float32
 	}
 	minEdge.distSqr = math.MaxFloat32
-	for e := 0; e < 3; e += 1 {
+	for e := range 3 {
 		closest := math2.ClosestPointOnLine(triangle[e], triangle[(e+1)%3], spherePos)
 		diff := spherePos.Sub(closest)
 		distSqr := diff.LenSqr()
@@ -84,7 +84,7 @@ func SphereTriangleCollision(spherePos mgl32.Vec3, sphereRadius float32, triangl
 		pushNormal := minEdge.diff.Mul(1.0 / dist)
 		return TRI_PART_EDGE, Result{
 			Hit:         true,
-			Position:    minEdge.closest,
+			Position:    minEdge.closest.Add(trianglesOffset),
 			Normal:      pushNormal,
 			Penetration: sphereRadius - dist,
 		}
@@ -135,6 +135,13 @@ func ResolveSphereBox(spherePos, boxPos mgl32.Vec3, sphere Sphere, box Box) (res
 		dist := math2.Sqrt(distSq)
 		result.Normal = diff.Mul(1.0 / dist)
 		result.Penetration = sphere.Radius() - dist
+		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
+	} else if distSq == 0.0 {
+		result.Hit = true
+		diffToCenter := spherePos.Sub(boxPos)
+		distToCenter := diffToCenter.Len()
+		result.Normal = diffToCenter.Mul(1.0 / distToCenter)
+		result.Penetration = sphere.Radius() - distToCenter
 		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
 	}
 

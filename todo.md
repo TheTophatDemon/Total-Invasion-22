@@ -1,7 +1,9 @@
 # TODO
-- Implement panning somehow
 - Sickle clipping through wall
+   - Try fixing bullet through paper effect on triangle meshes
+- Implement audio panning somehow
 - Find solution for raycasting through invisible tiles
+- Make FPS counter actually accurate
 - Text shadow
 - Music
 - Particle effects

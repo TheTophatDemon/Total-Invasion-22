@@ -27,7 +27,7 @@ func (rb *RingBuffer[T]) Dequeue() (out T, empty bool) {
 }
 
 func (rb *RingBuffer[T]) Enqueue(input T) bool {
-	if rb.count >= len(rb.buffer)-1 {
+	if rb.count >= len(rb.buffer) {
 		return false
 	}
 	rb.count += 1
