@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -35,15 +34,27 @@ const (
 	COL_FILTER_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
 )
 
+const (
+	STORAGE_PLAYERS int = iota
+	STORAGE_ENEMIES
+	STORAGE_WALLS
+	STORAGE_PROPS
+	STORAGE_TRIGGERS
+	STORAGE_PROJECTILES
+	STORAGE_GAME_MAP
+	STORAGE_COUNT
+)
+
 type World struct {
 	UI                        *ui.Scene
-	Players                   *scene.Storage[Player]
-	Enemies                   *scene.Storage[Enemy]
-	Walls                     *scene.Storage[Wall]
-	Props                     *scene.Storage[Prop]
-	Triggers                  *scene.Storage[Trigger]
-	Projectiles               *scene.Storage[Projectile]
-	GameMap                   *comps.Map
+	Players                   scene.Storage[Player]
+	Enemies                   scene.Storage[Enemy]
+	Walls                     scene.Storage[Wall]
+	Props                     scene.Storage[Prop]
+	Triggers                  scene.Storage[Trigger]
+	Projectiles               scene.Storage[Projectile]
+	GameMap                   comps.Map
+	Stores                    [STORAGE_COUNT]scene.StorageOps
 	CurrentPlayer             scene.Id[*Player]
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
 	messageText               scene.Id[*ui.Text]
@@ -54,27 +65,38 @@ type World struct {
 }
 
 func NewWorld(mapPath string) (*World, error) {
-	w := &World{
+	world := &World{
 		messageTimer:    2.0,
 		messagePriority: 0,
 	}
 
-	w.UI = ui.NewUIScene(256, 64)
-	w.Players = scene.NewStorage[Player](8)
-	w.Enemies = scene.NewStorage[Enemy](256)
-	w.Walls = scene.NewStorage[Wall](256)
-	w.Props = scene.NewStorage[Prop](256)
-	w.Triggers = scene.NewStorage[Trigger](64)
-	w.Projectiles = scene.NewStorage[Projectile](256)
+	world.UI = ui.NewUIScene(256, 64)
+
+	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, nil)
+	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
+	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
+	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
+	world.Triggers = scene.NewStorageWithFuncs(64, (*Trigger).Update, nil)
+	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
-	w.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
+	world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
 	if err != nil {
 		return nil, err
+	}
+
+	world.Stores = [STORAGE_COUNT]scene.StorageOps{
+		STORAGE_PLAYERS:     &world.Players,
+		STORAGE_ENEMIES:     &world.Enemies,
+		STORAGE_WALLS:       &world.Walls,
+		STORAGE_PROPS:       &world.Props,
+		STORAGE_TRIGGERS:    &world.Triggers,
+		STORAGE_PROJECTILES: &world.Projectiles,
+		STORAGE_GAME_MAP:    &world.GameMap,
 	}
 
 	// Set panel collision shapes
@@ -85,11 +107,11 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/panel.obj",
 	} {
 		err = errors.Join(
-			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
-			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
-			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
-			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
-			w.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
+			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
+			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
+			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
+			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
+			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
 		)
 		if err != nil {
 			return nil, err
@@ -106,7 +128,7 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/cube_marker.obj",
 		"assets/models/shapes/bridge.obj",
 	} {
-		err = w.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
+		err = world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
 		if err != nil {
 			return nil, err
 		}
@@ -114,37 +136,37 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	w.CurrentPlayer, _, _ = SpawnPlayer(w.Players, w, playerSpawn.Position, playerSpawn.Angles)
+	world.CurrentPlayer, _, _ = SpawnPlayer(&world.Players, world, playerSpawn.Position, playerSpawn.Angles)
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		SpawnEnemy(w.Enemies, spawn.Position, spawn.Angles)
+		SpawnEnemy(&world.Enemies, spawn.Position, spawn.Angles)
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
-		if _, _, err := SpawnWallFromTE3(w.Walls, w, spawn); err != nil {
+		if _, _, err := SpawnWallFromTE3(&world.Walls, world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
-		if _, _, err := SpawnPropFromTE3(w.Props, w, spawn); err != nil {
+		if _, _, err := SpawnPropFromTE3(&world.Props, world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
-		if _, _, err := SpawnTriggerFromTE3(w.Triggers, w, spawn); err != nil {
+		if _, _, err := SpawnTriggerFromTE3(&world.Triggers, world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// UI
 	var fpsText *ui.Text
-	w.FPSCounter, fpsText, _ = w.UI.Texts.New()
+	world.FPSCounter, fpsText, _ = world.UI.Texts.New()
 	fpsText.
 		SetFont(DEFAULT_FONT_PATH).
 		SetText("FPS: 0").
@@ -153,7 +175,7 @@ func NewWorld(mapPath string) (*World, error) {
 		SetColor(color.White)
 
 	var spriteCounter *ui.Text
-	w.SpriteCounter, spriteCounter, _ = w.UI.Texts.New()
+	world.SpriteCounter, spriteCounter, _ = world.UI.Texts.New()
 	spriteCounter.
 		SetFont(DEFAULT_FONT_PATH).
 		SetText("Sprites drawn: 0\nWalls drawn: 0").
@@ -162,7 +184,7 @@ func NewWorld(mapPath string) (*World, error) {
 		SetColor(color.Blue)
 
 	var message *ui.Text
-	w.messageText, message, _ = w.UI.Texts.New()
+	world.messageText, message, _ = world.UI.Texts.New()
 	message.
 		SetFont(DEFAULT_FONT_PATH).
 		SetText("This is a test message! Это подопытное сообщение!").
@@ -176,7 +198,7 @@ func NewWorld(mapPath string) (*World, error) {
 		SetColor(color.Red)
 
 	var flashBox *ui.Box
-	w.flashRect, flashBox, _ = w.UI.Boxes.New()
+	world.flashRect, flashBox, _ = world.UI.Boxes.New()
 	flashBox.
 		SetDest(math2.Rect{
 			X:      -settings.WINDOW_WIDTH,
@@ -185,20 +207,16 @@ func NewWorld(mapPath string) (*World, error) {
 			Height: settings.WINDOW_HEIGHT * 2,
 		}).
 		SetColor(color.Blue.WithAlpha(0.5))
-	w.flashSpeed = 0.5
+	world.flashSpeed = 0.5
 
-	return w, nil
+	return world, nil
 }
 
 func (world *World) Update(deltaTime float32) {
 	// Update entities
-	world.GameMap.Update(deltaTime)
-	world.Players.Update((*Player).Update, deltaTime)
-	world.Enemies.Update((*Enemy).Update, deltaTime)
-	world.Walls.Update((*Wall).Update, deltaTime)
-	world.Props.Update((*Prop).Update, deltaTime)
-	world.Triggers.Update((*Trigger).Update, deltaTime)
-	world.Projectiles.Update((*Projectile).Update, deltaTime)
+	for _, store := range world.Stores {
+		store.Update(deltaTime)
+	}
 	world.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
@@ -270,11 +288,9 @@ func (world *World) Render() {
 	}
 
 	// Render 3D game elements
-	world.GameMap.Render(&renderContext)
-	world.Enemies.Render((*Enemy).Render, &renderContext)
-	world.Walls.Render((*Wall).Render, &renderContext)
-	world.Props.Render((*Prop).Render, &renderContext)
-	world.Projectiles.Render((*Projectile).Render, &renderContext)
+	for _, store := range world.Stores {
+		store.Render(&renderContext)
+	}
 
 	if sprCountTxt, ok := world.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
@@ -307,77 +323,6 @@ func (world *World) FlashScreen(color color.Color, fadeSpeed float32) {
 		flash.Color = color
 		world.flashSpeed = fadeSpeed
 	}
-}
-
-func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
-	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
-	var closestEnt scene.Handle
-	var closestBodyHit collision.RaycastResult
-	var nextBody func() (comps.HasBody, scene.Handle) = world.BodiesIter()
-	closestBodyHit.Distance = math.MaxFloat32
-	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
-		body := bodyEnt.Body()
-		if bodyEnt == excludeBody ||
-			bodyEnt.Body().Layer&filter == 0 ||
-			!body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
-			continue
-		}
-		bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position(), maxDist)
-		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
-			closestBodyHit = bodyHit
-			closestEnt = bodyId
-		}
-	}
-	if !closestEnt.IsNil() {
-		return closestBodyHit, closestEnt
-	}
-	return collision.RaycastResult{}, scene.Handle{}
-}
-
-func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
-	radiusSq := sphereRadius * sphereRadius
-	nextActor := world.ActorsIter()
-	result := make([]scene.Handle, 0)
-	for actorEnt, actorId := nextActor(); actorEnt != nil; actorEnt, actorId = nextActor() {
-		if actorEnt == exception {
-			continue
-		}
-		body := actorEnt.Body()
-		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
-			result = append(result, actorId)
-		}
-	}
-	return result
-}
-
-func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
-	nextBody := world.BodiesIter()
-	result := make([]scene.Handle, 0)
-	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
-		if bodyEnt == exception {
-			continue
-		}
-		body := bodyEnt.Body()
-
-		var hit bool
-		switch shape := body.Shape.(type) {
-		case collision.Sphere:
-			hit = collision.SphereTouchesSphere(spherePos, sphereRadius, body.Transform.Position(), shape.Radius())
-		case collision.Box:
-			hit = collision.SphereTouchesBox(spherePos, sphereRadius, shape.Extents().Translate(body.Transform.Position()))
-		case collision.Mesh:
-			for _, tri := range shape.Triangles() {
-				if h, _ := collision.SphereTriangleCollision(spherePos, sphereRadius, tri, body.Transform.Position()); h != collision.TRI_PART_NONE {
-					hit = true
-					break
-				}
-			}
-		}
-		if hit {
-			result = append(result, bodyId)
-		}
-	}
-	return result
 }
 
 func (world *World) ListenerPosition() mgl32.Vec3 {

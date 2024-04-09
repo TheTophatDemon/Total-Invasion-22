@@ -27,10 +27,10 @@ type Map struct {
 var _ HasBody = (*Map)(nil)
 var _ scene.StorageOps = (*Map)(nil) // There is only one map, so it stores itself.
 
-func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (*Map, error) {
+func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 	mesh, triMap, err := te3File.BuildMesh()
 	if err != nil {
-		return nil, err
+		return Map{}, err
 	}
 	cache.TakeMesh(te3File.FilePath(), mesh)
 
@@ -42,7 +42,7 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (*Map, error) {
 			var shapeMesh *geom.Mesh
 			shapeMesh, err = cache.GetMesh(te3File.Tiles.Shapes[shapeID])
 			if err != nil {
-				return nil, err
+				return Map{}, err
 			}
 			tileTransform := te3File.Tiles.Data[i].GetRotationMatrix()
 			// Transform the shape by the tile's transform
@@ -56,7 +56,7 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (*Map, error) {
 		}
 	}
 
-	gameMap := &Map{
+	gameMap := Map{
 		body: Body{
 			Shape: gridShape,
 			Layer: collisionLayer,
@@ -137,5 +137,17 @@ func (gm *Map) Update(deltaTime float32) {
 func (gm *Map) Render(context *render.Context) {
 	for i := range gm.groupRenderers {
 		gm.groupRenderers[i].Render(nil, &gm.tileAnims[i], context)
+	}
+}
+
+func (gm *Map) IterUntyped() func() (any, scene.Handle) {
+	var visitedOnce bool
+	return func() (any, scene.Handle) {
+		if !visitedOnce {
+			visitedOnce = true
+			return gm, scene.NewHandle(0, 0, gm)
+		} else {
+			return nil, scene.Handle{}
+		}
 	}
 }

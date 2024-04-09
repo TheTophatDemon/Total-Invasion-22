@@ -114,7 +114,7 @@ func (sickle *WeaponSickle) Fire() {
 	if !sickle.thrownSickle.Exists() {
 		if ownerActor, ok := sickle.owner.Get(); ok {
 			firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, ownerActor.Body().Transform.Matrix())
-			sickle.thrownSickle, _, _ = SpawnSickle(sickle.world, sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
+			sickle.thrownSickle, _, _ = SpawnSickle(sickle.world, &sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
 			if box, ok := sickle.sprite.Get(); ok {
 				box.AnimPlayer.ChangeAnimation(sickle.throwAnim)
 				box.AnimPlayer.PlayFromStart()

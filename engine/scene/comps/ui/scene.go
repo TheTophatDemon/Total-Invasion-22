@@ -12,19 +12,19 @@ import (
 )
 
 type Scene struct {
-	Boxes *world.Storage[Box]
-	Texts *world.Storage[Text]
+	Boxes world.Storage[Box]
+	Texts world.Storage[Text]
 }
 
 func NewUIScene(maxBoxes, maxTexts uint) *Scene {
 	return &Scene{
-		Boxes: world.NewStorage[Box](maxBoxes),
+		Boxes: world.NewStorageWithFuncs(maxBoxes, (*Box).Update, nil),
 		Texts: world.NewStorage[Text](maxTexts),
 	}
 }
 
 func (scene *Scene) Update(deltaTime float32) {
-	scene.Boxes.Update((*Box).Update, deltaTime)
+	scene.Boxes.Update(deltaTime)
 }
 
 func (scene *Scene) Render(context *render.Context) {

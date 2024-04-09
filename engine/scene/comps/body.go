@@ -12,12 +12,13 @@ type HasBody interface {
 }
 
 type Body struct {
-	Transform   Transform
-	Velocity    mgl32.Vec3
-	Shape       collision.Shape
-	Filter      collision.Mask                // Determines which collision layers this body will respond to collisions with
-	Layer       collision.Mask                // The collision layer(s) that this body resides on
-	OnIntersect func(*Body, collision.Result) // Called when the body intersects another body that passes the filter. Can be nil.
+	Transform      Transform
+	Velocity       mgl32.Vec3
+	Shape          collision.Shape
+	Filter         collision.Mask                // Determines which collision layers this body will respond to collisions with
+	Layer          collision.Mask                // The collision layer(s) that this body resides on
+	OnIntersect    func(*Body, collision.Result) // Called when the body intersects another body that passes the filter. Can be nil.
+	SweepCollision bool                          // When true, the body has continous collision, which is more performance intensive but also more accurate.
 }
 
 func (b *Body) Body() *Body {

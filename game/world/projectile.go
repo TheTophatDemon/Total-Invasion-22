@@ -42,7 +42,7 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.owner = owner
 
 	proj.body.Transform = comps.TransformFromTranslationAngles(position, rotation)
-	proj.body.Shape = collision.NewSphere(0.5)
+	proj.body.Shape = collision.NewSphere(0.25)
 	proj.body.Layer = COL_LAYER_PROJECTILES
 	proj.body.Filter = COL_LAYER_NONE
 

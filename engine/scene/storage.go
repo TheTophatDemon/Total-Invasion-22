@@ -12,17 +12,10 @@ type StorageOps interface {
 	GetUntyped(Handle) (any, bool)
 	Has(Handle) bool
 	Remove(Handle)
+	Update(deltaTime float32)
+	Render(renderContext *render.Context)
+	IterUntyped() func() (any, Handle)
 }
-
-// Manages the allocation of a type of game object, reusing memory where possible and issuing object ids.
-type Storage[T any] struct {
-	data       []T
-	owners     []Handle
-	active     []bool
-	lastActive int // Index of the last active object. Used to optimize updating.
-}
-
-var _ StorageOps = (*Storage[any])(nil)
 
 // Represents a function that updates a poiner to object T by deltaTime.
 // You can pass in a pointer-receiving method M for type T with the expression `(*T).M`.
@@ -32,20 +25,39 @@ type UpdateFunc[T any] func(object *T, deltaTime float32)
 // You can pass in a pointer-receiving method M for type T with the expression `(*T).M`.
 type RenderFunc[T any] func(object *T, renderContext *render.Context)
 
+// Manages the allocation of a type of game object, reusing memory where possible and issuing object ids.
+type Storage[T any] struct {
+	data       []T
+	owners     []Handle
+	active     []bool
+	lastActive int           // Index of the last active object. Used to optimize updating.
+	UpdateFunc UpdateFunc[T] // Function to call when updating each object.
+	RenderFunc RenderFunc[T] // Function to call when rendering each object.
+}
+
+var _ StorageOps = (*Storage[any])(nil)
+
 // Creates a new storage that can hold `capacity` number of objects. This capacity will not change, so be generous.
-func NewStorage[T any](capacity uint) *Storage[T] {
+func NewStorage[T any](capacity uint) Storage[T] {
 	if capacity == 0 {
 		panic("the storage must have capacity greater than 0")
 	}
-	storage := &Storage[T]{
+	storage := Storage[T]{
 		data:       make([]T, capacity),
 		owners:     make([]Handle, capacity),
 		active:     make([]bool, capacity),
 		lastActive: -1,
 	}
 	for i := range storage.owners {
-		storage.owners[i] = Handle{index: uint16(i), generation: 0, storage: storage}
+		storage.owners[i] = Handle{index: uint16(i), generation: 0, storage: &storage}
 	}
+	return storage
+}
+
+func NewStorageWithFuncs[T any](capacity uint, updateFunc UpdateFunc[T], renderFunc RenderFunc[T]) Storage[T] {
+	storage := NewStorage[T](capacity)
+	storage.UpdateFunc = updateFunc
+	storage.RenderFunc = renderFunc
 	return storage
 }
 
@@ -126,16 +138,22 @@ func (st *Storage[T]) ForEach(predicate func(*T)) {
 }
 
 // Runs an update function on all active objects in the storage.
-func (st *Storage[T]) Update(updFunc UpdateFunc[T], deltaTime float32) {
+func (st *Storage[T]) Update(deltaTime float32) {
+	if st.UpdateFunc == nil {
+		return
+	}
 	st.ForEach(func(t *T) {
-		updFunc(t, deltaTime)
+		st.UpdateFunc(t, deltaTime)
 	})
 }
 
 // Runs a render function on all active objects in the storage.
-func (st *Storage[T]) Render(renderFunc RenderFunc[T], context *render.Context) {
+func (st *Storage[T]) Render(context *render.Context) {
+	if st.RenderFunc == nil {
+		return
+	}
 	st.ForEach(func(t *T) {
-		renderFunc(t, context)
+		st.RenderFunc(t, context)
 	})
 }
 
@@ -151,5 +169,19 @@ func (st *Storage[T]) Iter() func() (*T, Handle) {
 			}
 		}
 		return nil, Handle{}
+	}
+}
+
+func (st *Storage[T]) IterUntyped() func() (any, Handle) {
+	iter := st.Iter()
+	return func() (any, Handle) {
+		item, handle := iter()
+		if item == nil {
+			// Not returning the item pointer directly because that creates a non-nil interface.
+			// One of the classic Go blunders...
+			return nil, handle
+		} else {
+			return item, handle
+		}
 	}
 }
