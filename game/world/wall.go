@@ -89,6 +89,7 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 		Shape:     collision.NewBox(bbox),
 		Layer:     COL_LAYER_MAP,
 		Filter:    COL_LAYER_NONE,
+		LockY:     true,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
@@ -155,7 +156,7 @@ func (w *Wall) configureForDoor(ent te3.Ent) error {
 		if speed, err := ent.FloatProperty("speed"); err == nil {
 			w.Speed = speed
 		} else {
-			w.Speed = 2.0
+			w.Speed = 4.0
 		}
 	} else {
 		w.Destination = w.Origin
@@ -212,8 +213,6 @@ func (w *Wall) Update(deltaTime float32) {
 	case MOVE_PHASE_CLOSED:
 		w.body.Velocity = mgl32.Vec3{}
 	}
-
-	w.body.Update(deltaTime)
 }
 
 func (w *Wall) Render(context *render.Context) {

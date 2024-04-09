@@ -53,6 +53,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 			Shape:  collision.NewSphere(0.7),
 			Layer:  COL_LAYER_ACTORS,
 			Filter: COL_FILTER_ACTORS,
+			LockY:  true,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 100.0,

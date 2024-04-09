@@ -222,21 +222,7 @@ func (world *World) Update(deltaTime float32) {
 	// Update bodies and resolve collisions
 	bodiesIter := world.BodiesIter()
 	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
-		body := bodyEnt.Body()
-		before := body.Transform.Position()
-		body.Update(deltaTime)
-
-		if before.Sub(body.Transform.Position()).LenSqr() != 0.0 {
-			innerBodiesIter := world.BodiesIter()
-			for innerBodyEnt, _ := innerBodiesIter(); innerBodyEnt != nil; innerBodyEnt, _ = innerBodiesIter() {
-				if innerBodyEnt != body {
-					body.ResolveCollision(innerBodyEnt.Body())
-				}
-			}
-		}
-		// Restrict movement to the XZ plane
-		after := body.Transform.Position()
-		body.Transform.SetPosition(mgl32.Vec3{after.X(), before.Y(), after.Z()})
+		bodyEnt.Body().MoveAndCollide(deltaTime, world.BodiesIter())
 	}
 
 	// Update message text

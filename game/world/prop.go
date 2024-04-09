@@ -96,7 +96,6 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 
 func (p *Prop) Update(deltaTime float32) {
 	p.AnimPlayer.Update(deltaTime)
-	p.body.Update(deltaTime)
 }
 
 func (p *Prop) Render(context *render.Context) {

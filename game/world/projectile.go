@@ -41,10 +41,14 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.id = id
 	proj.owner = owner
 
-	proj.body.Transform = comps.TransformFromTranslationAngles(position, rotation)
-	proj.body.Shape = collision.NewSphere(0.25)
-	proj.body.Layer = COL_LAYER_PROJECTILES
-	proj.body.Filter = COL_LAYER_NONE
+	proj.body = comps.Body{
+		Transform:      comps.TransformFromTranslationAngles(position, rotation),
+		Shape:          collision.NewSphere(0.1),
+		Layer:          COL_LAYER_PROJECTILES,
+		Filter:         COL_LAYER_NONE,
+		LockY:          true,
+		SweepCollision: true,
+	}
 
 	sickleTex := cache.GetTexture("assets/textures/sprites/sickle_thrown.png")
 	proj.SpriteRender = comps.NewSpriteRender(sickleTex)

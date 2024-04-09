@@ -252,6 +252,14 @@ func (box Box) LongestDimension() float32 {
 	return max(dims[0], dims[1], dims[2])
 }
 
+func (husband Box) Union(wife Box) (child Box) {
+	child = Box{
+		Min: Vec3Min(husband.Min, wife.Min),
+		Max: Vec3Max(husband.Max, wife.Max),
+	}
+	return
+}
+
 func (box Box) Center() mgl32.Vec3 {
 	return box.Min.Add(box.Size().Mul(0.5))
 }

@@ -51,6 +51,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 			Shape:  collision.NewSphere(0.7),
 			Layer:  COL_LAYER_ACTORS,
 			Filter: COL_FILTER_ACTORS,
+			LockY:  true,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 80.0,

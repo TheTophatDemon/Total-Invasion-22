@@ -3,6 +3,7 @@
    - Try fixing bullet through paper effect on triangle meshes
 - Implement audio panning somehow
 - Find solution for raycasting through invisible tiles
+- Why can the up-and-down walls no longer be activated?
 - Music
 - Make FPS counter actually accurate
 - Text shadow
