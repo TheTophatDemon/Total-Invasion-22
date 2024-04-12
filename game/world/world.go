@@ -34,17 +34,6 @@ const (
 	COL_FILTER_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
 )
 
-const (
-	STORAGE_PLAYERS int = iota
-	STORAGE_ENEMIES
-	STORAGE_WALLS
-	STORAGE_PROPS
-	STORAGE_TRIGGERS
-	STORAGE_PROJECTILES
-	STORAGE_GAME_MAP
-	STORAGE_COUNT
-)
-
 type World struct {
 	UI                        *ui.Scene
 	Players                   scene.Storage[Player]
@@ -53,8 +42,8 @@ type World struct {
 	Props                     scene.Storage[Prop]
 	Triggers                  scene.Storage[Trigger]
 	Projectiles               scene.Storage[Projectile]
+	DebugShapes               scene.Storage[DebugShape]
 	GameMap                   comps.Map
-	Stores                    [STORAGE_COUNT]scene.StorageOps
 	CurrentPlayer             scene.Id[*Player]
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
 	messageText               scene.Id[*ui.Text]
@@ -78,6 +67,7 @@ func NewWorld(mapPath string) (*World, error) {
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
 	world.Triggers = scene.NewStorageWithFuncs(64, (*Trigger).Update, nil)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
+	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -87,16 +77,6 @@ func NewWorld(mapPath string) (*World, error) {
 	world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
 	if err != nil {
 		return nil, err
-	}
-
-	world.Stores = [STORAGE_COUNT]scene.StorageOps{
-		STORAGE_PLAYERS:     &world.Players,
-		STORAGE_ENEMIES:     &world.Enemies,
-		STORAGE_WALLS:       &world.Walls,
-		STORAGE_PROPS:       &world.Props,
-		STORAGE_TRIGGERS:    &world.Triggers,
-		STORAGE_PROJECTILES: &world.Projectiles,
-		STORAGE_GAME_MAP:    &world.GameMap,
 	}
 
 	// Set panel collision shapes
@@ -214,9 +194,7 @@ func NewWorld(mapPath string) (*World, error) {
 
 func (world *World) Update(deltaTime float32) {
 	// Update entities
-	for _, store := range world.Stores {
-		store.Update(deltaTime)
-	}
+	scene.UpdateStores(world, deltaTime)
 	world.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
@@ -274,9 +252,7 @@ func (world *World) Render() {
 	}
 
 	// Render 3D game elements
-	for _, store := range world.Stores {
-		store.Render(&renderContext)
-	}
+	scene.RenderStores(world, &renderContext)
 
 	if sprCountTxt, ok := world.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))

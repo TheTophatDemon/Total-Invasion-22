@@ -80,7 +80,19 @@ func (body *Body) ResolveCollision(movement mgl32.Vec3, otherBody *Body) {
 		log.Printf("collision is not implemented for shape %v.\n", body.Shape)
 	}
 
-	res := body.Shape.ResolveCollision(nextPosition, otherBody.Transform.Position(), otherBody.Shape)
+	var shapePosition mgl32.Vec3 = nextPosition
+	if body.SweepCollision {
+		movementLength := movement.Len()
+		if movementLength != 0.0 {
+			movementDir := movement.Mul(1.0 / movementLength)
+			rayHit := otherBody.Shape.Raycast(body.Transform.Position(), movementDir, otherBody.Transform.Position(), movementLength)
+			if rayHit.Hit {
+				shapePosition = rayHit.Position
+			}
+		}
+	}
+
+	res := body.Shape.ResolveCollision(shapePosition, otherBody.Transform.Position(), otherBody.Shape)
 	if res.Hit {
 		if body.Filter&otherBody.Layer != 0 {
 			body.Transform.TranslateV(res.Normal.Mul(res.Penetration).Mul(resolveFraction))

@@ -13,10 +13,10 @@ import (
 // Iterates through all of the stores in the world that can be cast to the given Component type.
 func iterateStores[Component any](world *World) func() (Component, scene.Handle) {
 	var zero Component
-	var iters [STORAGE_COUNT]func() (any, scene.Handle)
-	for i, store := range world.Stores {
-		iters[i] = store.IterUntyped()
-	}
+	iters := make([]func() (any, scene.Handle), 0, 10)
+	scene.ForEachStorageField(world, func(storage scene.StorageOps) {
+		iters = append(iters, storage.IterUntyped())
+	})
 	var iter int = 0
 	return func() (Component, scene.Handle) {
 		for ; iter < len(iters); iter++ {

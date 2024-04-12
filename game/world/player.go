@@ -87,55 +87,55 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	return
 }
 
-func (p *Player) Update(deltaTime float32) {
+func (player *Player) Update(deltaTime float32) {
 	if input.IsActionPressed(settings.ACTION_FORWARD) {
-		p.actor.inputForward = 1.0
+		player.actor.inputForward = 1.0
 	} else if input.IsActionPressed(settings.ACTION_BACK) {
-		p.actor.inputForward = -1.0
+		player.actor.inputForward = -1.0
 	} else {
-		p.actor.inputForward = 0.0
+		player.actor.inputForward = 0.0
 	}
 
 	if input.IsActionPressed(settings.ACTION_RIGHT) {
-		p.actor.inputStrafe = 1.0
+		player.actor.inputStrafe = 1.0
 	} else if input.IsActionPressed(settings.ACTION_LEFT) {
-		p.actor.inputStrafe = -1.0
+		player.actor.inputStrafe = -1.0
 	} else {
-		p.actor.inputStrafe = 0.0
+		player.actor.inputStrafe = 0.0
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
 		message := "No-Clip "
-		if p.Body().Layer != COL_LAYER_NONE {
-			p.Body().Layer = COL_LAYER_NONE
-			p.Body().Filter = COL_LAYER_NONE
+		if player.Body().Layer != COL_LAYER_NONE {
+			player.Body().Layer = COL_LAYER_NONE
+			player.Body().Filter = COL_LAYER_NONE
 			message += "Activated"
 		} else {
-			p.Body().Layer = COL_LAYER_ACTORS
-			p.Body().Filter = COL_FILTER_ACTORS
+			player.Body().Layer = COL_LAYER_ACTORS
+			player.Body().Filter = COL_FILTER_ACTORS
 			message += "Deactivated"
 		}
-		p.world.ShowMessage(message, 4.0, 100, color.Red)
+		player.world.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_USE) {
-		rayOrigin := p.Body().Transform.Position()
-		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), p.Body().Transform.Matrix())
-		hit, closestBody := p.world.Raycast(rayOrigin, rayDir, COL_FILTER_ACTORS, USE_DIST, p)
+		rayOrigin := player.Body().Transform.Position()
+		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
+		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, COL_FILTER_ACTORS, USE_DIST, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
-				usable.OnUse(p)
+				usable.OnUse(player)
 			}
 		}
 	}
 
-	if p.selectedWeapon >= 0 {
-		var weapon Weapon = p.weapons[p.selectedWeapon]
+	if player.selectedWeapon >= 0 {
+		var weapon Weapon = player.weapons[player.selectedWeapon]
 		weapon.Update(deltaTime)
 		if input.IsActionJustPressed(settings.ACTION_FIRE) {
 			// Don't fire if there is a wall to close in front
 			var cast collision.RaycastResult
-			cast, _ = p.world.Raycast(p.Body().Transform.Position(), p.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, p)
+			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
 			if !cast.Hit {
 				weapon.Fire()
 			}
@@ -143,25 +143,25 @@ func (p *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
-		p.actor.MaxSpeed = p.WalkSpeed
+		player.actor.MaxSpeed = player.WalkSpeed
 	} else {
-		p.actor.MaxSpeed = p.RunSpeed
+		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	if math2.Abs(p.actor.inputForward) > mgl32.Epsilon || math2.Abs(p.actor.inputStrafe) > mgl32.Epsilon {
-		if p.actor.MaxSpeed == p.WalkSpeed {
-			p.actor.Friction = p.WalkFriction
+	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
+		if player.actor.MaxSpeed == player.WalkSpeed {
+			player.actor.Friction = player.WalkFriction
 		} else {
-			p.actor.Friction = p.RunFriction
+			player.actor.Friction = player.RunFriction
 		}
 	} else {
-		p.actor.Friction = p.StandFriction
+		player.actor.Friction = player.StandFriction
 	}
 
-	p.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	p.Body().Transform.SetRotation(0.0, p.actor.YawAngle, 0.0)
+	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
+	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 
-	p.actor.Update(deltaTime)
+	player.actor.Update(deltaTime)
 }
 
 func (p *Player) ProcessSignal(s Signal, params any) {

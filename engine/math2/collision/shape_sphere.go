@@ -79,7 +79,7 @@ func (sphere Sphere) ResolveCollision(myPosition, theirPosition mgl32.Vec3, thei
 			Normal:      overallNormal,
 			Penetration: overallDistance,
 		}
-	case *Grid:
+	case Grid:
 		return otherShape.ResolveOtherBodysCollision(theirPosition, myPosition, sphere)
 	}
 	return Result{}

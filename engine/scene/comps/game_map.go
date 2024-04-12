@@ -18,7 +18,7 @@ type Map struct {
 	body           Body
 	tiles          te3.Tiles
 	mesh           *geom.Mesh
-	gridShape      *collision.Grid
+	gridShape      collision.Grid
 	triMap         te3.TriMap        // Maps a flattened tile index to its indices in the mesh's triangles array.
 	tileAnims      []AnimationPlayer // Animates each texture group of tiles
 	groupRenderers []MeshRender      // Renders each texture group of tiles
@@ -34,7 +34,7 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 	}
 	cache.TakeMesh(te3File.FilePath(), mesh)
 
-	var gridShape *collision.Grid = collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3File.Tiles.GridSpacing())
+	var gridShape collision.Grid = collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3File.Tiles.GridSpacing())
 
 	// Set all tile collision shapes to use the triangle mesh by default.
 	for i := range len(te3File.Tiles.Data) {

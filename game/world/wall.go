@@ -89,7 +89,6 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 		Shape:     collision.NewBox(bbox),
 		Layer:     COL_LAYER_MAP,
 		Filter:    COL_LAYER_NONE,
-		LockY:     true,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {

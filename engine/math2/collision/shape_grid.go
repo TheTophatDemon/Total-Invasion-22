@@ -19,8 +19,8 @@ type Grid struct {
 
 var _ Shape = (*Grid)(nil)
 
-func NewGrid(width, height, length int, spacing float32) *Grid {
-	return &Grid{
+func NewGrid(width, height, length int, spacing float32) Grid {
+	return Grid{
 		shape: shape{
 			extents: math2.Box{
 				Min: mgl32.Vec3{-spacing, -spacing, -spacing},
@@ -117,11 +117,11 @@ func (grid *Grid) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 	return out
 }
 
-func (grid *Grid) Extents() math2.Box {
+func (grid Grid) Extents() math2.Box {
 	return grid.extents
 }
 
-func (grid *Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
+func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
 	if lenSqr := rayDir.LenSqr(); lenSqr == 0.0 {
 		return RaycastResult{}
 	} else if lenSqr != 1.0 {
@@ -254,7 +254,7 @@ func (grid *Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist flo
 	return RaycastResult{}
 }
 
-func (grid *Grid) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (grid Grid) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
 	// The map doesn't move, silly!
 	return Result{}
 }
