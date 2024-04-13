@@ -97,7 +97,7 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		body := bodyEnt.Body()
 		if bodyEnt == excludeBody ||
-			bodyEnt.Body().Layer&filter == 0 ||
+			!bodyEnt.Body().OnLayer(filter) ||
 			!body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
 			continue
 		}

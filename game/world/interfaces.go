@@ -20,6 +20,7 @@ type (
 		Equip()
 		Select()
 		Deselect()
+		CanFire() bool
 		Fire()
 		Equipped() bool
 		Update(deltaTime float32)

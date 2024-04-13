@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	COL_FILTER_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
+	COL_FILTER_FOR_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
 )
 
 type World struct {

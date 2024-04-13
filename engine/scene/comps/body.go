@@ -102,3 +102,7 @@ func (body *Body) ResolveCollision(movement mgl32.Vec3, otherBody *Body) {
 		}
 	}
 }
+
+func (body *Body) OnLayer(layer collision.Mask) bool {
+	return body.Layer&layer != 0
+}

@@ -45,7 +45,7 @@ type sfxMetadata struct {
 }
 
 func (vid VoiceId) IsValid() bool {
-	return vid.generation > 0 && vid.sfx != nil
+	return vid.generation > 0 && vid.sfx != nil && vid.generation == vid.sfx.players[vid.index].playCount
 }
 
 func (vid VoiceId) Attenuate(sourcePos, listenPos mgl32.Vec3) {

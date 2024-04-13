@@ -27,8 +27,9 @@ var _ Weapon = (*WeaponSickle)(nil)
 func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 	sickle := WeaponSickle{
 		weaponBase: weaponBase{
-			owner: owner,
-			world: world,
+			owner:    owner,
+			world:    world,
+			cooldown: 0.25,
 		},
 	}
 
@@ -95,6 +96,8 @@ func (sickle *WeaponSickle) Deselect() {
 }
 
 func (sickle *WeaponSickle) Update(deltaTime float32) {
+	sickle.weaponBase.Update(deltaTime)
+
 	var sprite *ui.Box
 	var ok bool
 	if sprite, ok = sickle.sprite.Get(); !ok {
@@ -110,15 +113,18 @@ func (sickle *WeaponSickle) Update(deltaTime float32) {
 	}
 }
 
+func (sickle *WeaponSickle) CanFire() bool {
+	return !sickle.thrownSickle.Exists() && sickle.weaponBase.CanFire()
+}
+
 func (sickle *WeaponSickle) Fire() {
-	if !sickle.thrownSickle.Exists() {
-		if ownerActor, ok := sickle.owner.Get(); ok {
-			firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, ownerActor.Body().Transform.Matrix())
-			sickle.thrownSickle, _, _ = SpawnSickle(sickle.world, &sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
-			if box, ok := sickle.sprite.Get(); ok {
-				box.AnimPlayer.ChangeAnimation(sickle.throwAnim)
-				box.AnimPlayer.PlayFromStart()
-			}
+	sickle.weaponBase.Fire()
+	if ownerActor, ok := sickle.owner.Get(); ok {
+		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, ownerActor.Body().Transform.Matrix())
+		sickle.thrownSickle, _, _ = SpawnSickle(sickle.world, &sickle.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), sickle.owner.Handle)
+		if box, ok := sickle.sprite.Get(); ok {
+			box.AnimPlayer.ChangeAnimation(sickle.throwAnim)
+			box.AnimPlayer.PlayFromStart()
 		}
 	}
 }

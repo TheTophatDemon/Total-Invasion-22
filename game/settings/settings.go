@@ -20,6 +20,8 @@ const (
 	ACTION_LOOK_VERT
 	ACTION_TRAP_MOUSE
 	ACTION_FIRE
+	ACTION_SICKLE
+	ACTION_CHICKEN
 	ACTION_USE
 	ACTION_NOCLIP
 	ACTION_COUNT
@@ -35,6 +37,8 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_LOOK_VERT:  "Look Vertically",
 	ACTION_TRAP_MOUSE: "Trap Mouse",
 	ACTION_FIRE:       "Fire",
+	ACTION_SICKLE:     "Select Sickle",
+	ACTION_CHICKEN:    "Select Chicken Cannon",
 	ACTION_USE:        "Use",
 	ACTION_NOCLIP:     "Noclip",
 }

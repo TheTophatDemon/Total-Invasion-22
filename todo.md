@@ -1,13 +1,12 @@
 # TODO
-- Sickle clipping through wall
-   - Try fixing bullet through paper effect on triangle meshes
 - Implement audio panning somehow
 - Find solution for raycasting through invisible tiles
+- Weapon switching transitions
 - Music
 - Make FPS counter actually accurate
+- Investigate stuttering
 - Text shadow
 - Particle effects
 - Localization
 - Wraith AI
-- Investigate stuttering
 - Bounding box hierarchy

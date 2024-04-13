@@ -25,6 +25,7 @@ type Player struct {
 	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
 	weaponSickle                             WeaponSickle
+	weaponChicken                            WeaponChicken
 	selectedWeapon                           int
 }
 
@@ -52,7 +53,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 			),
 			Shape:  collision.NewSphere(0.7),
 			Layer:  COL_LAYER_ACTORS,
-			Filter: COL_FILTER_ACTORS,
+			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
@@ -71,9 +72,10 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 
 	// Initialize weapons
 	p.weaponSickle = NewSickle(world, scene.Id[HasActor](p.id))
+	p.weaponChicken = NewChickenCannon(world, scene.Id[HasActor](p.id))
 	p.weapons = [...]Weapon{
 		WEAPON_ORDER_SICKLE:      &p.weaponSickle,
-		WEAPON_ORDER_CHICKEN:     nil,
+		WEAPON_ORDER_CHICKEN:     &p.weaponChicken,
 		WEAPON_ORDER_GRENADE:     nil,
 		WEAPON_ORDER_PARUSU:      nil,
 		WEAPON_ORDER_DBL_GRENADE: nil,
@@ -82,6 +84,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	}
 	p.selectedWeapon = WEAPON_ORDER_NONE
 	p.EquipWeapon(WEAPON_ORDER_SICKLE)
+	p.EquipWeapon(WEAPON_ORDER_CHICKEN)
 	p.SelectWeapon(WEAPON_ORDER_SICKLE)
 
 	return
@@ -112,7 +115,7 @@ func (player *Player) Update(deltaTime float32) {
 			message += "Activated"
 		} else {
 			player.Body().Layer = COL_LAYER_ACTORS
-			player.Body().Filter = COL_FILTER_ACTORS
+			player.Body().Filter = COL_FILTER_FOR_ACTORS
 			message += "Deactivated"
 		}
 		player.world.ShowMessage(message, 4.0, 100, color.Red)
@@ -121,7 +124,7 @@ func (player *Player) Update(deltaTime float32) {
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
-		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, COL_FILTER_ACTORS, USE_DIST, player)
+		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, COL_FILTER_FOR_ACTORS, USE_DIST, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -129,10 +132,16 @@ func (player *Player) Update(deltaTime float32) {
 		}
 	}
 
+	if input.IsActionJustPressed(settings.ACTION_SICKLE) {
+		player.SelectWeapon(WEAPON_ORDER_SICKLE)
+	} else if input.IsActionJustPressed(settings.ACTION_CHICKEN) {
+		player.SelectWeapon(WEAPON_ORDER_CHICKEN)
+	}
+
 	if player.selectedWeapon >= 0 {
 		var weapon Weapon = player.weapons[player.selectedWeapon]
 		weapon.Update(deltaTime)
-		if input.IsActionJustPressed(settings.ACTION_FIRE) {
+		if input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
 			// Don't fire if there is a wall to close in front
 			var cast collision.RaycastResult
 			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
