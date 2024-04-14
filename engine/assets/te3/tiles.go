@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 const GRID_SPACING = 2.0
@@ -132,4 +133,28 @@ func (tiles *Tiles) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 		out[2] += GRID_SPACING / 2.0
 	}
 	return out
+}
+
+func (tiles *Tiles) BBoxOfTile(i, j, k int) math2.Box {
+	corner := tiles.GridToWorldPos(i, j, k, false)
+	return math2.Box{
+		Min: corner,
+		Max: corner.Add(mgl32.Vec3{tiles.GridSpacing(), tiles.GridSpacing(), tiles.GridSpacing()}),
+	}
+}
+
+func (tiles *Tiles) WithTextureId(texID TextureID) []int {
+	result := make([]int, 0)
+	for t, tile := range tiles.Data {
+		if tile.TextureID == texID {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+func (tiles *Tiles) EraseTiles(tileIDs ...int) {
+	for _, t := range tileIDs {
+		tiles.Data[t] = Tile{ShapeID: -1, TextureID: -1}
+	}
 }

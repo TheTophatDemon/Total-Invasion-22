@@ -16,6 +16,9 @@ import (
 
 func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = st.New()
+	if err != nil {
+		return
+	}
 
 	proj.world = world
 	proj.id = id

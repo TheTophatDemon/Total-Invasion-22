@@ -1,7 +1,6 @@
 package world
 
 import (
-	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 )
@@ -22,7 +21,6 @@ type weaponBase struct {
 	owner         scene.Id[HasActor]
 	sprite        scene.Id[*ui.Box]
 	equipped      bool
-	fireVoice     audio.VoiceId
 	world         *World
 	cooldown      float32
 	cooldownTimer float32

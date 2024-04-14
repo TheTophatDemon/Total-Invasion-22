@@ -111,11 +111,6 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 			continue
 		}
 
-		// Exclude tiles with invisible texture flag
-		if cache.GetTexture(te3.Tiles.Textures[tile.TextureID]).HasFlag("invisible") {
-			continue
-		}
-
 		// Assign to group based on texture
 		group, ok := groupTiles[tile.TextureID]
 		if !ok {

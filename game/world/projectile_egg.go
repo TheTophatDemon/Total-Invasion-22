@@ -13,6 +13,9 @@ import (
 
 func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = st.New()
+	if err != nil {
+		return
+	}
 
 	proj.world = world
 	proj.id = id
@@ -22,7 +25,7 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 		Transform:      comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
 		Shape:          collision.NewSphere(0.1),
 		Layer:          COL_LAYER_PROJECTILES,
-		Filter:         COL_LAYER_NONE,
+		Filter:         COL_LAYER_MAP | COL_LAYER_ACTORS,
 		LockY:          true,
 		SweepCollision: true,
 	}
@@ -44,7 +47,7 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 	}
 
 	proj.onIntersect = func(body *comps.Body, result collision.Result) {
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && body != owner.Body() {
+		if owner, ok := scene.Get[HasActor](proj.owner); ok && body != owner.Body() && body.OnLayer(proj.body.Filter) {
 			for _, v := range proj.voices {
 				sfxShoot.Stop(v)
 			}

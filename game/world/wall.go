@@ -107,7 +107,7 @@ func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id sc
 	return
 }
 
-func (w *Wall) configureForDoor(ent te3.Ent) error {
+func (wall *Wall) configureForDoor(ent te3.Ent) error {
 	// Determine the door's destination position
 	unopenable, _ := ent.BoolProperty("unopenable")
 	if !unopenable {
@@ -128,127 +128,151 @@ func (w *Wall) configureForDoor(ent te3.Ent) error {
 		case "up", "u":
 			moveOffset = mgl32.Vec3{0.0, dist, 0.0}
 		case "right", "rg", "r":
-			moveOffset = mgl32.TransformNormal(mgl32.Vec3{dist, 0.0, 0.0}, w.body.Transform.Matrix())
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{dist, 0.0, 0.0}, wall.body.Transform.Matrix())
 		case "left", "lf", "l":
-			moveOffset = mgl32.TransformNormal(mgl32.Vec3{-dist, 0.0, 0.0}, w.body.Transform.Matrix())
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{-dist, 0.0, 0.0}, wall.body.Transform.Matrix())
 		case "forward", "fw", "f":
-			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -dist}, w.body.Transform.Matrix())
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -dist}, wall.body.Transform.Matrix())
 		case "backward", "back", "b":
-			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, dist}, w.body.Transform.Matrix())
+			moveOffset = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, dist}, wall.body.Transform.Matrix())
 		}
-		w.Destination = w.Origin.Add(moveOffset)
+		wall.Destination = wall.Origin.Add(moveOffset)
 
 		// Get waiting time
 		if waitStr, ok := ent.Properties["wait"]; ok {
 			if l := strings.ToLower(waitStr); l == "inf" || l == "infinity" || l == "-1" {
-				w.WaitTime = -1.0
+				wall.WaitTime = -1.0
 			} else if wait, err := ent.FloatProperty("wait"); err != nil {
-				w.WaitTime = wait
+				wall.WaitTime = wait
 			} else {
-				w.WaitTime = 0.0
+				wall.WaitTime = 0.0
 			}
 		} else {
-			w.WaitTime = 3.0
+			wall.WaitTime = 3.0
 		}
 
 		// Get speed
 		if speed, err := ent.FloatProperty("speed"); err == nil {
-			w.Speed = speed
+			wall.Speed = speed
 		} else {
-			w.Speed = 4.0
+			wall.Speed = 4.0
 		}
 	} else {
-		w.Destination = w.Origin
-		w.activator = ACTIVATOR_NONE
+		wall.Destination = wall.Origin
+		wall.activator = ACTIVATOR_NONE
 	}
 
 	if sfxStr, ok := ent.Properties["activateSound"]; ok {
 		if len(sfxStr) > 0 {
-			w.activateSound, _ = cache.GetSfx("assets/sounds/" + sfxStr)
+			wall.activateSound, _ = cache.GetSfx("assets/sounds/" + sfxStr)
 		} else {
-			w.activateSound = nil
+			wall.activateSound = nil
 		}
 	} else {
-		w.activateSound, _ = cache.GetSfx("assets/sounds/opendoor.wav")
+		wall.activateSound, _ = cache.GetSfx("assets/sounds/opendoor.wav")
 	}
 
 	return nil
 }
 
-func (w *Wall) Update(deltaTime float32) {
-	switch w.movePhase {
+func SpawnInvisibleWall(
+	st *scene.Storage[Wall],
+	world *World,
+	position mgl32.Vec3,
+	shape collision.Shape,
+) (id scene.Id[*Wall], wall *Wall, err error) {
+	id, wall, err = st.New()
+	if err != nil {
+		return
+	}
+
+	wall.world = world
+	wall.Origin = position
+	wall.body = comps.Body{
+		Transform: comps.TransformFromTranslation(position),
+		Shape:     shape,
+		Layer:     COL_LAYER_INVISIBLE,
+		Filter:    COL_LAYER_NONE,
+	}
+
+	return
+}
+
+func (wall *Wall) Update(deltaTime float32) {
+	switch wall.movePhase {
 	case MOVE_PHASE_OPENING:
-		targetDir := w.Destination.Sub(w.body.Transform.Position())
+		targetDir := wall.Destination.Sub(wall.body.Transform.Position())
 		targetDist := targetDir.Len()
-		if targetDist <= w.Speed*deltaTime {
-			w.body.Transform.SetPosition(w.Destination)
-			w.movePhase = MOVE_PHASE_OPEN
-			w.body.Velocity = mgl32.Vec3{}
+		if targetDist <= wall.Speed*deltaTime {
+			wall.body.Transform.SetPosition(wall.Destination)
+			wall.movePhase = MOVE_PHASE_OPEN
+			wall.body.Velocity = mgl32.Vec3{}
 		} else {
-			w.body.Velocity = targetDir.Mul(w.Speed / targetDist)
+			wall.body.Velocity = targetDir.Mul(wall.Speed / targetDist)
 		}
 	case MOVE_PHASE_CLOSING:
-		targetDir := w.Origin.Sub(w.body.Transform.Position())
+		targetDir := wall.Origin.Sub(wall.body.Transform.Position())
 		targetDist := targetDir.Len()
 		// Detect if something is standing in the way
-		blockers := w.world.ActorsInSphere(w.Origin, w.body.Shape.Extents().LongestDimension(), nil)
+		blockers := wall.world.ActorsInSphere(wall.Origin, wall.body.Shape.Extents().LongestDimension(), nil)
 		if len(blockers) > 0 {
-			w.body.Velocity = mgl32.Vec3{}
-			w.movePhase = MOVE_PHASE_OPENING
-		} else if targetDist <= w.Speed*deltaTime {
-			w.body.Transform.SetPosition(w.Origin)
-			w.movePhase = MOVE_PHASE_CLOSED
-			w.body.Velocity = mgl32.Vec3{}
+			wall.body.Velocity = mgl32.Vec3{}
+			wall.movePhase = MOVE_PHASE_OPENING
+		} else if targetDist <= wall.Speed*deltaTime {
+			wall.body.Transform.SetPosition(wall.Origin)
+			wall.movePhase = MOVE_PHASE_CLOSED
+			wall.body.Velocity = mgl32.Vec3{}
 		} else {
-			w.body.Velocity = targetDir.Mul(w.Speed / targetDist)
+			wall.body.Velocity = targetDir.Mul(wall.Speed / targetDist)
 		}
 	case MOVE_PHASE_OPEN:
-		w.waitTimer += deltaTime
-		if w.waitTimer > w.WaitTime && w.WaitTime >= 0.0 {
-			w.movePhase = MOVE_PHASE_CLOSING
-			w.waitTimer = 0.0
+		wall.waitTimer += deltaTime
+		if wall.waitTimer > wall.WaitTime && wall.WaitTime >= 0.0 {
+			wall.movePhase = MOVE_PHASE_CLOSING
+			wall.waitTimer = 0.0
 		}
 		fallthrough
 	case MOVE_PHASE_CLOSED:
-		w.body.Velocity = mgl32.Vec3{}
+		wall.body.Velocity = mgl32.Vec3{}
 	}
 }
 
-func (w *Wall) Render(context *render.Context) {
-	if !render.IsBoxVisible(context, w.Body().Shape.Extents().Translate(w.body.Transform.Position())) {
+func (wall *Wall) Render(context *render.Context) {
+	if !render.IsBoxVisible(context, wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
+		wall.MeshRender.Mesh == nil {
 		return
 	}
 	context.DrawnWallCount++
 
-	w.MeshRender.Render(&w.body.Transform, &w.AnimPlayer, context)
+	wall.MeshRender.Render(&wall.body.Transform, &wall.AnimPlayer, context)
 }
 
-func (w *Wall) Body() *comps.Body {
-	return &w.body
+func (wall *Wall) Body() *comps.Body {
+	return &wall.body
 }
 
-func (w *Wall) OnUse(player *Player) {
-	switch w.activator {
+func (wall *Wall) OnUse(player *Player) {
+	switch wall.activator {
 	case ACTIVATOR_NONE:
-		w.world.ShowMessage("The door can't move...", 2.0, 10, color.Red)
+		wall.world.ShowMessage("The door can't move...", 2.0, 10, color.Red)
 	case ACTIVATOR_ALL:
-		if !w.Origin.ApproxEqual(w.Destination) {
-			switch w.movePhase {
+		if !wall.Origin.ApproxEqual(wall.Destination) {
+			switch wall.movePhase {
 			case MOVE_PHASE_CLOSED:
-				w.movePhase = MOVE_PHASE_OPENING
-				w.waitTimer = 0
-				if w.activateSound != nil {
-					w.activateSound.Play()
+				wall.movePhase = MOVE_PHASE_OPENING
+				wall.waitTimer = 0
+				if wall.activateSound != nil {
+					wall.activateSound.Play()
 				}
 			case MOVE_PHASE_OPEN:
-				if w.WaitTime >= 0.0 {
-					w.movePhase = MOVE_PHASE_CLOSING
+				if wall.WaitTime >= 0.0 {
+					wall.movePhase = MOVE_PHASE_CLOSING
 				}
 			}
 		}
 	case ACTIVATOR_KEY:
-		w.world.ShowMessage("I need a key...", 2.0, 10, color.Red)
+		wall.world.ShowMessage("I need a key...", 2.0, 10, color.Red)
 	case ACTIVATOR_TRIGGER:
-		w.world.ShowMessage("This door opens elsewhere...", 2.0, 10, color.Red)
+		wall.world.ShowMessage("This door opens elsewhere...", 2.0, 10, color.Red)
 	}
 }

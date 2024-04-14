@@ -1,6 +1,5 @@
 # TODO
 - Implement audio panning somehow
-- Find solution for raycasting through invisible tiles
 - Weapon switching transitions
 - Music
 - Make FPS counter actually accurate

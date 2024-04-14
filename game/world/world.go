@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -28,10 +29,15 @@ const (
 	COL_LAYER_MAP  collision.Mask = 1 << (iota - 1)
 	COL_LAYER_ACTORS
 	COL_LAYER_PROJECTILES
+	COL_LAYER_INVISIBLE
 )
 
 const (
-	COL_FILTER_FOR_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS
+	COL_FILTER_FOR_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS | COL_LAYER_INVISIBLE
+)
+
+const (
+	TEX_FLAG_INVISIBLE string = "invisible"
 )
 
 type World struct {
@@ -74,6 +80,19 @@ func NewWorld(mapPath string) (*World, error) {
 		return nil, err
 	}
 
+	// Filter out invisible tiles and spawn invisible wall entities instead
+	for texID, texPath := range te3File.Tiles.Textures {
+		if cache.GetTexture(texPath).HasFlag(TEX_FLAG_INVISIBLE) {
+			invisibleTileIDs := te3File.Tiles.WithTextureId(te3.TextureID(texID))
+			te3File.Tiles.EraseTiles(invisibleTileIDs...)
+			for _, id := range invisibleTileIDs {
+				box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
+				pos := box.Center()
+				SpawnInvisibleWall(&world.Walls, world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
+			}
+		}
+	}
+
 	world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
 	if err != nil {
 		return nil, err
@@ -97,8 +116,6 @@ func NewWorld(mapPath string) (*World, error) {
 			return nil, err
 		}
 	}
-
-	//TODO: Set invisible tile shapes to nil
 
 	// Set cube collision shapes
 	for _, shapeName := range [...]string{
