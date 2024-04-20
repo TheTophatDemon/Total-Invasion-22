@@ -34,7 +34,7 @@ func (game *Game) Render() {
 }
 
 func main() {
-	err := engine.Init(settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, "Total Invasion II")
+	err := engine.Init(settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, "Total Invasion 22")
 	defer engine.DeInit()
 	if err != nil {
 		panic(err)

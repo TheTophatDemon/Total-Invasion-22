@@ -1,5 +1,6 @@
 # TODO
-- Implement audio panning somehow
+- Fix audio cooldowns to allow multiple sounds from different locations...?
+- Audio panning
 - Weapon switching transitions
 - Music
 - Make FPS counter actually accurate

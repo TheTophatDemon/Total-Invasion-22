@@ -1,7 +1,6 @@
 package audio
 
 import (
-	"bytes"
 	"encoding/binary"
 	"io"
 	"log"
@@ -90,7 +89,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 	if metadata != nil && metadata.AttenuationPower > 0.01 && metadata.AttenuationPower < 10.0 {
 		sfx.AttenuationPower = metadata.AttenuationPower
 	} else {
-		sfx.AttenuationPower = 1.0
+		sfx.AttenuationPower = 1.5
 	}
 
 	if metadata != nil {
@@ -120,7 +119,8 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		if sfx.loop {
 			reader = NewLoopReader(wavBytes)
 		} else {
-			reader = bytes.NewReader(wavBytes)
+			//reader = bytes.NewReader(wavBytes)
+			reader = NewDynamicReader(wavBytes, false)
 		}
 		sfx.players[i] = sfxPlayer{
 			Player:    *context.NewPlayer(reader),
@@ -133,9 +133,9 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 }
 
 func (sfx *Sfx) Play() VoiceId {
-	if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
-		return VoiceId{}
-	}
+	// if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
+	// 	return VoiceId{}
+	// }
 
 	for i := range sfx.players {
 		if !sfx.players[i].IsPlaying() {
@@ -171,7 +171,11 @@ func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos, listenPos mgl32.Vec3) {
 	player := &sfx.players[pid.index]
 	if player.IsPlaying() {
 		distance := max(1.0, sourcePos.Sub(listenPos).Len())
-		player.SetVolume(float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower)))
+		newVolume := float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower))
+		if newVolume < 0.01 {
+			newVolume = 0.0
+		}
+		player.SetVolume(newVolume)
 	}
 }
 
