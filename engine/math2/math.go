@@ -295,6 +295,11 @@ func Sin[F Float](val F) F {
 	return F(math.Sin(float64(val)))
 }
 
+// Calculates the sign using a fast sin approximation accurate from 0 to 1
+func FastApproxSin[F Float](val F) F {
+	return 0.5 * val * (3.0 - val*val)
+}
+
 func Asin[F Float](val F) F {
 	return F(math.Asin(float64(val)))
 }

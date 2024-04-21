@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -20,7 +21,6 @@ type Sfx struct {
 	Polyphony        uint8
 	AttenuationPower float32
 	loop             bool
-	decoder          wav.Decoder
 	players          []sfxPlayer
 	lastPlayed       time.Time
 }
@@ -71,9 +71,9 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		log.Printf("Could not parse metadata for %s; %s\n", assetPath, err)
 	}
 
-	sfx := &Sfx{
-		decoder: *wav.NewDecoder(file),
-	}
+	sfx := &Sfx{}
+
+	decoder := *wav.NewDecoder(file)
 
 	if metadata != nil && metadata.Polyphony > 0 && metadata.Polyphony < 128 {
 		sfx.Polyphony = uint8(metadata.Polyphony)
@@ -97,21 +97,23 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		sfx.loop = metadata.Loop
 	}
 
-	wavBuffer, err := sfx.decoder.FullPCMBuffer()
+	wavBuffer, err := decoder.FullPCMBuffer()
 	if err != nil {
 		return nil, err
 	}
+	floatBuffer := wavBuffer.AsFloat32Buffer()
 
 	sampleTimes := 1
-	if sfx.decoder.NumChans == 1 {
+	if decoder.NumChans == 1 {
 		// Mono samples have each data point doubled to make them "stereo".
 		sampleTimes = 2
 	}
 
 	wavBytes := make([]byte, 0, len(wavBuffer.Data)*2)
-	for i := range wavBuffer.Data {
+	for i := range floatBuffer.Data {
+		sample := math.Float32bits(floatBuffer.Data[i])
 		for range sampleTimes {
-			wavBytes = binary.LittleEndian.AppendUint16(wavBytes, uint16(wavBuffer.Data[i]))
+			wavBytes = binary.LittleEndian.AppendUint32(wavBytes, sample)
 		}
 	}
 	sfx.players = make([]sfxPlayer, sfx.Polyphony)
