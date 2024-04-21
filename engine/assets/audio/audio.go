@@ -3,8 +3,9 @@ package audio
 import "github.com/ebitengine/oto/v3"
 
 const (
-	SAMPLE_RATE   = 44100
-	CHANNEL_COUNT = 2
+	SAMPLE_RATE      = 44100
+	CHANNEL_COUNT    = 2
+	BYTES_PER_SAMPLE = 2
 )
 
 var context *oto.Context

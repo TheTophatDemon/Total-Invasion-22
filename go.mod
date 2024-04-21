@@ -8,8 +8,6 @@ require (
 	github.com/go-gl/mathgl v1.0.0
 )
 
-require github.com/Southclaws/opt v0.6.1
-
 require (
 	github.com/go-audio/audio v1.0.0 // indirect
 	github.com/go-audio/riff v1.0.0 // indirect

@@ -335,6 +335,10 @@ func Vec3Forward() mgl32.Vec3 {
 	return mgl32.Vec3{0.0, 0.0, -1.0}
 }
 
+func Vec3Right() mgl32.Vec3 {
+	return mgl32.Vec3{1.0, 0.0, 0.0}
+}
+
 // Returns a vector with the element-wise minimum value on each axis.
 func Vec3Min(a, b mgl32.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{

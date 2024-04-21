@@ -1,7 +1,7 @@
 package world
 
 import (
-	"tophatdemon.com/total-invasion-ii/engine/audio"
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -30,7 +30,7 @@ func (proj *Projectile) Body() *comps.Body {
 func (proj *Projectile) Update(deltaTime float32) {
 	proj.AnimPlayer.Update(deltaTime)
 	for _, vid := range proj.voices {
-		vid.Attenuate(proj.Body().Transform.Position(), proj.world.ListenerPosition())
+		vid.Attenuate(proj.Body().Transform.Position(), proj.world.ListenerTransform())
 	}
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)

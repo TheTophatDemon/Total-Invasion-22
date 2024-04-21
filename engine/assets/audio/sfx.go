@@ -32,6 +32,7 @@ type VoiceId struct {
 
 type sfxPlayer struct {
 	oto.Player
+	reader    io.Reader
 	maxVolume float32
 	playCount uint16
 }
@@ -47,12 +48,12 @@ func (vid VoiceId) IsValid() bool {
 	return vid.generation > 0 && vid.sfx != nil && vid.generation == vid.sfx.players[vid.index].playCount
 }
 
-func (vid VoiceId) Attenuate(sourcePos, listenPos mgl32.Vec3) {
+func (vid VoiceId) Attenuate(sourcePos mgl32.Vec3, listenerTransform mgl32.Mat4) {
 	if !vid.IsValid() {
 		return
 	}
 
-	vid.sfx.Attenuate(vid, sourcePos, listenPos)
+	vid.sfx.Attenuate(vid, sourcePos, listenerTransform)
 }
 
 func LoadSfx(assetPath string) (*Sfx, error) {
@@ -115,15 +116,10 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 	}
 	sfx.players = make([]sfxPlayer, sfx.Polyphony)
 	for i := range sfx.players {
-		var reader io.Reader
-		if sfx.loop {
-			reader = NewLoopReader(wavBytes)
-		} else {
-			//reader = bytes.NewReader(wavBytes)
-			reader = NewDynamicReader(wavBytes, false)
-		}
+		var reader io.Reader = NewReader(wavBytes, sfx.loop, 0.0)
 		sfx.players[i] = sfxPlayer{
 			Player:    *context.NewPlayer(reader),
+			reader:    reader,
 			playCount: 0,
 			maxVolume: 1.0,
 		}
@@ -164,18 +160,28 @@ func (sfx *Sfx) SetVolume(pid VoiceId, targetVolume float32) {
 	}
 }
 
-func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos, listenPos mgl32.Vec3) {
+func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos mgl32.Vec3, listener mgl32.Mat4) {
 	if !pid.IsValid() {
 		return
 	}
 	player := &sfx.players[pid.index]
 	if player.IsPlaying() {
-		distance := max(1.0, sourcePos.Sub(listenPos).Len())
+		// Set volume based on distance
+		diff := sourcePos.Sub(listener.Col(3).Vec3())
+		distance := max(1.0, diff.Len())
 		newVolume := float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower))
 		if newVolume < 0.01 {
 			newVolume = 0.0
 		}
 		player.SetVolume(newVolume)
+
+		// Set panning based on angle
+		if dynReader, ok := player.reader.(*Reader); ok {
+			dynReader.muty.Lock()
+			defer dynReader.muty.Unlock()
+			right := mgl32.TransformNormal(math2.Vec3Right(), listener)
+			dynReader.Pan = right.Dot(diff)
+		}
 	}
 }
 

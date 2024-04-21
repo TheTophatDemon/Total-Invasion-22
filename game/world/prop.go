@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
-	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -103,7 +103,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
 	if prop.voice.IsValid() {
-		prop.voice.Attenuate(prop.Body().Transform.Position(), prop.world.ListenerPosition())
+		prop.voice.Attenuate(prop.Body().Transform.Position(), prop.world.ListenerTransform())
 	}
 }
 

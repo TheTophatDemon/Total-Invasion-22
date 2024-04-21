@@ -304,9 +304,9 @@ func (world *World) FlashScreen(color color.Color, fadeSpeed float32) {
 	}
 }
 
-func (world *World) ListenerPosition() mgl32.Vec3 {
+func (world *World) ListenerTransform() mgl32.Mat4 {
 	if player, ok := world.CurrentPlayer.Get(); ok {
-		return player.Body().Transform.Position()
+		return player.Body().Transform.Matrix()
 	}
-	return mgl32.Vec3{}
+	return mgl32.Ident4()
 }

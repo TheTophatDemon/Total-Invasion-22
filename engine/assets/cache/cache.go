@@ -5,10 +5,10 @@ import (
 	"log"
 	"strings"
 
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/audio"
 )
 
 type cache[T any] struct {

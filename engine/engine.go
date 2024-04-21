@@ -6,8 +6,8 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
