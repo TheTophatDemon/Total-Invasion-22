@@ -170,8 +170,12 @@ func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos mgl32.Vec3, listener mgl32.Mat4
 	if player.IsPlaying() {
 		// Set volume based on distance
 		diff := sourcePos.Sub(listener.Col(3).Vec3())
-		distance := max(1.0, diff.Len())
-		newVolume := float64(player.maxVolume / math2.Pow(distance, sfx.AttenuationPower))
+		distance := diff.Len()
+		if distance == 0.0 {
+			player.SetVolume(1.0)
+			return
+		}
+		newVolume := float64(player.maxVolume / math2.Pow(max(1.0, distance), sfx.AttenuationPower))
 		if newVolume < 0.01 {
 			newVolume = 0.0
 		}
@@ -182,7 +186,7 @@ func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos mgl32.Vec3, listener mgl32.Mat4
 			dynReader.muty.Lock()
 			defer dynReader.muty.Unlock()
 			right := mgl32.TransformNormal(math2.Vec3Right(), listener)
-			dynReader.Pan = right.Dot(diff)
+			dynReader.Pan = -right.Dot(diff.Mul(1.0 / distance))
 		}
 	}
 }

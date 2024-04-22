@@ -53,8 +53,8 @@ func (reader *Reader) Read(outBuffer []byte) (nBytesRead int, err error) {
 			leftFactor := (reader.Pan + 1.0) / 2.0
 			rightFactor := 1.0 - leftFactor
 
-			newLeftSample := max(-1.0, min(1.0, leftSample*math2.FastApproxSin(leftFactor)))
-			newRightSample := max(-1.0, min(1.0, rightSample*math2.FastApproxSin(rightFactor)))
+			newLeftSample := leftSample * math2.FastApproxSin(leftFactor)
+			newRightSample := rightSample * math2.FastApproxSin(rightFactor)
 			binary.LittleEndian.PutUint32(leftDest, math.Float32bits(newLeftSample))
 			binary.LittleEndian.PutUint32(rightDest, math.Float32bits(newRightSample))
 		}

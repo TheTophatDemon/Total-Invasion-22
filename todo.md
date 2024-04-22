@@ -1,6 +1,6 @@
 # TODO
-- Fix audio cooldowns to allow multiple sounds from different locations...?
-- Audio panning
+- Make audio panning continuous
+- Make sfx reuse oldest player when buffer is full
 - Weapon switching transitions
 - Music
 - Make FPS counter actually accurate
