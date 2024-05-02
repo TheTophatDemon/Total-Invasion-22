@@ -2,7 +2,6 @@ package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -16,7 +15,6 @@ type Projectile struct {
 	body         comps.Body
 	owner        scene.Handle
 	moveFunc     func(deltaTime float32)
-	onIntersect  func(*comps.Body, collision.Result)
 	speed        float32
 	voices       [4]audio.VoiceId
 }

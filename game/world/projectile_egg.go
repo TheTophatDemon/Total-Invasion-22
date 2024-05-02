@@ -42,19 +42,18 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 		proj.voices[0] = sfxShoot.Play()
 	}
 
-	proj.moveFunc = func(deltaTime float32) {
-		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
-	}
-
-	proj.onIntersect = func(body *comps.Body, result collision.Result) {
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && body != owner.Body() && body.OnLayer(proj.body.Filter) {
-			for _, v := range proj.voices {
-				sfxShoot.Stop(v)
-			}
-			proj.id.Remove()
-		}
-	}
-	proj.body.OnIntersect = proj.onIntersect
+	proj.moveFunc = proj.eggMove
+	proj.body.OnIntersect = proj.eggIntersect
 
 	return
+}
+
+func (proj *Projectile) eggMove(deltaTime float32) {
+	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
+}
+
+func (proj *Projectile) eggIntersect(body *comps.Body, result collision.Result) {
+	if owner, ok := scene.Get[HasActor](proj.owner); ok && body != owner.Body() && body.OnLayer(proj.body.Filter) {
+		proj.id.Remove()
+	}
 }

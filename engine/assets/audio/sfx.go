@@ -17,12 +17,10 @@ import (
 )
 
 type Sfx struct {
-	Cooldown         float32
 	Polyphony        uint8
 	AttenuationPower float32
 	loop             bool
 	players          []sfxPlayer
-	lastPlayed       time.Time
 }
 
 type VoiceId struct {
@@ -32,16 +30,16 @@ type VoiceId struct {
 
 type sfxPlayer struct {
 	oto.Player
-	reader    io.Reader
-	maxVolume float32
-	playCount uint16
+	reader     io.Reader
+	maxVolume  float32
+	playCount  uint16
+	lastPlayed time.Time
 }
 
 type sfxMetadata struct {
 	Loop             bool
-	Cooldown         float32
 	Polyphony        int
-	AttenuationPower float32
+	AttenuationPower *float32
 }
 
 func (vid VoiceId) IsValid() bool {
@@ -54,6 +52,14 @@ func (vid VoiceId) Attenuate(sourcePos mgl32.Vec3, listenerTransform mgl32.Mat4)
 	}
 
 	vid.sfx.Attenuate(vid, sourcePos, listenerTransform)
+}
+
+func (vid VoiceId) Stop() {
+	if !vid.IsValid() {
+		return
+	}
+
+	vid.sfx.Stop(vid)
 }
 
 func LoadSfx(assetPath string) (*Sfx, error) {
@@ -81,14 +87,8 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		sfx.Polyphony = 8
 	}
 
-	if metadata != nil && metadata.Cooldown > 0.0 {
-		sfx.Cooldown = metadata.Cooldown
-	} else {
-		sfx.Cooldown = 0.1
-	}
-
-	if metadata != nil && metadata.AttenuationPower > 0.01 && metadata.AttenuationPower < 10.0 {
-		sfx.AttenuationPower = metadata.AttenuationPower
+	if metadata != nil && metadata.AttenuationPower != nil {
+		sfx.AttenuationPower = *metadata.AttenuationPower
 	} else {
 		sfx.AttenuationPower = 1.5
 	}
@@ -125,27 +125,43 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 			playCount: 0,
 			maxVolume: 1.0,
 		}
+		// The buffer size must be small so that the panning can be updated while the sound is playing
+		sfx.players[i].SetBufferSize(5888)
 	}
 	log.Printf("Sfx loaded at %v.\n", assetPath)
 	return sfx, nil
 }
 
 func (sfx *Sfx) Play() VoiceId {
-	// if time.Since(sfx.lastPlayed).Seconds() < float64(sfx.Cooldown) {
-	// 	return VoiceId{}
-	// }
+	playIt := func(player *sfxPlayer) {
+		player.Seek(0, io.SeekStart)
+		player.Play()
+		player.playCount++
+		player.lastPlayed = time.Now()
+	}
 
+	var oldestPlayer *sfxPlayer
+	var oldestPlayerIndex int = -1
 	for i := range sfx.players {
 		if !sfx.players[i].IsPlaying() {
-			sfx.players[i].Seek(0, io.SeekStart)
-			sfx.players[i].Play()
-			sfx.lastPlayed = time.Now()
-			sfx.players[i].playCount++
+			playIt(&sfx.players[i])
 			return VoiceId{
 				generation: sfx.players[i].playCount,
 				index:      uint16(i),
 				sfx:        sfx,
 			}
+		} else if oldestPlayer == nil || sfx.players[i].lastPlayed.Compare(oldestPlayer.lastPlayed) < 0 {
+			oldestPlayer = &sfx.players[i]
+			oldestPlayerIndex = i
+		}
+	}
+	// If all the players are occupied, cut short the one that was playing for the longest
+	if oldestPlayer != nil {
+		playIt(oldestPlayer)
+		return VoiceId{
+			generation: oldestPlayer.playCount,
+			index:      uint16(oldestPlayerIndex),
+			sfx:        sfx,
 		}
 	}
 	return VoiceId{}

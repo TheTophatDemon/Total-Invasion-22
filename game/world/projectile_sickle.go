@@ -43,49 +43,50 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
 	proj.speed = 35.0
 
-	var sfxThrow, sfxClink *audio.Sfx
+	var sfxThrow *audio.Sfx
 	sfxThrow, err = cache.GetSfx("assets/sounds/sickle.wav")
 	if err != nil {
 		log.Println(err)
 	} else {
 		proj.voices[0] = sfxThrow.Play()
 	}
-	sfxClink, err = cache.GetSfx("assets/sounds/sickle_clink.wav")
-	if err != nil {
-		log.Println(err)
+
+	proj.moveFunc = proj.sickleMove
+	proj.body.OnIntersect = proj.sickleIntersect
+
+	return
+}
+
+func (proj *Projectile) sickleMove(deltaTime float32) {
+	var decelerationRate float32 = 50.0
+	if !input.IsActionPressed(settings.ACTION_FIRE) {
+		decelerationRate = 100.0
+	}
+	proj.speed = max(-35.0, proj.speed-deltaTime*decelerationRate)
+	if owner, ok := scene.Get[HasActor](proj.owner); ok {
+		if proj.speed < 0.0 {
+			ownerPos := owner.Body().Transform.Position()
+			projPos := proj.body.Transform.Position()
+			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
+		}
 	}
 
-	proj.moveFunc = func(deltaTime float32) {
-		var decelerationRate float32 = 50.0
-		if !input.IsActionPressed(settings.ACTION_FIRE) {
-			decelerationRate = 100.0
-		}
-		proj.speed = max(-35.0, proj.speed-deltaTime*decelerationRate)
-		if owner, ok := scene.Get[HasActor](proj.owner); ok {
-			if proj.speed < 0.0 {
-				ownerPos := owner.Body().Transform.Position()
-				projPos := proj.body.Transform.Position()
-				proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
-			}
-		}
+	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
+}
 
-		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
-	}
-
-	proj.onIntersect = func(body *comps.Body, result collision.Result) {
-		if proj.speed <= -1.0 {
-			if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
-				for _, v := range proj.voices {
-					sfxThrow.Stop(v)
-				}
-				proj.id.Remove()
-			}
-		} else if body.OnLayer(COL_LAYER_MAP) {
-			proj.speed = -math2.Abs(proj.speed) / 2.0
+func (proj *Projectile) sickleIntersect(body *comps.Body, result collision.Result) {
+	if proj.speed <= -1.0 {
+		if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+			proj.voices[0].Stop()
+			proj.id.Remove()
+		}
+	} else if body.OnLayer(COL_LAYER_MAP) {
+		proj.speed = -math2.Abs(proj.speed) / 2.0
+		sfxClink, err := cache.GetSfx("assets/sounds/sickle_clink.wav")
+		if err != nil {
+			log.Println(err)
+		} else {
 			proj.voices[1] = sfxClink.Play()
 		}
 	}
-	proj.body.OnIntersect = proj.onIntersect
-
-	return
 }

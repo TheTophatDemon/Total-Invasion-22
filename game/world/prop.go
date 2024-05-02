@@ -91,10 +91,6 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
-		var sfx *audio.Sfx
-		if sfx, err = cache.GetSfx("assets/sounds/eggman_laugh.wav"); err == nil {
-			prop.voice = sfx.Play()
-		}
 	}
 
 	return

@@ -1,8 +1,6 @@
 # TODO
-- Make audio panning continuous
-- Make sfx reuse oldest player when buffer is full
-- Weapon switching transitions
 - Music
+- Weapon switching transitions
 - Make FPS counter actually accurate
 - Investigate stuttering
 - Text shadow
