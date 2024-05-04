@@ -7,28 +7,29 @@ import (
 	"math"
 	"sync"
 
+	"github.com/jfreymuth/oggvorbis"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 // This is a reader for an audio stream that will loop or adjust the panning of the audio in real time.
-type Reader struct {
+type SfxReader struct {
 	byteReader bytes.Reader
 	muty       sync.Mutex
 	Loop       bool
 	Pan        float32 // From -1.0 (left ear) to 1.0 (right ear)
 }
 
-var _ io.ReadSeeker = (*Reader)(nil)
+var _ io.ReadSeeker = (*SfxReader)(nil)
 
-func NewReader(buffer []byte, loop bool, pan float32) *Reader {
-	return &Reader{
+func NewReader(buffer []byte, loop bool, pan float32) *SfxReader {
+	return &SfxReader{
 		byteReader: *bytes.NewReader(buffer),
 		Loop:       loop,
 		Pan:        pan,
 	}
 }
 
-func (reader *Reader) Read(outBuffer []byte) (nBytesRead int, err error) {
+func (reader *SfxReader) Read(outBuffer []byte) (nBytesRead int, err error) {
 	reader.muty.Lock()
 	defer reader.muty.Unlock()
 
@@ -64,6 +65,50 @@ func (reader *Reader) Read(outBuffer []byte) (nBytesRead int, err error) {
 	return
 }
 
-func (reader *Reader) Seek(offset int64, whence int) (int64, error) {
+func (reader *SfxReader) Seek(offset int64, whence int) (int64, error) {
 	return reader.byteReader.Seek(offset, whence)
+}
+
+// This reader will stream audio from an OGG vorbis file and optionally loop it.
+type SongReader struct {
+	oggReader oggvorbis.Reader
+	loop      bool
+}
+
+var _ io.ReadSeeker = (*SongReader)(nil)
+
+func NewSongReader(oggReader oggvorbis.Reader, loop bool) SongReader {
+	return SongReader{
+		oggReader, loop,
+	}
+}
+
+func (reader *SongReader) Read(outBuffer []byte) (nBytesRead int, err error) {
+	// Read floats one at a time from the ogg file, then turn them into bytes and append to the output buffer.
+	var floatBuffer [1]float32
+	var n int
+	for i := range len(outBuffer) / 4 {
+		n, err = reader.oggReader.Read(floatBuffer[:])
+		nBytesRead += n
+		if err != nil {
+			return nBytesRead, err
+		}
+		binary.LittleEndian.PutUint32(outBuffer[i*4:], math.Float32bits(floatBuffer[0]))
+	}
+	return
+}
+
+func (reader *SongReader) Seek(offset int64, whence int) (int64, error) {
+	var newPos int64
+	offset /= 4 // Change offset from bytes to samples
+	switch whence {
+	case io.SeekStart:
+		newPos = offset
+	case io.SeekCurrent:
+		newPos = reader.oggReader.Position() + offset
+	case io.SeekEnd:
+		newPos = reader.oggReader.Length() + offset
+	}
+	err := reader.oggReader.SetPosition(newPos)
+	return newPos, err
 }

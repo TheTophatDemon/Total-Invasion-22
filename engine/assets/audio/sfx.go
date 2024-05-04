@@ -198,7 +198,7 @@ func (sfx *Sfx) Attenuate(pid VoiceId, sourcePos mgl32.Vec3, listener mgl32.Mat4
 		player.SetVolume(newVolume)
 
 		// Set panning based on angle
-		if dynReader, ok := player.reader.(*Reader); ok {
+		if dynReader, ok := player.reader.(*SfxReader); ok {
 			dynReader.muty.Lock()
 			defer dynReader.muty.Unlock()
 			right := mgl32.TransformNormal(math2.Vec3Right(), listener)

@@ -31,6 +31,9 @@ var loadedFonts cache[*fonts.Font]
 // Cache of sound effects, indexed by .wav file path
 var loadedSfx cache[*audio.Sfx]
 
+// Cache of songs, indexed by .ogg file path
+var loadedSongs cache[*audio.Song]
+
 func init() {
 	loadedTextures = cache[*textures.Texture]{
 		storage:        make(map[string]*textures.Texture),
@@ -59,6 +62,13 @@ func init() {
 		loadFunc:       audio.LoadSfx,
 		freeFunc:       (*audio.Sfx).Free,
 		resourceName:   "sfx",
+	}
+	loadedSongs = cache[*audio.Song]{
+		storage:        make(map[string]*audio.Song),
+		fileExtensions: []string{".ogg"},
+		loadFunc:       audio.LoadSong,
+		freeFunc:       (*audio.Song).Free,
+		resourceName:   "song",
 	}
 }
 
@@ -135,6 +145,15 @@ func GetSfx(assetPath string) (*audio.Sfx, error) {
 		log.Println(err)
 	}
 	return sfx, err
+}
+
+// Retrieves a song from the game assets, loading it if it doens't already exist.
+func GetSong(assetPath string) (*audio.Song, error) {
+	song, err := loadedSongs.get(assetPath)
+	if err != nil {
+		log.Println(err)
+	}
+	return song, err
 }
 
 func FreeAll() {

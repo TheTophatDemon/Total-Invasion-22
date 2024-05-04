@@ -131,6 +131,16 @@ func NewWorld(mapPath string) (*World, error) {
 		}
 	}
 
+	// Read level properties
+	levelProps, _ := te3File.FindEntWithProperty("name", "level properties")
+	if songPath, hasSong := levelProps.Properties["song"]; hasSong {
+		// Play the song
+		song, err := cache.GetSong(songPath)
+		if err == nil {
+			song.Play()
+		}
+	}
+
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
 	world.CurrentPlayer, _, _ = SpawnPlayer(&world.Players, world, playerSpawn.Position, playerSpawn.Angles)
