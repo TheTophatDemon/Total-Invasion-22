@@ -208,10 +208,10 @@ func NewWorld(mapPath string) (*World, error) {
 	world.flashRect, flashBox, _ = world.UI.Boxes.New()
 	flashBox.
 		SetDest(math2.Rect{
-			X:      -settings.WINDOW_WIDTH,
-			Y:      -settings.WINDOW_HEIGHT,
-			Width:  settings.WINDOW_WIDTH * 2,
-			Height: settings.WINDOW_HEIGHT * 2,
+			X:      -float32(settings.Current.WindowWidth),
+			Y:      -float32(settings.Current.WindowHeight),
+			Width:  float32(settings.Current.WindowWidth) * 2,
+			Height: float32(settings.Current.WindowHeight) * 2,
 		}).
 		SetColor(color.Blue.WithAlpha(0.5))
 	world.flashSpeed = 0.5
@@ -271,7 +271,7 @@ func (world *World) Render() {
 	renderContext := render.Context{
 		View:           viewMat,
 		Projection:     projMat,
-		AspectRatio:    settings.WINDOW_ASPECT_RATIO,
+		AspectRatio:    settings.Current.WindowAspectRatio(),
 		FogStart:       1.0,
 		FogLength:      50.0,
 		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
@@ -285,7 +285,7 @@ func (world *World) Render() {
 		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
 	}
 
-	uiMargin := ((float32(settings.WINDOW_WIDTH) * (float32(settings.UI_HEIGHT) / float32(settings.WINDOW_HEIGHT))) - float32(settings.UI_WIDTH)) / 2.0
+	uiMargin := ((float32(settings.Current.WindowWidth) * (float32(settings.UI_HEIGHT) / float32(settings.Current.WindowHeight))) - float32(settings.UI_WIDTH)) / 2.0
 
 	// Setup 2D render context
 	renderContext = render.Context{

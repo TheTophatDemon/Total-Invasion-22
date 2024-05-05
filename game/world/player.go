@@ -61,7 +61,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		Friction:  20.0,
 	}
 	p.Camera = comps.NewCamera(
-		70.0, settings.WINDOW_ASPECT_RATIO, 0.1, 1000.0,
+		70.0, settings.Current.WindowAspectRatio(), 0.1, 1000.0,
 	)
 	p.RunSpeed = 12.0
 	p.WalkSpeed = 7.0

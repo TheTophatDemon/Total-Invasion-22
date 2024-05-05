@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/iter"
 )
 
 type cache[T any] struct {
@@ -107,6 +108,16 @@ func (c *cache[T]) take(assetPath string, resource T) {
 	c.storage[assetPath] = resource
 }
 
+func (c *cache[T]) iterate() iter.Seq2[string, T] {
+	return func(yield func(string, T) bool) {
+		for path, item := range c.storage {
+			if !yield(path, item) {
+				return
+			}
+		}
+	}
+}
+
 func GetTexture(assetPath string) *textures.Texture {
 	texture, err := loadedTextures.get(assetPath)
 	if err != nil {
@@ -154,6 +165,10 @@ func GetSong(assetPath string) (*audio.Song, error) {
 		log.Println(err)
 	}
 	return song, err
+}
+
+func IterateSongs() iter.Seq2[string, *audio.Song] {
+	return loadedSongs.iterate()
 }
 
 func FreeAll() {

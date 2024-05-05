@@ -1,5 +1,6 @@
 # TODO
 - Code generator for iterators
+- Find some way to update audio in real time
 - Weapon switching transitions
 - Make FPS counter actually accurate
 - Investigate stuttering

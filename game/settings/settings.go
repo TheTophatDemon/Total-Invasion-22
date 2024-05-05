@@ -1,13 +1,14 @@
 package settings
 
-import "tophatdemon.com/total-invasion-ii/engine/input"
+import (
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/input"
+)
 
 const (
-	WINDOW_WIDTH        = 1280
-	WINDOW_HEIGHT       = 720
-	WINDOW_ASPECT_RATIO = float32(WINDOW_WIDTH) / WINDOW_HEIGHT
-	UI_HEIGHT           = 480
-	UI_WIDTH            = 800
+	UI_HEIGHT = 480
+	UI_WIDTH  = 800
 )
 
 const (
@@ -24,6 +25,7 @@ const (
 	ACTION_CHICKEN
 	ACTION_USE
 	ACTION_NOCLIP
+	ACTION_MUTE_MUS
 	ACTION_COUNT
 )
 
@@ -41,11 +43,48 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_CHICKEN:    "Select Chicken Cannon",
 	ACTION_USE:        "Use",
 	ACTION_NOCLIP:     "Noclip",
+	ACTION_MUTE_MUS:   "Mute Music",
 }
 
-const (
-	MOUSE_SENSITIVITY = 0.005
-)
+type Data struct {
+	WindowWidth, WindowHeight uint16
+	MouseSensitivity          float32
+	sfxVolume, musicVolume    float32
+}
+
+func (data *Data) WindowAspectRatio() float32 {
+	return float32(data.WindowWidth) / float32(data.WindowHeight)
+}
+
+func (data *Data) SfxVolume() float32 {
+	return data.sfxVolume
+}
+
+func (data *Data) MusicVolume() float32 {
+	return data.musicVolume
+}
+
+func UpdateMusicVolume(target float32) {
+	Current.musicVolume = target
+	// Set the volume of all currently playing songs
+	cache.IterateSongs()(func(path string, song *audio.Song) bool {
+		if song.IsPlaying() {
+			song.SetVolume(Current.musicVolume)
+		}
+		return true
+	})
+}
+
+var Default, Current Data
+
+func init() {
+	Default = Data{
+		WindowWidth: 1280, WindowHeight: 720,
+		MouseSensitivity: 0.005,
+		sfxVolume:        1.0, musicVolume: 1.0,
+	}
+	Current = Default
+}
 
 func ActionName(action input.Action) string {
 	if action > ACTION_COUNT {

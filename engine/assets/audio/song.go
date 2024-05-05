@@ -10,7 +10,7 @@ import (
 )
 
 type Song struct {
-	oto.Player
+	otoPlayer  oto.Player
 	songReader SongReader
 	file       *os.File
 }
@@ -30,10 +30,24 @@ func LoadSong(assetPath string) (*Song, error) {
 		file:       file,
 		songReader: NewSongReader(*oggReader, true),
 	}
-	song.Player = *context.NewPlayer(&song.songReader)
+	song.otoPlayer = *context.NewPlayer(&song.songReader)
 
 	log.Printf("Song loaded at %v.\n", assetPath)
 	return song, nil
+}
+
+func (song *Song) SetVolume(targetVolume float32) {
+	song.otoPlayer.SetVolume(float64(targetVolume))
+}
+
+func (song *Song) Play() {
+	if !song.IsPlaying() {
+		song.otoPlayer.Play()
+	}
+}
+
+func (song *Song) IsPlaying() bool {
+	return song.otoPlayer.IsPlaying()
 }
 
 func (song *Song) Free() {
