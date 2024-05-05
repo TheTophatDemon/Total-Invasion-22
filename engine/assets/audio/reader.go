@@ -85,22 +85,35 @@ func NewSongReader(oggReader oggvorbis.Reader, loop bool) SongReader {
 
 func (reader *SongReader) Read(outBuffer []byte) (nBytesRead int, err error) {
 	// Read floats one at a time from the ogg file, then turn them into bytes and append to the output buffer.
-	var floatBuffer [1]float32
+	var floatBuffer [2]float32
 	var n int
-	for i := range len(outBuffer) / 4 {
+	floatSize := binary.Size(float32(0))
+	stride := floatSize * 2
+	for byteIdx := 0; byteIdx < len(outBuffer); byteIdx += stride {
 		n, err = reader.oggReader.Read(floatBuffer[:])
-		nBytesRead += n
+		nBytesRead += (n / reader.oggReader.Channels()) * stride
+		if err == io.EOF && reader.loop {
+			err = reader.oggReader.SetPosition(0)
+			if err == nil && n == 0 {
+				n, err = reader.oggReader.Read(floatBuffer[:])
+				nBytesRead += (n / reader.oggReader.Channels()) * stride
+			}
+		}
 		if err != nil {
 			return nBytesRead, err
 		}
-		binary.LittleEndian.PutUint32(outBuffer[i*4:], math.Float32bits(floatBuffer[0]))
+		if reader.oggReader.Channels() < 2 {
+			floatBuffer[1] = floatBuffer[0]
+		}
+		binary.LittleEndian.PutUint32(outBuffer[byteIdx:], math.Float32bits(floatBuffer[0]))
+		binary.LittleEndian.PutUint32(outBuffer[byteIdx+floatSize:], math.Float32bits(floatBuffer[1]))
 	}
 	return
 }
 
 func (reader *SongReader) Seek(offset int64, whence int) (int64, error) {
 	var newPos int64
-	offset /= 4 // Change offset from bytes to samples
+	offset /= int64(binary.Size(float32(0)) * reader.oggReader.Channels()) // Change offset from bytes to samples
 	switch whence {
 	case io.SeekStart:
 		newPos = offset

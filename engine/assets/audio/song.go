@@ -2,6 +2,7 @@ package audio
 
 import (
 	"log"
+	"os"
 
 	"github.com/ebitengine/oto/v3"
 	"github.com/jfreymuth/oggvorbis"
@@ -11,6 +12,7 @@ import (
 type Song struct {
 	oto.Player
 	songReader SongReader
+	file       *os.File
 }
 
 func LoadSong(assetPath string) (*Song, error) {
@@ -18,7 +20,6 @@ func LoadSong(assetPath string) (*Song, error) {
 	if err != nil {
 		return nil, err
 	}
-	//defer file.Close()
 
 	oggReader, err := oggvorbis.NewReader(file)
 	if err != nil {
@@ -26,6 +27,7 @@ func LoadSong(assetPath string) (*Song, error) {
 	}
 
 	song := &Song{
+		file:       file,
 		songReader: NewSongReader(*oggReader, true),
 	}
 	song.Player = *context.NewPlayer(&song.songReader)
@@ -35,5 +37,5 @@ func LoadSong(assetPath string) (*Song, error) {
 }
 
 func (song *Song) Free() {
-
+	song.file.Close()
 }
