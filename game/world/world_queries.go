@@ -10,41 +10,9 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-// Iterates through all of the stores in the world that can be cast to the given Component type.
-func iterateStores[Component any](world *World) func() (Component, scene.Handle) {
-	var zero Component
-	iters := make([]func() (any, scene.Handle), 0, 10)
-	scene.ForEachStorageField(world, func(storage scene.StorageOps) {
-		iters = append(iters, storage.IterUntyped())
-	})
-	var iter int = 0
-	return func() (Component, scene.Handle) {
-		for ; iter < len(iters); iter++ {
-			if item, id := iters[iter](); item != nil {
-				if component, ok := item.(Component); ok {
-					return component, id
-				}
-			}
-		}
-		return zero, scene.Handle{}
-	}
-}
-
-func (world *World) BodiesIter() func() (comps.HasBody, scene.Handle) {
-	return iterateStores[comps.HasBody](world)
-}
-
-func (world *World) ActorsIter() func() (HasActor, scene.Handle) {
-	return iterateStores[HasActor](world)
-}
-
-func (world *World) LinkablesIter(linkNumber int) func() (Linkable, scene.Handle) {
-	return iterateStores[Linkable](world)
-}
-
 func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
-	nextActor := world.ActorsIter()
+	nextActor := world.ActorIter()
 	result := make([]scene.Handle, 0)
 	for actorEnt, actorId := nextActor(); actorEnt != nil; actorEnt, actorId = nextActor() {
 		if actorEnt == exception {
@@ -59,7 +27,7 @@ func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 }
 
 func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
-	nextBody := world.BodiesIter()
+	nextBody := world.BodyIter()
 	result := make([]scene.Handle, 0)
 	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		if bodyEnt == exception {
@@ -92,7 +60,7 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
 	var closestBodyHit collision.RaycastResult
-	var nextBody func() (comps.HasBody, scene.Handle) = world.BodiesIter()
+	var nextBody func() (comps.HasBody, scene.Handle) = world.BodyIter()
 	closestBodyHit.Distance = math.MaxFloat32
 	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
 		body := bodyEnt.Body()

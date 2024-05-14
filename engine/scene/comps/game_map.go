@@ -141,8 +141,15 @@ func (gm *Map) Render(context *render.Context) {
 }
 
 func (gm *Map) IterUntyped() func() (any, scene.Handle) {
-	var visitedOnce bool
+	iter := gm.Iter()
 	return func() (any, scene.Handle) {
+		return iter()
+	}
+}
+
+func (gm *Map) Iter() func() (*Map, scene.Handle) {
+	var visitedOnce bool
+	return func() (*Map, scene.Handle) {
 		if !visitedOnce {
 			visitedOnce = true
 			return gm, scene.NewHandle(0, 0, gm)

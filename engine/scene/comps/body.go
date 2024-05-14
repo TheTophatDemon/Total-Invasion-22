@@ -8,10 +8,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
-type HasBody interface {
-	Body() *Body
-}
-
 type Body struct {
 	Transform      Transform
 	Velocity       mgl32.Vec3

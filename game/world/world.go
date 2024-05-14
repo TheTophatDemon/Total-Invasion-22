@@ -40,6 +40,7 @@ const (
 	TEX_FLAG_INVISIBLE string = "invisible"
 )
 
+//go:generate go run world_gen_iters.go engine/scene/comps.HasBody HasActor Linkable
 type World struct {
 	UI                        *ui.Scene
 	Players                   scene.Storage[Player]
@@ -225,9 +226,9 @@ func (world *World) Update(deltaTime float32) {
 	world.UI.Update(deltaTime)
 
 	// Update bodies and resolve collisions
-	bodiesIter := world.BodiesIter()
+	bodiesIter := world.BodyIter()
 	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
-		bodyEnt.Body().MoveAndCollide(deltaTime, world.BodiesIter())
+		bodyEnt.Body().MoveAndCollide(deltaTime, world.BodyIter())
 	}
 
 	// Update message text

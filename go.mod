@@ -5,7 +5,13 @@ go 1.22
 require (
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
-	github.com/go-gl/mathgl v1.0.0
+	github.com/go-gl/mathgl v1.1.0
+)
+
+require (
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.21.0 // indirect
 )
 
 require (
@@ -22,7 +28,7 @@ require (
 require (
 	github.com/ebitengine/oto/v3 v3.1.0
 	github.com/ebitengine/purego v0.5.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 )
 
 require (

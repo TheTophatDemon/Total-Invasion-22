@@ -5,12 +5,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-type HasActor interface {
-	comps.HasBody
-	Observer
-	Actor() *Actor
-}
-
 type Actor struct {
 	body                          comps.Body
 	MaxSpeed, AccelRate, Friction float32

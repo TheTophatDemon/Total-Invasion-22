@@ -126,8 +126,8 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 			maxVolume: 1.0,
 		}
 		// The buffer size must be small so that the panning can be updated while the sound is playing
-		//TODO: What's up with the small buffer sizes cutting out the audio???
-		sfx.players[i].SetBufferSize(5888 * 4)
+		// This size should hold about 1/10 of a second of audio
+		sfx.players[i].SetBufferSize(binary.Size(float32(0)) * 2 * SAMPLE_RATE / 10)
 	}
 	log.Printf("Sfx loaded at %v.\n", assetPath)
 	return sfx, nil
