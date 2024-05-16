@@ -40,7 +40,7 @@ const (
 	TEX_FLAG_INVISIBLE string = "invisible"
 )
 
-//go:generate go run world_gen_iters.go engine/scene/comps.HasBody HasActor Linkable
+//go:generate ../../world_gen_iters.exe engine/scene/comps.HasBody HasActor Linkable
 type World struct {
 	UI                        *ui.Scene
 	Players                   scene.Storage[Player]

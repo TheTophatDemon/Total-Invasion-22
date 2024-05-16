@@ -9,14 +9,14 @@ require (
 )
 
 require (
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/tools v0.21.0 // indirect
+	github.com/jfreymuth/oggvorbis v1.0.5
+	github.com/jfreymuth/vorbis v1.0.2 // indirect
 )
 
 require (
-	github.com/jfreymuth/oggvorbis v1.0.5
-	github.com/jfreymuth/vorbis v1.0.2 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/tools v0.21.0
 )
 
 require (
