@@ -8,3 +8,7 @@ settings.json
 *.prof
 __debug*
 imgui.ini
+*.pprof
+*.svg
+*.out
+/total-invasion-22

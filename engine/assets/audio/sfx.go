@@ -109,7 +109,7 @@ func LoadSfx(assetPath string) (*Sfx, error) {
 		sampleTimes = 2
 	}
 
-	wavBytes := make([]byte, 0, len(wavBuffer.Data)*2)
+	wavBytes := make([]byte, 0, len(wavBuffer.Data)*4*sampleTimes)
 	for i := range floatBuffer.Data {
 		sample := math.Float32bits(floatBuffer.Data[i])
 		for range sampleTimes {

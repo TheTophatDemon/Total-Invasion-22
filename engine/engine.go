@@ -2,6 +2,7 @@ package engine
 
 import (
 	"runtime"
+	"time"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -67,55 +68,51 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 
 func Run(app App) {
 	previousTime := glfw.GetTime()
-	previousTickTime := glfw.GetTime()
 
 	// FPS counters
-	var tickTimer float32 = 0.0
-
 	var fpsTimer float32
 	var fpsTicks int
 	for !window.ShouldClose() {
 		// Update
-		tickTime := glfw.GetTime()
-		tickDelta := float32(tickTime - previousTickTime)
-		previousTickTime = tickTime
-		tickTimer += tickDelta
-		if tickTimer >= updateRate {
-			tickTimer = 0.0
+		now := glfw.GetTime()
+		deltaTime := float32(now - previousTime)
+		previousTime = now
 
-			time := glfw.GetTime()
-			deltaTime := min(updateRate, float32(time-previousTime))
-			previousTime = time
+		//Calc FPS
+		fpsTimer += deltaTime
+		if fpsTimer > 1.0 {
+			fpsTimer = 0.0
+			fps = fpsTicks
+			fpsTicks = 0
+		} else {
+			fpsTicks += 1
+		}
 
-			//Calc FPS
-			fpsTimer += deltaTime
-			if fpsTimer > 1.0 {
-				fpsTimer = 0.0
-				fps = fpsTicks
-				fpsTicks = 0
-			} else {
-				fpsTicks += 1
-			}
+		app.Update(deltaTime)
 
-			app.Update(deltaTime)
+		// OpenGL settings
+		gl.Enable(gl.DEPTH_TEST)
+		gl.Enable(gl.CULL_FACE)
+		gl.Enable(gl.BLEND)
+		gl.DepthFunc(gl.LESS)
+		gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE_MINUS_DST_ALPHA, gl.ONE)
+		gl.CullFace(gl.BACK)
+		gl.ClearColor(0.0, 0.0, 0.2, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-			// OpenGL settings
-			gl.Enable(gl.DEPTH_TEST)
-			gl.Enable(gl.CULL_FACE)
-			gl.Enable(gl.BLEND)
-			gl.DepthFunc(gl.LESS)
-			gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE_MINUS_DST_ALPHA, gl.ONE)
-			gl.CullFace(gl.BACK)
-			gl.ClearColor(0.0, 0.0, 0.2, 1.0)
-			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		app.Render()
 
-			app.Render()
+		CheckOpenGLError()
 
-			CheckOpenGLError()
+		input.Update()
+		window.SwapBuffers()
+		glfw.PollEvents()
 
-			input.Update()
-			window.SwapBuffers()
-			glfw.PollEvents()
+		// Throttle the update rate if the game is running faster than max FPS
+		now = glfw.GetTime()
+		if frameTime := float32(now - previousTime); frameTime < updateRate {
+			waitTime := time.Duration((updateRate - frameTime) * 1000.0)
+			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
 }

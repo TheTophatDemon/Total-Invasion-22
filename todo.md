@@ -1,8 +1,7 @@
 # TODO
 - Audio mixing
+- Add sub-steps to make physics better at low FPS
 - Weapon switching transitions
-- Make FPS counter actually accurate
-- Investigate stuttering
 - Text shadow
 - Particle effects
 - Localization

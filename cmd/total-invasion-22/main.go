@@ -1,6 +1,9 @@
 package main
 
 import (
+	// "log"
+	// "os"
+	// "runtime/pprof"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -74,4 +77,14 @@ func main() {
 	engine.Run(&Game{
 		world,
 	})
+
+	// memProf, err := os.Create("memory_profile.pprof")
+	// if err != nil {
+	// 	log.Fatalf("could not create memory profile: %v", err)
+	// }
+	// defer memProf.Close()
+	// runtime.GC()
+	// if err := pprof.WriteHeapProfile(memProf); err != nil {
+	// 	log.Fatal("could not write memory profile: ", err)
+	// }
 }
