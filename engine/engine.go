@@ -22,7 +22,7 @@ type App interface {
 }
 
 var fps int
-var updateRate float32 = 1.0 / 60.0
+var updateRate float64 = 1.0 / 60.0
 var window *glfw.Window
 
 func FPS() int {
@@ -30,7 +30,7 @@ func FPS() int {
 }
 
 func SetUpdateRate(fps int) {
-	updateRate = 1.0 / float32(fps)
+	updateRate = 1.0 / float64(fps)
 }
 
 func Init(screenWidth, screenHeight int, windowTitle string) error {
@@ -67,25 +67,24 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 }
 
 func Run(app App) {
-	previousTime := glfw.GetTime()
+	previousTime := time.Now()
 
 	// FPS counters
 	var fpsTimer float32
 	var fpsTicks int
 	for !window.ShouldClose() {
 		// Update
-		now := glfw.GetTime()
-		deltaTime := float32(now - previousTime)
+		now := time.Now()
+		deltaTime := float32(now.Sub(previousTime).Seconds())
 		previousTime = now
 
 		//Calc FPS
 		fpsTimer += deltaTime
+		fpsTicks++
 		if fpsTimer > 1.0 {
 			fpsTimer = 0.0
 			fps = fpsTicks
 			fpsTicks = 0
-		} else {
-			fpsTicks += 1
 		}
 
 		app.Update(deltaTime)
@@ -109,10 +108,11 @@ func Run(app App) {
 		glfw.PollEvents()
 
 		// Throttle the update rate if the game is running faster than max FPS
-		now = glfw.GetTime()
-		if frameTime := float32(now - previousTime); frameTime < updateRate {
-			waitTime := time.Duration((updateRate - frameTime) * 1000.0)
-			time.Sleep(waitTime * time.Millisecond)
+		for {
+			now = time.Now()
+			if frameTime := now.Sub(previousTime).Seconds(); frameTime >= updateRate {
+				break
+			}
 		}
 	}
 }
