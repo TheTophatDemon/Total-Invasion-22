@@ -22,12 +22,11 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 	proj.owner = owner
 
 	proj.body = comps.Body{
-		Transform:      comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
-		Shape:          collision.NewSphere(0.1),
-		Layer:          COL_LAYER_PROJECTILES,
-		Filter:         COL_LAYER_MAP | COL_LAYER_ACTORS,
-		LockY:          true,
-		SweepCollision: true,
+		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
+		Shape:     collision.NewSphere(0.1),
+		Layer:     COL_LAYER_PROJECTILES,
+		Filter:    COL_LAYER_MAP | COL_LAYER_ACTORS,
+		LockY:     true,
 	}
 
 	eggTex := cache.GetTexture("assets/textures/sprites/egg.png")

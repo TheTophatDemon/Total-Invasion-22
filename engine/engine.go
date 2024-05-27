@@ -68,14 +68,15 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 
 func Run(app App) {
 	previousTime := time.Now()
+	var accumulator float64
 
 	// FPS counters
-	var fpsTimer float32
+	var fpsTimer float64
 	var fpsTicks int
 	for !window.ShouldClose() {
 		// Update
 		now := time.Now()
-		deltaTime := float32(now.Sub(previousTime).Seconds())
+		deltaTime := float64(now.Sub(previousTime).Seconds())
 		previousTime = now
 
 		//Calc FPS
@@ -87,7 +88,10 @@ func Run(app App) {
 			fpsTicks = 0
 		}
 
-		app.Update(deltaTime)
+		for accumulator += deltaTime; accumulator >= updateRate; accumulator -= updateRate {
+			app.Update(float32(updateRate))
+			input.Update()
+		}
 
 		// OpenGL settings
 		gl.Enable(gl.DEPTH_TEST)
@@ -103,7 +107,6 @@ func Run(app App) {
 
 		CheckOpenGLError()
 
-		input.Update()
 		window.SwapBuffers()
 		glfw.PollEvents()
 
