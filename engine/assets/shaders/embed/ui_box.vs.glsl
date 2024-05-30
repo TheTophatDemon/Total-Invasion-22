@@ -19,7 +19,7 @@ void main() {
     if (uFlipHorz) {
         sOfs = uSourceRect.z - sOfs;
     }
-    vTexCoord = uSourceRect.xy + vec2(sOfs, aTexCoord.y * uSourceRect.w);
+    vTexCoord = uSourceRect.xy + vec2(sOfs, aTexCoord.y * uSourceRect.w + uSourceRect.w);
 
     gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aPos, 1.0);
 }

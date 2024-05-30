@@ -142,7 +142,7 @@ func (player *Player) Update(deltaTime float32) {
 		var weapon Weapon = player.weapons[player.selectedWeapon]
 		weapon.Update(deltaTime)
 		if input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
-			// Don't fire if there is a wall to close in front
+			// Don't fire if there is a wall too close in front
 			var cast collision.RaycastResult
 			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
 			if !cast.Hit {

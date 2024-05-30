@@ -15,7 +15,8 @@ import (
 
 type WeaponChicken struct {
 	weaponBase
-	hudTexture *textures.Texture
+	hudTexture         *textures.Texture
+	idleAnim, fireAnim textures.Animation
 }
 
 var _ Weapon = (*WeaponChicken)(nil)
@@ -30,6 +31,14 @@ func NewChickenCannon(world *World, owner scene.Id[HasActor]) WeaponChicken {
 	}
 
 	chicken.hudTexture = cache.GetTexture("assets/textures/ui/chicken_cannon_hud.png")
+
+	var ok bool
+	if chicken.idleAnim, ok = chicken.hudTexture.GetAnimation("idle"); !ok {
+		log.Println("chicken cannon idle anim not found")
+	}
+	if chicken.fireAnim, ok = chicken.hudTexture.GetAnimation("fire"); !ok {
+		log.Println("chicken cannon fire anim not found")
+	}
 
 	return chicken
 }
@@ -64,6 +73,9 @@ func (chicken *WeaponChicken) Select() {
 		}).
 		SetTexture(chicken.hudTexture).
 		SetColor(color.White)
+
+	spriteBox.AnimPlayer.ChangeAnimation(chicken.idleAnim)
+	spriteBox.AnimPlayer.PlayFromStart()
 }
 
 func (chicken *WeaponChicken) Deselect() {
@@ -87,5 +99,11 @@ func (chicken *WeaponChicken) Fire() {
 	if ownerActor, ok := chicken.owner.Get(); ok {
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, ownerActor.Body().Transform.Matrix())
 		SpawnEgg(chicken.world, &chicken.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), chicken.owner.Handle)
+	}
+	if spriteBox, ok := chicken.sprite.Get(); ok {
+		if spriteBox.AnimPlayer.CurrentAnimation().Name != chicken.fireAnim.Name {
+			spriteBox.AnimPlayer.ChangeAnimation(chicken.fireAnim)
+			spriteBox.AnimPlayer.PlayFromStart()
+		}
 	}
 }
