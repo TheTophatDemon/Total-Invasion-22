@@ -6,16 +6,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type WeaponChicken struct {
 	weaponBase
-	hudTexture         *textures.Texture
 	idleAnim, fireAnim textures.Animation
 }
 
@@ -24,21 +20,25 @@ var _ Weapon = (*WeaponChicken)(nil)
 func NewChickenCannon(world *World, owner scene.Id[HasActor]) WeaponChicken {
 	chicken := WeaponChicken{
 		weaponBase: weaponBase{
-			owner:    owner,
-			world:    world,
-			cooldown: 0.1,
+			owner:         owner,
+			world:         world,
+			cooldown:      0.15,
+			spriteScale:   2.0,
+			spriteTexture: cache.GetTexture("assets/textures/ui/chicken_cannon_hud.png"),
+			spriteOffset:  mgl32.Vec2{0.0, 16.0},
+			swayExtents:   mgl32.Vec2{16.0, 8.0},
+			swaySpeed:     mgl32.Vec2{0.5, 1.0},
 		},
 	}
 
-	chicken.hudTexture = cache.GetTexture("assets/textures/ui/chicken_cannon_hud.png")
-
 	var ok bool
-	if chicken.idleAnim, ok = chicken.hudTexture.GetAnimation("idle"); !ok {
+	if chicken.idleAnim, ok = chicken.spriteTexture.GetAnimation("idle"); !ok {
 		log.Println("chicken cannon idle anim not found")
 	}
-	if chicken.fireAnim, ok = chicken.hudTexture.GetAnimation("fire"); !ok {
+	if chicken.fireAnim, ok = chicken.spriteTexture.GetAnimation("fire"); !ok {
 		log.Println("chicken cannon fire anim not found")
 	}
+	chicken.defaultAnimation = chicken.idleAnim
 
 	return chicken
 }
@@ -52,38 +52,15 @@ func (chicken *WeaponChicken) Equip() {
 }
 
 func (chicken *WeaponChicken) Select() {
-	var (
-		spriteBox *ui.Box
-		err       error
-	)
-	chicken.sprite, spriteBox, err = chicken.world.UI.Boxes.New()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	spriteBox.
-		SetSrc(math2.Rect{
-			X: 256.0, Y: 0.0,
-			Width: 256.0, Height: 192.0,
-		}).
-		SetDest(math2.Rect{
-			X:     float32(settings.UI_WIDTH/2) - 256.0,
-			Y:     settings.UI_HEIGHT - 192.0*2.0,
-			Width: 512.0, Height: 192.0 * 2.0,
-		}).
-		SetTexture(chicken.hudTexture).
-		SetColor(color.White)
-
-	spriteBox.AnimPlayer.ChangeAnimation(chicken.idleAnim)
-	spriteBox.AnimPlayer.PlayFromStart()
+	chicken.weaponBase.Select()
 }
 
 func (chicken *WeaponChicken) Deselect() {
 	chicken.sprite.Remove()
 }
 
-func (chicken *WeaponChicken) Update(deltaTime float32) {
-	chicken.weaponBase.Update(deltaTime)
+func (chicken *WeaponChicken) Update(deltaTime float32, swayAmount float32) {
+	chicken.weaponBase.Update(deltaTime, swayAmount)
 
 	var sprite *ui.Box
 	var ok bool
@@ -91,6 +68,9 @@ func (chicken *WeaponChicken) Update(deltaTime float32) {
 		return
 	}
 
+	if chicken.CanFire() {
+		sprite.AnimPlayer.ChangeAnimation(chicken.idleAnim)
+	}
 	sprite.AnimPlayer.Update(deltaTime)
 }
 
@@ -100,6 +80,7 @@ func (chicken *WeaponChicken) Fire() {
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, ownerActor.Body().Transform.Matrix())
 		SpawnEgg(chicken.world, &chicken.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), chicken.owner.Handle)
 	}
+
 	if spriteBox, ok := chicken.sprite.Get(); ok {
 		if spriteBox.AnimPlayer.CurrentAnimation().Name != chicken.fireAnim.Name {
 			spriteBox.AnimPlayer.ChangeAnimation(chicken.fireAnim)

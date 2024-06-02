@@ -140,7 +140,7 @@ func (player *Player) Update(deltaTime float32) {
 
 	if player.selectedWeapon >= 0 {
 		var weapon Weapon = player.weapons[player.selectedWeapon]
-		weapon.Update(deltaTime)
+		weapon.Update(deltaTime, player.actor.body.Velocity.Len())
 		if input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
 			// Don't fire if there is a wall too close in front
 			var cast collision.RaycastResult

@@ -31,6 +31,6 @@ type (
 		CanFire() bool
 		Fire()
 		Equipped() bool
-		Update(deltaTime float32)
+		Update(deltaTime float32, swayAmount float32)
 	}
 )

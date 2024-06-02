@@ -7,19 +7,15 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type WeaponSickle struct {
 	weaponBase
-	sfxCatch             *audio.Sfx
-	hudTexture           *textures.Texture
-	throwAnim, catchAnim textures.Animation
-	thrownSickle         scene.Id[*Projectile]
+	sfxCatch                       *audio.Sfx
+	throwAnim, catchAnim, idleAnim textures.Animation
+	thrownSickle                   scene.Id[*Projectile]
 }
 
 var _ Weapon = (*WeaponSickle)(nil)
@@ -27,9 +23,14 @@ var _ Weapon = (*WeaponSickle)(nil)
 func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 	sickle := WeaponSickle{
 		weaponBase: weaponBase{
-			owner:    owner,
-			world:    world,
-			cooldown: 0.25,
+			owner:         owner,
+			world:         world,
+			cooldown:      0.25,
+			spriteScale:   2.0,
+			spriteTexture: cache.GetTexture("assets/textures/ui/sickle_hud.png"),
+			spriteOffset:  mgl32.Vec2{192.0, 16.0},
+			swayExtents:   mgl32.Vec2{32.0, 16.0},
+			swaySpeed:     mgl32.Vec2{1.0, 2.0},
 		},
 	}
 
@@ -43,13 +44,18 @@ func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 		log.Println(err)
 	}
 
-	sickle.hudTexture = cache.GetTexture("assets/textures/ui/sickle_hud.png")
-
-	sickle.throwAnim, ok = sickle.hudTexture.GetAnimation("throw")
+	sickle.throwAnim, ok = sickle.spriteTexture.GetAnimation("throw")
 	if !ok {
 		log.Println("sickle throw anim not found")
 	}
-	sickle.catchAnim, ok = sickle.hudTexture.GetAnimation("catch")
+
+	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
+	if !ok {
+		log.Println("sickle idle anim not found")
+	}
+	sickle.defaultAnimation = sickle.idleAnim
+
+	sickle.catchAnim, ok = sickle.spriteTexture.GetAnimation("catch")
 	if !ok {
 		log.Println("sickle catch anim not found")
 	}
@@ -66,37 +72,15 @@ func (sickle *WeaponSickle) Equip() {
 }
 
 func (sickle *WeaponSickle) Select() {
-	var (
-		spriteBox *ui.Box
-		err       error
-	)
-	sickle.sprite, spriteBox, err = sickle.world.UI.Boxes.New()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	spriteBox.
-		SetSrc(math2.Rect{
-			X: 256.0, Y: 0.0,
-			Width: 256.0, Height: 192.0,
-		}).
-		SetDest(math2.Rect{
-			X:     settings.UI_WIDTH - 256.0*2.0,
-			Y:     settings.UI_HEIGHT - 192.0*2.0,
-			Width: 256.0 * 2.0, Height: 192.0 * 2.0,
-		}).
-		SetTexture(sickle.hudTexture).
-		SetColor(color.White)
-
-	spriteBox.AnimPlayer.ChangeAnimation(sickle.throwAnim)
+	sickle.weaponBase.Select()
 }
 
 func (sickle *WeaponSickle) Deselect() {
 	sickle.sprite.Remove()
 }
 
-func (sickle *WeaponSickle) Update(deltaTime float32) {
-	sickle.weaponBase.Update(deltaTime)
+func (sickle *WeaponSickle) Update(deltaTime float32, swayAmount float32) {
+	sickle.weaponBase.Update(deltaTime, swayAmount)
 
 	var sprite *ui.Box
 	var ok bool

@@ -65,6 +65,17 @@ func (box *Box) SetDest(dest math2.Rect) *Box {
 	return box
 }
 
+func (box *Box) SetDestPosition(position mgl32.Vec2) *Box {
+	box.dest = math2.Rect{
+		X:      position.X(),
+		Y:      position.Y(),
+		Width:  box.dest.Width,
+		Height: box.dest.Height,
+	}
+	box.transformDirty = true
+	return box
+}
+
 func (box *Box) Src() math2.Rect {
 	return box.src
 }
