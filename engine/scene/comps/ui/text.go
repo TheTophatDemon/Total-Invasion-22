@@ -30,6 +30,9 @@ type Text struct {
 	alignment      TextAlign
 	color          color.Color
 	text           string
+	shadowEnabled  bool
+	shadowColor    color.Color
+	shadowOffset   mgl32.Vec2
 	textDirty      bool
 	mesh           *geom.Mesh
 	texture        *textures.Texture
@@ -80,6 +83,18 @@ func (txt *Text) SetText(newText string) *Text {
 
 func (txt *Text) Text() string {
 	return txt.text
+}
+
+func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) {
+	txt.textDirty = true
+	txt.shadowEnabled = true
+	txt.shadowColor = color
+	txt.shadowOffset = offset
+}
+
+func (txt *Text) DisableShadow() {
+	txt.shadowEnabled = false
+	txt.textDirty = true
 }
 
 // Calculates positions for each character's rectangle
@@ -219,13 +234,20 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 
 		// Regenerate text mesh
 		numVertsGuess := len(txt.text) * 4
+		if txt.shadowEnabled {
+			numVertsGuess *= 2
+		}
 		verts := geom.Vertices{
 			Pos:      make([]mgl32.Vec3, 0, numVertsGuess),
 			TexCoord: make([]mgl32.Vec2, 0, numVertsGuess),
 			Color:    make([]mgl32.Vec4, 0, numVertsGuess),
 		}
 
-		inds := make([]uint32, 0, len(txt.text)*2)
+		numIndsGuess := len(txt.text) * 2
+		if txt.shadowEnabled {
+			numIndsGuess *= 2
+		}
+		inds := make([]uint32, 0, numIndsGuess)
 
 		// Generate mesh data for the boxes
 		for b, charRect := range boxes {
@@ -261,6 +283,16 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 				mgl32.Vec4{1.0, 1.0, 1.0, 1.0},
 				mgl32.Vec4{1.0, 1.0, 1.0, 1.0},
 			)
+
+			if txt.shadowEnabled {
+				// Duplicate the vertices at an offset for shadows
+				for range 4 {
+					verts.Pos = append(verts.Pos, verts.Pos[len(verts.Pos)-4].Add(txt.shadowOffset.Vec3(0.1)))
+					verts.TexCoord = append(verts.TexCoord, verts.TexCoord[len(verts.TexCoord)-4])
+					verts.Color = append(verts.Color, txt.shadowColor.Vector())
+				}
+				inds = append(inds, indexBase+4, indexBase+6, indexBase+5, indexBase+6, indexBase+7, indexBase+5)
+			}
 
 			inds = append(inds, indexBase+0, indexBase+2, indexBase+1, indexBase+2, indexBase+3, indexBase+1)
 		}

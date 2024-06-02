@@ -3,6 +3,7 @@ package settings
 import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
@@ -49,6 +50,7 @@ var actionNames = [ACTION_COUNT]string{
 type Data struct {
 	WindowWidth, WindowHeight uint16
 	MouseSensitivity          float32
+	TextShadowColor           color.Color
 	sfxVolume, musicVolume    float32
 }
 
@@ -81,6 +83,7 @@ func init() {
 	Default = Data{
 		WindowWidth: 1280, WindowHeight: 720,
 		MouseSensitivity: 0.005,
+		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		sfxVolume:        1.0, musicVolume: 1.0,
 	}
 	Current = Default

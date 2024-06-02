@@ -203,7 +203,8 @@ func NewWorld(mapPath string) (*World, error) {
 			Height: float32(settings.UI_HEIGHT) / 2.0,
 		}).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Red)
+		SetColor(color.Red).
+		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
 
 	var flashBox *ui.Box
 	world.flashRect, flashBox, _ = world.UI.Boxes.New()

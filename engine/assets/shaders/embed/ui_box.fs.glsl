@@ -1,6 +1,7 @@
 #version 330
 
 in vec2 vTexCoord;
+in vec4 vColor;
 
 uniform vec4 uDiffuseColor;
 uniform bool uNoTexture;
@@ -13,9 +14,9 @@ void main() {
     vec4 diffuse;
     
     if (!uNoTexture) {
-        diffuse = texture(uTex, vTexCoord) * uDiffuseColor;
+        diffuse = texture(uTex, vTexCoord) * uDiffuseColor * vColor;
     } else {
-        diffuse = uDiffuseColor;
+        diffuse = uDiffuseColor * vColor;
     }
     
     if (diffuse.a <= 0.01) {

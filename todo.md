@@ -1,6 +1,6 @@
 # TODO
-- Text shadow
 - Particle effects
+- Read settings from configuration file
 - Localization
 - Wraith AI
 - Bounding box hierarchy
