@@ -24,13 +24,14 @@ type (
 	}
 
 	Weapon interface {
-		Order() int
+		Order() WeaponIndex
 		Equip()
+		IsEquipped() bool
 		Select()
 		Deselect()
-		CanFire() bool
+		IsSelected() bool
 		Fire()
-		Equipped() bool
+		CanFire() bool
 		Update(deltaTime float32, swayAmount float32)
 	}
 )

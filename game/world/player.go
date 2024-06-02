@@ -24,9 +24,7 @@ type Player struct {
 	actor                                    Actor
 	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
-	weaponSickle                             WeaponSickle
-	weaponChicken                            WeaponChicken
-	selectedWeapon                           int
+	selectedWeapon, nextWeapon               WeaponIndex
 }
 
 var _ HasActor = (*Player)(nil)
@@ -71,11 +69,9 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	p.world = world
 
 	// Initialize weapons
-	p.weaponSickle = NewSickle(world, scene.Id[HasActor](p.id))
-	p.weaponChicken = NewChickenCannon(world, scene.Id[HasActor](p.id))
 	p.weapons = [...]Weapon{
-		WEAPON_ORDER_SICKLE:      &p.weaponSickle,
-		WEAPON_ORDER_CHICKEN:     &p.weaponChicken,
+		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](p.id)),
+		WEAPON_ORDER_CHICKEN:     NewChickenCannon(world, scene.Id[HasActor](p.id)),
 		WEAPON_ORDER_GRENADE:     nil,
 		WEAPON_ORDER_PARUSU:      nil,
 		WEAPON_ORDER_DBL_GRENADE: nil,
@@ -138,9 +134,22 @@ func (player *Player) Update(deltaTime float32) {
 		player.SelectWeapon(WEAPON_ORDER_CHICKEN)
 	}
 
+	var weapon Weapon = nil
 	if player.selectedWeapon >= 0 {
-		var weapon Weapon = player.weapons[player.selectedWeapon]
+		weapon = player.weapons[player.selectedWeapon]
+	}
+
+	if weapon == nil || !weapon.IsSelected() {
+		player.selectedWeapon = player.nextWeapon
+		if player.selectedWeapon >= 0 {
+			weapon = player.weapons[player.selectedWeapon]
+			weapon.Select()
+		}
+	}
+
+	if weapon != nil {
 		weapon.Update(deltaTime, player.actor.body.Velocity.Len())
+
 		if input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
 			// Don't fire if there is a wall too close in front
 			var cast collision.RaycastResult
@@ -180,21 +189,18 @@ func (p *Player) ProcessSignal(s Signal, params any) {
 	}
 }
 
-func (p *Player) SelectWeapon(order int) {
-	if order == p.selectedWeapon || order >= len(p.weapons) || !p.weapons[order].Equipped() {
+func (p *Player) SelectWeapon(order WeaponIndex) {
+	if order == p.selectedWeapon || !p.weapons[order].IsEquipped() {
 		return
 	}
 	if p.selectedWeapon >= 0 {
 		p.weapons[p.selectedWeapon].Deselect()
 	}
-	p.selectedWeapon = order
-	if p.selectedWeapon >= 0 {
-		p.weapons[p.selectedWeapon].Select()
-	}
+	p.nextWeapon = order
 }
 
-func (p *Player) EquipWeapon(order int) {
-	if order >= len(p.weapons) || order < 0 {
+func (p *Player) EquipWeapon(order WeaponIndex) {
+	if order < 0 {
 		return
 	}
 	p.weapons[order].Equip()

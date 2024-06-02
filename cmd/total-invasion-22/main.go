@@ -71,6 +71,8 @@ func main() {
 		panic(err)
 	}
 
+	settings.UpdateMusicVolume(0.0)
+
 	runtime.GC()
 
 	input.TrapMouse()

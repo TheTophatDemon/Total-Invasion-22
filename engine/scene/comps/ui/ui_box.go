@@ -76,6 +76,10 @@ func (box *Box) SetDestPosition(position mgl32.Vec2) *Box {
 	return box
 }
 
+func (box *Box) DestPosition() mgl32.Vec2 {
+	return mgl32.Vec2{box.dest.X, box.dest.Y}
+}
+
 func (box *Box) Src() math2.Rect {
 	return box.src
 }

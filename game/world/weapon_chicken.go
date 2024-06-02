@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type WeaponChicken struct {
@@ -17,73 +18,69 @@ type WeaponChicken struct {
 
 var _ Weapon = (*WeaponChicken)(nil)
 
-func NewChickenCannon(world *World, owner scene.Id[HasActor]) WeaponChicken {
-	chicken := WeaponChicken{
+func NewChickenCannon(world *World, owner scene.Id[HasActor]) *WeaponChicken {
+	chickenGun := &WeaponChicken{
 		weaponBase: weaponBase{
 			owner:         owner,
 			world:         world,
 			cooldown:      0.15,
-			spriteScale:   2.0,
 			spriteTexture: cache.GetTexture("assets/textures/ui/chicken_cannon_hud.png"),
-			spriteOffset:  mgl32.Vec2{0.0, 16.0},
 			swayExtents:   mgl32.Vec2{16.0, 8.0},
 			swaySpeed:     mgl32.Vec2{0.5, 1.0},
 		},
 	}
 
 	var ok bool
-	if chicken.idleAnim, ok = chicken.spriteTexture.GetAnimation("idle"); !ok {
+	if chickenGun.idleAnim, ok = chickenGun.spriteTexture.GetAnimation("idle"); !ok {
 		log.Println("chicken cannon idle anim not found")
 	}
-	if chicken.fireAnim, ok = chicken.spriteTexture.GetAnimation("fire"); !ok {
+	if chickenGun.fireAnim, ok = chickenGun.spriteTexture.GetAnimation("fire"); !ok {
 		log.Println("chicken cannon fire anim not found")
 	}
-	chicken.defaultAnimation = chicken.idleAnim
+	chickenGun.defaultAnimation = chickenGun.idleAnim
 
-	return chicken
+	chickenGun.spriteSize = mgl32.Vec2{
+		chickenGun.idleAnim.Frames[0].Rect.Width * 2.0,
+		chickenGun.idleAnim.Frames[0].Rect.Height * 2.0,
+	}
+	chickenGun.spriteEndPos = mgl32.Vec2{
+		settings.UI_WIDTH/2 - chickenGun.spriteSize.X()/2.0,
+		settings.UI_HEIGHT - chickenGun.spriteSize.Y() + 16.0,
+	}
+	chickenGun.spriteStartPos = chickenGun.spriteEndPos.Add(mgl32.Vec2{0.0, chickenGun.spriteSize.Y()})
+
+	return chickenGun
 }
 
-func (chicken *WeaponChicken) Order() int {
+func (chickenGun *WeaponChicken) Order() WeaponIndex {
 	return WEAPON_ORDER_CHICKEN
 }
 
-func (chicken *WeaponChicken) Equip() {
-	chicken.weaponBase.Equip()
-}
-
-func (chicken *WeaponChicken) Select() {
-	chicken.weaponBase.Select()
-}
-
-func (chicken *WeaponChicken) Deselect() {
-	chicken.sprite.Remove()
-}
-
-func (chicken *WeaponChicken) Update(deltaTime float32, swayAmount float32) {
-	chicken.weaponBase.Update(deltaTime, swayAmount)
+func (chickenGun *WeaponChicken) Update(deltaTime float32, swayAmount float32) {
+	chickenGun.weaponBase.Update(deltaTime, swayAmount)
 
 	var sprite *ui.Box
 	var ok bool
-	if sprite, ok = chicken.sprite.Get(); !ok {
+	if sprite, ok = chickenGun.sprite.Get(); !ok {
 		return
 	}
 
-	if chicken.CanFire() {
-		sprite.AnimPlayer.ChangeAnimation(chicken.idleAnim)
+	if chickenGun.CanFire() {
+		sprite.AnimPlayer.ChangeAnimation(chickenGun.idleAnim)
 	}
 	sprite.AnimPlayer.Update(deltaTime)
 }
 
-func (chicken *WeaponChicken) Fire() {
-	chicken.weaponBase.Fire()
-	if ownerActor, ok := chicken.owner.Get(); ok {
+func (chickenGun *WeaponChicken) Fire() {
+	chickenGun.weaponBase.Fire()
+	if ownerActor, ok := chickenGun.owner.Get(); ok {
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, ownerActor.Body().Transform.Matrix())
-		SpawnEgg(chicken.world, &chicken.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), chicken.owner.Handle)
+		SpawnEgg(chickenGun.world, &chickenGun.world.Projectiles, firePos, ownerActor.Body().Transform.Rotation(), chickenGun.owner.Handle)
 	}
 
-	if spriteBox, ok := chicken.sprite.Get(); ok {
-		if spriteBox.AnimPlayer.CurrentAnimation().Name != chicken.fireAnim.Name {
-			spriteBox.AnimPlayer.ChangeAnimation(chicken.fireAnim)
+	if spriteBox, ok := chickenGun.sprite.Get(); ok {
+		if spriteBox.AnimPlayer.CurrentAnimation().Name != chickenGun.fireAnim.Name {
+			spriteBox.AnimPlayer.ChangeAnimation(chickenGun.fireAnim)
 			spriteBox.AnimPlayer.PlayFromStart()
 		}
 	}

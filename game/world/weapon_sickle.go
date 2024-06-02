@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type WeaponSickle struct {
@@ -20,15 +21,13 @@ type WeaponSickle struct {
 
 var _ Weapon = (*WeaponSickle)(nil)
 
-func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
-	sickle := WeaponSickle{
+func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
+	sickle := &WeaponSickle{
 		weaponBase: weaponBase{
 			owner:         owner,
 			world:         world,
 			cooldown:      0.25,
-			spriteScale:   2.0,
 			spriteTexture: cache.GetTexture("assets/textures/ui/sickle_hud.png"),
-			spriteOffset:  mgl32.Vec2{192.0, 16.0},
 			swayExtents:   mgl32.Vec2{32.0, 16.0},
 			swaySpeed:     mgl32.Vec2{1.0, 2.0},
 		},
@@ -38,6 +37,22 @@ func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 		err error
 		ok  bool
 	)
+
+	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
+	if !ok {
+		log.Println("sickle idle anim not found")
+	}
+	sickle.defaultAnimation = sickle.idleAnim
+
+	sickle.spriteSize = mgl32.Vec2{
+		sickle.idleAnim.Frames[0].Rect.Width * 2.0,
+		sickle.idleAnim.Frames[0].Rect.Height * 2.0,
+	}
+	sickle.spriteEndPos = mgl32.Vec2{
+		settings.UI_WIDTH/2 - sickle.spriteSize.X()/2.0 + 192.0,
+		settings.UI_HEIGHT - sickle.spriteSize.Y() + 16.0,
+	}
+	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})
 
 	sickle.sfxCatch, err = cache.GetSfx("assets/sounds/sickle_return.wav")
 	if err != nil {
@@ -49,12 +64,6 @@ func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 		log.Println("sickle throw anim not found")
 	}
 
-	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
-	if !ok {
-		log.Println("sickle idle anim not found")
-	}
-	sickle.defaultAnimation = sickle.idleAnim
-
 	sickle.catchAnim, ok = sickle.spriteTexture.GetAnimation("catch")
 	if !ok {
 		log.Println("sickle catch anim not found")
@@ -63,20 +72,8 @@ func NewSickle(world *World, owner scene.Id[HasActor]) WeaponSickle {
 	return sickle
 }
 
-func (sickle *WeaponSickle) Order() int {
+func (sickle *WeaponSickle) Order() WeaponIndex {
 	return WEAPON_ORDER_SICKLE
-}
-
-func (sickle *WeaponSickle) Equip() {
-	sickle.weaponBase.Equip()
-}
-
-func (sickle *WeaponSickle) Select() {
-	sickle.weaponBase.Select()
-}
-
-func (sickle *WeaponSickle) Deselect() {
-	sickle.sprite.Remove()
 }
 
 func (sickle *WeaponSickle) Update(deltaTime float32, swayAmount float32) {
