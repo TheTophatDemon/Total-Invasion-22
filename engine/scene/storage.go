@@ -85,6 +85,13 @@ func (st *Storage[T]) Has(h Handle) bool {
 func (st *Storage[T]) New() (Id[*T], *T, error) {
 	for i, active := range st.active {
 		if !active {
+			if st.owners[i].generation == 0 {
+				// Finalize any existing entity that is being overwritten.
+				if hasFinalizer, ok := any(&st.data[i]).(engine.HasFinalizer); ok {
+					hasFinalizer.Finalize()
+				}
+			}
+
 			st.active[i] = true
 			st.owners[i] = Handle{
 				index:      st.owners[i].index,

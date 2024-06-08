@@ -1,6 +1,7 @@
 #version 330
 
 in vec2 vTexCoord;
+in vec4 vDiffuseColor;
 
 uniform sampler2D uTex;
 
@@ -17,6 +18,8 @@ void main() {
     if (diffuse.a < 0.5) {
         discard;
     }
+
+    diffuse *= vDiffuseColor;
     
     //Apply depth based fog
     float depth = gl_FragCoord.z / gl_FragCoord.w;

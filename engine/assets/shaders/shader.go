@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"text/template"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -54,9 +55,9 @@ var (
 	//go:embed embed/debug.fs.glsl
 	debugFragShaderSrc string
 
-	SpriteShader *Shader
+	SpriteShader, SpriteShaderInstanced *Shader
 	//go:embed embed/sprite.vs.glsl
-	spriteVertShaderSrc string
+	spriteVertShaderSrcTemplate string
 	//go:embed embed/sprite.fs.glsl
 	spriteFragShaderSrc string
 
@@ -86,9 +87,24 @@ func Init() {
 		log.Fatalln("Couldn't compile debug shader: ", err)
 	}
 
-	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
+	// Generate the instanced and non-instanced sprite shaders
+	type spriteShaderTemplInput struct{ Instanced bool }
+	spriteShaderTempl, err := template.New("spriteShader").Parse(spriteVertShaderSrcTemplate)
+	if err != nil {
+		log.Fatalln("Couldn't parse template for sprite shader: ", err)
+	}
+	var spriteShaderVertSrcNonInstanced, spriteShaderVertSrcInstanced strings.Builder
+	spriteShaderTempl.Execute(&spriteShaderVertSrcNonInstanced, spriteShaderTemplInput{Instanced: false})
+	spriteShaderTempl.Execute(&spriteShaderVertSrcInstanced, spriteShaderTemplInput{Instanced: true})
+
+	SpriteShader, err = CreateShader(spriteShaderVertSrcNonInstanced.String(), spriteFragShaderSrc)
 	if err != nil {
 		log.Fatalln("Couldn't compile sprite shader: ", err)
+	}
+
+	SpriteShaderInstanced, err = CreateShader(spriteShaderVertSrcInstanced.String(), spriteFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile instanced sprite shader: ", err)
 	}
 
 	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)
@@ -102,6 +118,7 @@ func Free() {
 	MapShader.Free()
 	DebugShader.Free()
 	SpriteShader.Free()
+	SpriteShaderInstanced.Free()
 	UIShader.Free()
 }
 
