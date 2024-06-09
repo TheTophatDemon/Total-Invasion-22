@@ -3,11 +3,13 @@ package comps
 import (
 	"unsafe"
 
-	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
@@ -27,15 +29,18 @@ type ParticleRender struct {
 	Mesh       *geom.Mesh
 	Texture    *textures.Texture
 	AnimPlayer *AnimationPlayer
+	Radius     float32 // The sphereical radius within which particles will be spawned.
+	SpawnRate  float32 // The rate at which new particles will be spawned, in seconds per particle.
+
+	spawnTimer float32
 
 	// Particle instance fields
-	positions      []mgl32.Vec3
-	positionBuffer uint32
-	colors         []mgl32.Vec4
-	colorBuffer    uint32
-	sizes          []mgl32.Vec2
-	sizeBuffer     uint32
-
+	positions                 []mgl32.Vec3
+	positionBuffer            uint32
+	colors                    []mgl32.Vec4
+	colorBuffer               uint32
+	sizes                     []mgl32.Vec2
+	sizeBuffer                uint32
 	velocities, accelerations []mgl32.Vec3
 }
 
@@ -46,12 +51,14 @@ func NewParticleRender(
 	maxInstances uint16,
 ) ParticleRender {
 	parts := ParticleRender{
-		Mesh:       mesh,
-		Texture:    texture,
-		AnimPlayer: anim,
-		positions:  make([]mgl32.Vec3, 0, maxInstances),
-		colors:     make([]mgl32.Vec4, 0, maxInstances),
-		sizes:      make([]mgl32.Vec2, 0, maxInstances),
+		Mesh:          mesh,
+		Texture:       texture,
+		AnimPlayer:    anim,
+		positions:     make([]mgl32.Vec3, 0, maxInstances),
+		colors:        make([]mgl32.Vec4, 0, maxInstances),
+		sizes:         make([]mgl32.Vec2, 0, maxInstances),
+		velocities:    make([]mgl32.Vec3, 0, maxInstances),
+		accelerations: make([]mgl32.Vec3, 0, maxInstances),
 	}
 
 	// Position buffer
@@ -84,6 +91,12 @@ func (parts *ParticleRender) Update(deltaTime float32) {
 	}
 
 	//TODO: Particle movement
+
+	parts.spawnTimer += deltaTime
+	if parts.spawnTimer > parts.SpawnRate {
+		parts.spawnTimer = 0.0
+		parts.SpawnParticle(math2.RandomDir().Mul(parts.Radius), color.White.Vector(), mgl32.Vec2{0.25, 0.25}, mgl32.Vec3{}, mgl32.Vec3{})
+	}
 
 	parts.updateBuffers()
 }
@@ -125,6 +138,38 @@ func (parts *ParticleRender) Render(
 
 func (parts *ParticleRender) Finalize() {
 	parts.Free()
+}
+
+func (parts *ParticleRender) SpawnParticle(position mgl32.Vec3, color mgl32.Vec4, size mgl32.Vec2, velocity, acceleration mgl32.Vec3) {
+	if len(parts.positions) >= cap(parts.positions) {
+		return
+	}
+
+	parts.positions = append(parts.positions, position)
+	parts.colors = append(parts.colors, color)
+	parts.sizes = append(parts.sizes, size)
+	parts.velocities = append(parts.velocities, velocity)
+	parts.accelerations = append(parts.accelerations, acceleration)
+}
+
+func (parts *ParticleRender) removeParticle(index int) {
+	if index >= len(parts.positions) || index < 0 {
+		return
+	}
+
+	lastIndex := len(parts.positions) - 1
+	// Swap the latest particle with the one being removed in order to keep the list contiguous.
+	parts.positions[index] = parts.positions[lastIndex]
+	parts.colors[index] = parts.colors[lastIndex]
+	parts.sizes[index] = parts.sizes[lastIndex]
+	parts.velocities[index] = parts.velocities[lastIndex]
+	parts.accelerations[index] = parts.accelerations[lastIndex]
+
+	parts.positions = parts.positions[:lastIndex]
+	parts.colors = parts.colors[:lastIndex]
+	parts.sizes = parts.sizes[:lastIndex]
+	parts.velocities = parts.velocities[:lastIndex]
+	parts.accelerations = parts.accelerations[:lastIndex]
 }
 
 func (parts *ParticleRender) Free() {

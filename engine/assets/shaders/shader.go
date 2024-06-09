@@ -87,24 +87,26 @@ func Init() {
 		log.Fatalln("Couldn't compile debug shader: ", err)
 	}
 
-	// Generate the instanced and non-instanced sprite shaders
-	type spriteShaderTemplInput struct{ Instanced bool }
-	spriteShaderTempl, err := template.New("spriteShader").Parse(spriteVertShaderSrcTemplate)
-	if err != nil {
-		log.Fatalln("Couldn't parse template for sprite shader: ", err)
-	}
-	var spriteShaderVertSrcNonInstanced, spriteShaderVertSrcInstanced strings.Builder
-	spriteShaderTempl.Execute(&spriteShaderVertSrcNonInstanced, spriteShaderTemplInput{Instanced: false})
-	spriteShaderTempl.Execute(&spriteShaderVertSrcInstanced, spriteShaderTemplInput{Instanced: true})
+	{
+		// Generate the instanced and non-instanced sprite shaders
+		type templInput struct{ Instanced bool }
+		shaderTempl, err := template.New("spriteShader").Parse(spriteVertShaderSrcTemplate)
+		if err != nil {
+			log.Fatalln("Couldn't parse template for sprite shader: ", err)
+		}
+		var vertSrcNonInstanced, vertSrcInstanced strings.Builder
+		shaderTempl.Execute(&vertSrcNonInstanced, templInput{Instanced: false})
+		shaderTempl.Execute(&vertSrcInstanced, templInput{Instanced: true})
 
-	SpriteShader, err = CreateShader(spriteShaderVertSrcNonInstanced.String(), spriteFragShaderSrc)
-	if err != nil {
-		log.Fatalln("Couldn't compile sprite shader: ", err)
-	}
+		SpriteShader, err = CreateShader(vertSrcNonInstanced.String(), spriteFragShaderSrc)
+		if err != nil {
+			log.Fatalln("Couldn't compile sprite shader: ", err)
+		}
 
-	SpriteShaderInstanced, err = CreateShader(spriteShaderVertSrcInstanced.String(), spriteFragShaderSrc)
-	if err != nil {
-		log.Fatalln("Couldn't compile instanced sprite shader: ", err)
+		SpriteShaderInstanced, err = CreateShader(vertSrcInstanced.String(), spriteFragShaderSrc)
+		if err != nil {
+			log.Fatalln("Couldn't compile instanced sprite shader: ", err)
+		}
 	}
 
 	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)

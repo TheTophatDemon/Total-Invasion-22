@@ -3,6 +3,7 @@ package math2
 
 import (
 	"math"
+	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -360,6 +361,19 @@ func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 		max(a[1], b[1]),
 		max(a[2], b[2]),
 	}
+}
+
+// Returns a unit vector pointing in a random direction.
+func RandomDir() mgl32.Vec3 {
+	dir := mgl32.Vec3{
+		(rand.Float32() - 0.5) * 2.0,
+		(rand.Float32() - 0.5) * 2.0,
+		(rand.Float32() - 0.5) * 2.0,
+	}
+	if dir.LenSqr() == 0.0 {
+		return mgl32.Vec3{1.0, 0.0, 0.0}
+	}
+	return dir.Normalize()
 }
 
 func QuatToEulerAngles(q mgl32.Quat) mgl32.Vec3 {

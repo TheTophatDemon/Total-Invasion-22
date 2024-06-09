@@ -12,10 +12,11 @@ import (
 )
 
 type Enemy struct {
-	SpriteRender comps.SpriteRender
-	AnimPlayer   comps.AnimationPlayer
-	actor        Actor
-	timer        float32
+	SpriteRender   comps.SpriteRender
+	AnimPlayer     comps.AnimationPlayer
+	bloodParticles comps.ParticleRender
+	actor          Actor
+	timer          float32
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -61,6 +62,9 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 
+	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
+	enemy.bloodParticles = comps.NewParticleRender(cache.QuadMesh, bloodTexture, nil, 25)
+
 	return
 }
 
@@ -69,10 +73,12 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.actor.inputForward = math2.Sin(enemy.timer)
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
+	enemy.bloodParticles.Update(deltaTime)
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
 	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.actor.YawAngle)
+	enemy.bloodParticles.Render(&enemy.Body().Transform, context)
 }
 
 func (enemy *Enemy) ProcessSignal(signal Signal, params any) {

@@ -30,7 +30,7 @@ void main() {
     mat4 modelMatrix = uModelMatrix;
 
     //{{ if .Instanced }}
-    modelMatrix[3] += vec4(aInstancePos, 1.0);
+    modelMatrix[3] += vec4(aInstancePos, 0.0);
     //{{ end }}
 
     vec4 pos = uViewMatrix * modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
