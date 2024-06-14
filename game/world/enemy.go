@@ -64,6 +64,10 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 
 	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
 	enemy.bloodParticles = comps.NewParticleRender(cache.QuadMesh, bloodTexture, nil, 25)
+	enemy.bloodParticles.SpawnRate = 0.25
+	enemy.bloodParticles.SpawnRadius = 1.0
+	enemy.bloodParticles.VisibilityRadius = 5.0
+	enemy.bloodParticles.Emitting = true
 
 	return
 }
@@ -73,7 +77,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.actor.inputForward = math2.Sin(enemy.timer)
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
-	enemy.bloodParticles.Update(deltaTime)
+	enemy.bloodParticles.Update(deltaTime, &enemy.Body().Transform)
 }
 
 func (enemy *Enemy) Render(context *render.Context) {

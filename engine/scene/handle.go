@@ -43,6 +43,14 @@ func (h Handle) Remove() {
 	h.storage.Remove(h)
 }
 
+func (h Handle) Index() uint16 {
+	return h.index
+}
+
+func (h Handle) Generation() uint16 {
+	return h.generation
+}
+
 func (h Handle) IsNil() bool {
 	return h.storage == nil
 }

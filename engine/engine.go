@@ -9,6 +9,7 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
@@ -105,7 +106,7 @@ func Run(app App) {
 
 		app.Render()
 
-		CheckOpenGLError()
+		failure.CheckOpenGLError()
 
 		window.SwapBuffers()
 		glfw.PollEvents()

@@ -186,7 +186,7 @@ func NewWorld(mapPath string) (*World, error) {
 	world.SpriteCounter, spriteCounter, _ = world.UI.Texts.New()
 	spriteCounter.
 		SetFont(DEFAULT_FONT_PATH).
-		SetText("Sprites drawn: 0\nWalls drawn: 0").
+		SetText("Sprites drawn: 0\nWalls drawn: 0\nParticles drawn: 0").
 		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
 		SetScale(1.0).
 		SetColor(color.Blue)
@@ -284,7 +284,11 @@ func (world *World) Render() {
 	scene.RenderStores(world, &renderContext)
 
 	if sprCountTxt, ok := world.SpriteCounter.Get(); ok {
-		sprCountTxt.SetText(fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v", renderContext.DrawnSpriteCount, renderContext.DrawnWallCount))
+		sprCountTxt.SetText(
+			fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v",
+				renderContext.DrawnSpriteCount,
+				renderContext.DrawnWallCount,
+				renderContext.DrawnParticlesCount))
 	}
 
 	uiMargin := ((float32(settings.Current.WindowWidth) * (float32(settings.UI_HEIGHT) / float32(settings.Current.WindowHeight))) - float32(settings.UI_WIDTH)) / 2.0

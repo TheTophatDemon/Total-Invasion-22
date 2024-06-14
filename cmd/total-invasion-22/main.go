@@ -1,10 +1,10 @@
 package main
 
 import (
-	// "log"
-	// "os"
-	// "runtime/pprof"
+	"log"
+	"os"
 	"runtime"
+	"runtime/pprof"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 
@@ -45,7 +45,17 @@ func (game *Game) Render() {
 }
 
 func main() {
-	err := engine.Init(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight), "Total Invasion 22")
+	cpuProfile, err := os.Create("cpuProfile.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cpuProfile.Close()
+	if err := pprof.StartCPUProfile(cpuProfile); err != nil {
+		log.Fatal(err)
+	}
+	defer pprof.StopCPUProfile()
+
+	err = engine.Init(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight), "Total Invasion 22")
 	defer engine.DeInit()
 	if err != nil {
 		panic(err)
