@@ -1,15 +1,23 @@
 package settings
 
 import (
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
-	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"encoding/json"
+	"errors"
+	"io"
+	"os"
+
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
 const (
 	UI_HEIGHT = 480
 	UI_WIDTH  = 800
+)
+
+const (
+	SETTINGS_FILE_PATH = "game_settings.json"
 )
 
 const (
@@ -26,7 +34,6 @@ const (
 	ACTION_CHICKEN
 	ACTION_USE
 	ACTION_NOCLIP
-	ACTION_MUTE_MUS
 	ACTION_COUNT
 )
 
@@ -44,37 +51,17 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_CHICKEN:    "Select Chicken Cannon",
 	ACTION_USE:        "Use",
 	ACTION_NOCLIP:     "Noclip",
-	ACTION_MUTE_MUS:   "Mute Music",
 }
 
 type Data struct {
 	WindowWidth, WindowHeight uint16
 	MouseSensitivity          float32
 	TextShadowColor           color.Color
-	sfxVolume, musicVolume    float32
+	SfxVolume, MusicVolume    float32
 }
 
 func (data *Data) WindowAspectRatio() float32 {
 	return float32(data.WindowWidth) / float32(data.WindowHeight)
-}
-
-func (data *Data) SfxVolume() float32 {
-	return data.sfxVolume
-}
-
-func (data *Data) MusicVolume() float32 {
-	return data.musicVolume
-}
-
-func UpdateMusicVolume(target float32) {
-	Current.musicVolume = target
-	// Set the volume of all currently playing songs
-	cache.IterateSongs()(func(path string, song *audio.Song) bool {
-		if song.IsPlaying() {
-			song.SetVolume(Current.musicVolume)
-		}
-		return true
-	})
 }
 
 var Default, Current Data
@@ -84,7 +71,7 @@ func init() {
 		WindowWidth: 1280, WindowHeight: 720,
 		MouseSensitivity: 0.005,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
-		sfxVolume:        1.0, musicVolume: 1.0,
+		SfxVolume:        1.0, MusicVolume: 1.0,
 	}
 	Current = Default
 }
@@ -94,4 +81,49 @@ func ActionName(action input.Action) string {
 		return ""
 	}
 	return actionNames[action]
+}
+
+func LoadOrInit() {
+	settingsFile, err := os.Open(SETTINGS_FILE_PATH)
+	if errors.Is(err, os.ErrNotExist) {
+		Save()
+	} else if err != nil {
+		failure.LogErrWithLocation("Could not open settings file; %v", err)
+		return
+	} else {
+		defer settingsFile.Close()
+
+		fileBytes, err := io.ReadAll(settingsFile)
+		if err != nil {
+			failure.LogErrWithLocation("Could not read settings file; %v", err)
+			return
+		}
+
+		err = json.Unmarshal(fileBytes, &Current)
+		if err != nil {
+			failure.LogErrWithLocation("Could not unmarshal settings file; %v", err)
+			Current = Default
+			return
+		}
+	}
+}
+
+func Save() {
+	settingsFile, err := os.Create(SETTINGS_FILE_PATH)
+	if err != nil {
+		failure.LogErrWithLocation("Could not open settings file for writing; %v", err)
+	}
+	defer settingsFile.Close()
+
+	settingsBytes, err := json.Marshal(Current)
+	if err != nil {
+		failure.LogErrWithLocation("Could not marshal settings; %v", err)
+		return
+	}
+
+	_, err = settingsFile.Write(settingsBytes)
+	if err != nil {
+		failure.LogErrWithLocation("Could not write settings to file; %v", err)
+		return
+	}
 }

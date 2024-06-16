@@ -1,7 +1,5 @@
 # TODO
-- Read settings from configuration file
+- Real time audio mixing
 - Localization
 - Wraith AI
 - Bounding box hierarchy
-- Audio mixing
-- Squash and stretch for weapon transitions

@@ -29,14 +29,6 @@ func (game *Game) Update(deltaTime float32) {
 		}
 	}
 
-	if input.IsActionJustPressed(settings.ACTION_MUTE_MUS) {
-		if settings.Current.MusicVolume() != 0.0 {
-			settings.UpdateMusicVolume(0.0)
-		} else {
-			settings.UpdateMusicVolume(settings.Default.MusicVolume())
-		}
-	}
-
 	game.world.Update(deltaTime)
 }
 
@@ -54,6 +46,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer pprof.StopCPUProfile()
+
+	settings.LoadOrInit()
 
 	err = engine.Init(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight), "Total Invasion 22")
 	defer engine.DeInit()
@@ -74,14 +68,11 @@ func main() {
 	input.BindActionKey(settings.ACTION_SICKLE, glfw.Key1)
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
-	input.BindActionKey(settings.ACTION_MUTE_MUS, glfw.KeyM)
 
 	world, err := world.NewWorld("assets/maps/ti2-malicious-intents.te3")
 	if err != nil {
 		panic(err)
 	}
-
-	settings.UpdateMusicVolume(0.0)
 
 	runtime.GC()
 
