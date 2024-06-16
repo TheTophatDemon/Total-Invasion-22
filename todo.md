@@ -1,8 +1,4 @@
 # TODO
-- Particle effects
-    - Gravity
-    - Fading
-    - Animation frames
 - Read settings from configuration file
 - Localization
 - Wraith AI

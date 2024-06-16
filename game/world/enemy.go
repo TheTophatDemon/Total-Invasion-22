@@ -1,9 +1,12 @@
 package world
 
 import (
+	"math/rand"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -63,11 +66,35 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 	enemy.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 
 	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
-	enemy.bloodParticles = comps.NewParticleRender(cache.QuadMesh, bloodTexture, nil, 25)
-	enemy.bloodParticles.SpawnRate = 0.25
-	enemy.bloodParticles.SpawnRadius = 1.0
-	enemy.bloodParticles.VisibilityRadius = 5.0
-	enemy.bloodParticles.Emitting = true
+	bloodAnim, _ := bloodTexture.GetAnimation("default")
+	enemy.bloodParticles = comps.ParticleRender{
+		Mesh:             cache.QuadMesh,
+		Texture:          bloodTexture,
+		SpawnRate:        0.01,
+		SpawnRadius:      0.5,
+		VisibilityRadius: 5.0,
+		EmissionTimer:    math2.Inf32(),
+		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
+			form.Color = color.Red.Vector()
+			s := rand.Float32()*0.10 + 0.15
+			form.Size = mgl32.Vec2{s, s}
+			info.Velocity = info.Velocity.Mul(rand.Float32()*5 + 1.0)
+			info.Acceleration = mgl32.Vec3{0.0, -20.0, 0.0}
+			info.Lifetime = 1.0
+			info.AnimPlayer = comps.NewAnimationPlayer(bloodAnim, false)
+			info.AnimPlayer.MoveToRandomFrame()
+		},
+		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
+			const SHRINK_RATE = 0.75
+			form.Size[0] -= deltaTime * SHRINK_RATE
+			form.Size[1] -= deltaTime * SHRINK_RATE
+			if form.Size[0] <= 0.1 {
+				form.Size = mgl32.Vec2{}
+				info.Lifetime = 0.0
+			}
+		},
+	}
+	enemy.bloodParticles.Init(25)
 
 	return
 }

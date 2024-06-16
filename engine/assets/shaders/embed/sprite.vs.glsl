@@ -8,24 +8,36 @@ layout(location = 2) in vec3 aNormal;
 layout(location = 8) in vec3 aInstancePos;
 layout(location = 9) in vec4 aInstanceColor;
 layout(location = 10) in vec2 aInstanceSize;
+layout(location = 11) in vec4 aInstanceSrc;
 //{{ end }}
 
 uniform mat4 uViewMatrix;
 uniform mat4 uProjMatrix;
 uniform mat4 uModelMatrix;
-uniform vec4 uSourceRect;
 uniform bool uFlipHorz;
+
+//{{ if .Instanced | not }}
+uniform vec4 uSourceRect;
+//{{ end }}
 
 out vec2 vTexCoord;
 out vec3 vNormal;
 out vec4 vDiffuseColor;
 
 void main() {
-    float sOfs = aTexCoord.x * uSourceRect.z;
+
+    vec4 srcRect;
+    //{{ if .Instanced }}
+    srcRect = aInstanceSrc;
+    //{{ else }}
+    srcRect = uSourceRect;
+    //{{ end }}
+
+    float sOfs = aTexCoord.x * srcRect.z;
     if (uFlipHorz) {
-        sOfs = uSourceRect.z - sOfs;
+        sOfs = srcRect.z - sOfs;
     }
-    vTexCoord = uSourceRect.xy + vec2(sOfs, -aTexCoord.y * uSourceRect.w);
+    vTexCoord = srcRect.xy + vec2(sOfs, -aTexCoord.y * srcRect.w);
     
     mat4 modelMatrix = uModelMatrix;
 

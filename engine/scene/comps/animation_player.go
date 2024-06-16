@@ -1,6 +1,8 @@
 package comps
 
 import (
+	"math/rand"
+
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
@@ -86,6 +88,11 @@ func (ap *AnimationPlayer) FrameUV() math2.Rect {
 		Width:  pixelRect.Width / float32(ap.animation.AtlasSize[0]),
 		Height: pixelRect.Height / float32(ap.animation.AtlasSize[1]),
 	}
+}
+
+func (ap *AnimationPlayer) MoveToRandomFrame() {
+	ap.currentIndex = rand.Int() % len(ap.animation.Frames)
+	ap.frameTimer = 0.0
 }
 
 func (ap *AnimationPlayer) Play() {
