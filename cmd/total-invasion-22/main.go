@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -28,6 +29,10 @@ func (game *Game) Update(deltaTime float32) {
 			input.TrapMouse()
 		}
 	}
+
+	// Update audio volume based on settings.
+	audio.SetSfxBusVolume(settings.Current.SfxVolume)
+	audio.SetMusicBusVolume(settings.Current.MusicVolume)
 
 	game.world.Update(deltaTime)
 }

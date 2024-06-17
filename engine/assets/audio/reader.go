@@ -33,6 +33,8 @@ func (reader *SfxReader) Read(outBuffer []byte) (nBytesRead int, err error) {
 	reader.muty.Lock()
 	defer reader.muty.Unlock()
 
+	busVolume := float32(sfxVolume.Load()) / BUS_VOLUME_MAX
+
 	rawSamples := make([]byte, len(outBuffer))
 	nBytesRead, err = reader.byteReader.Read(rawSamples)
 	// Loop the samples if the buffer reaches the end
@@ -43,24 +45,20 @@ func (reader *SfxReader) Read(outBuffer []byte) (nBytesRead int, err error) {
 			nBytesRead += nBytesRead2
 		}
 	}
-	if reader.Pan != 0.0 {
-		// Balance the left and right channels according to reader.Pan
-		for s := 0; s < len(rawSamples); s += 8 {
-			leftSample := math.Float32frombits(binary.LittleEndian.Uint32(rawSamples[s:][:4]))
-			rightSample := math.Float32frombits(binary.LittleEndian.Uint32(rawSamples[s:][4:8]))
-			leftDest := outBuffer[s:][:4]
-			rightDest := outBuffer[s:][4:8]
+	// Balance the left and right channels according to reader.Pan
+	for s := 0; s < len(rawSamples); s += 8 {
+		leftSample := math.Float32frombits(binary.LittleEndian.Uint32(rawSamples[s:][:4]))
+		rightSample := math.Float32frombits(binary.LittleEndian.Uint32(rawSamples[s:][4:8]))
+		leftDest := outBuffer[s:][:4]
+		rightDest := outBuffer[s:][4:8]
 
-			leftFactor := (reader.Pan + 1.0) / 2.0
-			rightFactor := 1.0 - leftFactor
+		leftFactor := (reader.Pan + 1.0) / 2.0
+		rightFactor := 1.0 - leftFactor
 
-			newLeftSample := leftSample * math2.FastApproxSin(leftFactor)
-			newRightSample := rightSample * math2.FastApproxSin(rightFactor)
-			binary.LittleEndian.PutUint32(leftDest, math.Float32bits(newLeftSample))
-			binary.LittleEndian.PutUint32(rightDest, math.Float32bits(newRightSample))
-		}
-	} else {
-		copy(outBuffer, rawSamples)
+		newLeftSample := leftSample * math2.FastApproxSin(leftFactor) * busVolume
+		newRightSample := rightSample * math2.FastApproxSin(rightFactor) * busVolume
+		binary.LittleEndian.PutUint32(leftDest, math.Float32bits(newLeftSample))
+		binary.LittleEndian.PutUint32(rightDest, math.Float32bits(newRightSample))
 	}
 	return
 }
@@ -84,6 +82,8 @@ func NewSongReader(oggReader oggvorbis.Reader, loop bool) SongReader {
 }
 
 func (reader *SongReader) Read(outBuffer []byte) (nBytesRead int, err error) {
+	busVolume := float32(musicVolume.Load()) / BUS_VOLUME_MAX
+
 	// Read floats one at a time from the ogg file, then turn them into bytes and append to the output buffer.
 	var floatBuffer [2]float32
 	var n int
@@ -105,6 +105,8 @@ func (reader *SongReader) Read(outBuffer []byte) (nBytesRead int, err error) {
 		if reader.oggReader.Channels() < 2 {
 			floatBuffer[1] = floatBuffer[0]
 		}
+		floatBuffer[0] *= busVolume
+		floatBuffer[1] *= busVolume
 		binary.LittleEndian.PutUint32(outBuffer[byteIdx:], math.Float32bits(floatBuffer[0]))
 		binary.LittleEndian.PutUint32(outBuffer[byteIdx+floatSize:], math.Float32bits(floatBuffer[1]))
 	}
