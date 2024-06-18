@@ -3,9 +3,13 @@ package settings
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -58,6 +62,7 @@ type Data struct {
 	MouseSensitivity          float32
 	TextShadowColor           color.Color
 	SfxVolume, MusicVolume    float32
+	Locale                    string
 }
 
 func (data *Data) WindowAspectRatio() float32 {
@@ -72,6 +77,7 @@ func init() {
 		MouseSensitivity: 0.005,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		SfxVolume:        1.0, MusicVolume: 1.0,
+		Locale: locales.ENGLISH,
 	}
 	Current = Default
 }
@@ -126,4 +132,21 @@ func Save() {
 		failure.LogErrWithLocation("Could not write settings to file; %v", err)
 		return
 	}
+}
+
+func Localize(key string) string {
+	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/%v.json", strings.ToLower(Current.Locale)))
+	if err != nil {
+		return "ERROR"
+	}
+	localizedText, ok := (*trans)[key]
+	if !ok {
+		// Fall back to English
+		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/%v.json", locales.ENGLISH))
+		if err != nil {
+			return "ERROR"
+		}
+		localizedText = (*trans)[key]
+	}
+	return localizedText
 }

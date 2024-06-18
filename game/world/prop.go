@@ -12,6 +12,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type PropType uint8
@@ -41,7 +42,7 @@ func (p *Prop) Body() *comps.Body {
 func (p *Prop) OnUse(player *Player) {
 	switch p.propType {
 	case PROP_TYPE_GEOFFREY:
-		p.world.ShowMessage("Who's this douchebag?", 2.0, 10, color.Red)
+		p.world.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
 	}
 }
 

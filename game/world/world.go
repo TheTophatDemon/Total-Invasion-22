@@ -195,7 +195,7 @@ func NewWorld(mapPath string) (*World, error) {
 	world.messageText, message, _ = world.UI.Texts.New()
 	message.
 		SetFont(DEFAULT_FONT_PATH).
-		SetText("This is a test message! Это подопытное сообщение!").
+		SetText(settings.Localize("testMessage")).
 		SetDest(math2.Rect{
 			X:      float32(settings.UI_WIDTH) / 3.0,
 			Y:      float32(settings.UI_HEIGHT) / 2.0,

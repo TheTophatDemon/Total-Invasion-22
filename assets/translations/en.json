@@ -1,0 +1,9 @@
+{
+    "testMessage": "This is a test message.",
+    "geoffrey": "Who's this douchebag?",
+    "noclipActivate": "Noclip activated",
+    "noclipDeactivate": "Noclip deactivated",
+    "doorStuck": "The door can't move...",
+    "doorNeedKey": "I need a key...",
+    "doorSwitch": "This door opens elsewhere..."
+}

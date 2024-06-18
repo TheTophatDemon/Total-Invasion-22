@@ -15,6 +15,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type MovePhase uint8
@@ -254,7 +255,7 @@ func (wall *Wall) Body() *comps.Body {
 func (wall *Wall) OnUse(player *Player) {
 	switch wall.activator {
 	case ACTIVATOR_NONE:
-		wall.world.ShowMessage("The door can't move...", 2.0, 10, color.Red)
+		wall.world.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
 	case ACTIVATOR_ALL:
 		if !wall.Origin.ApproxEqual(wall.Destination) {
 			switch wall.movePhase {
@@ -271,8 +272,8 @@ func (wall *Wall) OnUse(player *Player) {
 			}
 		}
 	case ACTIVATOR_KEY:
-		wall.world.ShowMessage("I need a key...", 2.0, 10, color.Red)
+		wall.world.ShowMessage(settings.Localize("doorNeedKey"), 2.0, 10, color.Red)
 	case ACTIVATOR_TRIGGER:
-		wall.world.ShowMessage("This door opens elsewhere...", 2.0, 10, color.Red)
+		wall.world.ShowMessage(settings.Localize("doorSwitch"), 2.0, 10, color.Red)
 	}
 }

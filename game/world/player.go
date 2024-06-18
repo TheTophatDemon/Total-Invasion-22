@@ -104,15 +104,14 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
-		message := "No-Clip "
+		var message string = settings.Localize("noclipActivate")
 		if player.Body().Layer != COL_LAYER_NONE {
 			player.Body().Layer = COL_LAYER_NONE
 			player.Body().Filter = COL_LAYER_NONE
-			message += "Activated"
 		} else {
 			player.Body().Layer = COL_LAYER_ACTORS
 			player.Body().Filter = COL_FILTER_FOR_ACTORS
-			message += "Deactivated"
+			message = settings.Localize("noclipDeactivate")
 		}
 		player.world.ShowMessage(message, 4.0, 100, color.Red)
 	}

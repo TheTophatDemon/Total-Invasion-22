@@ -8,7 +8,9 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/iter"
 )
 
@@ -34,6 +36,9 @@ var loadedSfx cache[*audio.Sfx]
 
 // Cache of songs, indexed by .ogg file path
 var loadedSongs cache[*audio.Song]
+
+// Cache of translations, indexed by .json file path.
+var loadedTranslations cache[*locales.Translation]
 
 func init() {
 	loadedTextures = cache[*textures.Texture]{
@@ -70,6 +75,13 @@ func init() {
 		loadFunc:       audio.LoadSong,
 		freeFunc:       (*audio.Song).Free,
 		resourceName:   "song",
+	}
+	loadedTranslations = cache[*locales.Translation]{
+		storage:        make(map[string]*locales.Translation),
+		fileExtensions: []string{".json"},
+		loadFunc:       locales.LoadTranslation,
+		freeFunc:       nil,
+		resourceName:   "translation",
 	}
 }
 
@@ -158,7 +170,7 @@ func GetSfx(assetPath string) (*audio.Sfx, error) {
 	return sfx, err
 }
 
-// Retrieves a song from the game assets, loading it if it doens't already exist.
+// Retrieves a song from the game assets, loading it if it doesn't already exist.
 func GetSong(assetPath string) (*audio.Song, error) {
 	song, err := loadedSongs.get(assetPath)
 	if err != nil {
@@ -169,6 +181,15 @@ func GetSong(assetPath string) (*audio.Song, error) {
 
 func IterateSongs() iter.Seq2[string, *audio.Song] {
 	return loadedSongs.iterate()
+}
+
+// Retrieves a translation from the game assets, loading it if iit doesn't already exist.
+func GetTranslation(assetPath string) (*locales.Translation, error) {
+	trans, err := loadedTranslations.get(assetPath)
+	if err != nil {
+		failure.LogErrWithLocation("could not load translation at %v: %v", assetPath, err)
+	}
+	return trans, err
 }
 
 func FreeAll() {
