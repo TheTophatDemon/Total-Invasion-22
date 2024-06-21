@@ -108,6 +108,7 @@ func RayBoxCollision(rayOrigin, rayDir mgl32.Vec3, box math2.Box) RaycastResult 
 }
 
 func RaySphereCollision(rayOrigin, rayDir, spherePos mgl32.Vec3, sphereRadius float32) RaycastResult {
+	// Yes, this is the same algorithm that Raylib uses...
 	diff := spherePos.Sub(rayOrigin)
 	dist := diff.Len()
 	dp := diff.Dot(rayDir)

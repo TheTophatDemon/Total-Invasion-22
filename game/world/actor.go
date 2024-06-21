@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -34,6 +35,14 @@ func (a *Actor) Update(deltaTime float32) {
 
 func (a *Actor) SetYaw(newYaw float32) {
 	a.YawAngle = newYaw
+}
+
+func (a *Actor) FacingVec() mgl32.Vec3 {
+	return mgl32.Vec3{
+		math2.Sin(a.YawAngle),
+		0.0,
+		-math2.Cos(a.YawAngle),
+	}
 }
 
 func (a *Actor) Body() *comps.Body {

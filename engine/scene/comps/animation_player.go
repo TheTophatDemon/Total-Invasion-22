@@ -97,11 +97,15 @@ func (ap *AnimationPlayer) MoveToRandomFrame() {
 
 func (ap *AnimationPlayer) Play() {
 	ap.playing = true
-	ap.frameTimer = 0.0
+}
+
+func (ap *AnimationPlayer) Stop() {
+	ap.playing = false
 }
 
 func (ap *AnimationPlayer) PlayFromStart() {
 	ap.currentIndex = 0
+	ap.frameTimer = 0.0
 	ap.Play()
 }
 

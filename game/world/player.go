@@ -118,7 +118,7 @@ func (player *Player) Update(deltaTime float32) {
 
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
-		rayDir := mgl32.TransformNormal(math2.Vec3Forward(), player.Body().Transform.Matrix())
+		rayDir := player.Body().Transform.Forward()
 		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, COL_FILTER_FOR_ACTORS, USE_DIST, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {

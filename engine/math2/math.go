@@ -85,6 +85,14 @@ func RandomDir() mgl32.Vec3 {
 	return dir.Normalize()
 }
 
+func DegToRadVec3(degrees mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		mgl32.DegToRad(degrees[0]),
+		mgl32.DegToRad(degrees[1]),
+		mgl32.DegToRad(degrees[2]),
+	}
+}
+
 func QuatToEulerAngles(q mgl32.Quat) mgl32.Vec3 {
 	//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 	sinr_cosp := 2.0 * (q.W*q.X() + q.Y()*q.Z())

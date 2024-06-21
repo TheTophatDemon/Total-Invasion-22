@@ -148,7 +148,7 @@ func NewWorld(mapPath string) (*World, error) {
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		SpawnEnemy(&world.Enemies, spawn.Position, spawn.Angles)
+		SpawnEnemy(&world.Enemies, spawn.Position, spawn.Angles, world)
 	}
 
 	// Spawn dynamic tiles

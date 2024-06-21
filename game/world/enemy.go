@@ -1,6 +1,7 @@
 package world
 
 import (
+	"math"
 	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -14,12 +15,18 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
+const (
+	ENEMY_FOV_RADS       = math.Pi
+	ENEMY_WAKE_PROXIMITY = 1.5
+)
+
 type Enemy struct {
-	SpriteRender   comps.SpriteRender
-	AnimPlayer     comps.AnimationPlayer
-	bloodParticles comps.ParticleRender
-	actor          Actor
-	timer          float32
+	SpriteRender         comps.SpriteRender
+	AnimPlayer           comps.AnimationPlayer
+	bloodParticles       comps.ParticleRender
+	actor                Actor
+	world                *World
+	walkAnim, attackAnim textures.Animation
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -33,24 +40,22 @@ func (enemy *Enemy) Body() *comps.Body {
 	return &enemy.actor.body
 }
 
-func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id scene.Id[*Enemy], enemy *Enemy, err error) {
+func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, world *World) (id scene.Id[*Enemy], enemy *Enemy, err error) {
 	id, enemy, err = storage.New()
 	if err != nil {
 		return
 	}
 
+	enemy.world = world
+
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
-	var anim textures.Animation
-	if int(position.Len()*1000.0)%2 == 0 {
-		anim, _ = wraithTexture.GetAnimation("attack;front")
-	} else {
-		anim, _ = wraithTexture.GetAnimation("walk;front")
-	}
+	enemy.walkAnim, _ = wraithTexture.GetAnimation("walk;front")
+	enemy.attackAnim, _ = wraithTexture.GetAnimation("walk;front")
 
 	enemy.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), angles, mgl32.Vec3{0.9, 0.9, 0.9},
+				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), math2.DegToRadVec3(angles), mgl32.Vec3{0.9, 0.9, 0.9},
 			),
 			Shape:  collision.NewSphere(0.7),
 			Layer:  COL_LAYER_ACTORS,
@@ -63,7 +68,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 		MaxSpeed:  5.0,
 	}
 	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
-	enemy.AnimPlayer = comps.NewAnimationPlayer(anim, true)
+	enemy.AnimPlayer = comps.NewAnimationPlayer(enemy.walkAnim, false)
 
 	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
 	bloodAnim, _ := bloodTexture.GetAnimation("default")
@@ -73,7 +78,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 		SpawnRate:        0.01,
 		SpawnRadius:      0.5,
 		VisibilityRadius: 5.0,
-		EmissionTimer:    math2.Inf32(),
+		EmissionTimer:    0.0,
 		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
 			form.Color = color.Red.Vector()
 			s := rand.Float32()*0.10 + 0.15
@@ -100,11 +105,29 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3) (id 
 }
 
 func (enemy *Enemy) Update(deltaTime float32) {
-	enemy.timer += deltaTime
-	enemy.actor.inputForward = math2.Sin(enemy.timer)
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
 	enemy.bloodParticles.Update(deltaTime, &enemy.Body().Transform)
+
+	enemyPos := enemy.Body().Transform.Position()
+	enemyDir := enemy.actor.FacingVec()
+
+	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
+		toPlayer := player.Body().Transform.Position().Sub(enemyPos)
+		distToPlayer := toPlayer.Len()
+		if distToPlayer != 0.0 {
+			toPlayer = toPlayer.Normalize()
+		}
+		angle := math2.Acos(toPlayer.Dot(enemyDir))
+
+		enemy.AnimPlayer.Stop()
+		if angle < ENEMY_FOV_RADS/2.0 || distToPlayer < ENEMY_WAKE_PROXIMITY {
+			res, handle := enemy.world.Raycast(enemyPos, toPlayer, COL_LAYER_ACTORS, 100.0, enemy)
+			if handle.Equals(player.id.Handle) && res.Hit {
+				enemy.AnimPlayer.Play()
+			}
+		}
+	}
 }
 
 func (enemy *Enemy) Render(context *render.Context) {

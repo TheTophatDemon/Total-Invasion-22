@@ -35,7 +35,7 @@ func (sphere Sphere) Radius() float32 {
 
 func (sphere Sphere) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
 	var res RaycastResult = RaySphereCollision(rayOrigin, rayDir, shapeOffset, sphere.radius)
-	if res.Distance < maxDist {
+	if res.Distance <= maxDist {
 		return res
 	} else {
 		return RaycastResult{}
