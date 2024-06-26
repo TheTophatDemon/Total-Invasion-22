@@ -72,7 +72,11 @@ func main() {
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 
-	world, err := world.NewWorld("assets/maps/ti2-malicious-intents.te3")
+	mapName := settings.Current.Debug.StartMap
+	if len(mapName) == 0 {
+		mapName = "assets/maps/ti2-malicious-intents.te3"
+	}
+	world, err := world.NewWorld(mapName)
 	if err != nil {
 		panic(err)
 	}

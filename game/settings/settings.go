@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,6 +64,9 @@ type Data struct {
 	TextShadowColor           color.Color
 	SfxVolume, MusicVolume    float32
 	Locale                    string
+	Debug                     struct {
+		StartMap string
+	}
 }
 
 func (data *Data) WindowAspectRatio() float32 {
@@ -127,7 +131,10 @@ func Save() {
 		return
 	}
 
-	_, err = settingsFile.Write(settingsBytes)
+	var formattedBuffer bytes.Buffer
+	json.Indent(&formattedBuffer, settingsBytes, "", "\t")
+	_, err = formattedBuffer.WriteTo(settingsFile)
+
 	if err != nil {
 		failure.LogErrWithLocation("Could not write settings to file; %v", err)
 		return

@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -100,13 +98,13 @@ func (gameMap *Map) Remove(handle scene.Handle) {
 	// You fool! I am eternal.
 }
 
-func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) error {
-	return gm.SetTileCollisionShapesForAngles(shapeName, 0, 360, 0, 360, shape)
+func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) {
+	gm.SetTileCollisionShapesForAngles(shapeName, 0, 360, 0, 360, shape)
 }
 
 // Sets the collision shape of all tiles that have the specified shape, and whose angles are within the designated ranges.
 // 'yawMin' and 'pitchMin' are inclusive bounds, but 'yawMax' and 'pitchMax' are exclusive.
-func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax, pitchMin, pitchMax int32, shape collision.Shape) error {
+func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax, pitchMin, pitchMax int32, shape collision.Shape) {
 	var shapeID te3.ShapeID = -1
 	for id, name := range gm.tiles.Shapes {
 		if name == shapeName {
@@ -115,7 +113,7 @@ func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax,
 		}
 	}
 	if shapeID < 0 {
-		return fmt.Errorf("shape not found")
+		return
 	}
 	for index, tile := range gm.tiles.Data {
 		if tile.ShapeID == shapeID &&
@@ -125,7 +123,7 @@ func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax,
 			gm.gridShape.SetShapeAtFlatIndex(index, shape)
 		}
 	}
-	return nil
+	return
 }
 
 func (gm *Map) Update(deltaTime float32) {

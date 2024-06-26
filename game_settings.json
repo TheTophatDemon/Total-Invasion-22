@@ -1,1 +1,17 @@
-{"WindowWidth":1280,"WindowHeight":720,"MouseSensitivity":0.005,"TextShadowColor":{"R":0,"G":0,"B":0,"A":0.5},"SfxVolume":1.0,"MusicVolume":0.0,"Locale":"en"}
+{
+	"WindowWidth": 1280,
+	"WindowHeight": 720,
+	"MouseSensitivity": 0.005,
+	"TextShadowColor": {
+		"R": 0,
+		"G": 0,
+		"B": 0,
+		"A": 0.5
+	},
+	"SfxVolume": 1,
+	"MusicVolume": 0.0,
+	"Locale": "en",
+	"Debug": {
+		"StartMap": "assets/maps/ti2-malicious-intents.te3"
+	}
+}

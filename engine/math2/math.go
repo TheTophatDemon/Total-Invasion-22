@@ -29,6 +29,11 @@ func Clamp[N Number](val, min, max N) N {
 	return val
 }
 
+// Returns 1 if the number is positive and -1 if it is negative.
+func Signum[N Number](val N) N {
+	return Abs(val) / val
+}
+
 // Calculates the sign using a fast sin approximation accurate from 0 to 1
 func FastApproxSin[F Float](val F) F {
 	return 0.5 * val * (3.0 - val*val)

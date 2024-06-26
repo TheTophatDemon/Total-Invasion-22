@@ -23,10 +23,10 @@ type DebugShape struct {
 }
 
 func (debugShape *DebugShape) Update(deltaTime float32) {
-	debugShape.TimeLeft -= deltaTime
 	if debugShape.TimeLeft <= 0.0 {
 		debugShape.id.Remove()
 	}
+	debugShape.TimeLeft -= deltaTime
 }
 
 func (debugShape *DebugShape) Render(context *render.Context) {

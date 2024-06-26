@@ -29,7 +29,7 @@ func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
 			cooldown:      0.25,
 			spriteTexture: cache.GetTexture("assets/textures/ui/sickle_hud.png"),
 			swayExtents:   mgl32.Vec2{32.0, 16.0},
-			swaySpeed:     mgl32.Vec2{1.0, 2.0},
+			swaySpeed:     mgl32.Vec2{0.75, 1.5},
 		},
 	}
 

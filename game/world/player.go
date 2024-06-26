@@ -25,6 +25,7 @@ type Player struct {
 	world                                    *World
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
 	selectedWeapon, nextWeapon               WeaponIndex
+	initialCollisionLayers                   collision.Mask
 }
 
 var _ HasActor = (*Player)(nil)
@@ -44,13 +45,14 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		return
 	}
 	p.id = id
+	p.initialCollisionLayers = COL_LAYER_ACTORS | COL_LAYER_PLAYERS
 	p.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
 			Shape:  collision.NewSphere(0.7),
-			Layer:  COL_LAYER_ACTORS,
+			Layer:  p.initialCollisionLayers,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
@@ -109,7 +111,7 @@ func (player *Player) Update(deltaTime float32) {
 			player.Body().Layer = COL_LAYER_NONE
 			player.Body().Filter = COL_LAYER_NONE
 		} else {
-			player.Body().Layer = COL_LAYER_ACTORS
+			player.Body().Layer = player.initialCollisionLayers
 			player.Body().Filter = COL_FILTER_FOR_ACTORS
 			message = settings.Localize("noclipDeactivate")
 		}
@@ -177,7 +179,6 @@ func (player *Player) Update(deltaTime float32) {
 
 	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
-
 	player.actor.Update(deltaTime)
 }
 

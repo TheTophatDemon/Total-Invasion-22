@@ -92,6 +92,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
+		prop.body.Layer |= COL_LAYER_NPCS
 	}
 
 	return

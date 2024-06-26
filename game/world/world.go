@@ -1,7 +1,6 @@
 package world
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -29,7 +28,9 @@ const (
 	COL_LAYER_MAP  collision.Mask = 1 << (iota - 1)
 	COL_LAYER_ACTORS
 	COL_LAYER_PROJECTILES
-	COL_LAYER_INVISIBLE
+	COL_LAYER_INVISIBLE // Includes invisible walls around holes and lava
+	COL_LAYER_PLAYERS
+	COL_LAYER_NPCS // Includes enemies, chickens, and Geoffrey
 )
 
 const (
@@ -106,16 +107,11 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/bars.obj",
 		"assets/models/shapes/panel.obj",
 	} {
-		err = errors.Join(
-			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX),
-			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ),
-			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX),
-			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ),
-			world.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX),
-		)
-		if err != nil {
-			return nil, err
-		}
+		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX)
+		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ)
+		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX)
+		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ)
+		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX)
 	}
 
 	// Set cube collision shapes
@@ -126,10 +122,7 @@ func NewWorld(mapPath string) (*World, error) {
 		"assets/models/shapes/cube_marker.obj",
 		"assets/models/shapes/bridge.obj",
 	} {
-		err = world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
-		if err != nil {
-			return nil, err
-		}
+		world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
 	}
 
 	// Read level properties

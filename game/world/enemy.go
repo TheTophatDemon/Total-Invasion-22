@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -17,16 +18,33 @@ import (
 
 const (
 	ENEMY_FOV_RADS       = math.Pi
-	ENEMY_WAKE_PROXIMITY = 1.5
+	ENEMY_WAKE_PROXIMITY = 1.7
+)
+
+type EnemyState uint8
+
+const (
+	ENEMY_STATE_IDLE EnemyState = iota
+	ENEMY_STATE_CHASE
 )
 
 type Enemy struct {
-	SpriteRender         comps.SpriteRender
-	AnimPlayer           comps.AnimationPlayer
-	bloodParticles       comps.ParticleRender
-	actor                Actor
-	world                *World
-	walkAnim, attackAnim textures.Animation
+	SpriteRender          comps.SpriteRender
+	AnimPlayer            comps.AnimationPlayer
+	WakeTime              float32 // Number of seconds player must be in sight before enemy begins to pursue.
+	WakeLimit             float32 // Maximum number of seconds after losing sight of player before giving up.
+	ChaseStraightTime     float32 // Number of seconds enemy chases in a straight line before turning.
+	ChaseStrafeTime       float32 // Number of seconds enemy chases diagonally.
+	bloodParticles        comps.ParticleRender
+	actor                 Actor
+	world                 *World
+	walkAnim, attackAnim  textures.Animation
+	wakeTimer, chaseTimer float32
+	chaseStrafeDir        float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle           float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	wakeSound             *audio.Sfx
+	state                 EnemyState
+	voice                 audio.VoiceId
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -51,6 +69,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
 	enemy.walkAnim, _ = wraithTexture.GetAnimation("walk;front")
 	enemy.attackAnim, _ = wraithTexture.GetAnimation("walk;front")
+	enemy.wakeSound, _ = cache.GetSfx("assets/sounds/enemy/wraith/wraith_greeting.wav")
 
 	enemy.actor = Actor{
 		body: comps.Body{
@@ -58,7 +77,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), math2.DegToRadVec3(angles), mgl32.Vec3{0.9, 0.9, 0.9},
 			),
 			Shape:  collision.NewSphere(0.7),
-			Layer:  COL_LAYER_ACTORS,
+			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
@@ -69,6 +88,13 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	}
 	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(enemy.walkAnim, false)
+	enemy.WakeTime = 0.5
+	enemy.WakeLimit = 5.0
+	enemy.ChaseStraightTime = 3.0
+	enemy.ChaseStrafeTime = 1.0
+	enemy.chaseTimer = rand.Float32() * enemy.ChaseStrafeTime
+
+	enemy.state = ENEMY_STATE_IDLE
 
 	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
 	bloodAnim, _ := bloodTexture.GetAnimation("default")
@@ -112,28 +138,84 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemyPos := enemy.Body().Transform.Position()
 	enemyDir := enemy.actor.FacingVec()
 
+	// Check if the player is in view and not obstructed
+	canSeePlayer := false
+	var vecToPlayer, dirToPlayer mgl32.Vec3
+	var distToPlayer float32
 	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
-		toPlayer := player.Body().Transform.Position().Sub(enemyPos)
-		distToPlayer := toPlayer.Len()
-		if distToPlayer != 0.0 {
-			toPlayer = toPlayer.Normalize()
-		}
-		angle := math2.Acos(toPlayer.Dot(enemyDir))
+		enemy.voice.Attenuate(enemyPos, player.Body().Transform.Matrix())
 
-		enemy.AnimPlayer.Stop()
-		if angle < ENEMY_FOV_RADS/2.0 || distToPlayer < ENEMY_WAKE_PROXIMITY {
-			res, handle := enemy.world.Raycast(enemyPos, toPlayer, COL_LAYER_ACTORS, 100.0, enemy)
+		vecToPlayer = player.Body().Transform.Position().Sub(enemyPos)
+		distToPlayer = vecToPlayer.Len()
+		if distToPlayer != 0.0 {
+			dirToPlayer = vecToPlayer.Normalize()
+		}
+
+		if distToPlayer < ENEMY_WAKE_PROXIMITY {
+			canSeePlayer = true
+		} else if angle := math2.Acos(dirToPlayer.Dot(enemyDir)); angle < ENEMY_FOV_RADS/2.0 {
+			res, handle := enemy.world.Raycast(enemyPos, dirToPlayer, COL_LAYER_PLAYERS|COL_LAYER_MAP, 25.0, enemy)
 			if handle.Equals(player.id.Handle) && res.Hit {
-				enemy.AnimPlayer.Play()
+				canSeePlayer = true
 			}
 		}
+	}
+
+	if !canSeePlayer {
+		enemy.wakeTimer = max(0.0, enemy.wakeTimer-deltaTime)
+	} else {
+		enemy.wakeTimer = min(enemy.WakeLimit, enemy.wakeTimer+deltaTime)
+	}
+
+	enemy.spriteAngle = enemy.actor.YawAngle
+
+	switch enemy.state {
+	case ENEMY_STATE_IDLE:
+		if enemy.wakeTimer >= enemy.WakeTime {
+			enemy.changeState(ENEMY_STATE_CHASE)
+		}
+		enemy.actor.inputForward = 0.0
+		enemy.actor.inputStrafe = 0.0
+	case ENEMY_STATE_CHASE:
+		if enemy.wakeTimer <= 0.0 && !canSeePlayer {
+			enemy.changeState(ENEMY_STATE_IDLE)
+		}
+		enemy.actor.inputForward = 1.0
+		enemy.chaseTimer += deltaTime
+		enemy.actor.YawAngle = math2.Atan2(-vecToPlayer.X(), -vecToPlayer.Z())
+		if enemy.chaseTimer < enemy.ChaseStraightTime {
+			enemy.chaseStrafeDir = 0.0
+			enemy.spriteAngle = enemy.actor.YawAngle
+		} else if enemy.chaseTimer < enemy.ChaseStraightTime+enemy.ChaseStrafeTime {
+			if enemy.chaseStrafeDir == 0.0 {
+				enemy.chaseStrafeDir = ([2]float32{-0.7, 0.7})[rand.Intn(2)]
+			}
+			enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
+		} else {
+			enemy.chaseTimer = 0.0
+		}
+		enemy.actor.inputStrafe = enemy.chaseStrafeDir
 	}
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.actor.YawAngle)
+	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.spriteAngle)
 	enemy.bloodParticles.Render(&enemy.Body().Transform, context)
 }
 
 func (enemy *Enemy) ProcessSignal(signal Signal, params any) {
+}
+
+func (enemy *Enemy) changeState(newState EnemyState) {
+	// Initialize new state
+	switch newState {
+	case ENEMY_STATE_IDLE:
+		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
+		enemy.AnimPlayer.Stop()
+	case ENEMY_STATE_CHASE:
+		enemy.voice = enemy.wakeSound.Play()
+		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
+		enemy.AnimPlayer.Play()
+	}
+	enemy.state = newState
 }
