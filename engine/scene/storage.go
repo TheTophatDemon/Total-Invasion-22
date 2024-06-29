@@ -7,16 +7,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
-// Type-agnostic abstraction of Storage
-type StorageOps interface {
-	GetUntyped(Handle) (any, bool)
-	Has(Handle) bool
-	Remove(Handle)
-	Update(deltaTime float32)
-	Render(renderContext *render.Context)
-	IterUntyped() func() (any, Handle)
-}
-
 // Represents a function that updates a poiner to object T by deltaTime.
 // You can pass in a pointer-receiving method M for type T with the expression `(*T).M`.
 type UpdateFunc[T any] func(object *T, deltaTime float32)

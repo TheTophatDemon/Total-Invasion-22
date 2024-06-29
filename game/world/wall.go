@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -49,7 +48,7 @@ type Wall struct {
 	movePhase     MovePhase
 	world         *World
 	activator     ActivationType
-	activateSound *audio.Sfx
+	activateSound string
 }
 
 var _ Usable = (*Wall)(nil)
@@ -163,14 +162,10 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		wall.activator = ACTIVATOR_NONE
 	}
 
-	if sfxStr, ok := ent.Properties["activateSound"]; ok {
-		if len(sfxStr) > 0 {
-			wall.activateSound, _ = cache.GetSfx("assets/sounds/" + sfxStr)
-		} else {
-			wall.activateSound = nil
-		}
+	if sfxStr, ok := ent.Properties["activateSound"]; ok && len(sfxStr) > 0 {
+		wall.activateSound = "assets/sounds/" + sfxStr
 	} else {
-		wall.activateSound, _ = cache.GetSfx("assets/sounds/opendoor.wav")
+		wall.activateSound = "assets/sounds/opendoor.wav"
 	}
 
 	return nil
@@ -262,8 +257,8 @@ func (wall *Wall) OnUse(player *Player) {
 			case MOVE_PHASE_CLOSED:
 				wall.movePhase = MOVE_PHASE_OPENING
 				wall.waitTimer = 0
-				if wall.activateSound != nil {
-					wall.activateSound.Play()
+				if len(wall.activateSound) > 0 {
+					cache.GetSfx(wall.activateSound).Play()
 				}
 			case MOVE_PHASE_OPEN:
 				if wall.WaitTime >= 0.0 {

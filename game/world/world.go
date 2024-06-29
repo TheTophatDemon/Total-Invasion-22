@@ -59,6 +59,7 @@ type World struct {
 	messagePriority           int
 	flashRect                 scene.Id[*ui.Box]
 	flashSpeed                float32
+	removalQueue              []scene.Handle // Holds entities to be removed at the end of the frame.
 }
 
 func NewWorld(mapPath string) (*World, error) {
@@ -215,6 +216,8 @@ func NewWorld(mapPath string) (*World, error) {
 }
 
 func (world *World) Update(deltaTime float32) {
+	world.removalQueue = world.removalQueue[0:0]
+
 	// Update entities
 	scene.UpdateStores(world, deltaTime)
 	world.UI.Update(deltaTime)
@@ -223,6 +226,11 @@ func (world *World) Update(deltaTime float32) {
 	bodiesIter := world.BodyIter()
 	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
 		bodyEnt.Body().MoveAndCollide(deltaTime, world.BodyIter())
+	}
+
+	// Remove deleted entities
+	for _, handle := range world.removalQueue {
+		handle.Remove()
 	}
 
 	// Update message text
@@ -318,4 +326,8 @@ func (world *World) ListenerTransform() mgl32.Mat4 {
 		return player.Body().Transform.Matrix()
 	}
 	return mgl32.Ident4()
+}
+
+func (world *World) QueueRemoval(entHandle scene.Handle) {
+	world.removalQueue = append(world.removalQueue, entHandle)
 }

@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -12,6 +11,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game/settings"
+)
+
+const (
+	SFX_SICKLE_THROW = "assets/sounds/sickle.wav"
+	SFX_SICKLE_CLINK = "assets/sounds/sickle_clink.wav"
 )
 
 func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
@@ -41,14 +45,8 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	}
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
 	proj.speed = 35.0
-
-	var sfxThrow *audio.Sfx
-	sfxThrow, err = cache.GetSfx("assets/sounds/sickle.wav")
-	if err != nil {
-		log.Println(err)
-	} else {
-		proj.voices[0] = sfxThrow.Play()
-	}
+	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).Play()
+	proj.StunChance = 0.1
 
 	proj.moveFunc = proj.sickleMove
 	proj.body.OnIntersect = proj.sickleIntersect
@@ -73,19 +71,15 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 }
 
-func (proj *Projectile) sickleIntersect(body *comps.Body, result collision.Result) {
+func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result) {
+	otherBody := otherEnt.Body()
 	if proj.speed <= -1.0 {
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && body == owner.Body() {
+		if owner, ok := scene.Get[HasActor](proj.owner); ok && otherBody == owner.Body() {
 			proj.voices[0].Stop()
 			proj.id.Remove()
 		}
-	} else if body.OnLayer(COL_LAYER_MAP) {
+	} else if otherBody.OnLayer(COL_LAYER_MAP) {
 		proj.speed = -math2.Abs(proj.speed) / 2.0
-		sfxClink, err := cache.GetSfx("assets/sounds/sickle_clink.wav")
-		if err != nil {
-			log.Println(err)
-		} else {
-			proj.voices[1] = sfxClink.Play()
-		}
+		proj.voices[1] = cache.GetSfx(SFX_SICKLE_CLINK).Play()
 	}
 }

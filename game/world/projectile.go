@@ -12,6 +12,7 @@ type Projectile struct {
 	id           scene.Id[*Projectile]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
+	StunChance   float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
 	body         comps.Body
 	owner        scene.Handle
 	moveFunc     func(deltaTime float32)

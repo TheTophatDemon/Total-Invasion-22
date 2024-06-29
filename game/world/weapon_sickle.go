@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -12,9 +11,12 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+const (
+	SFX_SICKLE_CATCH = "assets/sounds/sickle_return.wav"
+)
+
 type WeaponSickle struct {
 	weaponBase
-	sfxCatch                       *audio.Sfx
 	throwAnim, catchAnim, idleAnim textures.Animation
 	thrownSickle                   scene.Id[*Projectile]
 }
@@ -33,11 +35,7 @@ func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
 		},
 	}
 
-	var (
-		err error
-		ok  bool
-	)
-
+	var ok bool
 	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
 	if !ok {
 		log.Println("sickle idle anim not found")
@@ -53,11 +51,6 @@ func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
 		settings.UI_HEIGHT - sickle.spriteSize.Y() + 16.0,
 	}
 	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})
-
-	sickle.sfxCatch, err = cache.GetSfx("assets/sounds/sickle_return.wav")
-	if err != nil {
-		log.Println(err)
-	}
 
 	sickle.throwAnim, ok = sickle.spriteTexture.GetAnimation("throw")
 	if !ok {
@@ -90,7 +83,7 @@ func (sickle *WeaponSickle) Update(deltaTime float32, swayAmount float32) {
 	if !sickle.thrownSickle.Exists() && sprite.AnimPlayer.CurrentAnimation().Name == sickle.throwAnim.Name {
 		sprite.AnimPlayer.ChangeAnimation(sickle.catchAnim)
 		sprite.AnimPlayer.PlayFromStart()
-		sickle.sfxCatch.Play()
+		cache.GetSfx(SFX_SICKLE_CATCH).Play()
 	}
 }
 

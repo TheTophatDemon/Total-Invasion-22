@@ -162,12 +162,13 @@ func GetFont(assetPath string) (*fonts.Font, error) {
 }
 
 // Retrieves a sound effect from the game assets, loading it if it doesn't already exist.
-func GetSfx(assetPath string) (*audio.Sfx, error) {
+func GetSfx(assetPath string) *audio.Sfx {
 	sfx, err := loadedSfx.get(assetPath)
 	if err != nil {
 		log.Println(err)
+		return SilentSfx
 	}
-	return sfx, err
+	return sfx
 }
 
 // Retrieves a song from the game assets, loading it if it doesn't already exist.

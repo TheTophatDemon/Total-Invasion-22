@@ -26,25 +26,30 @@ type EnemyState uint8
 const (
 	ENEMY_STATE_IDLE EnemyState = iota
 	ENEMY_STATE_CHASE
+	ENEMY_STATE_STUN
+)
+
+const (
+	SFX_WRAITH_WAKE = "assets/sounds/enemy/wraith/wraith_greeting.wav"
+	SFX_WRAITH_HURT = "assets/sounds/enemy/wraith/wraith_hurt.wav"
 )
 
 type Enemy struct {
-	SpriteRender          comps.SpriteRender
-	AnimPlayer            comps.AnimationPlayer
-	WakeTime              float32 // Number of seconds player must be in sight before enemy begins to pursue.
-	WakeLimit             float32 // Maximum number of seconds after losing sight of player before giving up.
-	ChaseStraightTime     float32 // Number of seconds enemy chases in a straight line before turning.
-	ChaseStrafeTime       float32 // Number of seconds enemy chases diagonally.
-	bloodParticles        comps.ParticleRender
-	actor                 Actor
-	world                 *World
-	walkAnim, attackAnim  textures.Animation
-	wakeTimer, chaseTimer float32
-	chaseStrafeDir        float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
-	spriteAngle           float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
-	wakeSound             *audio.Sfx
-	state                 EnemyState
-	voice                 audio.VoiceId
+	SpriteRender                      comps.SpriteRender
+	AnimPlayer                        comps.AnimationPlayer
+	WakeTime                          float32 // Number of seconds player must be in sight before enemy begins to pursue.
+	WakeLimit                         float32 // Maximum number of seconds after losing sight of player before giving up.
+	StunTime                          float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
+	StunChance                        float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
+	bloodParticles                    comps.ParticleRender
+	actor                             Actor
+	world                             *World
+	walkAnim, attackAnim, stunAnim    textures.Animation
+	wakeTimer, chaseTimer, stateTimer float32
+	chaseStrafeDir                    float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle                       float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	state                             EnemyState
+	voice                             audio.VoiceId
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -69,30 +74,31 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
 	enemy.walkAnim, _ = wraithTexture.GetAnimation("walk;front")
 	enemy.attackAnim, _ = wraithTexture.GetAnimation("walk;front")
-	enemy.wakeSound, _ = cache.GetSfx("assets/sounds/enemy/wraith/wraith_greeting.wav")
+	enemy.stunAnim, _ = wraithTexture.GetAnimation("hurt;front")
 
 	enemy.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), math2.DegToRadVec3(angles), mgl32.Vec3{0.9, 0.9, 0.9},
 			),
-			Shape:  collision.NewSphere(0.7),
-			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
-			Filter: COL_FILTER_FOR_ACTORS,
-			LockY:  true,
+			Shape:       collision.NewSphere(0.7),
+			Layer:       COL_LAYER_ACTORS | COL_LAYER_NPCS,
+			Filter:      COL_FILTER_FOR_ACTORS,
+			LockY:       true,
+			OnIntersect: enemy.enemyIntersect,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 80.0,
 		Friction:  20.0,
-		MaxSpeed:  5.0,
+		MaxSpeed:  5.5,
 	}
 	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(enemy.walkAnim, false)
 	enemy.WakeTime = 0.5
 	enemy.WakeLimit = 5.0
-	enemy.ChaseStraightTime = 3.0
-	enemy.ChaseStrafeTime = 1.0
-	enemy.chaseTimer = rand.Float32() * enemy.ChaseStrafeTime
+	enemy.StunChance = 1.0
+	enemy.StunTime = 0.5
+	enemy.chaseTimer = rand.Float32() * 10.0
 
 	enemy.state = ENEMY_STATE_IDLE
 
@@ -180,22 +186,15 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		if enemy.wakeTimer <= 0.0 && !canSeePlayer {
 			enemy.changeState(ENEMY_STATE_IDLE)
 		}
-		enemy.actor.inputForward = 1.0
-		enemy.chaseTimer += deltaTime
-		enemy.actor.YawAngle = math2.Atan2(-vecToPlayer.X(), -vecToPlayer.Z())
-		if enemy.chaseTimer < enemy.ChaseStraightTime {
-			enemy.chaseStrafeDir = 0.0
-			enemy.spriteAngle = enemy.actor.YawAngle
-		} else if enemy.chaseTimer < enemy.ChaseStraightTime+enemy.ChaseStrafeTime {
-			if enemy.chaseStrafeDir == 0.0 {
-				enemy.chaseStrafeDir = ([2]float32{-0.7, 0.7})[rand.Intn(2)]
-			}
-			enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
-		} else {
-			enemy.chaseTimer = 0.0
+		enemy.wraithChase(deltaTime, 3.0, 1.0, vecToPlayer)
+	case ENEMY_STATE_STUN:
+		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+		if enemy.stateTimer > enemy.StunTime {
+			enemy.wakeTimer = enemy.WakeLimit
+			enemy.changeState(ENEMY_STATE_CHASE)
 		}
-		enemy.actor.inputStrafe = enemy.chaseStrafeDir
 	}
+	enemy.stateTimer += deltaTime
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
@@ -213,9 +212,51 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Stop()
 	case ENEMY_STATE_CHASE:
-		enemy.voice = enemy.wakeSound.Play()
+		enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).Play()
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Play()
+	case ENEMY_STATE_STUN:
+		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).Play()
+		enemy.AnimPlayer.ChangeAnimation(enemy.stunAnim)
+		enemy.AnimPlayer.PlayFromStart()
 	}
+	enemy.stateTimer = 0.0
 	enemy.state = newState
+}
+
+func (enemy *Enemy) enemyIntersect(otherEnt comps.HasBody, res collision.Result) {
+	otherBody := otherEnt.Body()
+	_ = res
+	if proj, ok := otherEnt.(*Projectile); ok && otherBody.OnLayer(COL_LAYER_PROJECTILES) {
+		enemy.bloodParticles.EmissionTimer = 0.1
+		if enemy.state != ENEMY_STATE_STUN && rand.Float32() < enemy.StunChance*proj.StunChance {
+			enemy.changeState(ENEMY_STATE_STUN)
+		}
+	}
+}
+
+func (enemy *Enemy) wraithChase(
+	deltaTime float32,
+	chaseStraightTime float32, // Number of seconds enemy chases in a straight line before turning.
+	chaseStrafeTime float32, // Number of seconds enemy chases diagonally.
+	vecToPlayer mgl32.Vec3,
+) {
+	totalChaseTime := chaseStraightTime + chaseStrafeTime
+	enemy.actor.inputForward = 1.0
+	enemy.chaseTimer += deltaTime
+	enemy.actor.YawAngle = math2.Atan2(-vecToPlayer.X(), -vecToPlayer.Z())
+	if enemy.chaseTimer < chaseStraightTime {
+		enemy.chaseStrafeDir = 0.0
+		enemy.spriteAngle = enemy.actor.YawAngle
+	} else if enemy.chaseTimer < totalChaseTime {
+		if enemy.chaseStrafeDir == 0.0 {
+			enemy.chaseStrafeDir = ([2]float32{-0.7, 0.7})[rand.Intn(2)]
+		}
+		enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
+	} else {
+		for enemy.chaseTimer > totalChaseTime {
+			enemy.chaseTimer -= totalChaseTime
+		}
+	}
+	enemy.actor.inputStrafe = enemy.chaseStrafeDir
 }

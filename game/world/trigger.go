@@ -1,8 +1,6 @@
 package world
 
 import (
-	"log"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -11,7 +9,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-const TRIGGER_TOUCH_MAX = 3
+const (
+	TRIGGER_TOUCH_MAX = 3
+	SFX_TELEPORT      = "assets/sounds/teleport.wav"
+)
 
 type Trigger struct {
 	Sphere        collision.Sphere
@@ -115,11 +116,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
-				if sfx, err := cache.GetSfx("assets/sounds/teleport.wav"); err == nil {
-					sfx.Play()
-				} else {
-					log.Println(err)
-				}
+				cache.GetSfx(SFX_TELEPORT).Play()
 				break
 			}
 		}

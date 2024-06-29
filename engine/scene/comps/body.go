@@ -12,10 +12,10 @@ type Body struct {
 	Transform   Transform
 	Velocity    mgl32.Vec3
 	Shape       collision.Shape
-	Filter      collision.Mask                // Determines which collision layers this body will respond to collisions with
-	Layer       collision.Mask                // The collision layer(s) that this body resides on
-	OnIntersect func(*Body, collision.Result) // Called when the body intersects another body that passes the filter. Can be nil.
-	LockY       bool                          // When true, the body will not move on the Y axis in response to collisions.
+	Filter      collision.Mask                                            // Determines which collision layers this body will respond to collisions with
+	Layer       collision.Mask                                            // The collision layer(s) that this body resides on
+	OnIntersect func(collidingEntity HasBody, collision collision.Result) // Called when the body intersects another body, include those that don't pass the collision filter. Can be nil.
+	LockY       bool                                                      // When true, the body will not move on the Y axis in response to collisions.
 }
 
 func (body *Body) Body() *Body {
@@ -27,9 +27,7 @@ func (body *Body) MoveAndCollide(deltaTime float32, bodiesIterator func() (HasBo
 
 	movement := body.Velocity.Mul(deltaTime)
 	for collidingEnt, _ := bodiesIterator(); collidingEnt != nil; collidingEnt, _ = bodiesIterator() {
-		if collidingEnt.Body() != body {
-			body.ResolveCollision(movement, collidingEnt.Body())
-		}
+		body.ResolveCollision(movement, collidingEnt)
 	}
 
 	body.Transform.TranslateV(movement)
@@ -42,7 +40,8 @@ func (body *Body) MoveAndCollide(deltaTime float32, bodiesIterator func() (HasBo
 }
 
 // Change the position of this body so that it doesn't collide with the other body.
-func (body *Body) ResolveCollision(movement mgl32.Vec3, otherBody *Body) {
+func (body *Body) ResolveCollision(movement mgl32.Vec3, otherEnt HasBody) {
+	otherBody := otherEnt.Body()
 	if otherBody == nil || body == otherBody || (body.Filter&otherBody.Layer == 0 && body.OnIntersect == nil) {
 		return
 	}
@@ -65,7 +64,7 @@ func (body *Body) ResolveCollision(movement mgl32.Vec3, otherBody *Body) {
 			body.Transform.TranslateV(res.Normal.Mul(res.Penetration))
 		}
 		if body.OnIntersect != nil {
-			body.OnIntersect(otherBody, res)
+			body.OnIntersect(otherEnt, res)
 		}
 	}
 }

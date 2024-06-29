@@ -1,6 +1,6 @@
 # TODO
 - Wraith AI
-    - Bleeding and dying
+    - Dying
     - Attacking
         - Be sure to make them stand while attacking so they don't push the player through walls
 - Fix artifacts at the top of billboards
