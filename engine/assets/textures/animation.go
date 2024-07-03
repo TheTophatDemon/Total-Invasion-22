@@ -18,18 +18,27 @@ type Frame struct {
 	Duration float32    // Duration of the frame in seconds
 }
 
-func (a *Animation) BaseName() string {
-	semiIndex := strings.LastIndexByte(a.Name, byte(';'))
+func (anim *Animation) BaseName() string {
+	semiIndex := strings.LastIndexByte(anim.Name, byte(';'))
 	if semiIndex > -1 {
-		return a.Name[:semiIndex]
+		return anim.Name[:semiIndex]
 	}
-	return a.Name
+	return anim.Name
 }
 
-func (a *Animation) LayerName() string {
-	semiIndex := strings.LastIndexByte(a.Name, byte(';'))
-	if semiIndex > -1 && semiIndex < len(a.Name)-1 {
-		return a.Name[semiIndex+1:]
+func (anim *Animation) LayerName() string {
+	semiIndex := strings.LastIndexByte(anim.Name, byte(';'))
+	if semiIndex > -1 && semiIndex < len(anim.Name)-1 {
+		return anim.Name[semiIndex+1:]
 	}
 	return ""
+}
+
+// Returns the number of seconds from the start to the end.
+func (anim *Animation) Duration() float32 {
+	var sum float32
+	for _, frame := range anim.Frames {
+		sum += frame.Duration
+	}
+	return sum
 }

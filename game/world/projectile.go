@@ -8,16 +8,18 @@ import (
 )
 
 type Projectile struct {
-	world        *World
-	id           scene.Id[*Projectile]
-	SpriteRender comps.SpriteRender
-	AnimPlayer   comps.AnimationPlayer
-	StunChance   float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
-	body         comps.Body
-	owner        scene.Handle
-	moveFunc     func(deltaTime float32)
-	speed        float32
-	voices       [4]audio.VoiceId
+	world                 *World
+	id                    scene.Id[*Projectile]
+	SpriteRender          comps.SpriteRender
+	AnimPlayer            comps.AnimationPlayer
+	StunChance            float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
+	Damage                float32 // Damage done to actors for every frame collided.
+	ShouldDamagePerSecond bool    // Set to true to multiply damage done by deltaTime
+	body                  comps.Body
+	owner                 scene.Handle
+	moveFunc              func(deltaTime float32)
+	speed                 float32
+	voices                [4]audio.VoiceId
 }
 
 var _ comps.HasBody = (*Projectile)(nil)

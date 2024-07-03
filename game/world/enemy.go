@@ -27,29 +27,32 @@ const (
 	ENEMY_STATE_IDLE EnemyState = iota
 	ENEMY_STATE_CHASE
 	ENEMY_STATE_STUN
+	ENEMY_STATE_DIE
 )
 
 const (
 	SFX_WRAITH_WAKE = "assets/sounds/enemy/wraith/wraith_greeting.wav"
 	SFX_WRAITH_HURT = "assets/sounds/enemy/wraith/wraith_hurt.wav"
+	SFX_WRAITH_DIE  = "assets/sounds/enemy/wraith/wraith_die.wav"
 )
 
 type Enemy struct {
-	SpriteRender                      comps.SpriteRender
-	AnimPlayer                        comps.AnimationPlayer
-	WakeTime                          float32 // Number of seconds player must be in sight before enemy begins to pursue.
-	WakeLimit                         float32 // Maximum number of seconds after losing sight of player before giving up.
-	StunTime                          float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
-	StunChance                        float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
-	bloodParticles                    comps.ParticleRender
-	actor                             Actor
-	world                             *World
-	walkAnim, attackAnim, stunAnim    textures.Animation
-	wakeTimer, chaseTimer, stateTimer float32
-	chaseStrafeDir                    float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
-	spriteAngle                       float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
-	state                             EnemyState
-	voice                             audio.VoiceId
+	SpriteRender                            comps.SpriteRender
+	AnimPlayer                              comps.AnimationPlayer
+	WakeTime                                float32 // Number of seconds player must be in sight before enemy begins to pursue.
+	WakeLimit                               float32 // Maximum number of seconds after losing sight of player before giving up.
+	StunTime                                float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
+	StunChance                              float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
+	bloodParticles                          comps.ParticleRender
+	bloodOffset                             mgl32.Vec3
+	actor                                   Actor
+	world                                   *World
+	walkAnim, attackAnim, stunAnim, dieAnim textures.Animation
+	wakeTimer, chaseTimer, stateTimer       float32
+	chaseStrafeDir                          float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle                             float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	state                                   EnemyState
+	voice                                   audio.VoiceId
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -75,6 +78,11 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	enemy.walkAnim, _ = wraithTexture.GetAnimation("walk;front")
 	enemy.attackAnim, _ = wraithTexture.GetAnimation("walk;front")
 	enemy.stunAnim, _ = wraithTexture.GetAnimation("hurt;front")
+	enemy.dieAnim, _ = wraithTexture.GetAnimation("die;front")
+	// Preload sounds
+	cache.GetSfx(SFX_WRAITH_WAKE)
+	cache.GetSfx(SFX_WRAITH_HURT)
+	cache.GetSfx(SFX_WRAITH_DIE)
 
 	enemy.actor = Actor{
 		body: comps.Body{
@@ -99,6 +107,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	enemy.StunChance = 1.0
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
+	enemy.actor.Health = 100.0
 
 	enemy.state = ENEMY_STATE_IDLE
 
@@ -139,7 +148,10 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
-	enemy.bloodParticles.Update(deltaTime, &enemy.Body().Transform)
+
+	bloodTransform := enemy.Body().Transform
+	bloodTransform.TranslateV(enemy.bloodOffset)
+	enemy.bloodParticles.Update(deltaTime, &bloodTransform)
 
 	enemyPos := enemy.Body().Transform.Position()
 	enemyDir := enemy.actor.FacingVec()
@@ -173,6 +185,10 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		enemy.wakeTimer = min(enemy.WakeLimit, enemy.wakeTimer+deltaTime)
 	}
 
+	if enemy.actor.Health <= 0.0 {
+		enemy.changeState(ENEMY_STATE_DIE)
+	}
+
 	enemy.spriteAngle = enemy.actor.YawAngle
 
 	switch enemy.state {
@@ -193,6 +209,14 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			enemy.wakeTimer = enemy.WakeLimit
 			enemy.changeState(ENEMY_STATE_CHASE)
 		}
+	case ENEMY_STATE_DIE:
+		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+		radius := enemy.Body().Shape.(collision.Sphere).Radius()
+		if enemy.bloodOffset.Y() > -radius {
+			enemy.bloodOffset = enemy.bloodOffset.Sub(mgl32.Vec3{0.0, deltaTime, 0.0})
+		} else {
+			enemy.bloodOffset = mgl32.Vec3{0.0, -radius, 0.0}
+		}
 	}
 	enemy.stateTimer += deltaTime
 }
@@ -206,29 +230,49 @@ func (enemy *Enemy) ProcessSignal(signal Signal, params any) {
 }
 
 func (enemy *Enemy) changeState(newState EnemyState) {
+	if newState == enemy.state {
+		return
+	}
 	// Initialize new state
 	switch newState {
 	case ENEMY_STATE_IDLE:
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Stop()
 	case ENEMY_STATE_CHASE:
-		enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).Play()
+		if enemy.state == ENEMY_STATE_IDLE {
+			enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).Play()
+		}
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Play()
 	case ENEMY_STATE_STUN:
 		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).Play()
 		enemy.AnimPlayer.ChangeAnimation(enemy.stunAnim)
 		enemy.AnimPlayer.PlayFromStart()
+	case ENEMY_STATE_DIE:
+		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).Play()
+		enemy.AnimPlayer.ChangeAnimation(enemy.dieAnim)
+		enemy.AnimPlayer.PlayFromStart()
+		enemy.actor.body.Layer = COL_LAYER_NONE
+		enemy.actor.body.Filter = COL_LAYER_NONE
+		enemy.bloodParticles.EmissionTimer = enemy.dieAnim.Duration()
 	}
 	enemy.stateTimer = 0.0
 	enemy.state = newState
 }
 
-func (enemy *Enemy) enemyIntersect(otherEnt comps.HasBody, res collision.Result) {
+func (enemy *Enemy) enemyIntersect(otherEnt comps.HasBody, res collision.Result, deltaTime float32) {
+	if enemy.state == ENEMY_STATE_DIE {
+		return
+	}
 	otherBody := otherEnt.Body()
 	_ = res
 	if proj, ok := otherEnt.(*Projectile); ok && otherBody.OnLayer(COL_LAYER_PROJECTILES) {
 		enemy.bloodParticles.EmissionTimer = 0.1
+		if proj.ShouldDamagePerSecond {
+			enemy.actor.Health -= proj.Damage * deltaTime
+		} else {
+			enemy.actor.Health -= proj.Damage
+		}
 		if enemy.state != ENEMY_STATE_STUN && rand.Float32() < enemy.StunChance*proj.StunChance {
 			enemy.changeState(ENEMY_STATE_STUN)
 		}

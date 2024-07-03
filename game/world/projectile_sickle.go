@@ -47,6 +47,8 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.speed = 35.0
 	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).Play()
 	proj.StunChance = 0.1
+	proj.Damage = 100.0
+	proj.ShouldDamagePerSecond = true
 
 	proj.moveFunc = proj.sickleMove
 	proj.body.OnIntersect = proj.sickleIntersect
@@ -71,7 +73,7 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 }
 
-func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result) {
+func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
 	otherBody := otherEnt.Body()
 	if proj.speed <= -1.0 {
 		if owner, ok := scene.Get[HasActor](proj.owner); ok && otherBody == owner.Body() {

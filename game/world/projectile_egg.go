@@ -35,6 +35,8 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 	proj.speed = 100.0
 	proj.voices[0] = cache.GetSfx(SFX_EGG_SHOOT).Play()
 	proj.StunChance = 0.1
+	proj.Damage = 15
+	proj.ShouldDamagePerSecond = false
 
 	proj.moveFunc = proj.eggMove
 	proj.body.OnIntersect = proj.eggIntersect
@@ -46,9 +48,10 @@ func (proj *Projectile) eggMove(deltaTime float32) {
 	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 }
 
-func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result) {
+func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
 	otherBody := otherEnt.Body()
-	if owner, ok := scene.Get[HasActor](proj.owner); ok && otherBody != owner.Body() && otherBody.OnLayer(proj.body.Filter) {
+	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
+	if !hasOwner || (hasOwner && otherBody != owner.Body()) {
 		proj.world.QueueRemoval(proj.id.Handle)
 	}
 }

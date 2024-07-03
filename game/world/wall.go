@@ -162,10 +162,16 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		wall.activator = ACTIVATOR_NONE
 	}
 
-	if sfxStr, ok := ent.Properties["activateSound"]; ok && len(sfxStr) > 0 {
-		wall.activateSound = "assets/sounds/" + sfxStr
+	if sfxStr, ok := ent.Properties["activateSound"]; ok {
+		if len(sfxStr) > 0 {
+			wall.activateSound = "assets/sounds/" + sfxStr
+		}
 	} else {
 		wall.activateSound = "assets/sounds/opendoor.wav"
+	}
+	if len(wall.activateSound) > 0 {
+		// Preload the sound
+		cache.GetSfx(wall.activateSound)
 	}
 
 	return nil

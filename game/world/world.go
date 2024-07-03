@@ -66,6 +66,7 @@ func NewWorld(mapPath string) (*World, error) {
 	world := &World{
 		messageTimer:    2.0,
 		messagePriority: 0,
+		removalQueue:    make([]scene.Handle, 0, 8),
 	}
 
 	world.UI = ui.NewUIScene(256, 64)
