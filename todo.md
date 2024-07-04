@@ -5,6 +5,7 @@
 - Player health bar and HUD
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
+- Wraiths should raycast to left and right side before chasing diagonally
 - Fix artifacts at the top of billboards
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff

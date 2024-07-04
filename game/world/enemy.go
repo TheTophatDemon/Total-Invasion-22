@@ -19,6 +19,7 @@ import (
 const (
 	ENEMY_FOV_RADS       = math.Pi
 	ENEMY_WAKE_PROXIMITY = 1.7
+	WRAITH_MELEE_RANGE   = 2.0
 )
 
 type EnemyState uint8
@@ -27,6 +28,7 @@ const (
 	ENEMY_STATE_IDLE EnemyState = iota
 	ENEMY_STATE_CHASE
 	ENEMY_STATE_STUN
+	ENEMY_STATE_ATTACK
 	ENEMY_STATE_DIE
 )
 
@@ -76,7 +78,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
 	enemy.walkAnim, _ = wraithTexture.GetAnimation("walk;front")
-	enemy.attackAnim, _ = wraithTexture.GetAnimation("walk;front")
+	enemy.attackAnim, _ = wraithTexture.GetAnimation("attack;front")
 	enemy.stunAnim, _ = wraithTexture.GetAnimation("hurt;front")
 	enemy.dieAnim, _ = wraithTexture.GetAnimation("die;front")
 	// Preload sounds
@@ -198,15 +200,28 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		enemy.actor.inputForward = 0.0
 		enemy.actor.inputStrafe = 0.0
 	case ENEMY_STATE_CHASE:
+		enemy.wraithChase(deltaTime, 3.0, 1.0, vecToPlayer)
 		if enemy.wakeTimer <= 0.0 && !canSeePlayer {
 			enemy.changeState(ENEMY_STATE_IDLE)
 		}
-		enemy.wraithChase(deltaTime, 3.0, 1.0, vecToPlayer)
+		if distToPlayer < WRAITH_MELEE_RANGE {
+			enemy.changeState(ENEMY_STATE_ATTACK)
+		}
 	case ENEMY_STATE_STUN:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 		if enemy.stateTimer > enemy.StunTime {
 			enemy.wakeTimer = enemy.WakeLimit
 			enemy.changeState(ENEMY_STATE_CHASE)
+		}
+	case ENEMY_STATE_ATTACK:
+		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+		if enemy.stateTimer > 0.5 {
+			if distToPlayer >= WRAITH_MELEE_RANGE {
+				enemy.changeState(ENEMY_STATE_CHASE)
+			} else {
+				// TODO: Send damage
+			}
+			enemy.stateTimer = 0.0
 		}
 	case ENEMY_STATE_DIE:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
@@ -246,6 +261,9 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 	case ENEMY_STATE_STUN:
 		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).Play()
 		enemy.AnimPlayer.ChangeAnimation(enemy.stunAnim)
+		enemy.AnimPlayer.PlayFromStart()
+	case ENEMY_STATE_ATTACK:
+		enemy.AnimPlayer.ChangeAnimation(enemy.attackAnim)
 		enemy.AnimPlayer.PlayFromStart()
 	case ENEMY_STATE_DIE:
 		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).Play()
