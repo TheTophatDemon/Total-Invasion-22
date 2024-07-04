@@ -89,11 +89,10 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), math2.DegToRadVec3(angles), mgl32.Vec3{0.9, 0.9, 0.9},
 			),
-			Shape:       collision.NewSphere(0.7),
-			Layer:       COL_LAYER_ACTORS | COL_LAYER_NPCS,
-			Filter:      COL_FILTER_FOR_ACTORS,
-			LockY:       true,
-			OnIntersect: enemy.enemyIntersect,
+			Shape:  collision.NewSphere(0.7),
+			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
+			Filter: COL_FILTER_FOR_ACTORS,
+			LockY:  true,
 		},
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 80.0,
@@ -260,21 +259,20 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 	enemy.state = newState
 }
 
-func (enemy *Enemy) enemyIntersect(otherEnt comps.HasBody, res collision.Result, deltaTime float32) {
+func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) {
 	if enemy.state == ENEMY_STATE_DIE {
 		return
 	}
-	otherBody := otherEnt.Body()
-	_ = res
-	if proj, ok := otherEnt.(*Projectile); ok && otherBody.OnLayer(COL_LAYER_PROJECTILES) {
+	if proj, ok := sourceEntity.(*Projectile); ok && proj.Body().OnLayer(COL_LAYER_PROJECTILES) {
 		enemy.bloodParticles.EmissionTimer = 0.1
-		if proj.ShouldDamagePerSecond {
-			enemy.actor.Health -= proj.Damage * deltaTime
-		} else {
-			enemy.actor.Health -= proj.Damage
-		}
-		if enemy.state != ENEMY_STATE_STUN && rand.Float32() < enemy.StunChance*proj.StunChance {
-			enemy.changeState(ENEMY_STATE_STUN)
+		enemy.actor.Health -= damage
+		if enemy.state != ENEMY_STATE_STUN {
+			if rand.Float32() < enemy.StunChance*proj.StunChance {
+				enemy.changeState(ENEMY_STATE_STUN)
+			} else {
+				enemy.wakeTimer = enemy.WakeLimit
+				enemy.changeState(ENEMY_STATE_CHASE)
+			}
 		}
 	}
 }

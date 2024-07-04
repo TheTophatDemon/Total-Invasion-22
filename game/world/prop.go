@@ -22,8 +22,9 @@ const (
 	PROP_TYPE_GEOFFREY
 )
 
-// An unmoving object in the game world used as decoration
+// A (generally) unmoving object in the game world used as decoration
 type Prop struct {
+	id           scene.Id[*Prop]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
 	body         comps.Body
@@ -65,6 +66,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 		return
 	}
 
+	prop.id = id
 	prop.world = world
 
 	sprite := cache.GetTexture(texturePath)
@@ -107,4 +109,10 @@ func (prop *Prop) Update(deltaTime float32) {
 
 func (prop *Prop) Render(context *render.Context) {
 	prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+}
+
+func (prop *Prop) OnDamage(sourceEntity any, damage float32) {
+	if prop.propType == PROP_TYPE_GEOFFREY {
+		prop.world.QueueRemoval(prop.id.Handle)
+	}
 }

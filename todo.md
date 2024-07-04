@@ -1,8 +1,10 @@
 # TODO
 - Wraith AI
-    - Dying
     - Attacking
         - Be sure to make them stand while attacking so they don't push the player through walls
+- Player health bar and HUD
+- Sickle flesh cutting sound
+- Make wraith corpses not go through walls
 - Fix artifacts at the top of billboards
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff

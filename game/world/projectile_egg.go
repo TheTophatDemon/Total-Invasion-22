@@ -36,7 +36,6 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 	proj.voices[0] = cache.GetSfx(SFX_EGG_SHOOT).Play()
 	proj.StunChance = 0.1
 	proj.Damage = 15
-	proj.ShouldDamagePerSecond = false
 
 	proj.moveFunc = proj.eggMove
 	proj.body.OnIntersect = proj.eggIntersect
@@ -52,6 +51,9 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 	otherBody := otherEnt.Body()
 	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
 	if !hasOwner || (hasOwner && otherBody != owner.Body()) {
+		if damageable, canDamage := otherEnt.(Damageable); canDamage {
+			damageable.OnDamage(proj, proj.Damage)
+		}
 		proj.world.QueueRemoval(proj.id.Handle)
 	}
 }

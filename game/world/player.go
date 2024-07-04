@@ -205,3 +205,9 @@ func (p *Player) EquipWeapon(order WeaponIndex) {
 	}
 	p.weapons[order].Equip()
 }
+
+func (player *Player) OnDamage(sourceEntity any, damage float32) {
+	if proj, ok := sourceEntity.(*Projectile); ok && proj.Body().OnLayer(COL_LAYER_PROJECTILES) {
+		player.actor.Health -= damage
+	}
+}

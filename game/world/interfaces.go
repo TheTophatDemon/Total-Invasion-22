@@ -8,6 +8,10 @@ type (
 		OnUse(p *Player)
 	}
 
+	Damageable interface {
+		OnDamage(sourceEntity any, amount float32)
+	}
+
 	Observer interface {
 		ProcessSignal(Signal, any)
 	}
@@ -19,6 +23,7 @@ type (
 
 	HasActor interface {
 		comps.HasBody
+		Damageable
 		Observer
 		Actor() *Actor
 	}

@@ -47,8 +47,7 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	proj.speed = 35.0
 	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).Play()
 	proj.StunChance = 0.1
-	proj.Damage = 100.0
-	proj.ShouldDamagePerSecond = true
+	proj.Damage = 200.0
 
 	proj.moveFunc = proj.sickleMove
 	proj.body.OnIntersect = proj.sickleIntersect
@@ -83,5 +82,10 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 	} else if otherBody.OnLayer(COL_LAYER_MAP) {
 		proj.speed = -math2.Abs(proj.speed) / 2.0
 		proj.voices[1] = cache.GetSfx(SFX_SICKLE_CLINK).Play()
+	}
+
+	// Apply damage per second
+	if damageable, canDamage := otherEnt.(Damageable); canDamage {
+		damageable.OnDamage(proj, proj.Damage*deltaTime)
 	}
 }
