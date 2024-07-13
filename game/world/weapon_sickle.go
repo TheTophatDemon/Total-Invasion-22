@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -43,11 +44,11 @@ func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
 	sickle.defaultAnimation = sickle.idleAnim
 
 	sickle.spriteSize = mgl32.Vec2{
-		sickle.idleAnim.Frames[0].Rect.Width * settings.UIScale() * 2.0,
-		sickle.idleAnim.Frames[0].Rect.Height * settings.UIScale() * 2.0,
+		sickle.idleAnim.Frames[0].Rect.Width * hud.SpriteScale(),
+		sickle.idleAnim.Frames[0].Rect.Height * hud.SpriteScale(),
 	}
 	sickle.spriteEndPos = mgl32.Vec2{
-		settings.UIWidth()/2 - sickle.spriteSize.X()/2.0 + 256.0,
+		settings.UIWidth()/2 - sickle.spriteSize.X()/2.0 + settings.UIWidth()/4.0,
 		settings.UIHeight() - sickle.spriteSize.Y() + 16.0,
 	}
 	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})

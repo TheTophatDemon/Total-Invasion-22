@@ -287,7 +287,7 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 			if txt.shadowEnabled {
 				// Duplicate the vertices at an offset for shadows
 				for range 4 {
-					verts.Pos = append(verts.Pos, verts.Pos[len(verts.Pos)-4].Add(txt.shadowOffset.Vec3(0.1)))
+					verts.Pos = append(verts.Pos, verts.Pos[len(verts.Pos)-4].Add(txt.shadowOffset.Vec3(-0.01)))
 					verts.TexCoord = append(verts.TexCoord, verts.TexCoord[len(verts.TexCoord)-4])
 					verts.Color = append(verts.Color, txt.shadowColor.Vector())
 				}

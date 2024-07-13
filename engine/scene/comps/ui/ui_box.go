@@ -15,6 +15,7 @@ type Box struct {
 	FlippedHorz bool
 
 	src, dest      math2.Rect
+	depth          float32
 	transformDirty bool
 	transform      mgl32.Mat4
 }
@@ -44,11 +45,13 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 		Texture:        texture,
 		src:            src,
 		dest:           dest,
+		depth:          0.0,
 		transformDirty: true,
 	}
 }
 
 func (box *Box) InitDefault() {
+	*box = Box{}
 	box.Color = color.White
 	box.Texture = nil
 	box.AnimPlayer = comps.AnimationPlayer{}
@@ -72,6 +75,16 @@ func (box *Box) Dest() math2.Rect {
 
 func (box *Box) SetDest(dest math2.Rect) *Box {
 	box.dest = dest
+	box.transformDirty = true
+	return box
+}
+
+func (box *Box) Depth() float32 {
+	return box.depth
+}
+
+func (box *Box) SetDepth(value float32) *Box {
+	box.depth = value
 	box.transformDirty = true
 	return box
 }
@@ -122,7 +135,7 @@ func (box *Box) Transform() mgl32.Mat4 {
 		bx, by := box.dest.Center()
 		scx := box.dest.Width / 2.0
 		scy := box.dest.Height / 2.0
-		box.transform = mgl32.Translate3D(bx, by, 0.0).Mul4(mgl32.Scale3D(scx, scy, 1.0))
+		box.transform = mgl32.Translate3D(bx, by, box.depth).Mul4(mgl32.Scale3D(scx, scy, 1.0))
 	}
 	return box.transform
 }

@@ -229,6 +229,10 @@ func frameFromAesprite(af aseFrame) Frame {
 }
 
 func layerFromAseprite(af aseLayer) (Layer, error) {
+	if len(af.Data) == 0 {
+		return Layer{Name: af.Name, ViewRange: [2]int{0, 360}}, nil
+	}
+
 	var layerData struct {
 		ViewRange, FlippedViewRange [2]int
 	}

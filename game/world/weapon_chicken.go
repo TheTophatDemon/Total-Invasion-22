@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -40,8 +41,8 @@ func NewChickenCannon(world *World, owner scene.Id[HasActor]) *WeaponChicken {
 	chickenGun.defaultAnimation = chickenGun.idleAnim
 
 	chickenGun.spriteSize = mgl32.Vec2{
-		chickenGun.idleAnim.Frames[0].Rect.Width * settings.UIScale() * 2.0,
-		chickenGun.idleAnim.Frames[0].Rect.Height * settings.UIScale() * 2.0,
+		chickenGun.idleAnim.Frames[0].Rect.Width * hud.SpriteScale(),
+		chickenGun.idleAnim.Frames[0].Rect.Height * hud.SpriteScale(),
 	}
 	chickenGun.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - chickenGun.spriteSize.X()/2.0,

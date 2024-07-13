@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -22,6 +23,7 @@ const (
 type Hud struct {
 	UI                        *ui.Scene
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
+	Heart, Face               scene.Id[*ui.Box]
 	messageText               scene.Id[*ui.Text]
 	messageTimer              float32
 	messagePriority           int
@@ -73,29 +75,65 @@ func (hud *Hud) Init() {
 		SetDest(math2.Rect{
 			X:      -settings.UIWidth(),
 			Y:      -settings.UIHeight(),
-			Width:  settings.UIWidth() * 2,
-			Height: settings.UIHeight() * 2,
+			Width:  settings.UIWidth(),
+			Height: settings.UIHeight(),
 		}).
+		SetDepth(9.0).
 		SetColor(color.Blue.WithAlpha(0.5))
 
 	hud.flashSpeed = 0.5
 
+	// Left HUD panel
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
 	_, leftPanel, _ := hud.UI.Boxes.New()
-	panelHeight := float32(leftPanelTex.Height()) * settings.UIScale() * 2.0
+	panelHeight := float32(leftPanelTex.Height()) * SpriteScale()
 	*leftPanel = ui.NewBoxFull(
 		math2.Rect{
 			X: 0.0, Y: settings.UIHeight() - panelHeight,
-			Width:  float32(leftPanelTex.Width()) * settings.UIScale() * 2.0,
+			Width:  float32(leftPanelTex.Width()) * SpriteScale(),
 			Height: panelHeight,
 		},
 		leftPanelTex,
 		color.White,
 	)
+	leftPanel.SetDepth(1.0)
 
+	fitToSlice := func(parent math2.Rect, slice textures.Slice) math2.Rect {
+		return math2.Rect{
+			X:      parent.X + slice.Bounds.X*SpriteScale(),
+			Y:      parent.Y + slice.Bounds.Y*SpriteScale(),
+			Width:  slice.Bounds.Width * SpriteScale(),
+			Height: slice.Bounds.Height * SpriteScale(),
+		}
+	}
+
+	hudIconsTexture := cache.GetTexture("assets/textures/ui/hud_icons.png")
+
+	// Heart icon
+	var heart *ui.Box
+	hud.Heart, heart, _ = hud.UI.Boxes.New()
+	heartSlice := leftPanelTex.FindSlice("healthIcon")
+	heart.SetTexture(hudIconsTexture).SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).SetDepth(2.0)
+	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
+		heart.AnimPlayer.ChangeAnimation(heartAnim)
+		heart.AnimPlayer.PlayFromStart()
+	}
+
+	// Face
+	faceTex := cache.GetTexture("assets/textures/ui/segan_face.png")
+	var face *ui.Box
+	hud.Face, face, _ = hud.UI.Boxes.New()
+	faceSlice := leftPanelTex.FindSlice("face")
+	face.SetTexture(faceTex).SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).SetDepth(2.0)
+	if faceAnim, ok := faceTex.GetAnimation("idle"); ok {
+		face.AnimPlayer.ChangeAnimation(faceAnim)
+		face.AnimPlayer.PlayFromStart()
+	}
+
+	// Right HUD panel
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
 	_, rightPanel, _ := hud.UI.Boxes.New()
-	rightPanelWidth := rightPanelTex.Rect().Width * settings.UIScale() * 2.0
+	rightPanelWidth := rightPanelTex.Rect().Width * SpriteScale()
 	*rightPanel = ui.NewBoxFull(
 		math2.Rect{
 			X:      settings.UIWidth() - rightPanelWidth,
@@ -106,6 +144,7 @@ func (hud *Hud) Init() {
 		rightPanelTex,
 		color.White,
 	)
+	rightPanel.SetDepth(1.0)
 }
 
 func (hud *Hud) Update(deltaTime float32) {
@@ -151,7 +190,7 @@ func (hud *Hud) Render() {
 	// Setup 2D render context
 	renderContext := render.Context{
 		View:       mgl32.Ident4(),
-		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -1.0, 10.0),
+		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -10.0, 10.0),
 	}
 
 	// Render 2D game elements
@@ -173,4 +212,8 @@ func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {
 		flash.Color = color
 		hud.flashSpeed = fadeSpeed
 	}
+}
+
+func SpriteScale() float32 {
+	return settings.UIScale() * 2.0
 }

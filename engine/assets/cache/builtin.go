@@ -11,6 +11,7 @@ var (
 	// A quad on the XY plane centered at (0,0) with a width and height of 2.
 	QuadMesh *geom.Mesh
 
+	// A sound that plays no audio. Used as an error placeholder.
 	SilentSfx *audio.Sfx
 )
 

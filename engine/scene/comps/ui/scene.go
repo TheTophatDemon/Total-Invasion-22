@@ -30,7 +30,7 @@ func (scene *Scene) Update(deltaTime float32) {
 func (scene *Scene) Render(context *render.Context) {
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 	gl.CullFace(gl.FRONT)
-	gl.Disable(gl.DEPTH_TEST)
+	gl.Enable(gl.DEPTH_TEST)
 
 	// Render boxes in one large batch
 	cache.QuadMesh.Bind()

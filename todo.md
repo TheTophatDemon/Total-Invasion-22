@@ -1,6 +1,6 @@
 # TODO
-- Player health bar and HUD
-    - Fix UI drawing with clamp enabled
+- Player health bar
+    - Fix off by one error
 - Player death
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
