@@ -43,12 +43,12 @@ func NewSickle(world *World, owner scene.Id[HasActor]) *WeaponSickle {
 	sickle.defaultAnimation = sickle.idleAnim
 
 	sickle.spriteSize = mgl32.Vec2{
-		sickle.idleAnim.Frames[0].Rect.Width * 2.0,
-		sickle.idleAnim.Frames[0].Rect.Height * 2.0,
+		sickle.idleAnim.Frames[0].Rect.Width * settings.UIScale() * 2.0,
+		sickle.idleAnim.Frames[0].Rect.Height * settings.UIScale() * 2.0,
 	}
 	sickle.spriteEndPos = mgl32.Vec2{
-		settings.UI_WIDTH/2 - sickle.spriteSize.X()/2.0 + 192.0,
-		settings.UI_HEIGHT - sickle.spriteSize.Y() + 16.0,
+		settings.UIWidth()/2 - sickle.spriteSize.X()/2.0 + 256.0,
+		settings.UIHeight() - sickle.spriteSize.Y() + 16.0,
 	}
 	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})
 

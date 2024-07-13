@@ -1,6 +1,6 @@
 { "frames": [
    {
-    "filename": "invisible.png;0",
+    "filename": "tree.png;0",
     "frame": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -12,12 +12,12 @@
  "meta": {
   "app": "https://www.aseprite.org/",
   "version": "1.3.2-x64",
-  "image": "invisible.png",
   "format": "RGBA8888",
+  "image": "tree.png",
   "size": { "w": 64, "h": 64 },
   "scale": "1",
   "slices": [
-   { "name": "meta", "color": "#0000ffff", "data": "invisible", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 64, "h": 64 } }] }
+   { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 64, "h": 64 } }] }
   ]
  }
 }

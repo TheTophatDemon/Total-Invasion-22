@@ -36,6 +36,9 @@
   "scale": "1",
   "frameTags": [
    { "name": "default", "from": 0, "to": 2, "direction": "forward", "color": "#000000ff" }
+  ],
+  "slices": [
+   { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 2, "bounds": {"x": 0, "y": 0, "w": 16, "h": 16 } }] }
   ]
  }
 }

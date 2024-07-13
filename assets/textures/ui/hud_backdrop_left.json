@@ -1,0 +1,26 @@
+{ "frames": [
+   {
+    "filename": "hud_backdrop_left.png;0",
+    "frame": { "x": 0, "y": 0, "w": 80, "h": 48 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 48 },
+    "sourceSize": { "w": 80, "h": 48 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.2-x64",
+  "image": "hud_backdrop_left.png",
+  "format": "RGBA8888",
+  "size": { "w": 80, "h": 48 },
+  "scale": "1",
+  "slices": [
+   { "name": "face", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 1, "y": 2, "w": 44, "h": 44 } }] },
+   { "name": "healthIcon", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 50, "y": 4, "w": 24, "h": 24 } }] },
+   { "name": "healthStat", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 49, "y": 31, "w": 26, "h": 12 } }] },
+   { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 80, "h": 48 } }] }
+  ]
+ }
+}

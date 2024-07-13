@@ -40,12 +40,12 @@ func NewChickenCannon(world *World, owner scene.Id[HasActor]) *WeaponChicken {
 	chickenGun.defaultAnimation = chickenGun.idleAnim
 
 	chickenGun.spriteSize = mgl32.Vec2{
-		chickenGun.idleAnim.Frames[0].Rect.Width * 2.0,
-		chickenGun.idleAnim.Frames[0].Rect.Height * 2.0,
+		chickenGun.idleAnim.Frames[0].Rect.Width * settings.UIScale() * 2.0,
+		chickenGun.idleAnim.Frames[0].Rect.Height * settings.UIScale() * 2.0,
 	}
 	chickenGun.spriteEndPos = mgl32.Vec2{
-		settings.UI_WIDTH/2 - chickenGun.spriteSize.X()/2.0,
-		settings.UI_HEIGHT - chickenGun.spriteSize.Y() + 16.0,
+		settings.UIWidth()/2 - chickenGun.spriteSize.X()/2.0,
+		settings.UIHeight() - chickenGun.spriteSize.Y() + 16.0,
 	}
 	chickenGun.spriteStartPos = chickenGun.spriteEndPos.Add(mgl32.Vec2{0.0, chickenGun.spriteSize.Y()})
 

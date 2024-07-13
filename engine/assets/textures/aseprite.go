@@ -10,41 +10,59 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
-type aseSpriteSheet struct {
-	Frames []aseFrame
-	Meta   aseMeta
-}
+const (
+	META_SLICE_NAME   = "meta"
+	DEFAULT_ANIM_FLAG = "default"
+)
 
-type aseMeta struct {
-	Image string
-	Size  struct {
-		W, H uint
+type (
+	aseSpriteSheet struct {
+		Frames []aseFrame
+		Meta   aseMeta
 	}
-	FrameTags []aseTag
-	Layers    []aseLayer
-	Data      string
-}
 
-type aseFrame struct {
-	FileName string
-	Frame    Rect
-	Duration uint
-}
+	aseMeta struct {
+		Image string
+		Size  struct {
+			W, H uint
+		}
+		FrameTags []aseTag
+		Layers    []aseLayer
+		Slices    []aseSlice
+	}
 
-type Rect struct {
-	X, Y, W, H int
-}
+	aseSlice struct {
+		Name string
+		Data string
+		Keys []aseSliceKey
+	}
 
-type aseTag struct {
-	Name     string
-	From, To uint
-	Repeat   string
-	Data     string
-}
+	aseSliceKey struct {
+		Frame  int
+		Bounds Rect
+	}
 
-type aseLayer struct {
-	Name, Data string
-}
+	aseFrame struct {
+		FileName string
+		Frame    Rect
+		Duration uint
+	}
+
+	Rect struct {
+		X, Y, W, H int
+	}
+
+	aseTag struct {
+		Name     string
+		From, To uint
+		Repeat   string
+		Data     string
+	}
+
+	aseLayer struct {
+		Name, Data string
+	}
+)
 
 func (af *aseFrame) getLayerName() (string, error) {
 	firstSemi := strings.IndexRune(af.FileName, ';')
@@ -76,18 +94,24 @@ func (ss *aseSpriteSheet) atlasPath() string {
 	return ss.Meta.Image
 }
 
-func (ss *aseSpriteSheet) loadFlags() ([]string, error) {
-	if len(ss.Meta.Data) == 0 {
-		return []string{}, nil
+// Loads texture flags from a slice called "meta" in the ase file.
+// Once Aseprite updates to export its per-sprite metadata, this can
+// be changed to use that instead.
+// The flags are separated by space characters and can otherwise be
+// any non-whitespace sequence.
+// Returns an empty slice if no flags are found.
+func (ss *aseSpriteSheet) loadFlags() []string {
+	for _, slice := range ss.Meta.Slices {
+		if slice.Name == META_SLICE_NAME {
+			flags := strings.Split(slice.Data, " ")
+			for i := range flags {
+				flags[i] = strings.TrimSpace(flags[i])
+			}
+			return flags
+		}
 	}
 
-	var flags []string
-	err := json.Unmarshal([]byte(ss.Meta.Data), &flags)
-	if err != nil {
-		return nil, err
-	}
-
-	return flags, nil
+	return []string{}
 }
 
 func (ss *aseSpriteSheet) loadFrames(layer *aseLayer, tag *aseTag) (frames []Frame, err error) {
@@ -161,6 +185,10 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 				ss.Meta.Size.H,
 			},
 			Loop: (len(ss.Meta.FrameTags[t].Repeat) == 0),
+		}
+
+		if ss.Meta.FrameTags[t].Data == DEFAULT_ANIM_FLAG {
+			anim.Default = true
 		}
 
 		var err error

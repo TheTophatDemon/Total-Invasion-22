@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -57,10 +58,10 @@ func (hud *Hud) Init() {
 		SetFont(DEFAULT_FONT_PATH).
 		SetText(settings.Localize("testMessage")).
 		SetDest(math2.Rect{
-			X:      float32(settings.UI_WIDTH) / 3.0,
-			Y:      float32(settings.UI_HEIGHT) / 2.0,
-			Width:  float32(settings.UI_WIDTH / 3.0),
-			Height: float32(settings.UI_HEIGHT) / 2.0,
+			X:      settings.UIWidth() / 3.0,
+			Y:      settings.UIHeight() / 2.0,
+			Width:  settings.UIWidth() / 3.0,
+			Height: settings.UIHeight() / 2.0,
 		}).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
 		SetColor(color.Red).
@@ -70,14 +71,41 @@ func (hud *Hud) Init() {
 	hud.flashRect, flashBox, _ = hud.UI.Boxes.New()
 	flashBox.
 		SetDest(math2.Rect{
-			X:      -float32(settings.Current.WindowWidth),
-			Y:      -float32(settings.Current.WindowHeight),
-			Width:  float32(settings.Current.WindowWidth) * 2,
-			Height: float32(settings.Current.WindowHeight) * 2,
+			X:      -settings.UIWidth(),
+			Y:      -settings.UIHeight(),
+			Width:  settings.UIWidth() * 2,
+			Height: settings.UIHeight() * 2,
 		}).
 		SetColor(color.Blue.WithAlpha(0.5))
 
 	hud.flashSpeed = 0.5
+
+	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
+	_, leftPanel, _ := hud.UI.Boxes.New()
+	panelHeight := float32(leftPanelTex.Height()) * settings.UIScale() * 2.0
+	*leftPanel = ui.NewBoxFull(
+		math2.Rect{
+			X: 0.0, Y: settings.UIHeight() - panelHeight,
+			Width:  float32(leftPanelTex.Width()) * settings.UIScale() * 2.0,
+			Height: panelHeight,
+		},
+		leftPanelTex,
+		color.White,
+	)
+
+	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
+	_, rightPanel, _ := hud.UI.Boxes.New()
+	rightPanelWidth := rightPanelTex.Rect().Width * settings.UIScale() * 2.0
+	*rightPanel = ui.NewBoxFull(
+		math2.Rect{
+			X:      settings.UIWidth() - rightPanelWidth,
+			Y:      settings.UIHeight() - panelHeight,
+			Width:  rightPanelWidth,
+			Height: panelHeight,
+		},
+		rightPanelTex,
+		color.White,
+	)
 }
 
 func (hud *Hud) Update(deltaTime float32) {
@@ -120,12 +148,10 @@ func (hud *Hud) UpdateDebugCounters(renderContext *render.Context) {
 }
 
 func (hud *Hud) Render() {
-	uiMargin := ((float32(settings.Current.WindowWidth) * (float32(settings.UI_HEIGHT) / float32(settings.Current.WindowHeight))) - float32(settings.UI_WIDTH)) / 2.0
-
 	// Setup 2D render context
 	renderContext := render.Context{
 		View:       mgl32.Ident4(),
-		Projection: mgl32.Ortho(-uiMargin, settings.UI_WIDTH+uiMargin, settings.UI_HEIGHT, 0.0, -1.0, 10.0),
+		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -1.0, 10.0),
 	}
 
 	// Render 2D game elements

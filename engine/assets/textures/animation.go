@@ -11,6 +11,7 @@ type Animation struct {
 	AtlasSize [2]uint
 	Name      string
 	Loop      bool
+	Default   bool
 }
 
 type Frame struct {

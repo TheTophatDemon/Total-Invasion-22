@@ -1,11 +1,13 @@
 # TODO
 - Player health bar and HUD
+    - Fix UI drawing with clamp enabled
 - Player death
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally
 - Fix eggs catching on corpses
 - Fix artifacts at the top of billboards
+- Geoffrey interaction
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff
 - Fix teleporter stuck (telefrag)

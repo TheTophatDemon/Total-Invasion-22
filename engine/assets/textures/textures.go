@@ -8,6 +8,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
+const (
+	FLAG_CLAMP_BORDER = "clampBorder"
+)
+
 type Texture struct {
 	target     uint32               // OpenGL Texture Target (GL_TEXTURE_2D & etc.)
 	glID       uint32               // OpenGL Texture ID
@@ -15,6 +19,7 @@ type Texture struct {
 	width      uint32               // Size of entire texture
 	height     uint32               // Size of the entire texture
 	flags      []string             // Flags indicate the in-game properties of the texture
+	slices     map[string]Slice     // Holds the slices defined in Aseprite (excluding the meta slice). Indexed by name.
 	animations map[string]Animation // Map of animations by name
 	layers     map[string]Layer
 }
@@ -25,30 +30,35 @@ type Layer struct {
 	FlippedViewRange [2]int // The range of yaw angles at which this layer will be shown flipped horizontally, in degrees.
 }
 
-func (t *Texture) Width() int {
-	return int(t.width)
+type Slice struct {
+	Data   string
+	Bounds math2.Rect
 }
 
-func (t *Texture) Height() int {
-	return int(t.height)
+func (tex *Texture) Width() int {
+	return int(tex.width)
 }
 
-func (t *Texture) ID() uint32 {
-	return t.glID
+func (tex *Texture) Height() int {
+	return int(tex.height)
 }
 
-func (t *Texture) Target() uint32 {
-	return t.target
+func (tex *Texture) ID() uint32 {
+	return tex.glID
 }
 
-func (t *Texture) Unit() uint32 {
-	return t.glUnit
+func (tex *Texture) Target() uint32 {
+	return tex.target
+}
+
+func (tex *Texture) Unit() uint32 {
+	return tex.glUnit
 }
 
 // Returns true if the texture has a flag matching the argument (ignoring case).
-func (t *Texture) HasFlag(testFlag string) bool {
-	for f := range t.flags {
-		if strings.EqualFold(t.flags[f], testFlag) {
+func (tex *Texture) HasFlag(testFlag string) bool {
+	for f := range tex.flags {
+		if strings.EqualFold(tex.flags[f], testFlag) {
 			return true
 		}
 	}
@@ -64,26 +74,41 @@ func (tex *Texture) Rect() math2.Rect {
 	}
 }
 
-func (t *Texture) Free() {
-	id := t.glID
+func (tex *Texture) Free() {
+	id := tex.glID
 	gl.DeleteTextures(1, &id)
 }
 
-func (at *Texture) GetAnimation(name string) (anim Animation, ok bool) {
-	anim, ok = at.animations[name]
+func (tex *Texture) GetDefaultAnimation() (Animation, bool) {
+	for _, anim := range tex.animations {
+		if anim.Default || len(tex.animations) == 1 {
+			return anim, true
+		}
+	}
+	return Animation{}, false
+}
+
+func (tex *Texture) GetAnimation(name string) (anim Animation, ok bool) {
+	anim, ok = tex.animations[name]
 	return
 }
 
-func (at *Texture) GetAnimationNames() []string {
-	result := make([]string, 0, len(at.animations))
-	for name := range at.animations {
+func (tex *Texture) GetAnimationNames() []string {
+	result := make([]string, 0, len(tex.animations))
+	for name := range tex.animations {
 		result = append(result, name)
 	}
 	return result
 }
 
-func (t *Texture) LayerCount() int {
-	return len(t.layers)
+func (tex *Texture) LayerCount() int {
+	return len(tex.layers)
+}
+
+// Returns the slice with the given name from the texture.
+// If it is not found, a zero-value slice is returned.
+func (tex *Texture) FindSlice(name string) Slice {
+	return tex.slices[name]
 }
 
 // Searches for a layer in this texture with the given degrees angle in its range.
@@ -91,31 +116,31 @@ func (t *Texture) LayerCount() int {
 // The first boolean returned indicates whether the angle is within the flipped view range.
 //
 // The second boolean indicates whether the angle is within either view range.
-func (t *Texture) FindLayerWithinAngle(angle int) (Layer, bool, bool) {
+func (tex *Texture) FindLayerWithinAngle(angle int) (Layer, bool, bool) {
 	angle %= 360
 	if angle < 0 {
 		angle += 360
 	}
-	for l := range t.layers {
+	for l := range tex.layers {
 		for a := angle; a >= angle-360; a -= 360 {
-			if a >= t.layers[l].ViewRange[0] && a < t.layers[l].ViewRange[1] {
-				return t.layers[l], false, true
+			if a >= tex.layers[l].ViewRange[0] && a < tex.layers[l].ViewRange[1] {
+				return tex.layers[l], false, true
 			}
-			if a >= t.layers[l].FlippedViewRange[0] && a < t.layers[l].FlippedViewRange[1] {
-				return t.layers[l], true, true
+			if a >= tex.layers[l].FlippedViewRange[0] && a < tex.layers[l].FlippedViewRange[1] {
+				return tex.layers[l], true, true
 			}
 		}
 	}
 	return Layer{}, false, false
 }
 
-func (t *Texture) IsAtlas() bool {
-	return t.animations != nil && len(t.animations) > 0
+func (tex *Texture) IsAtlas() bool {
+	return tex.animations != nil && len(tex.animations) > 0
 }
 
-func (t *Texture) Bind() {
-	gl.ActiveTexture(t.glUnit)
-	gl.BindTexture(t.target, t.glID)
+func (tex *Texture) Bind() {
+	gl.ActiveTexture(tex.glUnit)
+	gl.BindTexture(tex.target, tex.glID)
 }
 
 const ERROR_TEXTURE_SIZE = 64

@@ -17,11 +17,6 @@ import (
 )
 
 const (
-	UI_HEIGHT = 480
-	UI_WIDTH  = 800
-)
-
-const (
 	SETTINGS_FILE_PATH = "game_settings.json"
 )
 
@@ -156,4 +151,16 @@ func Localize(key string) string {
 		localizedText = (*trans)[key]
 	}
 	return localizedText
+}
+
+func UIScale() float32 {
+	return float32(Current.WindowHeight) / 480
+}
+
+func UIWidth() float32 {
+	return float32(Current.WindowWidth)
+}
+
+func UIHeight() float32 {
+	return float32(Current.WindowHeight)
 }

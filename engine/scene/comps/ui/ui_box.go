@@ -48,6 +48,17 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 	}
 }
 
+func (box *Box) InitDefault() {
+	box.Color = color.White
+	box.Texture = nil
+	box.AnimPlayer = comps.AnimationPlayer{}
+	box.FlippedHorz = false
+	box.src = math2.Rect{X: 0.0, Y: 0.0, Width: 1.0, Height: 1.0}
+	box.dest = math2.Rect{}
+	box.transformDirty = false
+	box.transform = mgl32.Ident4()
+}
+
 func (box *Box) Update(deltaTime float32) {
 	box.AnimPlayer.Update(deltaTime)
 	if frame := box.AnimPlayer.Frame(); frame.Duration > 0.0 {
