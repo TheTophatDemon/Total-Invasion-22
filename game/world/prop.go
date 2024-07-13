@@ -43,7 +43,7 @@ func (p *Prop) Body() *comps.Body {
 func (p *Prop) OnUse(player *Player) {
 	switch p.propType {
 	case PROP_TYPE_GEOFFREY:
-		p.world.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+		p.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
 	}
 }
 

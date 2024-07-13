@@ -115,7 +115,7 @@ func (player *Player) Update(deltaTime float32) {
 			player.Body().Filter = COL_FILTER_FOR_ACTORS
 			message = settings.Localize("noclipDeactivate")
 		}
-		player.world.ShowMessage(message, 4.0, 100, color.Red)
+		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_USE) {
@@ -185,7 +185,7 @@ func (player *Player) Update(deltaTime float32) {
 func (p *Player) ProcessSignal(s Signal, params any) {
 	switch s {
 	case SIGNAL_TELEPORTED:
-		p.world.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+		p.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
 	}
 }
 

@@ -1,11 +1,10 @@
 # TODO
-- Wraith AI
-    - Attacking
-        - Be sure to make them stand while attacking so they don't push the player through walls
 - Player health bar and HUD
+- Player death
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally
+- Fix eggs catching on corpses
 - Fix artifacts at the top of billboards
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff

@@ -1,20 +1,17 @@
 package world
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
-	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -43,33 +40,25 @@ const (
 
 //go:generate ../../world_gen_iters.exe engine/scene/comps.HasBody HasActor Linkable
 type World struct {
-	UI                        *ui.Scene
-	Players                   scene.Storage[Player]
-	Enemies                   scene.Storage[Enemy]
-	Walls                     scene.Storage[Wall]
-	Props                     scene.Storage[Prop]
-	Triggers                  scene.Storage[Trigger]
-	Projectiles               scene.Storage[Projectile]
-	DebugShapes               scene.Storage[DebugShape]
-	GameMap                   comps.Map
-	CurrentPlayer             scene.Id[*Player]
-	FPSCounter, SpriteCounter scene.Id[*ui.Text]
-	messageText               scene.Id[*ui.Text]
-	messageTimer              float32
-	messagePriority           int
-	flashRect                 scene.Id[*ui.Box]
-	flashSpeed                float32
-	removalQueue              []scene.Handle // Holds entities to be removed at the end of the frame.
+	Hud           hud.Hud
+	Players       scene.Storage[Player]
+	Enemies       scene.Storage[Enemy]
+	Walls         scene.Storage[Wall]
+	Props         scene.Storage[Prop]
+	Triggers      scene.Storage[Trigger]
+	Projectiles   scene.Storage[Projectile]
+	DebugShapes   scene.Storage[DebugShape]
+	GameMap       comps.Map
+	CurrentPlayer scene.Id[*Player]
+	removalQueue  []scene.Handle // Holds entities to be removed at the end of the frame.
 }
 
 func NewWorld(mapPath string) (*World, error) {
 	world := &World{
-		messageTimer:    2.0,
-		messagePriority: 0,
-		removalQueue:    make([]scene.Handle, 0, 8),
+		removalQueue: make([]scene.Handle, 0, 8),
 	}
 
-	world.UI = ui.NewUIScene(256, 64)
+	world.Hud.Init()
 
 	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, nil)
 	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
@@ -167,52 +156,6 @@ func NewWorld(mapPath string) (*World, error) {
 		}
 	}
 
-	// UI
-	var fpsText *ui.Text
-	world.FPSCounter, fpsText, _ = world.UI.Texts.New()
-	fpsText.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText("FPS: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}).
-		SetScale(1.0).
-		SetColor(color.White)
-
-	var spriteCounter *ui.Text
-	world.SpriteCounter, spriteCounter, _ = world.UI.Texts.New()
-	spriteCounter.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText("Sprites drawn: 0\nWalls drawn: 0\nParticles drawn: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
-		SetScale(1.0).
-		SetColor(color.Blue)
-
-	var message *ui.Text
-	world.messageText, message, _ = world.UI.Texts.New()
-	message.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText(settings.Localize("testMessage")).
-		SetDest(math2.Rect{
-			X:      float32(settings.UI_WIDTH) / 3.0,
-			Y:      float32(settings.UI_HEIGHT) / 2.0,
-			Width:  float32(settings.UI_WIDTH / 3.0),
-			Height: float32(settings.UI_HEIGHT) / 2.0,
-		}).
-		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Red).
-		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
-
-	var flashBox *ui.Box
-	world.flashRect, flashBox, _ = world.UI.Boxes.New()
-	flashBox.
-		SetDest(math2.Rect{
-			X:      -float32(settings.Current.WindowWidth),
-			Y:      -float32(settings.Current.WindowHeight),
-			Width:  float32(settings.Current.WindowWidth) * 2,
-			Height: float32(settings.Current.WindowHeight) * 2,
-		}).
-		SetColor(color.Blue.WithAlpha(0.5))
-	world.flashSpeed = 0.5
-
 	return world, nil
 }
 
@@ -221,7 +164,7 @@ func (world *World) Update(deltaTime float32) {
 
 	// Update entities
 	scene.UpdateStores(world, deltaTime)
-	world.UI.Update(deltaTime)
+	world.Hud.Update(deltaTime)
 
 	// Update bodies and resolve collisions
 	bodiesIter := world.BodyIter()
@@ -232,31 +175,6 @@ func (world *World) Update(deltaTime float32) {
 	// Remove deleted entities
 	for _, handle := range world.removalQueue {
 		handle.Remove()
-	}
-
-	// Update message text
-	if message, ok := world.messageText.Get(); ok {
-		if world.messageTimer > 0.0 {
-			world.messageTimer -= deltaTime
-		} else {
-			message.SetColor(message.Color().Fade(deltaTime * MESSAGE_FADE_SPEED))
-			if message.Color().A <= 0.0 {
-				message.SetColor(color.Transparent)
-				world.messageTimer = 0.0
-				world.messagePriority = 0
-				message.SetText("")
-			}
-		}
-	}
-
-	// Update screen flash
-	if flash, ok := world.flashRect.Get(); ok {
-		flash.Color = flash.Color.Fade(world.flashSpeed * deltaTime)
-	}
-
-	// Update FPS counter
-	if fpsText, ok := world.FPSCounter.Get(); ok {
-		fpsText.SetText(fmt.Sprintf("FPS: %v", engine.FPS()))
 	}
 }
 
@@ -285,41 +203,8 @@ func (world *World) Render() {
 	// Render 3D game elements
 	scene.RenderStores(world, &renderContext)
 
-	if sprCountTxt, ok := world.SpriteCounter.Get(); ok {
-		sprCountTxt.SetText(
-			fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v",
-				renderContext.DrawnSpriteCount,
-				renderContext.DrawnWallCount,
-				renderContext.DrawnParticlesCount))
-	}
-
-	uiMargin := ((float32(settings.Current.WindowWidth) * (float32(settings.UI_HEIGHT) / float32(settings.Current.WindowHeight))) - float32(settings.UI_WIDTH)) / 2.0
-
-	// Setup 2D render context
-	renderContext = render.Context{
-		View:       mgl32.Ident4(),
-		Projection: mgl32.Ortho(-uiMargin, settings.UI_WIDTH+uiMargin, settings.UI_HEIGHT, 0.0, -1.0, 10.0),
-	}
-
-	// Render 2D game elements
-	world.UI.Render(&renderContext)
-}
-
-func (world *World) ShowMessage(text string, duration float32, priority int, colr color.Color) {
-	if priority >= world.messagePriority {
-		world.messageTimer = duration
-		world.messagePriority = priority
-		if message, ok := world.messageText.Get(); ok {
-			message.SetText(text).SetColor(colr)
-		}
-	}
-}
-
-func (world *World) FlashScreen(color color.Color, fadeSpeed float32) {
-	if flash, ok := world.flashRect.Get(); ok {
-		flash.Color = color
-		world.flashSpeed = fadeSpeed
-	}
+	world.Hud.UpdateDebugCounters(&renderContext)
+	world.Hud.Render()
 }
 
 func (world *World) ListenerTransform() mgl32.Mat4 {

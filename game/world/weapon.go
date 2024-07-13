@@ -72,7 +72,7 @@ func (wb *weaponBase) Select() {
 		spriteBox *ui.Box
 		err       error
 	)
-	wb.sprite, spriteBox, err = wb.world.UI.Boxes.New()
+	wb.sprite, spriteBox, err = wb.world.Hud.UI.Boxes.New()
 	if err != nil {
 		log.Println(err)
 		return
