@@ -18,6 +18,7 @@ import (
 const (
 	MESSAGE_FADE_SPEED = 2.0
 	DEFAULT_FONT_PATH  = "assets/textures/ui/font.fnt"
+	COUTNER_FONT_PATH  = "assets/textures/ui/hud_counter_font.fnt"
 )
 
 type Hud struct {
@@ -127,6 +128,20 @@ func (hud *Hud) Init() {
 		face.AnimPlayer.ChangeAnimation(faceAnim)
 		face.AnimPlayer.PlayFromStart()
 	}
+
+	// Health counter
+	var healthStat *ui.Text
+	_, healthStat, _ = hud.UI.Texts.New()
+	healthStatSlice := leftPanelTex.FindSlice("healthStat")
+	healthStat.
+		SetFont(COUTNER_FONT_PATH).
+		SetText("888").
+		SetDest(fitToSlice(leftPanel.Dest(), healthStatSlice)).
+		SetDepth(2.0).
+		SetScale(SpriteScale()).
+		SetAlignment(ui.TEXT_ALIGN_CENTER).
+		SetColor(color.Red)
+	_ = healthStat
 
 	// Right HUD panel
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")

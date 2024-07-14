@@ -12,3 +12,5 @@ imgui.ini
 *.svg
 *.out
 /total-invasion-22
+bmfont_gen
+bmfont_gen.exe

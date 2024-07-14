@@ -133,9 +133,10 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 		cursorY += float32(txt.font.Common.LineHeight)
 
 		if txt.alignment != TEXT_ALIGN_LEFT {
+			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
-			shiftAmount := (txt.dest.Width - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
+			shiftAmount := ((txt.dest.Width / txt.scale) - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
 			if txt.alignment == TEXT_ALIGN_CENTER {
 				shiftAmount *= 0.5
 			}
@@ -163,10 +164,10 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 		var firstBox math2.Rect
 	restartPoint:
 		runeIndex := 0
-		for i, w := 0, 0; i < len(word); i += w {
-			var r rune
-			r, w = utf8.DecodeRuneInString(word[i:])
-			char, ok := txt.font.Chars[r]
+		for i, runeWidth := 0, 0; i < len(word); i += runeWidth {
+			var rn rune
+			rn, runeWidth = utf8.DecodeRuneInString(word[i:])
+			char, ok := txt.font.Chars[rn]
 			if !ok {
 				// Add blank space for unknown character
 				cursorX += 16
@@ -189,7 +190,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 				break
 			}
 
-			if i == len(word)-w {
+			if i == len(word)-runeWidth {
 				// On the last character in the word, determine if the word should go on a new line
 				overflowsBounds := (charRect.X+charRect.Width >= txt.dest.Width)
 				firstWordOnLine := (firstBox.X == originX)
@@ -214,18 +215,19 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 
 			// Add kerning
 			if prevRune != scanner.EOF {
-				pair := bmfont.CharPair{First: prevRune, Second: r}
+				pair := bmfont.CharPair{First: prevRune, Second: rn}
 				kerning, ok := txt.font.Kerning[pair]
 				if ok {
 					cursorX += float32(kerning.Amount)
 				}
 			}
 
-			prevRune = r
+			prevRune = rn
 			runeIndex += 1
 			numCharsInLine += 1
 		}
 	}
+	// This will apply alignment to text that is made of only one line.
 	newLine()
 
 	return boxes, chars
