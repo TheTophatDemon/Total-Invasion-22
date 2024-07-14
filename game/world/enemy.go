@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 const (
@@ -218,8 +219,8 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		if enemy.stateTimer > 0.5 {
 			if distToPlayer >= WRAITH_MELEE_RANGE {
 				enemy.changeState(ENEMY_STATE_CHASE)
-			} else {
-				// TODO: Send damage
+			} else if player, ok := enemy.world.CurrentPlayer.Get(); ok {
+				player.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
 			}
 			enemy.stateTimer = 0.0
 		}

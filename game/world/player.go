@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 
+	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -59,6 +60,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 100.0,
 		Friction:  20.0,
+		Health:    100,
 	}
 	p.Camera = comps.NewCamera(
 		70.0, settings.Current.WindowAspectRatio(), 0.1, 1000.0,
@@ -180,6 +182,11 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 	player.actor.Update(deltaTime)
+
+	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
+		Health: int(player.actor.Health),
+		Noclip: player.Body().Layer == COL_LAYER_NONE,
+	})
 }
 
 func (p *Player) ProcessSignal(s Signal, params any) {
@@ -207,7 +214,5 @@ func (p *Player) EquipWeapon(order WeaponIndex) {
 }
 
 func (player *Player) OnDamage(sourceEntity any, damage float32) {
-	if proj, ok := sourceEntity.(*Projectile); ok && proj.Body().OnLayer(COL_LAYER_PROJECTILES) {
-		player.actor.Health -= damage
-	}
+	player.actor.Health = max(0, player.actor.Health-damage)
 }

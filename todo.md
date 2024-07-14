@@ -1,6 +1,9 @@
 # TODO
-- Player health bar
 - Player death
+    - Screen flash
+    - Facial expression
+    - Death animation
+    - Restart of level
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally

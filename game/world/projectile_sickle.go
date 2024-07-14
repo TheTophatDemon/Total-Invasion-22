@@ -73,9 +73,11 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+	owner, hasOwner := scene.Get[HasActor](proj.owner)
+
 	otherBody := otherEnt.Body()
 	if proj.speed <= -1.0 {
-		if owner, ok := scene.Get[HasActor](proj.owner); ok && otherBody == owner.Body() {
+		if hasOwner && otherBody == owner.Body() {
 			proj.voices[0].Stop()
 			proj.id.Remove()
 		}
@@ -85,7 +87,7 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 	}
 
 	// Apply damage per second
-	if damageable, canDamage := otherEnt.(Damageable); canDamage {
+	if damageable, canDamage := otherEnt.(Damageable); canDamage && damageable != owner {
 		damageable.OnDamage(proj, proj.Damage*deltaTime)
 	}
 }

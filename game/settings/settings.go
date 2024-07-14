@@ -62,6 +62,7 @@ type Data struct {
 	Debug                     struct {
 		StartMap string
 	}
+	DifficultyIndex int
 }
 
 func (data *Data) WindowAspectRatio() float32 {
@@ -76,7 +77,8 @@ func init() {
 		MouseSensitivity: 0.005,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		SfxVolume:        1.0, MusicVolume: 1.0,
-		Locale: locales.ENGLISH,
+		Locale:          locales.ENGLISH,
+		DifficultyIndex: len(Difficulties) - 1,
 	}
 	Current = Default
 }

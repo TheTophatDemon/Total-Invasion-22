@@ -5,8 +5,6 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -25,6 +23,7 @@ type Hud struct {
 	UI                        *ui.Scene
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
 	Heart, Face               scene.Id[*ui.Box]
+	healthStat                scene.Id[*ui.Text]
 	messageText               scene.Id[*ui.Text]
 	messageTimer              float32
 	messagePriority           int
@@ -82,82 +81,7 @@ func (hud *Hud) Init() {
 
 	hud.flashSpeed = 0.5
 
-	// Left HUD panel
-	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
-	_, leftPanel, _ := hud.UI.Boxes.New()
-	panelHeight := float32(leftPanelTex.Height()) * SpriteScale()
-	*leftPanel = ui.NewBoxFull(
-		math2.Rect{
-			X: 0.0, Y: settings.UIHeight() - panelHeight,
-			Width:  float32(leftPanelTex.Width()) * SpriteScale(),
-			Height: panelHeight,
-		},
-		leftPanelTex,
-		color.White,
-	)
-	leftPanel.SetDepth(1.0)
-
-	fitToSlice := func(parent math2.Rect, slice textures.Slice) math2.Rect {
-		return math2.Rect{
-			X:      parent.X + slice.Bounds.X*SpriteScale(),
-			Y:      parent.Y + slice.Bounds.Y*SpriteScale(),
-			Width:  slice.Bounds.Width * SpriteScale(),
-			Height: slice.Bounds.Height * SpriteScale(),
-		}
-	}
-
-	hudIconsTexture := cache.GetTexture("assets/textures/ui/hud_icons.png")
-
-	// Heart icon
-	var heart *ui.Box
-	hud.Heart, heart, _ = hud.UI.Boxes.New()
-	heartSlice := leftPanelTex.FindSlice("healthIcon")
-	heart.SetTexture(hudIconsTexture).SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).SetDepth(2.0)
-	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
-		heart.AnimPlayer.ChangeAnimation(heartAnim)
-		heart.AnimPlayer.PlayFromStart()
-	}
-
-	// Face
-	faceTex := cache.GetTexture("assets/textures/ui/segan_face.png")
-	var face *ui.Box
-	hud.Face, face, _ = hud.UI.Boxes.New()
-	faceSlice := leftPanelTex.FindSlice("face")
-	face.SetTexture(faceTex).SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).SetDepth(2.0)
-	if faceAnim, ok := faceTex.GetAnimation("idle"); ok {
-		face.AnimPlayer.ChangeAnimation(faceAnim)
-		face.AnimPlayer.PlayFromStart()
-	}
-
-	// Health counter
-	var healthStat *ui.Text
-	_, healthStat, _ = hud.UI.Texts.New()
-	healthStatSlice := leftPanelTex.FindSlice("healthStat")
-	healthStat.
-		SetFont(COUTNER_FONT_PATH).
-		SetText("888").
-		SetDest(fitToSlice(leftPanel.Dest(), healthStatSlice)).
-		SetDepth(2.0).
-		SetScale(SpriteScale()).
-		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Red)
-	_ = healthStat
-
-	// Right HUD panel
-	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
-	_, rightPanel, _ := hud.UI.Boxes.New()
-	rightPanelWidth := rightPanelTex.Rect().Width * SpriteScale()
-	*rightPanel = ui.NewBoxFull(
-		math2.Rect{
-			X:      settings.UIWidth() - rightPanelWidth,
-			Y:      settings.UIHeight() - panelHeight,
-			Width:  rightPanelWidth,
-			Height: panelHeight,
-		},
-		rightPanelTex,
-		color.White,
-	)
-	rightPanel.SetDepth(1.0)
+	hud.InitPlayerStats()
 }
 
 func (hud *Hud) Update(deltaTime float32) {
