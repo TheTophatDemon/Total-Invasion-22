@@ -85,7 +85,8 @@ func (wb *weaponBase) Select() {
 			Height: wb.spriteSize.Y(),
 		}).
 		SetTexture(wb.spriteTexture).
-		SetColor(color.White)
+		SetColor(color.White).
+		SetDepth(0.0)
 	spriteBox.AnimPlayer.ChangeAnimation(wb.defaultAnimation)
 	spriteBox.AnimPlayer.PlayFromStart()
 }

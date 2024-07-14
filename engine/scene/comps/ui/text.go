@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"text/scanner"
 	"unicode"
@@ -13,9 +14,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 type TextAlign int
@@ -38,7 +41,7 @@ type Text struct {
 	texture        *textures.Texture
 	font           *fonts.Font
 	dest           math2.Rect
-	scale          float32
+	scale, depth   float32
 	transform      mgl32.Mat4
 	transformDirty bool
 }
@@ -95,6 +98,16 @@ func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) {
 func (txt *Text) DisableShadow() {
 	txt.shadowEnabled = false
 	txt.textDirty = true
+}
+
+func (txt *Text) Depth() float32 {
+	return txt.depth
+}
+
+func (txt *Text) SetDepth(value float32) *Text {
+	txt.depth = value
+	txt.transformDirty = true
+	return txt
 }
 
 // Calculates positions for each character's rectangle
@@ -331,7 +344,33 @@ func (txt *Text) Scale() float32 {
 func (txt *Text) Transform() mgl32.Mat4 {
 	if txt.transformDirty {
 		txt.transformDirty = false
-		txt.transform = mgl32.Translate3D(txt.dest.X, txt.dest.Y, 0.0).Mul4(mgl32.Scale3D(txt.Scale(), txt.Scale(), 1.0))
+		txt.transform = mgl32.Translate3D(txt.dest.X, txt.dest.Y, txt.depth).Mul4(mgl32.Scale3D(txt.Scale(), txt.Scale(), 1.0))
 	}
 	return txt.transform
+}
+
+func (txt *Text) Render(context *render.Context) {
+	if len(txt.text) == 0 {
+		return
+	}
+
+	// Set color
+	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, txt.Color().Vector())
+	_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
+	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
+
+	// Set texture
+	txt.texture.Bind()
+	_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 1.0, 1.0, 1.0})
+
+	// Set transform
+	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Transform())
+
+	// Draw
+	if mesh, err := txt.Mesh(); err == nil {
+		mesh.Bind()
+		mesh.DrawAll()
+	} else {
+		log.Println(err)
+	}
 }

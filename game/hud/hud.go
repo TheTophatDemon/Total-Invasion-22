@@ -73,8 +73,6 @@ func (hud *Hud) Init() {
 	hud.flashRect, flashBox, _ = hud.UI.Boxes.New()
 	flashBox.
 		SetDest(math2.Rect{
-			X:      -settings.UIWidth(),
-			Y:      -settings.UIHeight(),
 			Width:  settings.UIWidth(),
 			Height: settings.UIHeight(),
 		}).

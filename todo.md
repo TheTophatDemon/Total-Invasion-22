@@ -1,12 +1,11 @@
 # TODO
 - Player health bar
-    - Fix off by one error
 - Player death
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally
 - Fix eggs catching on corpses
-- Fix artifacts at the top of billboards
+- Fix color weirdness on Linux
 - Geoffrey interaction
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff

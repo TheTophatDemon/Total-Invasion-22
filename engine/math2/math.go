@@ -31,6 +31,9 @@ func Clamp[N Number](val, min, max N) N {
 
 // Returns 1 if the number is positive and -1 if it is negative.
 func Signum[N Number](val N) N {
+	if val == 0 {
+		return 0
+	}
 	return Abs(val) / val
 }
 

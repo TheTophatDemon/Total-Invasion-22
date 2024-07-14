@@ -2,9 +2,12 @@ package ui
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -35,7 +38,7 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 	if texture != nil {
 		src = math2.Rect{
 			X:      0.0,
-			Y:      1.0,
+			Y:      0.0,
 			Width:  float32(texture.Width()),
 			Height: float32(texture.Height()),
 		}
@@ -138,4 +141,37 @@ func (box *Box) Transform() mgl32.Mat4 {
 		box.transform = mgl32.Translate3D(bx, by, box.depth).Mul4(mgl32.Scale3D(scx, scy, 1.0))
 	}
 	return box.transform
+}
+
+func (box *Box) Render(context *render.Context) {
+	cache.QuadMesh.Bind()
+	shaders.UIShader.Use()
+
+	_ = context.SetUniforms(shaders.UIShader)
+	_ = shaders.UIShader.SetUniformInt(shaders.UniformTex, 0)
+
+	// Set color.
+	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, box.Color.Vector())
+
+	// Set texture.
+	if box.Texture != nil {
+		_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
+		box.Texture.Bind()
+		texW, texH := float32(box.Texture.Width()), float32(box.Texture.Height())
+		srcVec := mgl32.Vec4{
+			box.src.X / texW,
+			1.0 - (box.src.Y / texH),
+			box.src.Width / texW,
+			box.src.Height / texH,
+		}
+		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, srcVec)
+	} else {
+		_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
+	}
+
+	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, box.FlippedHorz)
+
+	// Set uniforms
+	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())
+	cache.QuadMesh.DrawAll()
 }
