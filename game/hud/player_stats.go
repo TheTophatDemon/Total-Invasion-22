@@ -12,15 +12,30 @@ import (
 )
 
 const (
-	TEX_SEGAN_FACE   = "assets/textures/ui/segan_face.png"
-	ANIM_FACE_IDLE   = "idle"
-	ANIM_FACE_NOCLIP = "noclip"
+	TEX_SEGAN_FACE = "assets/textures/ui/segan_face.png"
 )
 
 type PlayerStats struct {
 	Health int
 	Noclip bool
 }
+
+type faceState struct {
+	anim     string
+	flipX    bool
+	showTime float32 // Number of seconds the face will appear for before giving way to lower priority states.
+	priority int8
+}
+
+// Data about each face state.
+var (
+	FaceStateIdle      = faceState{anim: "idle", priority: 0}
+	FaceStateHurtFront = faceState{anim: "hurt:front", showTime: 1.0, priority: 5}
+	FaceStateHurtLeft  = faceState{anim: "hurt:side", flipX: true, showTime: 1.0, priority: 6}
+	FaceStateHurtRight = faceState{anim: "hurt:side", flipX: false, showTime: 1.0, priority: 7}
+	FaceStateNoclip    = faceState{anim: "noclip", priority: 10}
+	FaceStateGod       = faceState{anim: "god", priority: 11}
+)
 
 func (hud *Hud) InitPlayerStats() {
 	// Left HUD panel
@@ -60,14 +75,14 @@ func (hud *Hud) InitPlayerStats() {
 	}
 
 	// Face
+	hud.faceState = FaceStateIdle
 	faceTex := cache.GetTexture(TEX_SEGAN_FACE)
 	var face *ui.Box
-	hud.Face, face, _ = hud.UI.Boxes.New()
+	hud.face, face, _ = hud.UI.Boxes.New()
 	faceSlice := leftPanelTex.FindSlice("face")
 	face.SetTexture(faceTex).SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).SetDepth(2.0)
-	if faceAnim, ok := faceTex.GetAnimation(ANIM_FACE_IDLE); ok {
-		face.AnimPlayer.ChangeAnimation(faceAnim)
-		face.AnimPlayer.PlayFromStart()
+	if faceAnim, ok := faceTex.GetAnimation(FaceStateIdle.anim); ok {
+		face.AnimPlayer.PlayNewAnim(faceAnim)
 	}
 
 	// Health counter
@@ -105,16 +120,34 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 		txt.SetText(fmt.Sprintf("%03d", stats.Health))
 	}
 
-	if face, ok := hud.Face.Get(); ok {
-		faceTex := cache.GetTexture(TEX_SEGAN_FACE)
-		if stats.Noclip && face.AnimPlayer.CurrentAnimation().Name != ANIM_FACE_NOCLIP {
-			anim, _ := faceTex.GetAnimation(ANIM_FACE_NOCLIP)
-			face.AnimPlayer.ChangeAnimation(anim)
-			face.AnimPlayer.PlayFromStart()
-		} else if !stats.Noclip && face.AnimPlayer.CurrentAnimation().Name != ANIM_FACE_IDLE {
-			anim, _ := faceTex.GetAnimation(ANIM_FACE_IDLE)
-			face.AnimPlayer.ChangeAnimation(anim)
-			face.AnimPlayer.PlayFromStart()
+	// Decide which face to display
+	if stats.Noclip {
+		hud.SuggestPlayerFace(FaceStateNoclip)
+	} else {
+		hud.faceTimer -= deltaTime
+		if hud.faceTimer <= 0.0 {
+			// Revert to idle face as a default
+			hud.forcePlayerFace(FaceStateIdle)
 		}
+	}
+}
+
+// Attempts to update the player's face to reflect in game events.
+// If the current state has a higher priority and isn't out of time, then nothing will occur.
+func (hud *Hud) SuggestPlayerFace(newState faceState) {
+	if hud.faceState == newState || hud.faceState.priority > newState.priority {
+		return
+	}
+	hud.forcePlayerFace(newState)
+}
+
+func (hud *Hud) forcePlayerFace(newState faceState) {
+	hud.faceState = newState
+	hud.faceTimer = newState.showTime
+	if face, ok := hud.face.Get(); ok {
+		faceTex := cache.GetTexture(TEX_SEGAN_FACE)
+		anim, _ := faceTex.GetAnimation(newState.anim)
+		face.AnimPlayer.PlayNewAnim(anim)
+		face.FlippedHorz = newState.flipX
 	}
 }

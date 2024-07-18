@@ -109,6 +109,15 @@ func (ap *AnimationPlayer) PlayFromStart() {
 	ap.Play()
 }
 
+func (ap *AnimationPlayer) PlayNewAnim(newAnim textures.Animation) {
+	ap.ChangeAnimation(newAnim)
+	ap.PlayFromStart()
+}
+
 func (ap *AnimationPlayer) IsPlaying() bool {
 	return ap.playing
+}
+
+func (ap *AnimationPlayer) IsPlayingAnim(anim textures.Animation) bool {
+	return ap.animation.Name == anim.Name
 }

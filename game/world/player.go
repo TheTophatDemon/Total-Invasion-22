@@ -1,6 +1,8 @@
 package world
 
 import (
+	"math"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -32,12 +34,12 @@ type Player struct {
 var _ HasActor = (*Player)(nil)
 var _ comps.HasBody = (*Player)(nil)
 
-func (p *Player) Actor() *Actor {
-	return &p.actor
+func (player *Player) Actor() *Actor {
+	return &player.actor
 }
 
-func (p *Player) Body() *comps.Body {
-	return &p.actor.body
+func (player *Player) Body() *comps.Body {
+	return &player.actor.body
 }
 
 func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], p *Player, err error) {
@@ -189,30 +191,49 @@ func (player *Player) Update(deltaTime float32) {
 	})
 }
 
-func (p *Player) ProcessSignal(s Signal, params any) {
+func (player *Player) ProcessSignal(s Signal, params any) {
 	switch s {
 	case SIGNAL_TELEPORTED:
-		p.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+		player.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
 	}
 }
 
-func (p *Player) SelectWeapon(order WeaponIndex) {
-	if order == p.selectedWeapon || !p.weapons[order].IsEquipped() {
+func (player *Player) SelectWeapon(order WeaponIndex) {
+	if order == player.selectedWeapon || !player.weapons[order].IsEquipped() {
 		return
 	}
-	if p.selectedWeapon >= 0 {
-		p.weapons[p.selectedWeapon].Deselect()
+	if player.selectedWeapon >= 0 {
+		player.weapons[player.selectedWeapon].Deselect()
 	}
-	p.nextWeapon = order
+	player.nextWeapon = order
 }
 
-func (p *Player) EquipWeapon(order WeaponIndex) {
+func (player *Player) EquipWeapon(order WeaponIndex) {
 	if order < 0 {
 		return
 	}
-	p.weapons[order].Equip()
+	player.weapons[order].Equip()
 }
 
 func (player *Player) OnDamage(sourceEntity any, damage float32) {
 	player.actor.Health = max(0, player.actor.Health-damage)
+	player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+
+	if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
+		dmgDir := bodyHaver.Body().Transform.Position().Sub(player.Body().Transform.Position())
+		if dmgDir.LenSqr() > 0.0 {
+			dmgDir = dmgDir.Normalize()
+		}
+		forward := player.actor.FacingVec()
+		halfFov := mgl32.DegToRad(settings.Current.Fov / 2.0)
+		if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
+			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
+		} else if forward.Cross(dmgDir).Y() > 0.0 {
+			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtLeft)
+		} else {
+			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtRight)
+		}
+	} else {
+		player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
+	}
 }

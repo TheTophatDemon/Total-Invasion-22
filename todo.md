@@ -1,14 +1,14 @@
 # TODO
 - Player death
-    - Screen flash
-    - Facial expression
     - Death animation
     - Restart of level
+- OpenGL Invalid operation error (something to do with blood particles?)
 - Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally
 - Fix eggs catching on corpses
 - Fix color weirdness on Linux
+- Chickens
 - Geoffrey interaction
 - Fix sounds playing before they've been attenuated
 - Fix sound attenuation to have linear falloff

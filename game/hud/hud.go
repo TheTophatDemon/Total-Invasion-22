@@ -22,7 +22,10 @@ const (
 type Hud struct {
 	UI                        *ui.Scene
 	FPSCounter, SpriteCounter scene.Id[*ui.Text]
-	Heart, Face               scene.Id[*ui.Box]
+	face                      scene.Id[*ui.Box]
+	faceState                 faceState
+	faceTimer                 float32
+	Heart                     scene.Id[*ui.Box]
 	healthStat                scene.Id[*ui.Text]
 	messageText               scene.Id[*ui.Text]
 	messageTimer              float32
