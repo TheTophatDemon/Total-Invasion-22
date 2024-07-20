@@ -1,11 +1,10 @@
 package world
 
 import (
-	"log"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
@@ -74,7 +73,7 @@ func (wb *weaponBase) Select() {
 	)
 	wb.sprite, spriteBox, err = wb.world.Hud.UI.Boxes.New()
 	if err != nil {
-		log.Println(err)
+		failure.LogErrWithLocation("%v", err)
 		return
 	}
 	spriteBox.

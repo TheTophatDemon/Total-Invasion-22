@@ -13,29 +13,34 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/world"
 )
 
-type Game struct {
+type App struct {
 	world *world.World
 }
 
-func (game *Game) Update(deltaTime float32) {
-	// Free mouse
-	if input.IsActionJustPressed(settings.ACTION_TRAP_MOUSE) {
-		if input.IsMouseTrapped() {
-			input.UntrapMouse()
-		} else {
-			input.TrapMouse()
-		}
-	}
+var TheApp App
 
+func (app *App) Update(deltaTime float32) {
 	// Update audio volume based on settings.
 	audio.SetSfxBusVolume(settings.Current.SfxVolume)
 	audio.SetMusicBusVolume(settings.Current.MusicVolume)
 
-	game.world.Update(deltaTime)
+	app.world.Update(deltaTime)
 }
 
-func (game *Game) Render() {
-	game.world.Render()
+func (app *App) Render() {
+	app.world.Render()
+}
+
+func (app *App) LoadGame(mapPath string) {
+	world, err := world.NewWorld(mapPath)
+	if err != nil {
+		panic(err)
+	}
+
+	runtime.GC()
+
+	input.TrapMouse()
+	app.world = world
 }
 
 func main() {
@@ -76,17 +81,9 @@ func main() {
 	if len(mapName) == 0 {
 		mapName = "assets/maps/ti2-malicious-intents.te3"
 	}
-	world, err := world.NewWorld(mapName)
-	if err != nil {
-		panic(err)
-	}
 
-	runtime.GC()
-
-	input.TrapMouse()
-	engine.Run(&Game{
-		world,
-	})
+	TheApp.LoadGame(mapName)
+	engine.Run(&TheApp)
 
 	// memProf, err := os.Create("memory_profile.pprof")
 	// if err != nil {

@@ -33,8 +33,9 @@ var (
 	FaceStateHurtFront = faceState{anim: "hurt:front", showTime: 1.0, priority: 5}
 	FaceStateHurtLeft  = faceState{anim: "hurt:side", flipX: true, showTime: 1.0, priority: 6}
 	FaceStateHurtRight = faceState{anim: "hurt:side", flipX: false, showTime: 1.0, priority: 7}
+	FaceStateDead      = faceState{anim: "dead", priority: 11}
 	FaceStateNoclip    = faceState{anim: "noclip", priority: 10}
-	FaceStateGod       = faceState{anim: "god", priority: 11}
+	FaceStateGod       = faceState{anim: "god", priority: 15}
 )
 
 func (hud *Hud) InitPlayerStats() {
@@ -121,8 +122,13 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 	}
 
 	// Decide which face to display
-	if stats.Noclip {
-		hud.SuggestPlayerFace(FaceStateNoclip)
+	if stats.Health <= 0 {
+		hud.forcePlayerFace(FaceStateDead)
+		if heart, ok := hud.Heart.Get(); ok {
+			heart.AnimPlayer.Stop()
+		}
+	} else if stats.Noclip {
+		hud.forcePlayerFace(FaceStateNoclip)
 	} else {
 		hud.faceTimer -= deltaTime
 		if hud.faceTimer <= 0.0 {

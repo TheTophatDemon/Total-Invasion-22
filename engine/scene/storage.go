@@ -2,6 +2,7 @@ package scene
 
 import (
 	"fmt"
+	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -104,7 +105,9 @@ func (st *Storage[T]) New() (Id[*T], *T, error) {
 			return Id[*T]{st.owners[i]}, &st.data[i], nil
 		}
 	}
-	return Id[*T]{}, nil, fmt.Errorf("no room in storage")
+	var zero T
+	itemType := reflect.TypeOf(zero)
+	return Id[*T]{}, nil, fmt.Errorf("ran out of room in storage for %v", itemType.Name())
 }
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.

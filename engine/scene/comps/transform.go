@@ -11,43 +11,43 @@ import (
 type Transform struct {
 	pos, rot, scale mgl32.Vec3
 	matrix          mgl32.Mat4
-	dirty           bool
+	upToDate        bool // True if the matrix currently matches the position, rotation, and scale.
 }
 
 func TransformFromMatrix(matrix mgl32.Mat4) *Transform {
 	return &Transform{
-		pos:    matrix.Col(3).Vec3(),
-		rot:    math2.Mat4EulerAngles(&matrix),
-		scale:  mgl32.Vec3{matrix[0], matrix[5], matrix[10]},
-		matrix: matrix,
-		dirty:  false,
+		pos:      matrix.Col(3).Vec3(),
+		rot:      math2.Mat4EulerAngles(&matrix),
+		scale:    mgl32.Vec3{matrix[0], matrix[5], matrix[10]},
+		matrix:   matrix,
+		upToDate: true,
 	}
 }
 
 func TransformFromTranslation(position mgl32.Vec3) Transform {
 	return Transform{
-		pos:   position,
-		rot:   math2.Vec3Zero(),
-		scale: math2.Vec3One(),
-		dirty: true,
+		pos:      position,
+		rot:      math2.Vec3Zero(),
+		scale:    math2.Vec3One(),
+		upToDate: false,
 	}
 }
 
 func TransformFromTranslationAngles(position mgl32.Vec3, angles mgl32.Vec3) Transform {
 	return Transform{
-		pos:   position,
-		rot:   angles,
-		scale: math2.Vec3One(),
-		dirty: true,
+		pos:      position,
+		rot:      angles,
+		scale:    math2.Vec3One(),
+		upToDate: false,
 	}
 }
 
 func TransformFromTranslationAnglesScale(position, angles, scale mgl32.Vec3) Transform {
 	return Transform{
-		pos:   position,
-		rot:   angles,
-		scale: scale,
-		dirty: true,
+		pos:      position,
+		rot:      angles,
+		scale:    scale,
+		upToDate: false,
 	}
 }
 
@@ -68,13 +68,9 @@ func TransformFromTE3Ent(ent te3.Ent, scaleByRadius, stayOnFloor bool) Transform
 	}
 }
 
-func (t *Transform) Dirty() bool {
-	return t.dirty
-}
-
 func (t *Transform) SetPosition(newPos mgl32.Vec3) {
 	t.pos = newPos
-	t.dirty = true
+	t.upToDate = false
 }
 
 func (t *Transform) Position() mgl32.Vec3 {
@@ -89,7 +85,7 @@ func (t *Transform) Translate(x, y, z float32) {
 	t.pos[0] += x
 	t.pos[1] += y
 	t.pos[2] += z
-	t.dirty = true
+	t.upToDate = false
 }
 
 func (t *Transform) TranslateV(offset mgl32.Vec3) {
@@ -99,12 +95,12 @@ func (t *Transform) TranslateV(offset mgl32.Vec3) {
 // Sets the rotation in euler angles (radians)
 func (t *Transform) SetRotation(pitch, yaw, roll float32) {
 	t.rot = mgl32.Vec3{pitch, yaw, roll}
-	t.dirty = true
+	t.upToDate = false
 }
 
 func (t *Transform) SetRotationV(v mgl32.Vec3) {
 	t.rot = v
-	t.dirty = true
+	t.upToDate = false
 }
 
 // Returns the euler angles of rotation (pitch, yaw, roll)
@@ -136,16 +132,17 @@ func (t *Transform) Rotate(pitch, yaw, roll float32) {
 	t.rot[0] += pitch
 	t.rot[1] += yaw
 	t.rot[2] += roll
-	t.dirty = true
+	t.upToDate = false
 }
 
 func (t *Transform) Matrix() mgl32.Mat4 {
-	if t.dirty {
+	if !t.upToDate {
 		t.matrix = mgl32.Scale3D(t.scale.X(), t.scale.Y(), t.scale.Z())
 		t.matrix = mgl32.HomogRotate3DZ(t.rot[2]).Mul4(t.matrix)
 		t.matrix = mgl32.HomogRotate3DX(t.rot[0]).Mul4(t.matrix)
 		t.matrix = mgl32.HomogRotate3DY(t.rot[1]).Mul4(t.matrix)
 		t.matrix = mgl32.Translate3D(t.pos.X(), t.pos.Y(), t.pos.Z()).Mul4(t.matrix)
+		t.upToDate = true
 	}
 	return t.matrix
 }

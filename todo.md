@@ -1,12 +1,12 @@
 # TODO
 - Player death
-    - Death animation
     - Restart of level
+- God mode
 - OpenGL Invalid operation error (something to do with blood particles?)
-- Sickle flesh cutting sound
 - Make wraith corpses not go through walls
 - Wraiths should raycast to left and right side before chasing diagonally
 - Fix eggs catching on corpses
+- Sickle flesh cutting sound
 - Fix color weirdness on Linux
 - Chickens
 - Geoffrey interaction

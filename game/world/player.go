@@ -29,6 +29,8 @@ type Player struct {
 	weapons                                  [WEAPON_ORDER_MAX]Weapon
 	selectedWeapon, nextWeapon               WeaponIndex
 	initialCollisionLayers                   collision.Mask
+	cameraFall                               float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
+	deathTimer                               float32 // Counts the seconds until the player is allowed to restart after dying.
 }
 
 var _ HasActor = (*Player)(nil)
@@ -42,20 +44,20 @@ func (player *Player) Body() *comps.Body {
 	return &player.actor.body
 }
 
-func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], p *Player, err error) {
-	id, p, err = st.New()
+func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], player *Player, err error) {
+	id, player, err = st.New()
 	if err != nil {
 		return
 	}
-	p.id = id
-	p.initialCollisionLayers = COL_LAYER_ACTORS | COL_LAYER_PLAYERS
-	p.actor = Actor{
+	player.id = id
+	player.initialCollisionLayers = COL_LAYER_ACTORS | COL_LAYER_PLAYERS
+	player.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
 			Shape:  collision.NewSphere(0.7),
-			Layer:  p.initialCollisionLayers,
+			Layer:  player.initialCollisionLayers,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
@@ -64,35 +66,95 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		Friction:  20.0,
 		Health:    100,
 	}
-	p.Camera = comps.NewCamera(
-		70.0, settings.Current.WindowAspectRatio(), 0.1, 1000.0,
+	player.Camera = comps.NewCamera(
+		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.1, 1000.0,
 	)
-	p.RunSpeed = 12.0
-	p.WalkSpeed = 7.0
-	p.StandFriction = 80.0
-	p.WalkFriction = 1.0
-	p.RunFriction = 20.0
-	p.world = world
+	player.RunSpeed = 12.0
+	player.WalkSpeed = 7.0
+	player.StandFriction = 80.0
+	player.WalkFriction = 1.0
+	player.RunFriction = 20.0
+	player.world = world
+	player.cameraFall = 2.0
 
 	// Initialize weapons
-	p.weapons = [...]Weapon{
-		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](p.id)),
-		WEAPON_ORDER_CHICKEN:     NewChickenCannon(world, scene.Id[HasActor](p.id)),
+	player.weapons = [...]Weapon{
+		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](player.id)),
+		WEAPON_ORDER_CHICKEN:     NewChickenCannon(world, scene.Id[HasActor](player.id)),
 		WEAPON_ORDER_GRENADE:     nil,
 		WEAPON_ORDER_PARUSU:      nil,
 		WEAPON_ORDER_DBL_GRENADE: nil,
 		WEAPON_ORDER_SIGN:        nil,
 		WEAPON_ORDER_AIRHORN:     nil,
 	}
-	p.selectedWeapon = WEAPON_ORDER_NONE
-	p.EquipWeapon(WEAPON_ORDER_SICKLE)
-	p.EquipWeapon(WEAPON_ORDER_CHICKEN)
-	p.SelectWeapon(WEAPON_ORDER_SICKLE)
+	player.selectedWeapon = WEAPON_ORDER_NONE
+	player.EquipWeapon(WEAPON_ORDER_SICKLE)
+	player.EquipWeapon(WEAPON_ORDER_CHICKEN)
+	player.SelectWeapon(WEAPON_ORDER_SICKLE)
 
 	return
 }
 
 func (player *Player) Update(deltaTime float32) {
+	if player.actor.Health > 0 {
+		player.takeUserInput(deltaTime)
+	} else {
+		// Death logic
+		player.SelectWeapon(WEAPON_ORDER_NONE)
+		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+		player.actor.inputForward = 0.0
+		player.actor.inputStrafe = 0.0
+		if player.Camera.Transform.Rotation().X() > -math.Pi/4.0 {
+			player.Camera.Transform.Rotate(-deltaTime, 0.0, 0.0)
+		}
+		if player.Camera.Transform.Position().Y() > -player.Body().Shape.(collision.Sphere).Radius() {
+			player.cameraFall -= deltaTime * 10.0
+			player.Camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
+		}
+		player.deathTimer += deltaTime
+		if (player.deathTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.deathTimer > 10.0 {
+			//TODO: Restart level.
+		}
+	}
+
+	var weapon Weapon = nil
+	if player.selectedWeapon >= 0 {
+		weapon = player.weapons[player.selectedWeapon]
+	}
+
+	if weapon == nil || !weapon.IsSelected() {
+		player.selectedWeapon = player.nextWeapon
+		if player.selectedWeapon >= 0 {
+			weapon = player.weapons[player.selectedWeapon]
+			weapon.Select()
+		}
+	}
+
+	if weapon != nil {
+		weapon.Update(deltaTime, player.actor.body.Velocity.Len())
+	}
+
+	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
+		if player.actor.MaxSpeed == player.WalkSpeed {
+			player.actor.Friction = player.WalkFriction
+		} else {
+			player.actor.Friction = player.RunFriction
+		}
+	} else {
+		player.actor.Friction = player.StandFriction
+	}
+
+	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
+	player.actor.Update(deltaTime)
+
+	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
+		Health: int(player.actor.Health),
+		Noclip: player.Body().Layer == COL_LAYER_NONE,
+	})
+}
+
+func (player *Player) takeUserInput(deltaTime float32) {
+	_ = deltaTime
 	if input.IsActionPressed(settings.ACTION_FORWARD) {
 		player.actor.inputForward = 1.0
 	} else if input.IsActionPressed(settings.ACTION_BACK) {
@@ -139,56 +201,26 @@ func (player *Player) Update(deltaTime float32) {
 		player.SelectWeapon(WEAPON_ORDER_CHICKEN)
 	}
 
-	var weapon Weapon = nil
-	if player.selectedWeapon >= 0 {
-		weapon = player.weapons[player.selectedWeapon]
-	}
-
-	if weapon == nil || !weapon.IsSelected() {
-		player.selectedWeapon = player.nextWeapon
-		if player.selectedWeapon >= 0 {
-			weapon = player.weapons[player.selectedWeapon]
-			weapon.Select()
-		}
-	}
-
-	if weapon != nil {
-		weapon.Update(deltaTime, player.actor.body.Velocity.Len())
-
-		if input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
-			// Don't fire if there is a wall too close in front
-			var cast collision.RaycastResult
-			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
-			if !cast.Hit {
-				weapon.Fire()
-			}
-		}
-	}
-
 	if input.IsActionPressed(settings.ACTION_SLOW) {
 		player.actor.MaxSpeed = player.WalkSpeed
 	} else {
 		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
-		if player.actor.MaxSpeed == player.WalkSpeed {
-			player.actor.Friction = player.WalkFriction
-		} else {
-			player.actor.Friction = player.RunFriction
+	var weapon Weapon = nil
+	if player.selectedWeapon >= 0 {
+		weapon = player.weapons[player.selectedWeapon]
+	}
+	if weapon != nil && input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
+		// Don't fire if there is a wall too close in front
+		var cast collision.RaycastResult
+		cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
+		if !cast.Hit {
+			weapon.Fire()
 		}
-	} else {
-		player.actor.Friction = player.StandFriction
 	}
 
 	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
-	player.actor.Update(deltaTime)
-
-	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health: int(player.actor.Health),
-		Noclip: player.Body().Layer == COL_LAYER_NONE,
-	})
 }
 
 func (player *Player) ProcessSignal(s Signal, params any) {
@@ -199,7 +231,7 @@ func (player *Player) ProcessSignal(s Signal, params any) {
 }
 
 func (player *Player) SelectWeapon(order WeaponIndex) {
-	if order == player.selectedWeapon || !player.weapons[order].IsEquipped() {
+	if order == player.selectedWeapon || (order >= 0 && !player.weapons[order].IsEquipped()) {
 		return
 	}
 	if player.selectedWeapon >= 0 {
@@ -217,23 +249,29 @@ func (player *Player) EquipWeapon(order WeaponIndex) {
 
 func (player *Player) OnDamage(sourceEntity any, damage float32) {
 	player.actor.Health = max(0, player.actor.Health-damage)
-	player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 
-	if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
-		dmgDir := bodyHaver.Body().Transform.Position().Sub(player.Body().Transform.Position())
-		if dmgDir.LenSqr() > 0.0 {
-			dmgDir = dmgDir.Normalize()
-		}
-		forward := player.actor.FacingVec()
-		halfFov := mgl32.DegToRad(settings.Current.Fov / 2.0)
-		if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
-			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
-		} else if forward.Cross(dmgDir).Y() > 0.0 {
-			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtLeft)
+	if player.actor.Health > 0 {
+		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+		if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
+			// Change the hurt face with respect to the direction the damage is coming from
+			dmgDir := bodyHaver.Body().Transform.Position().Sub(player.Body().Transform.Position())
+			if dmgDir.LenSqr() > 0.0 {
+				dmgDir = dmgDir.Normalize()
+			}
+			forward := player.actor.FacingVec()
+			halfFov := mgl32.DegToRad(settings.Current.Fov / 2.0)
+			if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
+				// Source is in front or back
+				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
+			} else if forward.Cross(dmgDir).Y() > 0.0 {
+				// Source is to the left
+				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtLeft)
+			} else {
+				// Source is to the right
+				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtRight)
+			}
 		} else {
-			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtRight)
+			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
 		}
-	} else {
-		player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
 	}
 }

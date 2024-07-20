@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -162,6 +163,15 @@ func NewWorld(mapPath string) (*World, error) {
 func (world *World) Update(deltaTime float32) {
 	world.removalQueue = world.removalQueue[0:0]
 
+	// Free mouse
+	if input.IsActionJustPressed(settings.ACTION_TRAP_MOUSE) {
+		if input.IsMouseTrapped() {
+			input.UntrapMouse()
+		} else {
+			input.TrapMouse()
+		}
+	}
+
 	// Update entities
 	scene.UpdateStores(world, deltaTime)
 	world.Hud.Update(deltaTime)
@@ -184,8 +194,8 @@ func (world *World) Render() {
 	if !ok {
 		panic("missing player")
 	}
-	cameraTransform := player.Body().Transform.Matrix()
 	camera := player.Camera
+	cameraTransform := player.Body().Transform.Matrix().Mul4(camera.Transform.Matrix())
 
 	// Setup 3D game render context
 	viewMat := cameraTransform.Inv()
