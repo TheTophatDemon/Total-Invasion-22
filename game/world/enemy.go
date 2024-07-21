@@ -20,7 +20,7 @@ import (
 const (
 	ENEMY_FOV_RADS       = math.Pi
 	ENEMY_WAKE_PROXIMITY = 1.7
-	WRAITH_MELEE_RANGE   = 2.0
+	WRAITH_MELEE_RANGE   = 2.5
 )
 
 type EnemyState uint8
@@ -267,12 +267,13 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 	case ENEMY_STATE_ATTACK:
 		enemy.AnimPlayer.ChangeAnimation(enemy.attackAnim)
 		enemy.AnimPlayer.PlayFromStart()
+		enemy.stateTimer = math2.Inf32()
 	case ENEMY_STATE_DIE:
 		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).Play()
 		enemy.AnimPlayer.ChangeAnimation(enemy.dieAnim)
 		enemy.AnimPlayer.PlayFromStart()
 		enemy.actor.body.Layer = COL_LAYER_NONE
-		enemy.actor.body.Filter = COL_LAYER_NONE
+		enemy.actor.body.Filter = COL_LAYER_MAP
 		enemy.bloodParticles.EmissionTimer = enemy.dieAnim.Duration()
 	}
 	enemy.stateTimer = 0.0
@@ -308,13 +309,29 @@ func (enemy *Enemy) wraithChase(
 	enemy.chaseTimer += deltaTime
 	enemy.actor.YawAngle = math2.Atan2(-vecToPlayer.X(), -vecToPlayer.Z())
 	if enemy.chaseTimer < chaseStraightTime {
+		// First, walk forward for a bit
 		enemy.chaseStrafeDir = 0.0
 		enemy.spriteAngle = enemy.actor.YawAngle
 	} else if enemy.chaseTimer < totalChaseTime {
+		// Then turn in a random direction.
 		if enemy.chaseStrafeDir == 0.0 {
 			enemy.chaseStrafeDir = ([2]float32{-0.7, 0.7})[rand.Intn(2)]
 		}
 		enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
+
+		// Cancel the turn if we are facing a wall
+		hit, _ := enemy.world.Raycast(
+			enemy.actor.Position(),
+			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
+			COL_LAYER_MAP,
+			WRAITH_MELEE_RANGE,
+			enemy,
+		)
+		if hit.Hit {
+			enemy.spriteAngle = enemy.actor.YawAngle
+			enemy.chaseStrafeDir = 0.0
+			enemy.chaseTimer = 0.0
+		}
 	} else {
 		for enemy.chaseTimer > totalChaseTime {
 			enemy.chaseTimer -= totalChaseTime

@@ -150,12 +150,12 @@ func (hud *Hud) SuggestPlayerFace(newState faceState) {
 }
 
 func (hud *Hud) forcePlayerFace(newState faceState) {
-	hud.faceState = newState
-	hud.faceTimer = newState.showTime
-	if face, ok := hud.face.Get(); ok {
+	if face, ok := hud.face.Get(); ok && hud.faceState != newState {
 		faceTex := cache.GetTexture(TEX_SEGAN_FACE)
 		anim, _ := faceTex.GetAnimation(newState.anim)
 		face.AnimPlayer.PlayNewAnim(anim)
 		face.FlippedHorz = newState.flipX
 	}
+	hud.faceState = newState
+	hud.faceTimer = newState.showTime
 }

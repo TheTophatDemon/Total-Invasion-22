@@ -49,3 +49,7 @@ func (actor *Actor) FacingVec() mgl32.Vec3 {
 func (actor *Actor) Body() *comps.Body {
 	return &actor.body
 }
+
+func (actor *Actor) Position() mgl32.Vec3 {
+	return actor.body.Transform.Position()
+}

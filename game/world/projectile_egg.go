@@ -49,6 +49,9 @@ func (proj *Projectile) eggMove(deltaTime float32) {
 
 func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
 	otherBody := otherEnt.Body()
+	if otherBody.Layer == COL_LAYER_NONE || otherBody.Layer == COL_LAYER_INVISIBLE {
+		return
+	}
 	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
 	if !hasOwner || (hasOwner && otherBody != owner.Body()) {
 		if damageable, canDamage := otherEnt.(Damageable); canDamage {
