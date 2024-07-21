@@ -1,13 +1,16 @@
 package main
 
 import (
+	"log"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world"
@@ -16,8 +19,6 @@ import (
 type App struct {
 	world *world.World
 }
-
-var TheApp App
 
 func (app *App) Update(deltaTime float32) {
 	// Update audio volume based on settings.
@@ -31,16 +32,30 @@ func (app *App) Render() {
 	app.world.Render()
 }
 
+func (app *App) ProcessSignal(signal any) {
+	switch msg := signal.(type) {
+	case game.MapChangeSignal:
+		if app.world != nil {
+			app.world.TearDown()
+		}
+		app.LoadGame(msg.NextMapPath)
+	}
+}
+
 func (app *App) LoadGame(mapPath string) {
-	world, err := world.NewWorld(mapPath)
+	log.Println("Loading game at map ", mapPath)
+
+	cache.Reset()
+
+	world, err := world.NewWorld(app, mapPath)
 	if err != nil {
 		panic(err)
 	}
 
-	runtime.GC()
-
 	input.TrapMouse()
 	app.world = world
+
+	runtime.GC()
 }
 
 func main() {
@@ -82,8 +97,9 @@ func main() {
 		mapName = "assets/maps/ti2-malicious-intents.te3"
 	}
 
-	TheApp.LoadGame(mapName)
-	engine.Run(&TheApp)
+	app := &App{}
+	app.LoadGame(mapName)
+	engine.Run(app)
 
 	// memProf, err := os.Create("memory_profile.pprof")
 	// if err != nil {

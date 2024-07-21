@@ -185,3 +185,11 @@ func (st *Storage[T]) IterUntyped() func() (any, Handle) {
 		}
 	}
 }
+
+func (st *Storage[T]) TearDown() {
+	for i := range st.data {
+		if hasFinalizer, ok := any(&st.data[i]).(engine.HasFinalizer); ok {
+			hasFinalizer.Finalize()
+		}
+	}
+}

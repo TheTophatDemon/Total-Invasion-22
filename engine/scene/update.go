@@ -20,6 +20,13 @@ func RenderStores(scene any, context *render.Context) {
 	})
 }
 
+// Given a pointer to a struct, this will find any exported fields that implement StorageOps and call TearDown() on them.
+func TearDownStores(scene any) {
+	ForEachStorageField(scene, func(storage StorageOps) {
+		storage.TearDown()
+	})
+}
+
 // Runs the given function on the value of every exported field in the given struct pointer that implements StorageOps.
 func ForEachStorageField(scene any, do func(StorageOps)) {
 	sceneVal := reflect.ValueOf(scene).Elem()

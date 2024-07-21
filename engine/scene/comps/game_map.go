@@ -13,6 +13,7 @@ import (
 )
 
 type Map struct {
+	name           string
 	body           Body
 	tiles          te3.Tiles
 	mesh           *geom.Mesh
@@ -55,6 +56,7 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 	}
 
 	gameMap := Map{
+		name: te3File.FilePath(),
 		body: Body{
 			Shape: gridShape,
 			Layer: collisionLayer,
@@ -82,6 +84,10 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 	return gameMap, nil
 }
 
+func (gameMap *Map) Name() string {
+	return gameMap.name
+}
+
 func (gameMap *Map) Body() *Body {
 	return &gameMap.body
 }
@@ -96,6 +102,9 @@ func (gameMap *Map) Has(handle scene.Handle) bool {
 
 func (gameMap *Map) Remove(handle scene.Handle) {
 	// You fool! I am eternal.
+}
+
+func (gameMap *Map) TearDown() {
 }
 
 func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) {

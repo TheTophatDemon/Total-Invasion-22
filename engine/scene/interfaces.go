@@ -11,5 +11,6 @@ type (
 		Update(deltaTime float32)
 		Render(renderContext *render.Context)
 		IterUntyped() func() (any, Handle)
+		TearDown() // Called to release external resources held by storage items.
 	}
 )

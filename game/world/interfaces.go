@@ -1,6 +1,9 @@
 package world
 
-import "tophatdemon.com/total-invasion-ii/engine/scene/comps"
+import (
+	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+)
 
 type (
 	// Represents an entity that reacts to having the 'use' key pressed when the player is pointing at it.
@@ -12,10 +15,6 @@ type (
 		OnDamage(sourceEntity any, amount float32)
 	}
 
-	Observer interface {
-		ProcessSignal(Signal, any)
-	}
-
 	// Represents an entity that can be activated by another entity.
 	Linkable interface {
 		LinkNumber() int
@@ -24,7 +23,7 @@ type (
 	HasActor interface {
 		comps.HasBody
 		Damageable
-		Observer
+		engine.Observer
 		Actor() *Actor
 	}
 

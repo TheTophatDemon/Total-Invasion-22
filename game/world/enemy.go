@@ -241,7 +241,7 @@ func (enemy *Enemy) Render(context *render.Context) {
 	enemy.bloodParticles.Render(&enemy.Body().Transform, context)
 }
 
-func (enemy *Enemy) ProcessSignal(signal Signal, params any) {
+func (enemy *Enemy) ProcessSignal(signal any) {
 }
 
 func (enemy *Enemy) changeState(newState EnemyState) {

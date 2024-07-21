@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 const (
@@ -112,7 +113,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				actor := actorHaver.Actor()
 				actor.SetYaw(trOther.Transform.Yaw())
 				actor.inputForward, actor.inputStrafe = 0.0, 0.0
-				actorHaver.ProcessSignal(SIGNAL_TELEPORTED, nil)
+				actorHaver.ProcessSignal(game.TeleportationSignal{})
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)

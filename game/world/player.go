@@ -10,6 +10,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -113,7 +114,7 @@ func (player *Player) Update(deltaTime float32) {
 		}
 		player.deathTimer += deltaTime
 		if (player.deathTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.deathTimer > 10.0 {
-			//TODO: Restart level.
+			player.world.ChangeMap(player.world.GameMap.Name())
 		}
 	}
 
@@ -223,9 +224,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
 }
 
-func (player *Player) ProcessSignal(s Signal, params any) {
-	switch s {
-	case SIGNAL_TELEPORTED:
+func (player *Player) ProcessSignal(signal any) {
+	switch signal.(type) {
+	case game.TeleportationSignal:
 		player.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
 	}
 }

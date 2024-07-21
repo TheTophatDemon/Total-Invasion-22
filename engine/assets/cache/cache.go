@@ -193,6 +193,21 @@ func GetTranslation(assetPath string) (*locales.Translation, error) {
 	return trans, err
 }
 
+// This frees memory for all resources currently loaded and clears the cache.
+// This is done to refresh the loaded assets between levels.
+func Reset() {
+	loadedTextures.freeAll()
+	clear(loadedTextures.storage)
+	loadedMeshes.freeAll()
+	clear(loadedMeshes.storage)
+	loadedFonts.freeAll()
+	clear(loadedFonts.storage)
+	loadedSfx.freeAll()
+	clear(loadedSfx.storage)
+}
+
+// This frees memory for all resources currently loaded.
+// This is meant to be done permanently at the end of the program.
 func FreeAll() {
 	loadedTextures.freeAll()
 	loadedMeshes.freeAll()

@@ -1,6 +1,4 @@
 # TODO
-- Player death
-    - Restart of level
 - God mode
 - OpenGL Invalid operation error (something to do with blood particles?)
 - Make wraith corpses not go through walls

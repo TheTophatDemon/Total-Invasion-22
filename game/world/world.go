@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -12,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -51,12 +53,14 @@ type World struct {
 	DebugShapes   scene.Storage[DebugShape]
 	GameMap       comps.Map
 	CurrentPlayer scene.Id[*Player]
-	removalQueue  []scene.Handle // Holds entities to be removed at the end of the frame.
+	removalQueue  []scene.Handle  // Holds entities to be removed at the end of the frame.
+	app           engine.Observer // Communicates with the main application
 }
 
-func NewWorld(mapPath string) (*World, error) {
+func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world := &World{
 		removalQueue: make([]scene.Handle, 0, 8),
+		app:          app,
 	}
 
 	world.Hud.Init()
@@ -160,6 +164,12 @@ func NewWorld(mapPath string) (*World, error) {
 	return world, nil
 }
 
+func (world *World) ChangeMap(mapPath string) {
+	world.app.ProcessSignal(game.MapChangeSignal{
+		NextMapPath: mapPath,
+	})
+}
+
 func (world *World) Update(deltaTime float32) {
 	world.removalQueue = world.removalQueue[0:0]
 
@@ -215,6 +225,10 @@ func (world *World) Render() {
 
 	world.Hud.UpdateDebugCounters(&renderContext)
 	world.Hud.Render()
+}
+
+func (world *World) TearDown() {
+	scene.TearDownStores(world)
 }
 
 func (world *World) ListenerTransform() mgl32.Mat4 {

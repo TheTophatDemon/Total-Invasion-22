@@ -7,3 +7,7 @@ type HasDefault interface {
 type HasFinalizer interface {
 	Finalize()
 }
+
+type Observer interface {
+	ProcessSignal(signal any)
+}
