@@ -6,6 +6,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -144,6 +145,7 @@ func (box *Box) Transform() mgl32.Mat4 {
 }
 
 func (box *Box) Render(context *render.Context) {
+	failure.CheckOpenGLError()
 	cache.QuadMesh.Bind()
 	shaders.UIShader.Use()
 
@@ -174,4 +176,5 @@ func (box *Box) Render(context *render.Context) {
 	// Set uniforms
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())
 	cache.QuadMesh.DrawAll()
+	failure.CheckOpenGLError()
 }

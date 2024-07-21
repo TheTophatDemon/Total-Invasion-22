@@ -7,7 +7,10 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-func CheckOpenGLError() {
+// Checks for an OpenGL error that occurred in a previous operation.
+// If an error is present, it will print the error to the console with the caller's file and line number.
+// Will return true if an error occurred or false otherwise.
+func CheckOpenGLError() bool {
 	if err := gl.GetError(); err != gl.NO_ERROR {
 		errName := "Unknown"
 		switch err {
@@ -30,5 +33,7 @@ func CheckOpenGLError() {
 		}
 		_, fileName, lineNum, _ := runtime.Caller(1)
 		log.Printf("**OPENGL ERROR** (%s, %v): %s", fileName, lineNum, errName)
+		return true
 	}
+	return false
 }

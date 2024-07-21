@@ -17,6 +17,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
@@ -356,18 +357,25 @@ func (txt *Text) Render(context *render.Context) {
 		return
 	}
 
+	failure.CheckOpenGLError()
+	cache.QuadMesh.Bind()
+	shaders.UIShader.Use()
 	// Set color
 	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, txt.Color().Vector())
+	failure.CheckOpenGLError()
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
+	failure.CheckOpenGLError()
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
+	failure.CheckOpenGLError()
 
 	// Set texture
 	txt.texture.Bind()
+	failure.CheckOpenGLError()
 	_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 1.0, 1.0, 1.0})
-
+	failure.CheckOpenGLError()
 	// Set transform
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Transform())
-
+	failure.CheckOpenGLError()
 	// Draw
 	if mesh, err := txt.Mesh(); err == nil {
 		mesh.Bind()
@@ -375,4 +383,6 @@ func (txt *Text) Render(context *render.Context) {
 	} else {
 		log.Println(err)
 	}
+
+	failure.CheckOpenGLError()
 }

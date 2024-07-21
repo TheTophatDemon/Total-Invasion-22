@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -61,6 +62,7 @@ func (scn *Scene) Update(deltaTime float32) {
 }
 
 func (scn *Scene) Render(context *render.Context) {
+	failure.CheckOpenGLError()
 	gl.CullFace(gl.FRONT)
 	gl.Disable(gl.DEPTH_TEST)
 
@@ -73,4 +75,5 @@ func (scn *Scene) Render(context *render.Context) {
 	}
 
 	gl.Enable(gl.DEPTH_TEST)
+	failure.CheckOpenGLError()
 }
