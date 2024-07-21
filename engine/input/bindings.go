@@ -55,10 +55,8 @@ func (mmb *MouseMovementBinding) IsPressed() bool {
 func (mmb *MouseMovementBinding) Axis() float32 {
 	switch mmb.axis {
 	case MOUSE_AXIS_X:
-		// return float32(math.Min(math.Max(mouseDeltaX, -1.0), 1.0))
 		return float32(mouseDeltaX) * mmb.sensitivity
 	case MOUSE_AXIS_Y:
-		// return float32(math.Min(math.Max(mouseDeltaY, -1.0), 1.0))
 		return float32(mouseDeltaY) * mmb.sensitivity
 	}
 	return 0.0
@@ -78,6 +76,9 @@ func (csb *CharSequenceBinding) Axis() float32 {
 }
 
 func (csb *CharSequenceBinding) OnKeyPress(key glfw.Key) {
+	if csb.progress == len(csb.sequence) {
+		csb.progress = 0
+	}
 	if csb.progress < len(csb.sequence) && key == csb.sequence[csb.progress] {
 		csb.progress += 1
 	} else {

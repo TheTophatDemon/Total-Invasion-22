@@ -110,6 +110,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
 	enemy.actor.Health = 100.0
+	enemy.actor.MaxHealth = enemy.actor.Health
 
 	enemy.state = ENEMY_STATE_IDLE
 

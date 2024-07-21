@@ -32,6 +32,7 @@ type Player struct {
 	initialCollisionLayers                   collision.Mask
 	cameraFall                               float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
 	deathTimer                               float32 // Counts the seconds until the player is allowed to restart after dying.
+	godMode                                  bool    // If true, the player does not take damage.
 }
 
 var _ HasActor = (*Player)(nil)
@@ -65,6 +66,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 100.0,
 		Friction:  20.0,
+		MaxHealth: 100,
 		Health:    100,
 	}
 	player.Camera = comps.NewCamera(
@@ -149,8 +151,9 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.Update(deltaTime)
 
 	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health: int(player.actor.Health),
-		Noclip: player.Body().Layer == COL_LAYER_NONE,
+		Health:  int(player.actor.Health),
+		Noclip:  player.Body().Layer == COL_LAYER_NONE,
+		GodMode: player.godMode,
 	})
 }
 
@@ -181,6 +184,20 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			player.Body().Layer = player.initialCollisionLayers
 			player.Body().Filter = COL_FILTER_FOR_ACTORS
 			message = settings.Localize("noclipDeactivate")
+		}
+		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
+	}
+
+	if input.IsActionJustPressed(settings.ACTION_GODMODE) {
+		if !player.godMode {
+			player.actor.Health = player.actor.MaxHealth
+		}
+		player.godMode = !player.godMode
+		var message string
+		if player.godMode {
+			message = settings.Localize("godModeActivate")
+		} else {
+			message = settings.Localize("godModeDeactivate")
 		}
 		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
 	}
@@ -249,6 +266,9 @@ func (player *Player) EquipWeapon(order WeaponIndex) {
 }
 
 func (player *Player) OnDamage(sourceEntity any, damage float32) {
+	if player.godMode {
+		return
+	}
 	player.actor.Health = max(0, player.actor.Health-damage)
 
 	if player.actor.Health > 0 {

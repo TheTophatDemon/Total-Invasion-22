@@ -3,6 +3,8 @@
     "geoffrey": "Who's this douchebag?",
     "noclipActivate": "Noclip activated",
     "noclipDeactivate": "Noclip deactivated",
+    "godModeActivate": "God mode activated",
+    "godModeDeactivate": "God mode deactivated",
     "doorStuck": "The door can't move...",
     "doorNeedKey": "I need a key...",
     "doorSwitch": "This door opens elsewhere..."

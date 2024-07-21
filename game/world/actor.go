@@ -11,7 +11,7 @@ type Actor struct {
 	MaxSpeed, AccelRate, Friction float32
 	inputForward, inputStrafe     float32
 	YawAngle                      float32 // Radians
-	Health                        float32
+	Health, MaxHealth             float32
 }
 
 func (actor *Actor) Update(deltaTime float32) {

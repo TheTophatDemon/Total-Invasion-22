@@ -91,6 +91,7 @@ func main() {
 	input.BindActionKey(settings.ACTION_SICKLE, glfw.Key1)
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
+	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})
 
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {

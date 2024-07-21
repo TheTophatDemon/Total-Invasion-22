@@ -16,8 +16,8 @@ const (
 )
 
 type PlayerStats struct {
-	Health int
-	Noclip bool
+	Health          int
+	Noclip, GodMode bool
 }
 
 type faceState struct {
@@ -127,6 +127,8 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 		if heart, ok := hud.Heart.Get(); ok {
 			heart.AnimPlayer.Stop()
 		}
+	} else if stats.GodMode {
+		hud.forcePlayerFace(FaceStateGod)
 	} else if stats.Noclip {
 		hud.forcePlayerFace(FaceStateNoclip)
 	} else {

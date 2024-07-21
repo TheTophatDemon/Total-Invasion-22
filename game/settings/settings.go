@@ -34,6 +34,7 @@ const (
 	ACTION_CHICKEN
 	ACTION_USE
 	ACTION_NOCLIP
+	ACTION_GODMODE
 	ACTION_COUNT
 )
 
@@ -51,6 +52,7 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_CHICKEN:    "Select Chicken Cannon",
 	ACTION_USE:        "Use",
 	ACTION_NOCLIP:     "Noclip",
+	ACTION_GODMODE:    "God Mode",
 }
 
 type Data struct {
