@@ -13,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -125,10 +126,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	levelProps, _ := te3File.FindEntWithProperty("name", "level properties")
 	if songPath, hasSong := levelProps.Properties["song"]; hasSong {
 		// Play the song
-		song, err := cache.GetSong(songPath)
-		if err == nil {
-			song.Play()
-		}
+		tdaudio.QueueSong(songPath, true, 0)
 	}
 
 	// Spawn player
@@ -186,6 +184,13 @@ func (world *World) Update(deltaTime float32) {
 	scene.UpdateStores(world, deltaTime)
 	world.Hud.Update(deltaTime)
 
+	// Set audio listener position
+	if player, ok := world.CurrentPlayer.Get(); ok {
+		pos := player.actor.Position()
+		dir := player.actor.FacingVec()
+		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
+	}
+
 	// Update bodies and resolve collisions
 	bodiesIter := world.BodyIter()
 	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
@@ -229,13 +234,6 @@ func (world *World) Render() {
 
 func (world *World) TearDown() {
 	scene.TearDownStores(world)
-}
-
-func (world *World) ListenerTransform() mgl32.Mat4 {
-	if player, ok := world.CurrentPlayer.Get(); ok {
-		return player.Body().Transform.Matrix()
-	}
-	return mgl32.Ident4()
 }
 
 func (world *World) QueueRemoval(entHandle scene.Handle) {

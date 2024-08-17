@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -12,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -30,7 +30,7 @@ type Prop struct {
 	body         comps.Body
 	world        *World
 	propType     PropType
-	voice        audio.VoiceId
+	voice        tdaudio.VoiceId
 }
 
 var _ comps.HasBody = (*Prop)(nil)
@@ -99,9 +99,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
-	if prop.voice.IsValid() {
-		prop.voice.Attenuate(prop.Body().Transform.Position(), prop.world.ListenerTransform())
-	}
+	prop.voice.SetPosition(prop.Body().Transform.Position())
 }
 
 func (prop *Prop) Render(context *render.Context) {

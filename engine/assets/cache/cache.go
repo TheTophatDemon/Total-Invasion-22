@@ -12,6 +12,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/iter"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type cache[T any] struct {
@@ -32,10 +33,7 @@ var loadedMeshes cache[*geom.Mesh]
 var loadedFonts cache[*fonts.Font]
 
 // Cache of sound effects, indexed by .wav file path
-var loadedSfx cache[*audio.Sfx]
-
-// Cache of songs, indexed by .ogg file path
-var loadedSongs cache[*audio.Song]
+var loadedSfx cache[tdaudio.SoundId]
 
 // Cache of translations, indexed by .json file path.
 var loadedTranslations cache[*locales.Translation]
@@ -62,19 +60,12 @@ func init() {
 		freeFunc:       nil,
 		resourceName:   "font",
 	}
-	loadedSfx = cache[*audio.Sfx]{
-		storage:        make(map[string]*audio.Sfx),
+	loadedSfx = cache[tdaudio.SoundId]{
+		storage:        make(map[string]tdaudio.SoundId),
 		fileExtensions: []string{".wav"},
 		loadFunc:       audio.LoadSfx,
-		freeFunc:       (*audio.Sfx).Free,
+		freeFunc:       nil,
 		resourceName:   "sfx",
-	}
-	loadedSongs = cache[*audio.Song]{
-		storage:        make(map[string]*audio.Song),
-		fileExtensions: []string{".ogg"},
-		loadFunc:       audio.LoadSong,
-		freeFunc:       (*audio.Song).Free,
-		resourceName:   "song",
 	}
 	loadedTranslations = cache[*locales.Translation]{
 		storage:        make(map[string]*locales.Translation),
@@ -161,27 +152,13 @@ func GetFont(assetPath string) (*fonts.Font, error) {
 	return fnt, err
 }
 
-// Retrieves a sound effect from the game assets, loading it if it doesn't already exist.
-func GetSfx(assetPath string) *audio.Sfx {
+// Retrieves a sound effect from the game assets.
+func GetSfx(assetPath string) tdaudio.SoundId {
 	sfx, err := loadedSfx.get(assetPath)
 	if err != nil {
 		log.Println(err)
-		return SilentSfx
 	}
 	return sfx
-}
-
-// Retrieves a song from the game assets, loading it if it doesn't already exist.
-func GetSong(assetPath string) (*audio.Song, error) {
-	song, err := loadedSongs.get(assetPath)
-	if err != nil {
-		log.Println(err)
-	}
-	return song, err
-}
-
-func IterateSongs() iter.Seq2[string, *audio.Song] {
-	return loadedSongs.iterate()
 }
 
 // Retrieves a translation from the game assets, loading it if iit doesn't already exist.
@@ -202,8 +179,6 @@ func Reset() {
 	clear(loadedMeshes.storage)
 	loadedFonts.freeAll()
 	clear(loadedFonts.storage)
-	loadedSfx.freeAll()
-	clear(loadedSfx.storage)
 }
 
 // This frees memory for all resources currently loaded.
@@ -212,6 +187,5 @@ func FreeAll() {
 	loadedTextures.freeAll()
 	loadedMeshes.freeAll()
 	loadedFonts.freeAll()
-	loadedSfx.freeAll()
 	FreeBuiltInAssets()
 }

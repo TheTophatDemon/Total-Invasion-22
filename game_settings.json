@@ -9,7 +9,7 @@
 		"A": 0.5
 	},
 	"SfxVolume": 1,
-	"MusicVolume": 0.0,
+	"MusicVolume": 0.25,
 	"Locale": "en",
 	"Debug": {
 		"StartMap": "assets/maps/ti2-malicious-intents.te3"

@@ -9,26 +9,9 @@ require (
 )
 
 require (
-	github.com/jfreymuth/oggvorbis v1.0.5
-	github.com/jfreymuth/vorbis v1.0.2 // indirect
-)
-
-require (
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/tools v0.21.0
-)
-
-require (
-	github.com/go-audio/audio v1.0.0 // indirect
-	github.com/go-audio/riff v1.0.0 // indirect
-	github.com/go-audio/wav v1.1.0
-)
-
-require (
-	github.com/ebitengine/oto/v3 v3.1.0
-	github.com/ebitengine/purego v0.5.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
 )
 
 require (

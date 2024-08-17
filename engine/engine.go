@@ -7,10 +7,10 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 func init() {
@@ -54,9 +54,7 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 	window.MakeContextCurrent()
 	input.Init()
 
-	if err := audio.Init(); err != nil {
-		return err
-	}
+	tdaudio.Init()
 
 	if err := gl.Init(); err != nil {
 		return err
@@ -91,6 +89,7 @@ func Run(app App) {
 
 		for accumulator += deltaTime; accumulator >= updateRate; accumulator -= updateRate {
 			app.Update(float32(updateRate))
+			tdaudio.Update()
 			input.Update()
 		}
 
@@ -124,4 +123,5 @@ func Run(app App) {
 func DeInit() {
 	cache.FreeAll()
 	glfw.Terminate()
+	tdaudio.Teardown()
 }

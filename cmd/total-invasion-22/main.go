@@ -7,9 +7,9 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -22,8 +22,8 @@ type App struct {
 
 func (app *App) Update(deltaTime float32) {
 	// Update audio volume based on settings.
-	audio.SetSfxBusVolume(settings.Current.SfxVolume)
-	audio.SetMusicBusVolume(settings.Current.MusicVolume)
+	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
+	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
 	app.world.Update(deltaTime)
 }

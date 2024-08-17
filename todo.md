@@ -1,6 +1,6 @@
 # TODO
-- Fix sounds playing before they've been attenuated
-- Fix sound attenuation to have linear falloff
+- Fix weird sound spatialization
+- Upgrade to Go 1.23.0
 - Sickle flesh cutting sound
 - Fix color weirdness on Linux
 - Chickens

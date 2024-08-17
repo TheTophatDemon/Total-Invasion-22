@@ -33,7 +33,7 @@ func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mg
 	eggTex := cache.GetTexture("assets/textures/sprites/egg.png")
 	proj.SpriteRender = comps.NewSpriteRender(eggTex)
 	proj.speed = 100.0
-	proj.voices[0] = cache.GetSfx(SFX_EGG_SHOOT).Play()
+	proj.voices[0] = cache.GetSfx(SFX_EGG_SHOOT).PlayAttenuated(position)
 	proj.StunChance = 0.1
 	proj.Damage = 15
 

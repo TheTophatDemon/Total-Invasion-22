@@ -5,7 +5,6 @@ import (
 	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -14,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -55,7 +55,7 @@ type Enemy struct {
 	chaseStrafeDir                          float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
 	spriteAngle                             float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
 	state                                   EnemyState
-	voice                                   audio.VoiceId
+	voice                                   tdaudio.VoiceId
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -164,7 +164,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	var vecToPlayer, dirToPlayer mgl32.Vec3
 	var distToPlayer float32
 	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
-		enemy.voice.Attenuate(enemyPos, player.Body().Transform.Matrix())
+		enemy.voice.SetPosition(enemyPos)
 
 		vecToPlayer = player.Body().Transform.Position().Sub(enemyPos)
 		distToPlayer = vecToPlayer.Len()
@@ -256,12 +256,12 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.AnimPlayer.Stop()
 	case ENEMY_STATE_CHASE:
 		if enemy.state == ENEMY_STATE_IDLE {
-			enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).Play()
+			enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).PlayAttenuated(enemy.actor.Position())
 		}
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Play()
 	case ENEMY_STATE_STUN:
-		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).Play()
+		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).PlayAttenuated(enemy.actor.Position())
 		enemy.AnimPlayer.ChangeAnimation(enemy.stunAnim)
 		enemy.AnimPlayer.PlayFromStart()
 	case ENEMY_STATE_ATTACK:
@@ -269,7 +269,7 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.AnimPlayer.PlayFromStart()
 		enemy.stateTimer = math2.Inf32()
 	case ENEMY_STATE_DIE:
-		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).Play()
+		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).PlayAttenuated(enemy.actor.Position())
 		enemy.AnimPlayer.ChangeAnimation(enemy.dieAnim)
 		enemy.AnimPlayer.PlayFromStart()
 		enemy.actor.body.Layer = COL_LAYER_NONE

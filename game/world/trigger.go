@@ -117,7 +117,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
-				cache.GetSfx(SFX_TELEPORT).Play()
+				cache.GetSfx(SFX_TELEPORT).PlayAttenuated(actor.Position())
 				break
 			}
 		}

@@ -2,7 +2,6 @@ package cache
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 )
@@ -10,9 +9,6 @@ import (
 var (
 	// A quad on the XY plane centered at (0,0) with a width and height of 2.
 	QuadMesh *geom.Mesh
-
-	// A sound that plays no audio. Used as an error placeholder.
-	SilentSfx *audio.Sfx
 )
 
 // Initialize built-in assets
@@ -47,8 +43,6 @@ func InitBuiltInAssets() {
 	}, []uint32{
 		1, 2, 0, 1, 3, 2,
 	})
-
-	SilentSfx = &audio.Sfx{}
 }
 
 func FreeBuiltInAssets() {
