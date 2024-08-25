@@ -89,8 +89,8 @@ func Run(app App) {
 
 		for accumulator += deltaTime; accumulator >= updateRate; accumulator -= updateRate {
 			app.Update(float32(updateRate))
-			tdaudio.Update()
 			input.Update()
+			tdaudio.Update()
 		}
 
 		// OpenGL settings

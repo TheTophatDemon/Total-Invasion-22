@@ -10,7 +10,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -46,7 +45,7 @@ func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation
 	}
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
 	proj.speed = 35.0
-	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).PlayAttenuated(position)
+	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).PlayAttenuatedV(position)
 	proj.StunChance = 0.1
 	proj.Damage = 200.0
 
@@ -79,12 +78,12 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 	otherBody := otherEnt.Body()
 	if proj.speed <= -1.0 {
 		if hasOwner && otherBody == owner.Body() {
-			tdaudio.StopSound(proj.voices[0])
+			proj.voices[0].Stop()
 			proj.id.Remove()
 		}
 	} else if otherBody.OnLayer(COL_LAYER_MAP) {
 		proj.speed = -math2.Abs(proj.speed) / 2.0
-		proj.voices[1] = cache.GetSfx(SFX_SICKLE_CLINK).PlayAttenuated(result.Position)
+		proj.voices[1] = cache.GetSfx(SFX_SICKLE_CLINK).PlayAttenuatedV(result.Position)
 	}
 
 	// Apply damage per second

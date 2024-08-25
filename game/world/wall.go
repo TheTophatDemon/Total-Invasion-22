@@ -264,7 +264,7 @@ func (wall *Wall) OnUse(player *Player) {
 				wall.movePhase = MOVE_PHASE_OPENING
 				wall.waitTimer = 0
 				if len(wall.activateSound) > 0 {
-					cache.GetSfx(wall.activateSound).PlayAttenuated(wall.body.Transform.Position())
+					cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Transform.Position())
 				}
 			case MOVE_PHASE_OPEN:
 				if wall.WaitTime >= 0.0 {

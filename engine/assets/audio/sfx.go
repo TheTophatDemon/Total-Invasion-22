@@ -20,7 +20,7 @@ type sfxMetadata struct {
 
 func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	if !strings.HasSuffix(soundPath, ".wav") {
-		return tdaudio.SoundId(0), fmt.Errorf("%v is not a wav file", soundPath)
+		return tdaudio.SoundId{}, fmt.Errorf("%v is not a wav file", soundPath)
 	}
 
 	// Look for metadata file
@@ -33,7 +33,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 
 	polyphony := uint8(4)
 	looped := false
-	rolloff := float32(0.5)
+	rolloff := float32(0.75)
 	if metadata != nil {
 		if metadata.Polyphony != 0 {
 			polyphony = uint8(metadata.Polyphony)

@@ -30,7 +30,7 @@ func (proj *Projectile) Body() *comps.Body {
 func (proj *Projectile) Update(deltaTime float32) {
 	proj.AnimPlayer.Update(deltaTime)
 	for _, vid := range proj.voices {
-		vid.SetPosition(proj.Body().Transform.Position())
+		vid.SetPositionV(proj.Body().Transform.Position())
 	}
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)

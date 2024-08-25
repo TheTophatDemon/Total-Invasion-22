@@ -202,6 +202,10 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
+	if input.IsActionJustPressed(settings.ACTION_DIE) {
+		player.actor.Health = 0
+	}
+
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := player.Body().Transform.Forward()

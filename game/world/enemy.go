@@ -158,14 +158,15 @@ func (enemy *Enemy) Update(deltaTime float32) {
 
 	enemyPos := enemy.Body().Transform.Position()
 	enemyDir := enemy.actor.FacingVec()
+	if enemy.voice.IsValid() {
+		enemy.voice.SetPositionV(enemyPos)
+	}
 
 	// Check if the player is in view and not obstructed
 	canSeePlayer := false
 	var vecToPlayer, dirToPlayer mgl32.Vec3
 	var distToPlayer float32
 	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
-		enemy.voice.SetPosition(enemyPos)
-
 		vecToPlayer = player.Body().Transform.Position().Sub(enemyPos)
 		distToPlayer = vecToPlayer.Len()
 		if distToPlayer != 0.0 {
@@ -256,12 +257,12 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.AnimPlayer.Stop()
 	case ENEMY_STATE_CHASE:
 		if enemy.state == ENEMY_STATE_IDLE {
-			enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).PlayAttenuated(enemy.actor.Position())
+			enemy.voice = cache.GetSfx(SFX_WRAITH_WAKE).PlayAttenuatedV(enemy.actor.Position())
 		}
 		enemy.AnimPlayer.ChangeAnimation(enemy.walkAnim)
 		enemy.AnimPlayer.Play()
 	case ENEMY_STATE_STUN:
-		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).PlayAttenuated(enemy.actor.Position())
+		enemy.voice = cache.GetSfx(SFX_WRAITH_HURT).PlayAttenuatedV(enemy.actor.Position())
 		enemy.AnimPlayer.ChangeAnimation(enemy.stunAnim)
 		enemy.AnimPlayer.PlayFromStart()
 	case ENEMY_STATE_ATTACK:
@@ -269,7 +270,7 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.AnimPlayer.PlayFromStart()
 		enemy.stateTimer = math2.Inf32()
 	case ENEMY_STATE_DIE:
-		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).PlayAttenuated(enemy.actor.Position())
+		enemy.voice = cache.GetSfx(SFX_WRAITH_DIE).PlayAttenuatedV(enemy.actor.Position())
 		enemy.AnimPlayer.ChangeAnimation(enemy.dieAnim)
 		enemy.AnimPlayer.PlayFromStart()
 		enemy.actor.body.Layer = COL_LAYER_NONE

@@ -26,9 +26,14 @@
 
 #define SONG_QUEUE_MAX 2
 
+typedef struct td_voice {
+    ma_sound sound;
+    uint32_t play_count;
+} td_voice;
+
 typedef struct td_player {
     uint8_t num_voices;
-    ma_sound *voices;
+    td_voice *voices;
 } td_player;
 
 typedef struct td_player_list {
@@ -52,11 +57,11 @@ static void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
     ma_engine_read_pcm_frames(&g_engine, pOutput, frameCount, NULL);
 }
 
-static void teardown_sounds() {
+void td_audio_free_sounds(void) {
     for (int s = 0; s < g_players.length; ++s) {
         td_player *player = &g_players.items[s];
         for (int v = 0; v < player->num_voices; ++v) {
-            ma_sound_uninit(&player->voices[v]);
+            ma_sound_uninit(&player->voices[v].sound);
         }
         free(player->voices);
     }
@@ -64,54 +69,61 @@ static void teardown_sounds() {
     free(g_players.items);
 }
 
-static bool check_voice_id(td_voice_id voice) {
-    if (voice.sound_id.id == 0 || 
-        voice.sound_id.id >= g_players.length ||
-        voice.voice_id >= g_players.items[voice.sound_id.id].num_voices) {
+bool td_audio_voice_is_valid(td_voice_id voice) {
+    if (voice.player.id == 0 || 
+        voice.player.id >= g_players.length) {
+        return false;
+    }
+    td_player *player = &g_players.items[voice.player.id];
+    if (voice.id >= player->num_voices ||
+        voice.play_count != player->voices[voice.id].play_count) {
         return false;
     }
     return true;
 }
 
-td_sound_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff) {
+td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff) {
     assert(path != NULL);
     assert(polyphony > 0);
 
     td_player player = (td_player){
         .num_voices = polyphony,
-        .voices = (ma_sound *) malloc(sizeof(ma_sound) * polyphony),
+        .voices = (td_voice *) calloc(polyphony, sizeof(td_voice)),
     };
-    td_sound_id new_id = (td_sound_id){.id = g_players.length};
+    td_player_id new_id = (td_player_id){.id = g_players.length};
     ARRAY_PUSH(g_players, td_player, player);
 
     // Set up voices
     int v = 0;
     for (v = 0; v < polyphony; ++v) {
-        ma_sound *voice = &player.voices[v];
+        ma_sound *sound = &player.voices[v].sound;
         ma_uint32 flags = MA_SOUND_FLAG_DECODE;
-        ma_result result = ma_sound_init_from_file(&g_engine, path, flags, &g_sfx_group, NULL, voice);
+        ma_result result = ma_sound_init_from_file(&g_engine, path, flags, &g_sfx_group, NULL, sound);
         if (result != MA_SUCCESS) {
             LOG_ERR("failed to load sound at %s, code %d", path, result);
             goto fail;
         }
-        ma_sound_set_looping(voice, (ma_bool32) looping);
-        ma_sound_set_rolloff(voice, rolloff);
+        ma_sound_set_looping(sound, (ma_bool32) looping);
+        ma_sound_set_rolloff(sound, rolloff);
+        ma_sound_set_doppler_factor(sound, 0.0);
+        ma_sound_set_pinned_listener_index(sound, 0);
+        ma_sound_set_directional_attenuation_factor(sound, 0);
     }
     return new_id;
 fail:
     for (v -= 1; v > 0; --v) {
-        ma_sound_uninit(&player.voices[v]);
+        ma_sound_uninit(&player.voices[v].sound);
     }
     --g_players.length;
     free(player.voices);
-    return (td_sound_id){0};
+    return (td_player_id){0};
 }
 
-bool td_audio_sound_is_looped(td_sound_id sound) {
-    if (sound.id >= g_players.length) return false;
-    td_player *player = &g_players.items[sound.id];
+bool td_audio_sound_is_looped(td_player_id player_id) {
+    if (player_id.id >= g_players.length) return false;
+    td_player *player = &g_players.items[player_id.id];
     if (player->num_voices == 0) return false;
-    return ma_sound_is_looping(&player->voices[0]);
+    return ma_sound_is_looping(&player->voices[0].sound);
 }
 
 bool td_audio_init() {
@@ -182,26 +194,27 @@ bool td_audio_init() {
 
 /// Attempts to play the sound using one of the available voices. Returns a zeroed voice ID if sound was not played.
 /// `x`, `y`, and `z` are the spatial coordinates of the sound in world space. If `attenuated` is false, then those parameters don't do anything.
-td_voice_id td_audio_play_sound(td_sound_id sound_id, float x, float y, float z, bool attenuated) {
-    assert(sound_id.id < g_players.length);
+td_voice_id td_audio_play_sound(td_player_id player_id, float x, float y, float z, bool attenuated) {
+    assert(player_id.id < g_players.length);
 
-    td_player *player = &g_players.items[sound_id.id];
+    td_player *player = &g_players.items[player_id.id];
 
-    ma_sound *chosen_voice = NULL;
+    td_voice *chosen_voice = NULL;
     int chosen_voice_id = -1;
+    ma_vec3f listener_pos = ma_engine_listener_get_position(&g_engine, 0);
+
     for (int v = 0; v < player->num_voices; ++v) {
-        ma_sound *voice = &player->voices[v];
-        if (!ma_sound_is_playing(voice)) {
+        td_voice *voice = &player->voices[v];
+        if (!ma_sound_is_playing(&voice->sound)) {
             chosen_voice = voice;
             chosen_voice_id = v;
             break;
         }
-        ma_vec3f listener_pos = ma_engine_listener_get_position(&g_engine, 0);
-        float chosen_voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(chosen_voice)));
-        float voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(voice)));
+        float chosen_voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(&chosen_voice->sound)));
+        float voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(&voice->sound)));
         if (chosen_voice == NULL || 
             chosen_voice_dist_from_listener < voice_dist_from_listener ||
-            (chosen_voice_dist_from_listener == voice_dist_from_listener && ma_sound_get_time_in_milliseconds(chosen_voice) < ma_sound_get_time_in_milliseconds(voice))
+            (chosen_voice_dist_from_listener == voice_dist_from_listener && ma_sound_get_time_in_milliseconds(&chosen_voice->sound) < ma_sound_get_time_in_milliseconds(&voice->sound))
         ) {
             // Overwrite the oldest, most distant sound.
             chosen_voice = voice;
@@ -210,43 +223,52 @@ td_voice_id td_audio_play_sound(td_sound_id sound_id, float x, float y, float z,
     }
 
     if (chosen_voice != NULL && chosen_voice_id > -1) {
-        ma_result result = ma_sound_seek_to_pcm_frame(chosen_voice, 0);
-        if (result != MA_SUCCESS) LOG_ERR("failed to seek sound with id %d, code %d", sound_id.id, result);
-
-        ma_sound_set_spatialization_enabled(chosen_voice, attenuated);
-        if (attenuated) {
-            ma_sound_set_position(chosen_voice, x, y, z);
+        ma_result result;
+        
+        if (ma_sound_is_playing(&chosen_voice->sound)) {
+            ma_sound_stop(&chosen_voice->sound);
         }
 
-        result = ma_sound_start(chosen_voice);
-        if (result != MA_SUCCESS) LOG_ERR("failed to start sound with id %d, code %d", sound_id.id, result);
+        result = ma_sound_seek_to_pcm_frame(&chosen_voice->sound, 0);
+        if (result != MA_SUCCESS) LOG_ERR("failed to seek sound with id %d, code %d", player_id.id, result);
+
+        ma_sound_set_spatialization_enabled(&chosen_voice->sound, attenuated);
+        if (attenuated) {
+            ma_sound_set_position(&chosen_voice->sound, x, y, z);
+        }
+
+        result = ma_sound_start(&chosen_voice->sound);
+        if (result != MA_SUCCESS) LOG_ERR("failed to start sound with id %d, code %d", player_id.id, result);
         
+        ++chosen_voice->play_count;
+
         return (td_voice_id) {
-            .sound_id = sound_id,
-            .voice_id = (uint32_t)chosen_voice_id,
+            .player = player_id,
+            .id = (uint32_t)chosen_voice_id,
+            .play_count = chosen_voice->play_count,
         };
     }
     return (td_voice_id) {0};
 }
 
 bool td_audio_sound_is_playing(td_voice_id voice) {
-    if (!check_voice_id(voice)) return false;
-    td_player *player = &g_players.items[voice.sound_id.id];
-    return (bool)ma_sound_is_playing(&player->voices[voice.voice_id]);
+    if (!td_audio_voice_is_valid(voice)) return false;
+    td_player *player = &g_players.items[voice.player.id];
+    return (bool)ma_sound_is_playing(&player->voices[voice.id].sound);
 }
 
 void td_audio_set_sound_position(td_voice_id voice, float x, float y, float z) {
-    if (!check_voice_id(voice)) return;
-    td_player *player = &g_players.items[voice.sound_id.id];
-    ma_sound *ma_player = &player->voices[voice.voice_id];
+    if (!td_audio_voice_is_valid(voice)) return;
+    td_player *player = &g_players.items[voice.player.id];
+    ma_sound *ma_player = &player->voices[voice.id].sound;
     if (!ma_sound_is_spatialization_enabled(ma_player)) return;
     ma_sound_set_position(ma_player, x, y, z);
 }
 
 void td_audio_stop_sound(td_voice_id voice) {
-    if (!check_voice_id(voice)) return;
-    td_player *player = &g_players.items[voice.sound_id.id];
-    ma_sound_stop(&player->voices[voice.voice_id]);
+    if (!td_audio_voice_is_valid(voice)) return;
+    td_player *player = &g_players.items[voice.player.id];
+    ma_sound_stop(&player->voices[voice.id].sound);
 }
 
 void td_audio_set_listener_orientation(float pos_x, float pos_y, float pos_z, float dir_x, float dir_y, float dir_z) {
@@ -309,7 +331,7 @@ void td_audio_update() {
 }
 
 void td_audio_teardown() {
-    teardown_sounds();
+    td_audio_free_sounds();
     ma_engine_uninit(&g_engine);
     ma_device_uninit(&g_device);
     ma_resource_manager_uninit(&g_resource_manager);

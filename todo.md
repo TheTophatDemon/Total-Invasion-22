@@ -1,9 +1,13 @@
 # TODO
-- Fix weird sound spatialization
 - Upgrade to Go 1.23.0
 - Sickle flesh cutting sound
-- Fix color weirdness on Linux
+- Don't stun lock enemies with chicken gun
+- Egg particles
 - Chickens
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)
+- Items 
+    - Health packs
+- Level completion
+- Fix color weirdness on Linux
 - Bounding box hierarchy

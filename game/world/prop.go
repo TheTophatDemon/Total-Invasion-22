@@ -99,7 +99,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
-	prop.voice.SetPosition(prop.Body().Transform.Position())
+	prop.voice.SetPositionV(prop.Body().Transform.Position())
 }
 
 func (prop *Prop) Render(context *render.Context) {
