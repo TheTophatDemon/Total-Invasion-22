@@ -79,7 +79,7 @@ func main() {
 	}
 
 	// Load error sound as first sound
-	tdaudio.LoadSound("assets/sound/error.wav", 1, false, 1.0)
+	tdaudio.LoadSound("assets/sounds/error.wav", 1, false, 1.0)
 
 	input.BindActionKey(settings.ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(settings.ACTION_BACK, glfw.KeyS)

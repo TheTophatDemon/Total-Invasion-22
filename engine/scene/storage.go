@@ -2,6 +2,7 @@ package scene
 
 import (
 	"fmt"
+	"iter"
 	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -137,14 +138,26 @@ func (st *Storage[T]) ForEach(predicate func(*T)) {
 	}
 }
 
+func (st *Storage[T]) All() iter.Seq2[Handle, *T] {
+	return func(yield func(Handle, *T) bool) {
+		for i := 0; i <= st.lastActive; i += 1 {
+			if st.active[i] {
+				if !yield(st.owners[i], &st.data[i]) {
+					break
+				}
+			}
+		}
+	}
+}
+
 // Runs an update function on all active objects in the storage.
 func (st *Storage[T]) Update(deltaTime float32) {
 	if st.UpdateFunc == nil {
 		return
 	}
-	st.ForEach(func(t *T) {
-		st.UpdateFunc(t, deltaTime)
-	})
+	for _, component := range st.All() {
+		st.UpdateFunc(component, deltaTime)
+	}
 }
 
 // Runs a render function on all active objects in the storage.
@@ -152,37 +165,8 @@ func (st *Storage[T]) Render(context *render.Context) {
 	if st.RenderFunc == nil {
 		return
 	}
-	st.ForEach(func(t *T) {
-		st.RenderFunc(t, context)
-	})
-}
-
-// Returns a closure that returns pointers to each item in storage sequentially, returning nil when the end is reached.
-func (st *Storage[T]) Iter() func() (*T, Handle) {
-	var i int
-	return func() (*T, Handle) {
-		for ; i < len(st.data) && i <= st.lastActive; i++ {
-			if st.active[i] {
-				data, owner := &st.data[i], st.owners[i]
-				i++
-				return data, owner
-			}
-		}
-		return nil, Handle{}
-	}
-}
-
-func (st *Storage[T]) IterUntyped() func() (any, Handle) {
-	iter := st.Iter()
-	return func() (any, Handle) {
-		item, handle := iter()
-		if item == nil {
-			// Not returning the item pointer directly because that creates a non-nil interface.
-			// One of the classic Go blunders...
-			return nil, handle
-		} else {
-			return item, handle
-		}
+	for _, component := range st.All() {
+		st.RenderFunc(component, context)
 	}
 }
 

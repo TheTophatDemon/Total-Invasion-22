@@ -38,13 +38,11 @@ func (scn *Scene) Update(deltaTime float32) {
 	// This is done every frame to ensure that transparent objects display correctly.
 	scn.sortedElements = scn.sortedElements[0:0]
 
-	boxIter := scn.Boxes.Iter()
-	for _, boxHandle := boxIter(); !boxHandle.IsNil(); _, boxHandle = boxIter() {
+	for boxHandle := range scn.Boxes.All() {
 		scn.sortedElements = append(scn.sortedElements, boxHandle)
 	}
 
-	textIter := scn.Texts.Iter()
-	for _, textHandle := textIter(); !textHandle.IsNil(); _, textHandle = textIter() {
+	for textHandle := range scn.Texts.All() {
 		scn.sortedElements = append(scn.sortedElements, textHandle)
 	}
 

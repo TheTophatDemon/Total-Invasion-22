@@ -12,9 +12,8 @@ import (
 
 func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
-	nextActor := world.ActorIter()
 	result := make([]scene.Handle, 0)
-	for actorEnt, actorId := nextActor(); actorEnt != nil; actorEnt, actorId = nextActor() {
+	for actorId, actorEnt := range world.AllActors() {
 		if actorEnt == exception {
 			continue
 		}
@@ -27,9 +26,8 @@ func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 }
 
 func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
-	nextBody := world.BodyIter()
 	result := make([]scene.Handle, 0)
-	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
+	for bodyId, bodyEnt := range world.AllBodies() {
 		if bodyEnt == exception {
 			continue
 		}
@@ -60,9 +58,8 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
 	var closestBodyHit collision.RaycastResult
-	var nextBody func() (comps.HasBody, scene.Handle) = world.BodyIter()
 	closestBodyHit.Distance = math.MaxFloat32
-	for bodyEnt, bodyId := nextBody(); bodyEnt != nil; bodyEnt, bodyId = nextBody() {
+	for bodyId, bodyEnt := range world.AllBodies() {
 		body := bodyEnt.Body()
 		if bodyEnt == excludeBody ||
 			!bodyEnt.Body().OnLayer(filter) ||

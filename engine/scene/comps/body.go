@@ -1,6 +1,7 @@
 package comps
 
 import (
+	"iter"
 	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -28,11 +29,11 @@ func (body *Body) Body() *Body {
 	return body
 }
 
-func (body *Body) MoveAndCollide(deltaTime float32, bodiesIterator func() (HasBody, scene.Handle)) {
+func (body *Body) MoveAndCollide(deltaTime float32, bodies iter.Seq2[scene.Handle, HasBody]) {
 	before := body.Transform.Position()
 
 	movement := body.Velocity.Mul(deltaTime)
-	for collidingEnt, _ := bodiesIterator(); collidingEnt != nil; collidingEnt, _ = bodiesIterator() {
+	for _, collidingEnt := range bodies {
 		body.ResolveCollision(movement, collidingEnt, deltaTime)
 	}
 

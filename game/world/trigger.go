@@ -102,8 +102,7 @@ func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {
 }
 
 func teleportAction(tr *Trigger, handle scene.Handle) {
-	links := tr.world.LinkableIter()
-	for link, _ := links(); link != nil; link, _ = links() {
+	for _, link := range tr.world.AllLinkables() {
 		if link != tr && link.LinkNumber() == tr.linkNumber {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				actorHaver, _ := scene.Get[HasActor](handle)

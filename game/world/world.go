@@ -42,7 +42,7 @@ const (
 	TEX_FLAG_INVISIBLE string = "invisible"
 )
 
-//go:generate ../../world_gen_iters.exe engine/scene/comps.HasBody HasActor Linkable
+//go:generate ../../world_gen_iters.exe
 type World struct {
 	Hud           hud.Hud
 	Players       scene.Storage[Player]
@@ -192,9 +192,8 @@ func (world *World) Update(deltaTime float32) {
 	}
 
 	// Update bodies and resolve collisions
-	bodiesIter := world.BodyIter()
-	for bodyEnt, _ := bodiesIter(); bodyEnt != nil; bodyEnt, _ = bodiesIter() {
-		bodyEnt.Body().MoveAndCollide(deltaTime, world.BodyIter())
+	for _, bodyEnt := range world.AllBodies() {
+		bodyEnt.Body().MoveAndCollide(deltaTime, world.AllBodies())
 	}
 
 	// Remove deleted entities

@@ -11,7 +11,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
-	"tophatdemon.com/total-invasion-ii/engine/iter"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
@@ -109,16 +108,6 @@ func (c *cache[T]) freeAll() {
 func (c *cache[T]) take(assetPath string, resource T) {
 	assetPath = strings.ReplaceAll(assetPath, "\\", "/")
 	c.storage[assetPath] = resource
-}
-
-func (c *cache[T]) iterate() iter.Seq2[string, T] {
-	return func(yield func(string, T) bool) {
-		for path, item := range c.storage {
-			if !yield(path, item) {
-				return
-			}
-		}
-	}
 }
 
 func GetTexture(assetPath string) *textures.Texture {

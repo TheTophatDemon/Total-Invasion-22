@@ -2,60 +2,85 @@
 package world
 
 import (
+	"iter"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-func (world *World) BodyIter() func() (comps.HasBody, scene.Handle) {
-	iterPlayers := world.Players.Iter()
-	iterEnemies := world.Enemies.Iter()
-	iterWalls := world.Walls.Iter()
-	iterProps := world.Props.Iter()
-	iterProjectiles := world.Projectiles.Iter()
-	iterGameMap := world.GameMap.Iter()
-	return func() (comps.HasBody, scene.Handle) {
-		if item, id := iterPlayers(); item != nil {
-			return item, id
+func (world *World) AllBodies() iter.Seq2[scene.Handle, comps.HasBody] {
+	return func(yield func(scene.Handle, comps.HasBody) bool) {
+		nextPlayers, stop := iter.Pull2(world.Players.All())
+		defer stop()
+		for handle, ent, ok := nextPlayers(); ok; handle, ent, ok = nextPlayers() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterEnemies(); item != nil {
-			return item, id
+		nextEnemies, stop := iter.Pull2(world.Enemies.All())
+		defer stop()
+		for handle, ent, ok := nextEnemies(); ok; handle, ent, ok = nextEnemies() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterWalls(); item != nil {
-			return item, id
+		nextWalls, stop := iter.Pull2(world.Walls.All())
+		defer stop()
+		for handle, ent, ok := nextWalls(); ok; handle, ent, ok = nextWalls() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterProps(); item != nil {
-			return item, id
+		nextProps, stop := iter.Pull2(world.Props.All())
+		defer stop()
+		for handle, ent, ok := nextProps(); ok; handle, ent, ok = nextProps() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterProjectiles(); item != nil {
-			return item, id
+		nextProjectiles, stop := iter.Pull2(world.Projectiles.All())
+		defer stop()
+		for handle, ent, ok := nextProjectiles(); ok; handle, ent, ok = nextProjectiles() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterGameMap(); item != nil {
-			return item, id
+		nextGameMap, stop := iter.Pull2(world.GameMap.All())
+		defer stop()
+		for handle, ent, ok := nextGameMap(); ok; handle, ent, ok = nextGameMap() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		return nil, scene.Handle{}
 	}
 }
 
-func (world *World) ActorIter() func() (HasActor, scene.Handle) {
-	iterPlayers := world.Players.Iter()
-	iterEnemies := world.Enemies.Iter()
-	return func() (HasActor, scene.Handle) {
-		if item, id := iterPlayers(); item != nil {
-			return item, id
+func (world *World) AllActors() iter.Seq2[scene.Handle, HasActor] {
+	return func(yield func(scene.Handle, HasActor) bool) {
+		nextPlayers, stop := iter.Pull2(world.Players.All())
+		defer stop()
+		for handle, ent, ok := nextPlayers(); ok; handle, ent, ok = nextPlayers() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		if item, id := iterEnemies(); item != nil {
-			return item, id
+		nextEnemies, stop := iter.Pull2(world.Enemies.All())
+		defer stop()
+		for handle, ent, ok := nextEnemies(); ok; handle, ent, ok = nextEnemies() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		return nil, scene.Handle{}
 	}
 }
 
-func (world *World) LinkableIter() func() (Linkable, scene.Handle) {
-	iterTriggers := world.Triggers.Iter()
-	return func() (Linkable, scene.Handle) {
-		if item, id := iterTriggers(); item != nil {
-			return item, id
+func (world *World) AllLinkables() iter.Seq2[scene.Handle, Linkable] {
+	return func(yield func(scene.Handle, Linkable) bool) {
+		nextTriggers, stop := iter.Pull2(world.Triggers.All())
+		defer stop()
+		for handle, ent, ok := nextTriggers(); ok; handle, ent, ok = nextTriggers() {
+			if !yield(handle, ent) {
+				return
+			}
 		}
-		return nil, scene.Handle{}
 	}
 }

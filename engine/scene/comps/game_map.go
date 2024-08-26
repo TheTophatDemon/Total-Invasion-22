@@ -1,6 +1,8 @@
 package comps
 
 import (
+	"iter"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -147,21 +149,8 @@ func (gm *Map) Render(context *render.Context) {
 	}
 }
 
-func (gm *Map) IterUntyped() func() (any, scene.Handle) {
-	iter := gm.Iter()
-	return func() (any, scene.Handle) {
-		return iter()
-	}
-}
-
-func (gm *Map) Iter() func() (*Map, scene.Handle) {
-	var visitedOnce bool
-	return func() (*Map, scene.Handle) {
-		if !visitedOnce {
-			visitedOnce = true
-			return gm, scene.NewHandle(0, 0, gm)
-		} else {
-			return nil, scene.Handle{}
-		}
+func (gameMap *Map) All() iter.Seq2[scene.Handle, *Map] {
+	return func(yield func(scene.Handle, *Map) bool) {
+		yield(scene.NewHandle(0, 0, gameMap), gameMap)
 	}
 }
