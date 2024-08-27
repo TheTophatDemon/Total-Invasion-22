@@ -1,7 +1,4 @@
 # TODO
-- Upgrade to Go 1.23.0
-- Sickle flesh cutting sound
-- Don't stun lock enemies with chicken gun
 - Egg particles
 - Chickens
 - Geoffrey interaction

@@ -54,7 +54,7 @@ type Enemy struct {
 	wakeTimer, chaseTimer, stateTimer       float32
 	chaseStrafeDir                          float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
 	spriteAngle                             float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
-	state                                   EnemyState
+	state, previousState                    EnemyState
 	voice                                   tdaudio.VoiceId
 }
 
@@ -278,12 +278,13 @@ func (enemy *Enemy) changeState(newState EnemyState) {
 		enemy.bloodParticles.EmissionTimer = enemy.dieAnim.Duration()
 	}
 	enemy.stateTimer = 0.0
+	enemy.previousState = enemy.state
 	enemy.state = newState
 }
 
-func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) {
+func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) bool {
 	if enemy.state == ENEMY_STATE_DIE {
-		return
+		return false
 	}
 	if proj, ok := sourceEntity.(*Projectile); ok && proj.Body().OnLayer(COL_LAYER_PROJECTILES) {
 		enemy.bloodParticles.EmissionTimer = 0.1
@@ -293,10 +294,13 @@ func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) {
 				enemy.changeState(ENEMY_STATE_STUN)
 			} else {
 				enemy.wakeTimer = enemy.WakeLimit
-				enemy.changeState(ENEMY_STATE_CHASE)
+				if enemy.state == ENEMY_STATE_IDLE {
+					enemy.changeState(ENEMY_STATE_CHASE)
+				}
 			}
 		}
 	}
+	return true
 }
 
 func (enemy *Enemy) wraithChase(

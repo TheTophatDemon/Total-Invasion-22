@@ -106,8 +106,9 @@ func (prop *Prop) Render(context *render.Context) {
 	prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
 }
 
-func (prop *Prop) OnDamage(sourceEntity any, damage float32) {
+func (prop *Prop) OnDamage(sourceEntity any, damage float32) bool {
 	if prop.propType == PROP_TYPE_GEOFFREY {
 		prop.world.QueueRemoval(prop.id.Handle)
 	}
+	return true
 }

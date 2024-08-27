@@ -12,7 +12,7 @@ type (
 	}
 
 	Damageable interface {
-		OnDamage(sourceEntity any, amount float32)
+		OnDamage(sourceEntity any, amount float32) bool
 	}
 
 	// Represents an entity that can be activated by another entity.

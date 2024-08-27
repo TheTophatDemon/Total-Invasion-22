@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	SFX_SICKLE_THROW = "assets/sounds/sickle.wav"
-	SFX_SICKLE_CLINK = "assets/sounds/sickle_clink.wav"
+	SFX_SICKLE_THROW = "assets/sounds/weapon/sickle.wav"
+	SFX_SICKLE_CLINK = "assets/sounds/weapon/sickle_clink.wav"
+	SFX_SICKLE_CUT   = "assets/sounds/weapon/sickle_cut.wav"
 )
 
 func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
@@ -88,6 +89,9 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 
 	// Apply damage per second
 	if damageable, canDamage := otherEnt.(Damageable); canDamage && damageable != owner {
-		damageable.OnDamage(proj, proj.Damage*deltaTime)
+		damaged := damageable.OnDamage(proj, proj.Damage*deltaTime)
+		if damaged && !proj.voices[2].IsPlaying() {
+			proj.voices[2] = cache.GetSfx(SFX_SICKLE_CUT).PlayAttenuatedV(proj.body.Transform.Position())
+		}
 	}
 }

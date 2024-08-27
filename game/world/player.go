@@ -269,9 +269,9 @@ func (player *Player) EquipWeapon(order WeaponIndex) {
 	player.weapons[order].Equip()
 }
 
-func (player *Player) OnDamage(sourceEntity any, damage float32) {
+func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 	if player.godMode {
-		return
+		return false
 	}
 	player.actor.Health = max(0, player.actor.Health-damage)
 
@@ -299,4 +299,5 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) {
 			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
 		}
 	}
+	return true
 }

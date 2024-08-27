@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	SFX_SICKLE_CATCH = "assets/sounds/sickle_return.wav"
+	SFX_SICKLE_CATCH = "assets/sounds/weapon/sickle_return.wav"
 )
 
 type WeaponSickle struct {
