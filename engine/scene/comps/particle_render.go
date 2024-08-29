@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
@@ -54,8 +55,10 @@ type ParticleRender struct {
 	EmissionTimer       float32 // Number of seconds before emission stops. Set this to >0 to start emitting particles.
 	SpawnRadius         float32 // The spherical radius within which particles will be spawned.
 	SpawnRate           float32 // The rate at which new particles will be spawned, in seconds per particle.
+	SpawnCount          int     // Each time a particle is spawned, spawn this many particles.
 	VisibilityRadius    float32 // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
 	LocalSpaceParticles bool    // If true, then particle positions will be in the space of the transform passed to the render method.
+	MaxCount            int     // Maxmimum number of particles to render at one time
 
 	// Called every frame to move and animate the particles. Velocity and acceleration will be applied later.
 	UpdateFunc func(
@@ -84,9 +87,24 @@ type ParticleRender struct {
 }
 
 // Initializes the particle renderer to support the given maximum number of particles.
-func (parts *ParticleRender) Init(maxInstances uint16) {
-	parts.particleForms = make([]ParticleForm, 0, maxInstances)
-	parts.particleInfos = make([]ParticleInfo, 0, maxInstances)
+func (parts *ParticleRender) Init() {
+	if parts.Mesh == nil {
+		parts.Mesh = cache.QuadMesh
+	}
+	if parts.MaxCount == 0 {
+		parts.MaxCount = 10
+	}
+	if parts.VisibilityRadius == 0 {
+		parts.VisibilityRadius = 5.0
+	}
+	if parts.SpawnCount == 0 {
+		parts.SpawnCount = 1
+	}
+
+	parts.spawnTimer = parts.SpawnRate // Make particles emit as soon as it's spawned.
+
+	parts.particleForms = make([]ParticleForm, 0, parts.MaxCount)
+	parts.particleInfos = make([]ParticleInfo, 0, parts.MaxCount)
 
 	gl.GenBuffers(1, &parts.particleBuffer)
 	gl.BindBuffer(gl.ARRAY_BUFFER, parts.particleBuffer)
@@ -136,32 +154,34 @@ func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
 		if parts.spawnTimer > parts.SpawnRate {
 			parts.spawnTimer = 0.0
 
-			dir := math2.RandomDir()
-			position := dir.Mul(parts.SpawnRadius)
-			if !parts.LocalSpaceParticles {
-				position = mgl32.TransformCoordinate(position, transform.Matrix())
-				dir = mgl32.TransformNormal(dir, transform.Matrix())
-			}
-
-			form := ParticleForm{
-				SrcRect:  mgl32.Vec4{0.0, 1.0, 1.0, 1.0},
-				Color:    color.White.Vector(),
-				Position: position,
-				Size:     mgl32.Vec2{1.0, 1.0},
-			}
-
-			info := ParticleInfo{
-				Velocity: dir,
-				Lifetime: 1.0,
-			}
-
-			if len(parts.particleInfos) != cap(parts.particleInfos) {
-				if parts.SpawnFunc != nil {
-					parts.SpawnFunc(len(parts.particleInfos), &form, &info)
+			for range parts.SpawnCount {
+				dir := math2.RandomDir()
+				position := dir.Mul(parts.SpawnRadius)
+				if !parts.LocalSpaceParticles {
+					position = mgl32.TransformCoordinate(position, transform.Matrix())
+					dir = mgl32.TransformNormal(dir, transform.Matrix())
 				}
-				if info.Lifetime > 0.0 {
-					parts.particleForms = append(parts.particleForms, form)
-					parts.particleInfos = append(parts.particleInfos, info)
+
+				form := ParticleForm{
+					SrcRect:  mgl32.Vec4{0.0, 1.0, 1.0, 1.0},
+					Color:    color.White.Vector(),
+					Position: position,
+					Size:     mgl32.Vec2{1.0, 1.0},
+				}
+
+				info := ParticleInfo{
+					Velocity: dir,
+					Lifetime: 1.0,
+				}
+
+				if len(parts.particleInfos) != cap(parts.particleInfos) {
+					if parts.SpawnFunc != nil {
+						parts.SpawnFunc(len(parts.particleInfos), &form, &info)
+					}
+					if info.Lifetime > 0.0 {
+						parts.particleForms = append(parts.particleForms, form)
+						parts.particleInfos = append(parts.particleInfos, info)
+					}
 				}
 			}
 		}

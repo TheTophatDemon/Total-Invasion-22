@@ -123,6 +123,7 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 		SpawnRadius:      0.5,
 		VisibilityRadius: 5.0,
 		EmissionTimer:    0.0,
+		MaxCount:         25,
 		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
 			form.Color = color.Red.Vector()
 			s := rand.Float32()*0.10 + 0.15
@@ -143,9 +144,13 @@ func SpawnEnemy(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, worl
 			}
 		},
 	}
-	enemy.bloodParticles.Init(25)
+	enemy.bloodParticles.Init()
 
 	return
+}
+
+func (enemy *Enemy) Finalize() {
+	enemy.bloodParticles.Finalize()
 }
 
 func (enemy *Enemy) Update(deltaTime float32) {

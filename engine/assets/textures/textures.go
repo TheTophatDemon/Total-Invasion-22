@@ -79,13 +79,13 @@ func (tex *Texture) Free() {
 	gl.DeleteTextures(1, &id)
 }
 
-func (tex *Texture) GetDefaultAnimation() (Animation, bool) {
+func (tex *Texture) GetDefaultAnimation() Animation {
 	for _, anim := range tex.animations {
 		if anim.Default || len(tex.animations) == 1 {
-			return anim, true
+			return anim
 		}
 	}
-	return Animation{}, false
+	return Animation{}
 }
 
 func (tex *Texture) GetAnimation(name string) (anim Animation, ok bool) {

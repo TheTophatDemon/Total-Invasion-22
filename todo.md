@@ -1,5 +1,4 @@
 # TODO
-- Egg particles
 - Chickens
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)

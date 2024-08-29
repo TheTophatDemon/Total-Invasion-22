@@ -51,6 +51,7 @@ type World struct {
 	Props         scene.Storage[Prop]
 	Triggers      scene.Storage[Trigger]
 	Projectiles   scene.Storage[Projectile]
+	Effects       scene.Storage[Effect]
 	DebugShapes   scene.Storage[DebugShape]
 	GameMap       comps.Map
 	CurrentPlayer scene.Id[*Player]
@@ -72,6 +73,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
 	world.Triggers = scene.NewStorageWithFuncs(64, (*Trigger).Update, nil)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
+	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)

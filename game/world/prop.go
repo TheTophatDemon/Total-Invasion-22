@@ -72,7 +72,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 	sprite := cache.GetTexture(texturePath)
 	prop.SpriteRender = comps.NewSpriteRender(sprite)
 
-	anim, _ := sprite.GetDefaultAnimation()
+	anim := sprite.GetDefaultAnimation()
 	prop.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 
 	radius, err := ent.FloatProperty("radius")
