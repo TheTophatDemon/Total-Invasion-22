@@ -41,6 +41,10 @@ func (sound SoundId) PlayAttenuatedV(pos [3]float32) VoiceId {
 	return sound.PlayAttenuated(pos[0], pos[1], pos[2])
 }
 
+func (sound SoundId) IsValid() bool {
+	return uint32(sound.id) != 0
+}
+
 // Voice functions
 
 func (voice VoiceId) IsPlaying() bool {

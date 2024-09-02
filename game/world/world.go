@@ -137,7 +137,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		SpawnEnemy(&world.Enemies, spawn.Position, spawn.Angles, world)
+		SpawnWraith(&world.Enemies, spawn.Position, spawn.Angles, world)
 	}
 
 	// Spawn dynamic tiles
