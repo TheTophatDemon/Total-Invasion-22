@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -20,9 +21,12 @@ func SpawnChicken(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wo
 	}
 
 	enemy.initDefaults(world)
+	enemy.initBlood(5, color.Red, 0.3)
 
 	tex := cache.GetTexture("assets/textures/sprites/chicken.png")
 	walkAnim, _ := tex.GetAnimation("walk;front")
+	flyAnim, _ := tex.GetAnimation("fly;front")
+	dieAnim, _ := tex.GetAnimation("die;front")
 
 	enemy.states = [...]enemyState{
 		ENEMY_STATE_IDLE: {
@@ -36,14 +40,14 @@ func SpawnChicken(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wo
 			},
 		},
 		ENEMY_STATE_STUN: {
-			anim:       walkAnim,
+			anim:       flyAnim,
 			enterSound: cache.GetSfx(SFX_CHICKEN),
 		},
 		ENEMY_STATE_ATTACK: {
 			anim: walkAnim,
 		},
 		ENEMY_STATE_DIE: {
-			anim:       walkAnim,
+			anim:       dieAnim,
 			enterSound: cache.GetSfx(SFX_CHICKEN),
 		},
 	}

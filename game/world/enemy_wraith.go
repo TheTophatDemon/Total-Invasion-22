@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -29,6 +30,7 @@ func SpawnWraith(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wor
 	}
 
 	enemy.initDefaults(world)
+	enemy.initBlood(15, color.Red, 0.5)
 
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
 	walkAnim, _ := wraithTexture.GetAnimation("walk;front")

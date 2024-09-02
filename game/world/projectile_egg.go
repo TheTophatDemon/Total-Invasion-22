@@ -63,13 +63,14 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 		}
 
 		proj.world.QueueRemoval(proj.id.Handle)
-		proj.emitEggShards()
+		proj.emitEggShards(proj.body.Transform.Position().Add(result.Normal.Mul(0.2)))
+		SpawnChicken(&proj.world.Enemies, proj.body.Transform.Position().Add(result.Normal.Mul(0.5)), result.Normal, proj.world)
 	}
 }
 
-func (proj *Projectile) emitEggShards() {
+func (proj *Projectile) emitEggShards(position mgl32.Vec3) {
 	particleTex := cache.GetTexture(TEX_EGG_SHARDS)
-	SpawnEffect(proj.world, &proj.world.Effects, proj.body.Transform, 1.0, comps.ParticleRender{
+	SpawnEffect(proj.world, &proj.world.Effects, comps.TransformFromTranslation(position), 1.0, comps.ParticleRender{
 		Texture:       particleTex,
 		EmissionTimer: 0.2,
 		MaxCount:      4,

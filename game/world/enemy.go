@@ -75,23 +75,19 @@ func (enemy *Enemy) Body() *comps.Body {
 	return &enemy.actor.body
 }
 
-func (enemy *Enemy) initDefaults(world *World) {
-	enemy.world = world
-
-	enemy.state = ENEMY_STATE_IDLE
-
+func (enemy *Enemy) initBlood(maxCount int, color color.Color, radius float32) {
 	bloodTexture := cache.GetTexture("assets/textures/sprites/blood.png")
 	bloodAnim, _ := bloodTexture.GetAnimation("default")
 	enemy.bloodParticles = comps.ParticleRender{
 		Mesh:             cache.QuadMesh,
 		Texture:          bloodTexture,
 		SpawnRate:        0.01,
-		SpawnRadius:      0.5,
+		SpawnRadius:      radius,
 		VisibilityRadius: 5.0,
 		EmissionTimer:    0.0,
-		MaxCount:         25,
+		MaxCount:         maxCount,
 		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			form.Color = color.Red.Vector()
+			form.Color = color.Vector()
 			s := rand.Float32()*0.10 + 0.15
 			form.Size = mgl32.Vec2{s, s}
 			info.Velocity = info.Velocity.Mul(rand.Float32()*5 + 1.0)
@@ -111,6 +107,11 @@ func (enemy *Enemy) initDefaults(world *World) {
 		},
 	}
 	enemy.bloodParticles.Init()
+}
+
+func (enemy *Enemy) initDefaults(world *World) {
+	enemy.world = world
+	enemy.state = ENEMY_STATE_IDLE
 }
 
 func (enemy *Enemy) Finalize() {
