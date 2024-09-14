@@ -1,8 +1,8 @@
 # TODO
 - Chickens
-    - Gravity
     - Lag problem
     - Wandering
+    - Lava edge case?
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)
 - Items 

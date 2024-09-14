@@ -196,11 +196,8 @@ func (parts *ParticleRender) Render(
 	if parts.Mesh == nil || len(parts.particleInfos) == 0 || !render.IsSphereVisible(context, transform.Position(), parts.VisibilityRadius) {
 		return
 	}
-	failure.CheckOpenGLError()
 
 	parts.updateBuffers()
-
-	failure.CheckOpenGLError()
 
 	// Set uniforms
 	shader := shaders.SpriteShaderInstanced
@@ -232,8 +229,6 @@ func (parts *ParticleRender) Render(
 		int32(len(parts.particleForms)))
 
 	context.DrawnParticlesCount += uint32(len(parts.particleForms))
-
-	failure.CheckOpenGLError()
 }
 
 func (parts *ParticleRender) Finalize() {

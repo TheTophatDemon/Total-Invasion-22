@@ -68,6 +68,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 		Friction:  20.0,
 		MaxHealth: 100,
 		Health:    100,
+		world:     world,
 	}
 	player.Camera = comps.NewCamera(
 		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.1, 1000.0,

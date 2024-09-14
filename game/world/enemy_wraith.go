@@ -91,6 +91,7 @@ func SpawnWraith(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wor
 		AccelRate: 80.0,
 		Friction:  20.0,
 		MaxSpeed:  5.5,
+		world:     world,
 	}
 	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(walkAnim, false)

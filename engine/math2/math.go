@@ -80,6 +80,10 @@ func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 	}
 }
 
+func Vec3WithY(vec mgl32.Vec3, newY float32) mgl32.Vec3 {
+	return mgl32.Vec3{vec.X(), newY, vec.Z()}
+}
+
 // Returns a unit vector pointing in a random direction.
 func RandomDir() mgl32.Vec3 {
 	dir := mgl32.Vec3{

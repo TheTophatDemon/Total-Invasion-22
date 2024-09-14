@@ -36,6 +36,11 @@ func SpawnChicken(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wo
 		ENEMY_STATE_CHASE: {
 			anim: walkAnim,
 			updateFunc: func(deltaTime float32) {
+				if !enemy.actor.onGround {
+					enemy.AnimPlayer.SwapAnimation(enemy.states[ENEMY_STATE_STUN].anim)
+				} else {
+					enemy.AnimPlayer.SwapAnimation(enemy.states[ENEMY_STATE_CHASE].anim)
+				}
 				enemy.actor.inputForward = 1.0
 			},
 		},
@@ -55,17 +60,20 @@ func SpawnChicken(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wo
 	enemy.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position), math2.DegToRadVec3(angles), mgl32.Vec3{0.4, 0.4, 0.4},
+				mgl32.Vec3(position), math2.DegToRadVec3(angles), mgl32.Vec3{0.5, 0.5, 0.5},
 			),
 			Shape:  collision.NewSphere(0.5),
 			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  false,
 		},
-		YawAngle:  mgl32.DegToRad(angles[1]),
-		AccelRate: 80.0,
-		Friction:  20.0,
-		MaxSpeed:  2.5,
+		YawAngle:     mgl32.DegToRad(angles[1]),
+		AccelRate:    80.0,
+		Friction:     20.0,
+		MaxSpeed:     2.5,
+		GravityAccel: 80.0,
+		MaxFallSpeed: 15.0,
+		world:        world,
 	}
 	enemy.SpriteRender = comps.NewSpriteRender(tex)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(walkAnim, false)

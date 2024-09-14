@@ -208,7 +208,8 @@ func (world *World) Render() {
 	// Find camera
 	player, ok := world.CurrentPlayer.Get()
 	if !ok {
-		panic("missing player")
+		log.Println("Error: Missing player during rendering")
+		return
 	}
 	camera := player.Camera
 	cameraTransform := player.Body().Transform.Matrix().Mul4(camera.Transform.Matrix())

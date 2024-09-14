@@ -7,14 +7,24 @@ import (
 )
 
 type Actor struct {
-	body                          comps.Body
 	MaxSpeed, AccelRate, Friction float32
-	inputForward, inputStrafe     float32
+	GravityAccel                  float32
+	MaxFallSpeed                  float32
 	YawAngle                      float32 // Radians
 	Health, MaxHealth             float32
+	body                          comps.Body
+	inputForward, inputStrafe     float32
+	onGround                      bool
+	world                         *World
 }
 
 func (actor *Actor) Update(deltaTime float32) {
+	if actor.GravityAccel != 0.0 && actor.body.Filter&COL_LAYER_MAP != 0 {
+		distToBottom := (actor.body.Shape.Extents().Max.Y()) + 0.01
+		downCast, _ := actor.world.Raycast(actor.body.Transform.Position(), mgl32.Vec3{0.0, -1.0, 0.0}, COL_LAYER_MAP, distToBottom, nil)
+		actor.onGround = downCast.Hit
+	}
+
 	input := mgl32.Vec3{actor.inputStrafe, 0.0, -actor.inputForward}
 	if input.LenSqr() != 0.0 {
 		input = input.Normalize()
@@ -23,6 +33,15 @@ func (actor *Actor) Update(deltaTime float32) {
 
 	// Apply acceleration
 	actor.body.Velocity = actor.body.Velocity.Add(moveDir.Mul(actor.AccelRate * deltaTime))
+	// Apply gravity
+	actor.body.Velocity = actor.body.Velocity.Add(mgl32.Vec3{0.0, -actor.GravityAccel * deltaTime, 0.0})
+	// Limit falling speed
+	if actor.onGround {
+		actor.body.Velocity = math2.Vec3WithY(actor.body.Velocity, 0.0)
+	} else if actor.body.Velocity.Y() < -actor.MaxFallSpeed {
+		actor.body.Velocity = math2.Vec3WithY(actor.body.Velocity, -actor.MaxFallSpeed)
+	}
+
 	// Apply friction
 	if speed := actor.body.Velocity.Len(); speed > mgl32.Epsilon {
 		frictionVec := actor.body.Velocity.Mul(-min(speed, actor.Friction*deltaTime) / speed)

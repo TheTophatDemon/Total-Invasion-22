@@ -63,8 +63,14 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 		}
 
 		proj.world.QueueRemoval(proj.id.Handle)
-		proj.emitEggShards(proj.body.Transform.Position().Add(result.Normal.Mul(0.2)))
-		SpawnChicken(&proj.world.Enemies, proj.body.Transform.Position().Add(result.Normal.Mul(0.5)), result.Normal, proj.world)
+		proj.body.Layer = 0
+		proj.body.Filter = 0
+		var backwards mgl32.Vec3
+		if proj.body.Velocity.LenSqr() != 0.0 {
+			backwards = proj.body.Velocity.Normalize().Mul(-1.0)
+		}
+		proj.emitEggShards(proj.body.Transform.Position().Add(backwards.Mul(1.0)))
+		SpawnChicken(&proj.world.Enemies, proj.body.Transform.Position().Add(backwards.Mul(0.5)), backwards, proj.world)
 	}
 }
 
