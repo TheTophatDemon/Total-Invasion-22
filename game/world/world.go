@@ -173,6 +173,14 @@ func (world *World) ChangeMap(mapPath string) {
 func (world *World) Update(deltaTime float32) {
 	world.removalQueue = world.removalQueue[0:0]
 
+	if input.IsActionJustPressed(settings.ACTION_KILL_ENEMIES) {
+		for handle, actor := range world.AllActors() {
+			if !handle.Equals(world.CurrentPlayer.Handle) {
+				actor.Actor().Health = 0
+			}
+		}
+	}
+
 	// Free mouse
 	if input.IsActionJustPressed(settings.ACTION_TRAP_MOUSE) {
 		if input.IsMouseTrapped() {

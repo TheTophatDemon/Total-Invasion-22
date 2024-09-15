@@ -1,8 +1,11 @@
 # TODO
 - Chickens
     - Lag problem
+        - Raycasts seem to be the main problem
+    - Move into separate storage
+    - Keep them from going into walls
     - Wandering
-    - Lava edge case?
+    - Lava edge case
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)
 - Items 
