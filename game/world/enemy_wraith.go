@@ -11,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game/settings"
+	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
@@ -30,7 +31,8 @@ func SpawnWraith(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, wor
 	}
 
 	enemy.initDefaults(world)
-	enemy.initBlood(15, color.Red, 0.5)
+	enemy.bloodParticles = effects.Blood(15, color.Red, 0.5)
+	enemy.bloodParticles.Init()
 
 	wraithTexture := cache.GetTexture("assets/textures/sprites/wraith.png")
 	walkAnim, _ := wraithTexture.GetAnimation("walk;front")

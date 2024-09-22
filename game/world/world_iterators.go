@@ -23,6 +23,13 @@ func (world *World) AllBodies() iter.Seq2[scene.Handle, comps.HasBody] {
 				return
 			}
 		}
+		nextChickens, stop := iter.Pull2(world.Chickens.All())
+		defer stop()
+		for handle, ent, ok := nextChickens(); ok; handle, ent, ok = nextChickens() {
+			if !yield(handle, ent) {
+				return
+			}
+		}
 		nextWalls, stop := iter.Pull2(world.Walls.All())
 		defer stop()
 		for handle, ent, ok := nextWalls(); ok; handle, ent, ok = nextWalls() {
@@ -66,6 +73,13 @@ func (world *World) AllActors() iter.Seq2[scene.Handle, HasActor] {
 		nextEnemies, stop := iter.Pull2(world.Enemies.All())
 		defer stop()
 		for handle, ent, ok := nextEnemies(); ok; handle, ent, ok = nextEnemies() {
+			if !yield(handle, ent) {
+				return
+			}
+		}
+		nextChickens, stop := iter.Pull2(world.Chickens.All())
+		defer stop()
+		for handle, ent, ok := nextChickens(); ok; handle, ent, ok = nextChickens() {
 			if !yield(handle, ent) {
 				return
 			}

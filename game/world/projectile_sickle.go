@@ -74,6 +74,10 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+	if !proj.body.OnLayer(COL_LAYER_PROJECTILES) {
+		return
+	}
+
 	owner, hasOwner := scene.Get[HasActor](proj.owner)
 
 	otherBody := otherEnt.Body()

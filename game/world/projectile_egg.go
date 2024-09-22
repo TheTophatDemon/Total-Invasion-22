@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -14,6 +15,10 @@ import (
 const (
 	SFX_EGG_SHOOT  = "assets/sounds/chickengun.wav"
 	TEX_EGG_SHARDS = "assets/textures/sprites/egg_shards.png"
+)
+
+const (
+	CHICKEN_SPAWN_CHANCE = 0.1
 )
 
 func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
@@ -52,6 +57,9 @@ func (proj *Projectile) eggMove(deltaTime float32) {
 }
 
 func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+	if !proj.body.OnLayer(COL_LAYER_PROJECTILES) {
+		return
+	}
 	otherBody := otherEnt.Body()
 	if otherBody.Layer == COL_LAYER_NONE || otherBody.Layer == COL_LAYER_INVISIBLE {
 		return
@@ -70,7 +78,12 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 			backwards = proj.body.Velocity.Normalize().Mul(-1.0)
 		}
 		proj.emitEggShards(proj.body.Transform.Position().Add(backwards.Mul(1.0)))
-		SpawnChicken(&proj.world.Enemies, proj.body.Transform.Position().Add(backwards.Mul(0.5)), backwards, proj.world)
+		if rand.Float32() < CHICKEN_SPAWN_CHANCE {
+			SpawnChicken(&proj.world.Chickens,
+				proj.body.Transform.Position().Add(backwards),
+				mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0},
+				proj.world)
+		}
 	}
 }
 

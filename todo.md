@@ -1,12 +1,12 @@
 # TODO
 - Chickens
-    - Lag problem
-    - Wandering
     - Lava edge case?
+    - Spawning inside walls
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)
 - Items 
     - Health packs
+    - Eggs
 - Level completion
 - Fix color weirdness on Linux
 - Bounding box hierarchy

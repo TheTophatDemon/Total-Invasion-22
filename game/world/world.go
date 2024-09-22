@@ -47,6 +47,7 @@ type World struct {
 	Hud           hud.Hud
 	Players       scene.Storage[Player]
 	Enemies       scene.Storage[Enemy]
+	Chickens      scene.Storage[Chicken]
 	Walls         scene.Storage[Wall]
 	Props         scene.Storage[Prop]
 	Triggers      scene.Storage[Trigger]
@@ -69,6 +70,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, nil)
 	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
+	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
 	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
 	world.Triggers = scene.NewStorageWithFuncs(64, (*Trigger).Update, nil)

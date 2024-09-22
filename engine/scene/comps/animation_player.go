@@ -47,15 +47,17 @@ func (ap *AnimationPlayer) Update(deltaTime float32) {
 	}
 	ap.frameTimer += deltaTime
 	if ap.frameTimer > ap.animation.Frames[ap.currentIndex].Duration {
-		ap.frameTimer = 0.0
 		ap.currentIndex += 1
 		if ap.currentIndex >= len(ap.animation.Frames) {
 			if !ap.animation.Loop {
 				ap.currentIndex = len(ap.animation.Frames) - 1
 				ap.playing = false
 			} else {
+				ap.frameTimer = 0.0
 				ap.currentIndex = 0
 			}
+		} else {
+			ap.frameTimer = 0.0
 		}
 	}
 }
@@ -118,6 +120,10 @@ func (ap *AnimationPlayer) IsPlaying() bool {
 	return ap.playing
 }
 
+func (ap *AnimationPlayer) IsAtEnd() bool {
+	return ap.currentIndex == len(ap.animation.Frames)-1 && ap.frameTimer > ap.animation.Frames[ap.currentIndex].Duration
+}
+
 func (ap *AnimationPlayer) IsPlayingAnim(anim textures.Animation) bool {
-	return ap.animation.Name == anim.Name
+	return ap.animation.BaseName() == anim.BaseName()
 }
