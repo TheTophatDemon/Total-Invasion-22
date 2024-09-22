@@ -22,6 +22,14 @@ const (
 	PROP_TYPE_GEOFFREY
 )
 
+const (
+	GEOFFREY_SAFETY_RADIUS = 2.5
+	GEOFFREY_COL_LAYERS    = COL_LAYER_MAP | COL_LAYER_NPCS
+	SFX_HONK               = "assets/sounds/honk.wav"
+	GEOFFREY_ANIM_IDLE     = "idle"
+	GEOFFREY_ANIM_VANISH   = "vanish"
+)
+
 // A (generally) unmoving object in the game world used as decoration
 type Prop struct {
 	id           scene.Id[*Prop]
@@ -31,6 +39,7 @@ type Prop struct {
 	world        *World
 	propType     PropType
 	voice        tdaudio.VoiceId
+	isSeen       bool
 }
 
 var _ comps.HasBody = (*Prop)(nil)
@@ -91,7 +100,7 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
-		prop.body.Layer |= COL_LAYER_NPCS
+		prop.body.Layer = GEOFFREY_COL_LAYERS
 	}
 
 	return
@@ -100,15 +109,29 @@ func SpawnPropFromTE3(st *scene.Storage[Prop], world *World, ent te3.Ent) (id sc
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
 	prop.voice.SetPositionV(prop.Body().Transform.Position())
+
+	switch prop.propType {
+	case PROP_TYPE_GEOFFREY:
+		vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_VANISH)
+		if !prop.isSeen && len(prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.body.Shape.(collision.Sphere).Radius(), prop)) == 0 {
+			// Make Geoffrey re-appear when nobody is looking.
+			if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
+				idleAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_IDLE)
+				prop.AnimPlayer.PlayNewAnim(idleAnim)
+				prop.body.Layer = GEOFFREY_COL_LAYERS
+			}
+		} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
+			// Check for incoming projectiles and trigger the disappearing animation.
+			projectiles := prop.world.ProjectilesInSphere(prop.body.Transform.Position(), GEOFFREY_SAFETY_RADIUS, nil)
+			if len(projectiles) > 0 {
+				prop.AnimPlayer.PlayNewAnim(vanishAnim)
+				prop.body.Layer = 0
+				cache.GetSfx(SFX_HONK).PlayAttenuatedV(prop.body.Transform.Position())
+			}
+		}
+	}
 }
 
 func (prop *Prop) Render(context *render.Context) {
-	prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
-}
-
-func (prop *Prop) OnDamage(sourceEntity any, damage float32) bool {
-	if prop.propType == PROP_TYPE_GEOFFREY {
-		prop.world.QueueRemoval(prop.id.Handle)
-	}
-	return true
+	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
 }

@@ -162,6 +162,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	chk.bloodParticles.EmissionTimer = 0.1
 	chk.actor.Health -= damage
 	if chk.actor.Health <= 0 {
+		chk.voice.Stop()
 		chk.voice = cache.GetSfx(SFX_CHICKEN_PAIN).PlayAttenuatedV(chk.Body().Transform.Position())
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {
 		chk.voice = cache.GetSfx(SFX_CHICKEN_BOK).PlayAttenuatedV(chk.Body().Transform.Position())

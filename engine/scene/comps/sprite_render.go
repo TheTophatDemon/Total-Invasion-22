@@ -25,14 +25,18 @@ func NewSpriteRender(texture *textures.Texture) SpriteRender {
 	}
 }
 
+func (sr *SpriteRender) Texture() *textures.Texture {
+	return sr.meshRender.Texture
+}
+
 func (sr *SpriteRender) Render(
 	transform *Transform,
 	animPlayer *AnimationPlayer,
 	context *render.Context,
 	yawAngle float32,
-) {
+) bool {
 	if !render.IsSphereVisible(context, transform.Position(), transform.Scale().X()) {
-		return
+		return false
 	}
 
 	sr.meshRender.Shader.Use()
@@ -73,4 +77,5 @@ func (sr *SpriteRender) Render(
 	sr.meshRender.Render(transform, animPlayer, context)
 
 	context.DrawnSpriteCount++
+	return true
 }

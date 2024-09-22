@@ -1,6 +1,7 @@
 package world
 
 import (
+	"log"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -49,6 +50,28 @@ func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 		}
 		if hit {
 			result = append(result, bodyId)
+		}
+	}
+	return result
+}
+
+func (world *World) ProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception *Projectile) []scene.Handle {
+	result := make([]scene.Handle, 0)
+	for projId, proj := range world.Projectiles.All() {
+		if proj == exception {
+			continue
+		}
+		body := proj.Body()
+
+		var hit bool
+		switch shape := body.Shape.(type) {
+		case collision.Sphere:
+			hit = collision.SphereTouchesSphere(spherePos, sphereRadius, body.Transform.Position(), shape.Radius())
+		default:
+			log.Printf("Warning: invalid collision shape for projectile detected (%s)\n", shape.String())
+		}
+		if hit {
+			result = append(result, projId)
 		}
 	}
 	return result

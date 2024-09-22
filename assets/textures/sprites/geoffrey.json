@@ -115,6 +115,15 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
     "duration": 50
+   },
+   {
+    "filename": "geoffrey.png;13",
+    "frame": { "x": 131, "y": 131, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 50
    }
  ],
  "meta": {
@@ -126,7 +135,7 @@
   "scale": "1",
   "frameTags": [
    { "name": "idle", "from": 0, "to": 8, "direction": "forward", "color": "#000000ff", "data": "default" },
-   { "name": "vanish", "from": 9, "to": 12, "direction": "forward", "repeat": "1", "color": "#000000ff" }
+   { "name": "vanish", "from": 9, "to": 13, "direction": "forward", "repeat": "1", "color": "#000000ff" }
   ],
   "slices": [
    { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 0, "bounds": {"x": -1, "y": -1, "w": 65, "h": 66 } }] }
