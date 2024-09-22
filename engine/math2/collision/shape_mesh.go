@@ -45,17 +45,21 @@ func NewMeshFromTriangles(triangles []math2.Triangle) Mesh {
 	}
 }
 
-func (m Mesh) Triangles() []math2.Triangle {
-	return m.triangles
+func (mesh Mesh) String() string {
+	return "Mesh"
 }
 
-func (m Mesh) Extents() math2.Box {
-	return m.extents
+func (mesh Mesh) Triangles() []math2.Triangle {
+	return mesh.triangles
 }
 
-func (m Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) (cast RaycastResult) {
+func (mesh Mesh) Extents() math2.Box {
+	return mesh.extents
+}
+
+func (mesh Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) (cast RaycastResult) {
 	var nearestHitDist float32 = math.MaxFloat32
-	for _, triangle := range m.triangles {
+	for _, triangle := range mesh.triangles {
 		triangle = triangle.OffsetBy(shapeOffset)
 		newCast := RayTriangleCollision(rayOrigin, rayDir, triangle)
 		if newCast.Hit && newCast.Distance <= maxDist {
@@ -68,6 +72,6 @@ func (m Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32
 	return
 }
 
-func (m Mesh) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (mesh Mesh) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
 	panic("collision resolution not implemented for mesh")
 }

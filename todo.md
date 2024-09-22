@@ -1,9 +1,8 @@
 # TODO
-- Chickens
-    - Lava edge case?
-    - Spawning inside walls
+- Chickens are spawning inside walls
 - Geoffrey interaction
 - Fix teleporter stuck (telefrag)
+- Add particle effect for teleporting entities
 - Items 
     - Health packs
     - Eggs

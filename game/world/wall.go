@@ -178,12 +178,11 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 }
 
 func SpawnInvisibleWall(
-	st *scene.Storage[Wall],
 	world *World,
 	position mgl32.Vec3,
 	shape collision.Shape,
 ) (id scene.Id[*Wall], wall *Wall, err error) {
-	id, wall, err = st.New()
+	id, wall, err = world.Walls.New()
 	if err != nil {
 		return
 	}

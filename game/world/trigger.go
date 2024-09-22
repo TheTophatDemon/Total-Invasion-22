@@ -1,6 +1,10 @@
 package world
 
 import (
+	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -15,22 +19,33 @@ const (
 	SFX_TELEPORT      = "assets/sounds/teleport.wav"
 )
 
+const (
+	TRIGGER_ACTION_TELEPORT = "teleport"
+	TRIGGER_ACTION_DAMAGE   = "damage"
+)
+
+const (
+	PROP_ACTION      = "action"
+	PROP_DAMAGE_RATE = "damagePerSecond"
+)
+
 type Trigger struct {
-	Sphere        collision.Sphere
-	Transform     comps.Transform
-	filter        func(comps.HasBody) bool
-	onEnter       func(*Trigger, scene.Handle)
-	whileTouching func(*Trigger, scene.Handle)
-	onExit        func(*Trigger, scene.Handle)
-	world         *World
-	linkNumber    int
-	touching      [TRIGGER_TOUCH_MAX]scene.Handle
+	Sphere          collision.Sphere
+	Transform       comps.Transform
+	filter          func(comps.HasBody) bool
+	onEnter         func(trigger *Trigger, entHandle scene.Handle)
+	whileTouching   func(trigger *Trigger, entHandle scene.Handle, deltaTime float32)
+	onExit          func(trigger *Trigger, entHandle scene.Handle)
+	world           *World
+	linkNumber      int
+	touching        [TRIGGER_TOUCH_MAX]scene.Handle
+	damagePerSecond float32
 }
 
 var _ Linkable = (*Trigger)(nil)
 
-func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
-	id, tr, err = st.New()
+func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
+	id, tr, err = world.Triggers.New()
 	if err != nil {
 		return
 	}
@@ -40,13 +55,32 @@ func SpawnTriggerFromTE3(st *scene.Storage[Trigger], world *World, ent te3.Ent) 
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
 
-	switch ent.Properties["action"] {
-	case "teleport":
+	switch ent.Properties[PROP_ACTION] {
+	case TRIGGER_ACTION_TELEPORT:
 		tr.filter = actorsOnlyFilter
 		tr.onEnter = teleportAction
+	case TRIGGER_ACTION_DAMAGE:
+		tr.filter = actorsOnlyFilter
+		tr.whileTouching = damageWhileTouching
+		damageRate, err := strconv.ParseFloat(ent.Properties[PROP_DAMAGE_RATE], 32)
+		if err != nil || math.IsNaN(damageRate) {
+			damageRate = 0.0
+		}
+		tr.damagePerSecond = float32(damageRate)
 	}
 
 	return
+}
+
+func SpawnKillzone(world *World, position mgl32.Vec3, radius float32, damagePerSecond float32) (id scene.Id[*Trigger], tr *Trigger, err error) {
+	return SpawnTriggerFromTE3(world, te3.Ent{
+		Radius:   radius,
+		Position: position,
+		Properties: map[string]string{
+			PROP_ACTION:      TRIGGER_ACTION_DAMAGE,
+			PROP_DAMAGE_RATE: fmt.Sprintf("%f", damagePerSecond),
+		},
+	})
 }
 
 func (tr *Trigger) Update(deltaTime float32) {
@@ -63,7 +97,7 @@ func (tr *Trigger) Update(deltaTime float32) {
 				stillTouching[index] = true
 			} else if index >= 0 {
 				if tr.whileTouching != nil {
-					tr.whileTouching(tr, handle)
+					tr.whileTouching(tr, handle, deltaTime)
 				}
 				stillTouching[index] = true
 			}
@@ -120,6 +154,12 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				break
 			}
 		}
+	}
+}
+
+func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
+	if damageable, canDamage := scene.Get[Damageable](handle); canDamage {
+		damageable.OnDamage(tr, tr.damagePerSecond*deltaTime)
 	}
 }
 

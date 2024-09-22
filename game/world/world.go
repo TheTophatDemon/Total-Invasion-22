@@ -40,6 +40,7 @@ const (
 
 const (
 	TEX_FLAG_INVISIBLE string = "invisible"
+	TEX_FLAG_KILLZONE  string = "killzone"
 )
 
 //go:generate ../../world_gen_iters.exe
@@ -73,7 +74,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
 	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
-	world.Triggers = scene.NewStorageWithFuncs(64, (*Trigger).Update, nil)
+	world.Triggers = scene.NewStorageWithFuncs(256, (*Trigger).Update, nil)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
@@ -83,15 +84,25 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		return nil, err
 	}
 
-	// Filter out invisible tiles and spawn invisible wall entities instead
 	for texID, texPath := range te3File.Tiles.Textures {
-		if cache.GetTexture(texPath).HasFlag(TEX_FLAG_INVISIBLE) {
+		tex := cache.GetTexture(texPath)
+		if tex.HasFlag(TEX_FLAG_INVISIBLE) {
+			// Filter out invisible tiles and spawn invisible wall entities instead
 			invisibleTileIDs := te3File.Tiles.WithTextureId(te3.TextureID(texID))
 			te3File.Tiles.EraseTiles(invisibleTileIDs...)
 			for _, id := range invisibleTileIDs {
 				box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
 				pos := box.Center()
-				SpawnInvisibleWall(&world.Walls, world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
+				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
+			}
+		}
+		if tex.HasFlag(TEX_FLAG_KILLZONE) {
+			// Add trigger objects that kill actors that touch them. Used for lava.
+			killerTileIDs := te3File.Tiles.WithTextureId(te3.TextureID(texID))
+			for _, id := range killerTileIDs {
+				box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
+				pos := box.Center()
+				SpawnKillzone(world, pos, box.Size().Len()/2.0, 9999.0)
 			}
 		}
 	}
@@ -158,7 +169,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
-		if _, _, err := SpawnTriggerFromTE3(&world.Triggers, world, spawn); err != nil {
+		if _, _, err := SpawnTriggerFromTE3(world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}

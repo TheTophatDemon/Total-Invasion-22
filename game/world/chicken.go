@@ -29,6 +29,8 @@ type Chicken struct {
 	voice                      tdaudio.VoiceId
 	walkAnim, flyAnim, dieAnim textures.Animation
 	world                      *World
+	id                         scene.Id[*Chicken]
+	decomposeTimer             float32 // Time in seconds before the chicken's corpse disappears.
 }
 
 var _ HasActor = (*Chicken)(nil)
@@ -41,13 +43,14 @@ func (chk *Chicken) Body() *comps.Body {
 	return &chk.actor.body
 }
 
-func SpawnChicken(storage *scene.Storage[Chicken], position, angles mgl32.Vec3, world *World) (id scene.Id[*Chicken], chk *Chicken, err error) {
-	id, chk, err = storage.New()
+func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chicken, err error) {
+	id, chk, err = world.Chickens.New()
 	if err != nil {
 		return
 	}
 
 	chk.world = world
+	chk.id = id
 
 	chk.bloodParticles = effects.Blood(5, color.Red, 0.3)
 	chk.bloodParticles.Init()
@@ -64,7 +67,7 @@ func SpawnChicken(storage *scene.Storage[Chicken], position, angles mgl32.Vec3, 
 			),
 			Shape:  collision.NewSphere(0.5),
 			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
-			Filter: COL_FILTER_FOR_ACTORS,
+			Filter: COL_LAYER_MAP | COL_LAYER_ACTORS,
 			LockY:  false,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
@@ -82,6 +85,8 @@ func SpawnChicken(storage *scene.Storage[Chicken], position, angles mgl32.Vec3, 
 	chk.actor.MaxHealth = chk.actor.Health
 
 	chk.voice = cache.GetSfx(SFX_CHICKEN_BOK).PlayAttenuatedV(position)
+
+	chk.decomposeTimer = 120.0
 
 	return
 }
@@ -118,6 +123,11 @@ func (chk *Chicken) Update(deltaTime float32) {
 			chk.actor.YawAngle += math.Pi/2.0 + rand.Float32()*math.Pi/2.0
 		}
 	} else {
+		chk.decomposeTimer -= deltaTime
+		if chk.decomposeTimer <= 0.0 {
+			chk.world.QueueRemoval(chk.id.Handle)
+		}
+
 		chk.actor.inputForward = 0.0
 		chk.actor.inputStrafe = 0.0
 
@@ -149,10 +159,8 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	if chk.actor.Health <= 0 {
 		return false
 	}
-	if _, ok := sourceEntity.(*Projectile); ok {
-		chk.bloodParticles.EmissionTimer = 0.1
-		chk.actor.Health -= damage
-	}
+	chk.bloodParticles.EmissionTimer = 0.1
+	chk.actor.Health -= damage
 	if chk.actor.Health <= 0 {
 		chk.voice = cache.GetSfx(SFX_CHICKEN_PAIN).PlayAttenuatedV(chk.Body().Transform.Position())
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {

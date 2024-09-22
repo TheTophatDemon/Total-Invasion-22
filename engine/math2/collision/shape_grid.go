@@ -41,6 +41,10 @@ func NewGrid(width, height, length int, spacing float32) Grid {
 	}
 }
 
+func (grid Grid) String() string {
+	return "Grid"
+}
+
 func (grid *Grid) Width() int {
 	return grid.width
 }

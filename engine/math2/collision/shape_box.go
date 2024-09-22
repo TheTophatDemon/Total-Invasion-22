@@ -19,12 +19,16 @@ func NewBox(extents math2.Box) Box {
 	}
 }
 
-func (b Box) Extents() math2.Box {
-	return b.extents
+func (box Box) String() string {
+	return "Box"
 }
 
-func (b Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
-	var res RaycastResult = RayBoxCollision(rayOrigin, rayDir, b.extents.Translate(shapeOffset))
+func (box Box) Extents() math2.Box {
+	return box.extents
+}
+
+func (box Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
+	var res RaycastResult = RayBoxCollision(rayOrigin, rayDir, box.extents.Translate(shapeOffset))
 	if res.Distance <= maxDist {
 		return res
 	} else {
@@ -32,6 +36,11 @@ func (b Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32)
 	}
 }
 
-func (b Box) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
-	panic("collision resolution not implemented for boxes")
+func (box Box) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	switch otherShape := theirShape.(type) {
+	case Sphere:
+		return ResolveSphereBox(theirPosition, myPosition, otherShape, box)
+	default:
+		panic("collision resolution not implemented for boxes and " + otherShape.String())
+	}
 }
