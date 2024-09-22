@@ -129,15 +129,6 @@ func (st *Storage[T]) Remove(h Handle) {
 	}
 }
 
-// Runs the given function on all active objects in storage.
-func (st *Storage[T]) ForEach(predicate func(*T)) {
-	for i := 0; i <= st.lastActive; i += 1 {
-		if st.active[i] {
-			predicate(&st.data[i])
-		}
-	}
-}
-
 func (st *Storage[T]) All() iter.Seq2[Handle, *T] {
 	return func(yield func(Handle, *T) bool) {
 		for i := 0; i <= st.lastActive; i += 1 {

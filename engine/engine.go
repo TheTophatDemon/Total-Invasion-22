@@ -87,10 +87,14 @@ func Run(app App) {
 			fpsTicks = 0
 		}
 
-		for accumulator += deltaTime; accumulator >= updateRate; accumulator -= updateRate {
+		// Run updates by splitting the time since the last from into fixed time steps.
+		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
+		updateCount := 0
+		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
 			app.Update(float32(updateRate))
 			input.Update()
 			tdaudio.Update()
+			updateCount++
 		}
 
 		// OpenGL settings
