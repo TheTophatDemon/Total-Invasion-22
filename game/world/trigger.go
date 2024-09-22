@@ -10,9 +10,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
@@ -33,6 +35,7 @@ const (
 type Trigger struct {
 	Sphere          collision.Sphere
 	Transform       comps.Transform
+	particles       comps.ParticleRender
 	filter          func(comps.HasBody) bool
 	onEnter         func(trigger *Trigger, entHandle scene.Handle)
 	whileTouching   func(trigger *Trigger, entHandle scene.Handle, deltaTime float32)
@@ -60,6 +63,8 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TRIGGER_ACTION_TELEPORT:
 		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
+		tr.particles = effects.Teleport(0.5)
+		tr.particles.Init()
 	case TRIGGER_ACTION_DAMAGE:
 		tr.filter = liveActorsOnlyFilter
 		tr.whileTouching = damageWhileTouching
@@ -113,6 +118,12 @@ func (tr *Trigger) Update(deltaTime float32) {
 			tr.touching[i] = scene.Handle{}
 		}
 	}
+
+	tr.particles.Update(deltaTime, &tr.Transform)
+}
+
+func (tr *Trigger) Render(context *render.Context) {
+	tr.particles.Render(&tr.Transform, context)
 }
 
 func (tr *Trigger) LinkNumber() int {
@@ -169,6 +180,8 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
 				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(actor.Position())
+				tr.particles.EmissionTimer = 0.5
+				trOther.particles.EmissionTimer = 0.5
 
 				break
 			}

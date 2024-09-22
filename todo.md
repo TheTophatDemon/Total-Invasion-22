@@ -1,5 +1,4 @@
 # TODO
-- Add particle effect for teleporting entities
 - Items 
     - Health packs
     - Eggs

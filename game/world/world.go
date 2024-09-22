@@ -74,7 +74,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
 	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
-	world.Triggers = scene.NewStorageWithFuncs(256, (*Trigger).Update, nil)
+	world.Triggers = scene.NewStorageWithFuncs(256, (*Trigger).Update, (*Trigger).Render)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
