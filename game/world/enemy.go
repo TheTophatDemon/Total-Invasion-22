@@ -219,17 +219,22 @@ func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) bool {
 	if enemy.state == ENEMY_STATE_DIE {
 		return false
 	}
-	if proj, ok := sourceEntity.(*Projectile); ok {
-		enemy.bloodParticles.EmissionTimer = 0.1
-		enemy.actor.Health -= damage
-		if enemy.state != ENEMY_STATE_STUN {
-			if rand.Float32() < enemy.StunChance*proj.StunChance {
-				enemy.changeState(ENEMY_STATE_STUN)
-			} else {
-				enemy.wakeTimer = enemy.WakeLimit
-				if enemy.state == ENEMY_STATE_IDLE {
-					enemy.changeState(ENEMY_STATE_CHASE)
-				}
+
+	enemy.bloodParticles.EmissionTimer = 0.1
+	enemy.actor.Health -= damage
+	if enemy.actor.Health <= 0.0 {
+		enemy.changeState(ENEMY_STATE_DIE)
+	} else if enemy.state != ENEMY_STATE_STUN {
+		sourceStunChance := float32(1.0)
+		if proj, ok := sourceEntity.(*Projectile); ok {
+			sourceStunChance = proj.StunChance
+		}
+		if rand.Float32() < enemy.StunChance*sourceStunChance {
+			enemy.changeState(ENEMY_STATE_STUN)
+		} else {
+			enemy.wakeTimer = enemy.WakeLimit
+			if enemy.state == ENEMY_STATE_IDLE {
+				enemy.changeState(ENEMY_STATE_CHASE)
 			}
 		}
 	}

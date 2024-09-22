@@ -1,5 +1,4 @@
 # TODO
-- Fix teleporter stuck (telefrag)
 - Add particle effect for teleporting entities
 - Items 
     - Health packs

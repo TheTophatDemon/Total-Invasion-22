@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -25,8 +26,8 @@ const (
 )
 
 const (
-	PROP_ACTION      = "action"
-	PROP_DAMAGE_RATE = "damagePerSecond"
+	TRIGGER_ACTION      = "action"
+	TRIGGER_DAMAGE_RATE = "damagePerSecond"
 )
 
 type Trigger struct {
@@ -55,14 +56,14 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
 
-	switch ent.Properties[PROP_ACTION] {
+	switch ent.Properties[TRIGGER_ACTION] {
 	case TRIGGER_ACTION_TELEPORT:
-		tr.filter = actorsOnlyFilter
+		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
 	case TRIGGER_ACTION_DAMAGE:
-		tr.filter = actorsOnlyFilter
+		tr.filter = liveActorsOnlyFilter
 		tr.whileTouching = damageWhileTouching
-		damageRate, err := strconv.ParseFloat(ent.Properties[PROP_DAMAGE_RATE], 32)
+		damageRate, err := strconv.ParseFloat(ent.Properties[TRIGGER_DAMAGE_RATE], 32)
 		if err != nil || math.IsNaN(damageRate) {
 			damageRate = 0.0
 		}
@@ -77,8 +78,8 @@ func SpawnKillzone(world *World, position mgl32.Vec3, radius float32, damagePerS
 		Radius:   radius,
 		Position: position,
 		Properties: map[string]string{
-			PROP_ACTION:      TRIGGER_ACTION_DAMAGE,
-			PROP_DAMAGE_RATE: fmt.Sprintf("%f", damagePerSecond),
+			TRIGGER_ACTION:      TRIGGER_ACTION_DAMAGE,
+			TRIGGER_DAMAGE_RATE: fmt.Sprintf("%f", damagePerSecond),
 		},
 	})
 }
@@ -127,7 +128,7 @@ func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {
 		}
 	}
 	for i := range tr.touching {
-		if !tr.touching[i].IsNil() || !tr.touching[i].Exists() {
+		if tr.touching[i].IsNil() || !tr.touching[i].Exists() {
 			tr.touching[i] = handle
 			return true, i
 		}
@@ -136,21 +137,39 @@ func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {
 }
 
 func teleportAction(tr *Trigger, handle scene.Handle) {
+	teleportingEnt, _ := scene.Get[HasActor](handle)
+	if teleportingEnt.Actor().Health <= 0 {
+		return
+	}
+	teleportingBody := teleportingEnt.Body()
 	for _, link := range tr.world.AllLinkables() {
 		if link != tr && link.LinkNumber() == tr.linkNumber {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
-				actorHaver, _ := scene.Get[HasActor](handle)
-				body := actorHaver.Body()
-				body.Transform.SetPosition(trOther.Transform.Position())
-				body.Velocity = mgl32.Vec3{}
-				actor := actorHaver.Actor()
+				// If there are NPCs standing on the other side, kill them.
+				actors := tr.world.ActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
+				for _, actorHandle := range actors {
+					victimEnt, _ := scene.Get[HasActor](actorHandle)
+					if player, isPlayer := victimEnt.(*Player); isPlayer && player != teleportingEnt {
+						// If the player is on the other side, kill the NPC instead.
+						teleportingEnt.(Damageable).OnDamage(tr, math2.Inf32())
+						return
+					} else if teleportingEnt == victimEnt {
+						continue
+					}
+					victimEnt.(Damageable).OnDamage(tr, math2.Inf32())
+				}
+
+				teleportingBody.Transform.SetPosition(trOther.Transform.Position())
+				teleportingBody.Velocity = mgl32.Vec3{}
+				actor := teleportingEnt.Actor()
 				actor.SetYaw(trOther.Transform.Yaw())
 				actor.inputForward, actor.inputStrafe = 0.0, 0.0
-				actorHaver.ProcessSignal(game.TeleportationSignal{})
+				teleportingEnt.ProcessSignal(game.TeleportationSignal{})
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
 				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(actor.Position())
+
 				break
 			}
 		}
@@ -163,7 +182,10 @@ func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
 	}
 }
 
-func actorsOnlyFilter(e comps.HasBody) bool {
-	_, ok := e.(HasActor)
-	return ok
+func liveActorsOnlyFilter(ent comps.HasBody) bool {
+	actorHaver, ok := ent.(HasActor)
+	if !ok {
+		return false
+	}
+	return actorHaver.Actor().Health > 0
 }
