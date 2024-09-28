@@ -88,6 +88,10 @@ func (tex *Texture) GetDefaultAnimation() Animation {
 	return Animation{}
 }
 
+func (tex *Texture) AnimationCount() int {
+	return len(tex.animations)
+}
+
 func (tex *Texture) GetAnimation(name string) (anim Animation, ok bool) {
 	anim, ok = tex.animations[name]
 	return

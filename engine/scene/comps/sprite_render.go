@@ -1,12 +1,11 @@
 package comps
 
 import (
-	"log"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
@@ -39,6 +38,9 @@ func (sr *SpriteRender) Render(
 		return false
 	}
 
+	if sr.meshRender.Shader == nil {
+		return false
+	}
 	sr.meshRender.Shader.Use()
 
 	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
@@ -63,14 +65,14 @@ func (sr *SpriteRender) Render(
 				}
 				err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, flip)
 				if err != nil {
-					log.Println("Error setting uniform in (*SpriteRender).Render", err)
+					failure.LogErrWithLocation("error setting uniform: %v", err)
 				}
 			}
 		}
 	} else {
 		err := sr.meshRender.Shader.SetUniformBool(shaders.UniformFlipHorz, false)
 		if err != nil {
-			log.Println("Error setting uniform in (*SpriteRender).Render", err)
+			failure.LogErrWithLocation("error setting uniform: %v", err)
 		}
 	}
 

@@ -45,7 +45,7 @@ func main() {
 		{
 			TypeName: "comps.HasBody", MethodName: "AllBodies",
 			StorageNames: []string{
-				"Players", "Enemies", "Chickens", "Walls", "Props", "Projectiles", "GameMap",
+				"Players", "Enemies", "Chickens", "Walls", "Props", "Projectiles", "Items", "GameMap",
 			},
 		},
 		{

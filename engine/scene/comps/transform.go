@@ -77,6 +77,19 @@ func (t *Transform) Position() mgl32.Vec3 {
 	return t.pos
 }
 
+func (t *Transform) SetScale(x, y, z float32) {
+	t.SetScaleV(mgl32.Vec3{x, y, z})
+}
+
+func (t *Transform) SetScaleUniform(scale float32) {
+	t.SetScale(scale, scale, scale)
+}
+
+func (t *Transform) SetScaleV(scale mgl32.Vec3) {
+	t.scale = scale
+	t.upToDate = false
+}
+
 func (t *Transform) Scale() mgl32.Vec3 {
 	return t.scale
 }

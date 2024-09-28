@@ -51,6 +51,13 @@ func (world *World) AllBodies() iter.Seq2[scene.Handle, comps.HasBody] {
 				return
 			}
 		}
+		nextItems, stop := iter.Pull2(world.Items.All())
+		defer stop()
+		for handle, ent, ok := nextItems(); ok; handle, ent, ok = nextItems() {
+			if !yield(handle, ent) {
+				return
+			}
+		}
 		nextGameMap, stop := iter.Pull2(world.GameMap.All())
 		defer stop()
 		for handle, ent, ok := nextGameMap(); ok; handle, ent, ok = nextGameMap() {

@@ -180,6 +180,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
 				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(actor.Position())
+				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(tr.Transform.Position())
 				tr.particles.EmissionTimer = 0.5
 				trOther.particles.EmissionTimer = 0.5
 

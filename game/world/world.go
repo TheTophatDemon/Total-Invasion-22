@@ -54,6 +54,7 @@ type World struct {
 	Triggers      scene.Storage[Trigger]
 	Projectiles   scene.Storage[Projectile]
 	Effects       scene.Storage[Effect]
+	Items         scene.Storage[Item]
 	DebugShapes   scene.Storage[DebugShape]
 	GameMap       comps.Map
 	CurrentPlayer scene.Id[*Player]
@@ -77,6 +78,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Triggers = scene.NewStorageWithFuncs(256, (*Trigger).Update, (*Trigger).Render)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
+	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
@@ -170,6 +172,13 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
 		if _, _, err := SpawnTriggerFromTE3(world, spawn); err != nil {
+			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+		}
+	}
+
+	// Spawn items
+	for _, spawn := range te3File.FindEntsWithProperty("type", "item") {
+		if _, _, err := SpawnItemFromTE3(world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}

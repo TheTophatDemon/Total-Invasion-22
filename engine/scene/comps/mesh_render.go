@@ -60,7 +60,7 @@ func (mr *MeshRender) Render(
 	if animPlayer != nil {
 		_ = mr.Shader.SetUniformVec4(shaders.UniformSrcRect, animPlayer.FrameUV().Vec4())
 	} else {
-		_ = mr.Shader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 0.0, 1.0, 1.0})
+		_ = mr.Shader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 1.0, 1.0, 1.0})
 	}
 
 	if len(mr.Group) == 0 {

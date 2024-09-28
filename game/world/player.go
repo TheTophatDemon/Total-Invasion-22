@@ -20,6 +20,10 @@ const (
 	USE_DIST float32 = 3.0
 )
 
+const (
+	OVERHEAL_RESTORE_RATE = 5.0
+)
+
 type Player struct {
 	Camera                                   comps.Camera
 	RunSpeed, WalkSpeed                      float32
@@ -102,6 +106,13 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 func (player *Player) Update(deltaTime float32) {
 	if player.actor.Health > 0 {
 		player.takeUserInput(deltaTime)
+		if player.actor.Health > player.actor.MaxHealth {
+			// When overhealed, gradually decrease health back to base level
+			player.actor.Health -= OVERHEAL_RESTORE_RATE * deltaTime
+			if player.actor.Health < player.actor.MaxHealth {
+				player.actor.Health = player.actor.MaxHealth
+			}
+		}
 	} else {
 		// Death logic
 		player.SelectWeapon(WEAPON_ORDER_NONE)
