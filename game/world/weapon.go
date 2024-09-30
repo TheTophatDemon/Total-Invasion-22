@@ -35,7 +35,17 @@ const (
 	WEAPON_STATE_INTRO
 	WEAPON_STATE_READY
 	WEAPON_STATE_OUTRO
-	WEAPON_STATE_MAX
+	WEAPON_STATE_COUNT
+)
+
+type AmmoType uint8
+
+const (
+	AMMO_TYPE_NONE AmmoType = iota
+	AMMO_TYPE_EGG
+	AMMO_TYPE_GRENADE
+	AMMO_TYPE_PLASMA
+	AMMO_TYPE_COUNT
 )
 
 type weaponBase struct {
@@ -134,7 +144,7 @@ func (wb *weaponBase) Update(deltaTime float32, swayAmount float32) {
 					Width:  wb.spriteSize.X(),
 					Height: wb.spriteSize.Y(),
 				})
-				wb.state = (wb.state + 1) % WEAPON_STATE_MAX
+				wb.state = (wb.state + 1) % WEAPON_STATE_COUNT
 			} else {
 				sprite.SetDestPosition(sprite.DestPosition().Add(diff.Mul(moveAmt / dist)))
 			}

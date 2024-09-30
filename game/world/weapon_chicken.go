@@ -57,6 +57,10 @@ func (chickenGun *WeaponChicken) Order() WeaponIndex {
 	return WEAPON_ORDER_CHICKEN
 }
 
+func (chickenGun *WeaponChicken) AmmoType() AmmoType {
+	return AMMO_TYPE_EGG
+}
+
 func (chickenGun *WeaponChicken) Update(deltaTime float32, swayAmount float32) {
 	chickenGun.weaponBase.Update(deltaTime, swayAmount)
 

@@ -70,6 +70,10 @@ func (sickle *WeaponSickle) Order() WeaponIndex {
 	return WEAPON_ORDER_SICKLE
 }
 
+func (sickle *WeaponSickle) AmmoType() AmmoType {
+	return AMMO_TYPE_NONE
+}
+
 func (sickle *WeaponSickle) Update(deltaTime float32, swayAmount float32) {
 	sickle.weaponBase.Update(deltaTime, swayAmount)
 

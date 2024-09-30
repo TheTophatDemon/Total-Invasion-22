@@ -21,7 +21,7 @@ const (
 )
 
 const (
-	OVERHEAL_RESTORE_RATE = 5.0
+	OVERHEAL_RESTORE_RATE = 1.0
 )
 
 type Player struct {
@@ -37,6 +37,7 @@ type Player struct {
 	cameraFall                               float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
 	deathTimer                               float32 // Counts the seconds until the player is allowed to restart after dying.
 	godMode                                  bool    // If true, the player does not take damage.
+	ammo                                     [AMMO_TYPE_COUNT]int
 }
 
 var _ HasActor = (*Player)(nil)
@@ -86,6 +87,7 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	player.cameraFall = 2.0
 
 	// Initialize weapons
+	player.ammo[AMMO_TYPE_NONE] = 1
 	player.weapons = [...]Weapon{
 		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](player.id)),
 		WEAPON_ORDER_CHICKEN:     NewChickenCannon(world, scene.Id[HasActor](player.id)),

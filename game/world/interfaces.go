@@ -37,5 +37,6 @@ type (
 		Fire()
 		CanFire() bool
 		Update(deltaTime float32, swayAmount float32)
+		AmmoType() AmmoType
 	}
 )
