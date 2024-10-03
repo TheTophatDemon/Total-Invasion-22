@@ -1,0 +1,22 @@
+package game
+
+type AmmoType uint8
+
+const (
+	AMMO_TYPE_NONE AmmoType = iota
+	AMMO_TYPE_SICKLE
+	AMMO_TYPE_EGG
+	AMMO_TYPE_GRENADE
+	AMMO_TYPE_PLASMA
+	AMMO_TYPE_COUNT
+)
+
+var AmmoLimits = [AMMO_TYPE_COUNT]int{
+	AMMO_TYPE_NONE:    0,
+	AMMO_TYPE_SICKLE:  1,
+	AMMO_TYPE_EGG:     255,
+	AMMO_TYPE_GRENADE: 100,
+	AMMO_TYPE_PLASMA:  500,
+}
+
+type Ammo [AMMO_TYPE_COUNT]int

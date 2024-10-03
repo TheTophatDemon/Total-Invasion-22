@@ -11,17 +11,22 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 type Item struct {
-	body         comps.Body
-	spriteRender comps.SpriteRender
-	animPlayer   comps.AnimationPlayer
-	flashColor   color.Color
-	pickupSound  tdaudio.SoundId
-	healAmount   float32
-	world        *World
-	id           scene.Id[*Item]
+	body          comps.Body
+	spriteRender  comps.SpriteRender
+	animPlayer    comps.AnimationPlayer
+	flashColor    color.Color
+	pickupSound   tdaudio.SoundId
+	healAmount    float32
+	ammoType      game.AmmoType
+	ammoAmount    int
+	dontWasteAmmo bool // If true, the item will not be collected if the player has maximum ammo
+
+	world *World
+	id    scene.Id[*Item]
 }
 
 var _ comps.HasBody = (*Item)(nil)
@@ -43,7 +48,7 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 			Transform: comps.TransformFromTE3Ent(ent, false, false),
 			Shape:     collision.NewSphere(0.5),
 			Layer:     0,
-			Filter:    COL_LAYER_PLAYERS,
+			Filter:    0,
 		},
 		flashColor:  color.White.WithAlpha(0.75),
 		pickupSound: cache.GetSfx("assets/sounds/pickup.wav"),
@@ -62,8 +67,10 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		item.body.Transform.SetScaleUniform(0.25)
 		textureName = "assets/textures/sprites/stimpack.png"
 	case "cartonofeggs", "egg_carton":
-		//TODO: Ammo types...
+		item.ammoType = game.AMMO_TYPE_EGG
+		item.ammoAmount = 12
 		item.body.Transform.SetScaleUniform(0.5)
+		item.dontWasteAmmo = true
 		textureName = "assets/textures/sprites/egg_carton.png"
 	default:
 		id.Remove()
@@ -97,10 +104,16 @@ func (item *Item) Render(context *render.Context) {
 
 func (item *Item) onIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
 	player, isPlayer := otherEnt.(*Player)
-	if !otherEnt.Body().OnLayer(item.body.Filter) || !isPlayer {
+	if !otherEnt.Body().OnLayer(COL_LAYER_PLAYERS) || !isPlayer {
 		return
 	}
 
+	if item.ammoAmount != 0 && item.ammoType != game.AMMO_TYPE_NONE {
+		notWasted := player.AddAmmo(item.ammoType, item.ammoAmount)
+		if item.dontWasteAmmo && !notWasted {
+			return
+		}
+	}
 	player.actor.Health += item.healAmount
 
 	item.pickupSound.PlayAttenuatedV(item.body.Transform.Position())

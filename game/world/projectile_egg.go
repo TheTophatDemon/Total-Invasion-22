@@ -5,24 +5,23 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
-	SFX_EGG_SHOOT  = "assets/sounds/chickengun.wav"
-	TEX_EGG_SHARDS = "assets/textures/sprites/egg_shards.png"
+	SFX_EGG_SHOOT = "assets/sounds/chickengun.wav"
 )
 
 const (
 	CHICKEN_SPAWN_CHANCE = 0.1
 )
 
-func SpawnEgg(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
-	id, proj, err = st.New()
+func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+	id, proj, err = world.Projectiles.New()
 	if err != nil {
 		return
 	}
@@ -77,41 +76,14 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 		if proj.body.Velocity.LenSqr() != 0.0 {
 			backwards = proj.body.Velocity.Normalize().Mul(-1.0)
 		}
-		proj.emitEggShards(proj.body.Transform.Position().Add(backwards))
+		SpawnEffect(proj.world,
+			comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
+			1.0,
+			effects.EggShards(proj.body.Shape.(collision.Sphere).Radius()))
 		if rand.Float32() < CHICKEN_SPAWN_CHANCE {
 			SpawnChicken(proj.world,
 				proj.body.Transform.Position().Add(backwards.Mul(1.5)),
 				mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		}
 	}
-}
-
-func (proj *Projectile) emitEggShards(position mgl32.Vec3) {
-	particleTex := cache.GetTexture(TEX_EGG_SHARDS)
-	SpawnEffect(proj.world, &proj.world.Effects, comps.TransformFromTranslation(position), 1.0, comps.ParticleRender{
-		Texture:       particleTex,
-		EmissionTimer: 0.2,
-		MaxCount:      4,
-		SpawnRadius:   proj.body.Shape.(collision.Sphere).Radius(),
-		SpawnRate:     1.0,
-		SpawnCount:    6,
-		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			form.Color = color.White.Vector()
-			form.Size = mgl32.Vec2{0.2, 0.2}
-			info.Velocity = info.Velocity.Mul(rand.Float32()*1 + 5.0)
-			info.Acceleration = mgl32.Vec3{0.0, -20.0, 0.0}
-			info.Lifetime = 1.0
-			info.AnimPlayer = comps.NewAnimationPlayer(particleTex.GetDefaultAnimation(), false)
-			info.AnimPlayer.MoveToRandomFrame()
-		},
-		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			const SHRINK_RATE = 0.75
-			form.Size[0] -= deltaTime * SHRINK_RATE
-			form.Size[1] -= deltaTime * SHRINK_RATE
-			if form.Size[0] <= 0.1 {
-				form.Size = mgl32.Vec2{}
-				info.Lifetime = 0.0
-			}
-		},
-	})
 }

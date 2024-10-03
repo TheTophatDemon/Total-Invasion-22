@@ -1,4 +1,4 @@
-package world
+package hud
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 type WeaponIndex int8
@@ -38,21 +39,10 @@ const (
 	WEAPON_STATE_COUNT
 )
 
-type AmmoType uint8
-
-const (
-	AMMO_TYPE_NONE AmmoType = iota
-	AMMO_TYPE_EGG
-	AMMO_TYPE_GRENADE
-	AMMO_TYPE_PLASMA
-	AMMO_TYPE_COUNT
-)
-
 type weaponBase struct {
-	owner            scene.Id[HasActor]
 	sprite           scene.Id[*ui.Box]
 	equipped         bool
-	world            *World
+	hud              *Hud
 	cooldown         float32
 	cooldownTimer    float32
 	sway             float32     // Value tracking the timeline of the sway animation.
@@ -64,6 +54,8 @@ type weaponBase struct {
 	state            weaponState // Describes the state of transitional animations.
 	spriteTexture    *textures.Texture
 	defaultAnimation textures.Animation // The animation that plays after the weapon is selected.
+	ammoType         game.AmmoType
+	ammoCost         int // Amount subtracted from ammo after firing
 }
 
 func (wb *weaponBase) Equip() {
@@ -81,7 +73,7 @@ func (wb *weaponBase) Select() {
 		spriteBox *ui.Box
 		err       error
 	)
-	wb.sprite, spriteBox, err = wb.world.Hud.UI.Boxes.New()
+	wb.sprite, spriteBox, err = wb.hud.UI.Boxes.New()
 	if err != nil {
 		failure.LogErrWithLocation("%v", err)
 		return
@@ -110,7 +102,7 @@ func (wb *weaponBase) IsSelected() bool {
 	return wb.state != WEAPON_STATE_INACTIVE
 }
 
-func (wb *weaponBase) Update(deltaTime float32, swayAmount float32) {
+func (wb *weaponBase) Update(deltaTime float32, swayAmount float32, ammo *game.Ammo) {
 	wb.cooldownTimer = max(wb.cooldownTimer-deltaTime, 0.0)
 	swayX := math2.Cos(wb.sway*wb.swaySpeed.X()) * wb.swayExtents.X()
 	swayY := math2.Sin(wb.sway*wb.swaySpeed.Y()) * wb.swayExtents.Y()
@@ -152,10 +144,15 @@ func (wb *weaponBase) Update(deltaTime float32, swayAmount float32) {
 	}
 }
 
-func (wb *weaponBase) Fire() {
+func (wb *weaponBase) Fire(ammo *game.Ammo) {
 	wb.cooldownTimer = wb.cooldown
+	ammo[wb.ammoType] -= wb.ammoCost
 }
 
-func (wb *weaponBase) CanFire() bool {
-	return wb.state == WEAPON_STATE_READY && wb.cooldownTimer <= 0.0
+func (wb *weaponBase) CanFire(ammo *game.Ammo) bool {
+	return wb.state == WEAPON_STATE_READY && wb.cooldownTimer <= 0.0 && ammo[wb.ammoType] >= wb.ammoCost
+}
+
+func (wb *weaponBase) AmmoType() game.AmmoType {
+	return wb.ammoType
 }

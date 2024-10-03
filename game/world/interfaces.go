@@ -26,17 +26,4 @@ type (
 		engine.Observer
 		Actor() *Actor
 	}
-
-	Weapon interface {
-		Order() WeaponIndex
-		Equip()
-		IsEquipped() bool
-		Select()
-		Deselect()
-		IsSelected() bool
-		Fire()
-		CanFire() bool
-		Update(deltaTime float32, swayAmount float32)
-		AmmoType() AmmoType
-	}
 )

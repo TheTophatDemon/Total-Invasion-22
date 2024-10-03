@@ -24,8 +24,8 @@ const (
 	WRAITH_MELEE_RANGE = 2.5
 )
 
-func SpawnWraith(storage *scene.Storage[Enemy], position, angles mgl32.Vec3, world *World) (id scene.Id[*Enemy], enemy *Enemy, err error) {
-	id, enemy, err = storage.New()
+func SpawnWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*Enemy], enemy *Enemy, err error) {
+	id, enemy, err = world.Enemies.New()
 	if err != nil {
 		return
 	}

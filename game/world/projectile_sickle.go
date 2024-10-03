@@ -10,6 +10,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -19,8 +20,8 @@ const (
 	SFX_SICKLE_CUT   = "assets/sounds/weapon/sickle_cut.wav"
 )
 
-func SpawnSickle(world *World, st *scene.Storage[Projectile], position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
-	id, proj, err = st.New()
+func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+	id, proj, err = world.Projectiles.New()
 	if err != nil {
 		return
 	}
@@ -85,6 +86,9 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 		if hasOwner && otherBody == owner.Body() {
 			proj.voices[0].Stop()
 			proj.id.Remove()
+			if player, isPlayer := owner.(*Player); isPlayer {
+				player.AddAmmo(game.AMMO_TYPE_SICKLE, 1)
+			}
 		}
 	} else if otherBody.OnLayer(COL_LAYER_MAP) {
 		proj.speed = -math2.Abs(proj.speed) / 2.0

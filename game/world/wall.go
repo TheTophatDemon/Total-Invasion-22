@@ -53,8 +53,8 @@ type Wall struct {
 
 var _ Usable = (*Wall)(nil)
 
-func SpawnWallFromTE3(st *scene.Storage[Wall], world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
-	id, wall, err = st.New()
+func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
+	id, wall, err = world.Walls.New()
 	if err != nil {
 		return
 	}

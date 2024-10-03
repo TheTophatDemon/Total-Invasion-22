@@ -10,28 +10,33 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 const (
 	MESSAGE_FADE_SPEED = 2.0
 	DEFAULT_FONT_PATH  = "assets/textures/ui/font.fnt"
-	COUTNER_FONT_PATH  = "assets/textures/ui/hud_counter_font.fnt"
+	COUNTER_FONT_PATH  = "assets/textures/ui/hud_counter_font.fnt"
 )
 
 type Hud struct {
-	UI                        *ui.Scene
-	FPSCounter, SpriteCounter scene.Id[*ui.Text]
-	face                      scene.Id[*ui.Box]
-	faceState                 faceState
-	faceTimer                 float32
-	Heart                     scene.Id[*ui.Box]
-	healthStat                scene.Id[*ui.Text]
-	messageText               scene.Id[*ui.Text]
-	messageTimer              float32
-	messagePriority           int
-	flashRect                 scene.Id[*ui.Box]
-	flashSpeed                float32
+	UI                         *ui.Scene
+	FPSCounter, SpriteCounter  scene.Id[*ui.Text]
+	face                       scene.Id[*ui.Box]
+	faceState                  faceState
+	faceTimer                  float32
+	heartIcon, ammoIcon        scene.Id[*ui.Box]
+	healthStat, ammoStat       scene.Id[*ui.Text]
+	messageText                scene.Id[*ui.Text]
+	messageTimer               float32
+	messagePriority            int
+	flashRect                  scene.Id[*ui.Box]
+	flashSpeed                 float32
+	sickle                     Sickle
+	chickenGun                 ChickenGun
+	weapons                    [WEAPON_ORDER_MAX]Weapon
+	selectedWeapon, nextWeapon WeaponIndex
 }
 
 func (hud *Hud) Init() {
@@ -83,6 +88,13 @@ func (hud *Hud) Init() {
 		SetColor(color.Blue.WithAlpha(0.5))
 
 	hud.flashSpeed = 0.5
+
+	hud.sickle.Init(hud)
+	hud.chickenGun.Init(hud)
+	hud.weapons = [WEAPON_ORDER_MAX]Weapon{
+		WEAPON_ORDER_SICKLE:  &hud.sickle,
+		WEAPON_ORDER_CHICKEN: &hud.chickenGun,
+	}
 
 	hud.InitPlayerStats()
 }
@@ -152,6 +164,43 @@ func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {
 		flash.Color = color
 		hud.flashSpeed = fadeSpeed
 	}
+}
+
+func (hud *Hud) Weapon(index WeaponIndex) Weapon {
+	if index == WEAPON_ORDER_NONE {
+		return nil
+	}
+	return hud.weapons[index]
+}
+
+func (hud *Hud) SelectedWeapon() Weapon {
+	return hud.Weapon(hud.selectedWeapon)
+}
+
+func (hud *Hud) AttemptFireWeapon(ammo *game.Ammo) bool {
+	weapon := hud.SelectedWeapon()
+	if weapon != nil && weapon.CanFire(ammo) {
+		weapon.Fire(ammo)
+		return true
+	}
+	return false
+}
+
+func (hud *Hud) SelectWeapon(order WeaponIndex) {
+	if order == hud.selectedWeapon || (order >= 0 && !hud.weapons[order].IsEquipped()) {
+		return
+	}
+	if hud.selectedWeapon >= 0 {
+		hud.weapons[hud.selectedWeapon].Deselect()
+	}
+	hud.nextWeapon = order
+}
+
+func (hud *Hud) EquipWeapon(order WeaponIndex) {
+	if order < 0 {
+		return
+	}
+	hud.weapons[order].Equip()
 }
 
 func SpriteScale() float32 {

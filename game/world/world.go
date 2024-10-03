@@ -148,23 +148,23 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	world.CurrentPlayer, _, _ = SpawnPlayer(&world.Players, world, playerSpawn.Position, playerSpawn.Angles)
+	world.CurrentPlayer, _, _ = SpawnPlayer(world, playerSpawn.Position, playerSpawn.Angles)
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		SpawnWraith(&world.Enemies, spawn.Position, spawn.Angles, world)
+		SpawnWraith(world, spawn.Position, spawn.Angles)
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
-		if _, _, err := SpawnWallFromTE3(&world.Walls, world, spawn); err != nil {
+		if _, _, err := SpawnWallFromTE3(world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
-		if _, _, err := SpawnPropFromTE3(&world.Props, world, spawn); err != nil {
+		if _, _, err := SpawnPropFromTE3(world, spawn); err != nil {
 			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}

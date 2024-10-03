@@ -31,13 +31,12 @@ type Player struct {
 	id                                       scene.Id[*Player]
 	actor                                    Actor
 	world                                    *World
-	weapons                                  [WEAPON_ORDER_MAX]Weapon
-	selectedWeapon, nextWeapon               WeaponIndex
-	initialCollisionLayers                   collision.Mask
-	cameraFall                               float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
-	deathTimer                               float32 // Counts the seconds until the player is allowed to restart after dying.
-	godMode                                  bool    // If true, the player does not take damage.
-	ammo                                     [AMMO_TYPE_COUNT]int
+
+	initialCollisionLayers collision.Mask
+	cameraFall             float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
+	deathTimer             float32 // Counts the seconds until the player is allowed to restart after dying.
+	godMode                bool    // If true, the player does not take damage.
+	ammo                   game.Ammo
 }
 
 var _ HasActor = (*Player)(nil)
@@ -51,8 +50,8 @@ func (player *Player) Body() *comps.Body {
 	return &player.actor.body
 }
 
-func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], player *Player, err error) {
-	id, player, err = st.New()
+func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], player *Player, err error) {
+	id, player, err = world.Players.New()
 	if err != nil {
 		return
 	}
@@ -87,20 +86,12 @@ func SpawnPlayer(st *scene.Storage[Player], world *World, position, angles mgl32
 	player.cameraFall = 2.0
 
 	// Initialize weapons
-	player.ammo[AMMO_TYPE_NONE] = 1
-	player.weapons = [...]Weapon{
-		WEAPON_ORDER_SICKLE:      NewSickle(world, scene.Id[HasActor](player.id)),
-		WEAPON_ORDER_CHICKEN:     NewChickenCannon(world, scene.Id[HasActor](player.id)),
-		WEAPON_ORDER_GRENADE:     nil,
-		WEAPON_ORDER_PARUSU:      nil,
-		WEAPON_ORDER_DBL_GRENADE: nil,
-		WEAPON_ORDER_SIGN:        nil,
-		WEAPON_ORDER_AIRHORN:     nil,
-	}
-	player.selectedWeapon = WEAPON_ORDER_NONE
-	player.EquipWeapon(WEAPON_ORDER_SICKLE)
-	player.EquipWeapon(WEAPON_ORDER_CHICKEN)
-	player.SelectWeapon(WEAPON_ORDER_SICKLE)
+	player.ammo[game.AMMO_TYPE_NONE] = 0
+	player.ammo[game.AMMO_TYPE_SICKLE] = 1
+	player.ammo[game.AMMO_TYPE_EGG] = 10
+	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_SICKLE)
+	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_CHICKEN)
+	player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 
 	return
 }
@@ -117,7 +108,7 @@ func (player *Player) Update(deltaTime float32) {
 		}
 	} else {
 		// Death logic
-		player.SelectWeapon(WEAPON_ORDER_NONE)
+		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
 		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
@@ -134,23 +125,6 @@ func (player *Player) Update(deltaTime float32) {
 		}
 	}
 
-	var weapon Weapon = nil
-	if player.selectedWeapon >= 0 {
-		weapon = player.weapons[player.selectedWeapon]
-	}
-
-	if weapon == nil || !weapon.IsSelected() {
-		player.selectedWeapon = player.nextWeapon
-		if player.selectedWeapon >= 0 {
-			weapon = player.weapons[player.selectedWeapon]
-			weapon.Select()
-		}
-	}
-
-	if weapon != nil {
-		weapon.Update(deltaTime, player.actor.body.Velocity.Len())
-	}
-
 	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
 		if player.actor.MaxSpeed == player.WalkSpeed {
 			player.actor.Friction = player.WalkFriction
@@ -165,9 +139,11 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.Update(deltaTime)
 
 	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health:  int(player.actor.Health),
-		Noclip:  player.Body().Layer == COL_LAYER_NONE,
-		GodMode: player.godMode,
+		Health:    int(player.actor.Health),
+		Noclip:    player.Body().Layer == COL_LAYER_NONE,
+		GodMode:   player.godMode,
+		Ammo:      &player.ammo,
+		MoveSpeed: player.actor.body.Velocity.Len(),
 	})
 }
 
@@ -232,9 +208,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_SICKLE) {
-		player.SelectWeapon(WEAPON_ORDER_SICKLE)
+		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 	} else if input.IsActionJustPressed(settings.ACTION_CHICKEN) {
-		player.SelectWeapon(WEAPON_ORDER_CHICKEN)
+		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_CHICKEN)
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {
@@ -243,16 +219,12 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	var weapon Weapon = nil
-	if player.selectedWeapon >= 0 {
-		weapon = player.weapons[player.selectedWeapon]
-	}
-	if weapon != nil && input.IsActionPressed(settings.ACTION_FIRE) && weapon.CanFire() {
+	if input.IsActionPressed(settings.ACTION_FIRE) {
 		// Don't fire if there is a wall too close in front
 		var cast collision.RaycastResult
 		cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
-		if !cast.Hit {
-			weapon.Fire()
+		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
+			player.AttackWithWeapon()
 		}
 	}
 
@@ -264,23 +236,6 @@ func (player *Player) ProcessSignal(signal any) {
 	case game.TeleportationSignal:
 		player.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
 	}
-}
-
-func (player *Player) SelectWeapon(order WeaponIndex) {
-	if order == player.selectedWeapon || (order >= 0 && !player.weapons[order].IsEquipped()) {
-		return
-	}
-	if player.selectedWeapon >= 0 {
-		player.weapons[player.selectedWeapon].Deselect()
-	}
-	player.nextWeapon = order
-}
-
-func (player *Player) EquipWeapon(order WeaponIndex) {
-	if order < 0 {
-		return
-	}
-	player.weapons[order].Equip()
 }
 
 func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
@@ -312,6 +267,21 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 		} else {
 			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
 		}
+	}
+	return true
+}
+
+// Adds ammo to the player's amounts, checking the limits to not overfill. Returns false if player has max ammo already.
+func (player *Player) AddAmmo(ammoType game.AmmoType, amount int) bool {
+	limit := game.AmmoLimits[ammoType]
+	if player.ammo[ammoType] == limit {
+		return false
+	}
+	newAmmo := player.ammo[ammoType] + amount
+	if newAmmo > limit {
+		player.ammo[ammoType] = limit
+	} else {
+		player.ammo[ammoType] = newAmmo
 	}
 	return true
 }

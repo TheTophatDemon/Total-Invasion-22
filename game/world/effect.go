@@ -15,8 +15,8 @@ type Effect struct {
 	particles comps.ParticleRender
 }
 
-func SpawnEffect(world *World, storage *scene.Storage[Effect], transform comps.Transform, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {
-	id, fx, err = storage.New()
+func SpawnEffect(world *World, transform comps.Transform, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {
+	id, fx, err = world.Effects.New()
 	if err != nil {
 		return
 	}

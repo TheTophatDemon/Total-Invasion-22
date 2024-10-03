@@ -1,7 +1,16 @@
 # TODO
-- Items 
-    - Health packs
-    - Eggs
+- Monsters should telefrag other monsters
+- Chickens should drop items
+- Potential problem with chickens spawning inside of player hitbox
+- Weapon pickups
 - Level completion
+- Keycards
+- Fire Wraiths
+- Grenade launcher & grenades
+- Switch
+- Parusu
+- Triggers activating walls
+- Cacowraith
+- Airhorn
 - Fix color weirdness on Linux
-- Bounding box hierarchy
+- Bounding box hierarchy for faster collision detection

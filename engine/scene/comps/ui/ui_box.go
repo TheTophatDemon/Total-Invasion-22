@@ -17,6 +17,7 @@ type Box struct {
 	Texture     *textures.Texture
 	AnimPlayer  comps.AnimationPlayer
 	FlippedHorz bool
+	Hidden      bool
 
 	src, dest      math2.Rect
 	depth          float32
@@ -145,6 +146,9 @@ func (box *Box) Transform() mgl32.Mat4 {
 }
 
 func (box *Box) Render(context *render.Context) {
+	if box.Hidden {
+		return
+	}
 	failure.CheckOpenGLError()
 	cache.QuadMesh.Bind()
 	shaders.UIShader.Use()

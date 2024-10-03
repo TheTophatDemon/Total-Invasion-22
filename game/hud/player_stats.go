@@ -8,16 +8,20 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 const (
 	TEX_SEGAN_FACE = "assets/textures/ui/segan_face.png"
+	TEX_HUD_ICONS  = "assets/textures/ui/hud_icons.png"
 )
 
 type PlayerStats struct {
 	Health          int
 	Noclip, GodMode bool
+	Ammo            *game.Ammo
+	MoveSpeed       float32
 }
 
 type faceState struct {
@@ -37,6 +41,12 @@ var (
 	FaceStateNoclip    = faceState{anim: "noclip", priority: 10}
 	FaceStateGod       = faceState{anim: "god", priority: 15}
 )
+
+var ammoTypeIconNames = [game.AMMO_TYPE_COUNT]string{
+	game.AMMO_TYPE_NONE:   "",
+	game.AMMO_TYPE_SICKLE: "sickle",
+	game.AMMO_TYPE_EGG:    "egg",
+}
 
 func (hud *Hud) InitPlayerStats() {
 	// Left HUD panel
@@ -63,11 +73,11 @@ func (hud *Hud) InitPlayerStats() {
 		}
 	}
 
-	hudIconsTexture := cache.GetTexture("assets/textures/ui/hud_icons.png")
+	hudIconsTexture := cache.GetTexture(TEX_HUD_ICONS)
 
 	// Heart icon
 	var heart *ui.Box
-	hud.Heart, heart, _ = hud.UI.Boxes.New()
+	hud.heartIcon, heart, _ = hud.UI.Boxes.New()
 	heartSlice := leftPanelTex.FindSlice("healthIcon")
 	heart.SetTexture(hudIconsTexture).SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).SetDepth(2.0)
 	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
@@ -91,7 +101,7 @@ func (hud *Hud) InitPlayerStats() {
 	hud.healthStat, healthStat, _ = hud.UI.Texts.New()
 	healthStatSlice := leftPanelTex.FindSlice("healthStat")
 	healthStat.
-		SetFont(COUTNER_FONT_PATH).
+		SetFont(COUNTER_FONT_PATH).
 		SetText("000").
 		SetDest(fitToSlice(leftPanel.Dest(), healthStatSlice)).
 		SetDepth(2.0).
@@ -114,30 +124,28 @@ func (hud *Hud) InitPlayerStats() {
 		color.White,
 	)
 	rightPanel.SetDepth(1.0)
-}
 
-func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
-	if txt, ok := hud.healthStat.Get(); ok {
-		txt.SetText(fmt.Sprintf("%03d", stats.Health))
-	}
+	// Ammo icon
+	var ammoIcon *ui.Box
+	hud.ammoIcon, ammoIcon, _ = hud.UI.Boxes.New()
+	ammoIconSlice := rightPanelTex.FindSlice("ammoIcon")
+	ammoIcon.SetTexture(hudIconsTexture).
+		SetDest(fitToSlice(rightPanel.Dest(), ammoIconSlice)).
+		SetDepth(2.0)
+	ammoIcon.Hidden = true
 
-	// Decide which face to display
-	if stats.Health <= 0 {
-		hud.forcePlayerFace(FaceStateDead)
-		if heart, ok := hud.Heart.Get(); ok {
-			heart.AnimPlayer.Stop()
-		}
-	} else if stats.GodMode {
-		hud.forcePlayerFace(FaceStateGod)
-	} else if stats.Noclip {
-		hud.forcePlayerFace(FaceStateNoclip)
-	} else {
-		hud.faceTimer -= deltaTime
-		if hud.faceTimer <= 0.0 {
-			// Revert to idle face as a default
-			hud.forcePlayerFace(FaceStateIdle)
-		}
-	}
+	// Ammo counter
+	var ammoStat *ui.Text
+	hud.ammoStat, ammoStat, _ = hud.UI.Texts.New()
+	ammoStatSlice := rightPanelTex.FindSlice("ammoStat")
+	ammoStat.
+		SetFont(COUNTER_FONT_PATH).
+		SetText("000").
+		SetDest(fitToSlice(rightPanel.Dest(), ammoStatSlice)).
+		SetDepth(2.0).
+		SetScale(SpriteScale()).
+		SetAlignment(ui.TEXT_ALIGN_CENTER).
+		SetColor(color.Blue)
 }
 
 // Attempts to update the player's face to reflect in game events.
@@ -158,4 +166,63 @@ func (hud *Hud) forcePlayerFace(newState faceState) {
 	}
 	hud.faceState = newState
 	hud.faceTimer = newState.showTime
+}
+
+func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
+	// Health stat
+	if txt, ok := hud.healthStat.Get(); ok {
+		txt.SetText(fmt.Sprintf("%03d", stats.Health))
+	}
+
+	// Ammo stat
+	if txt, ok := hud.ammoStat.Get(); ok {
+		if weapon := hud.SelectedWeapon(); weapon != nil {
+			txt.SetText(fmt.Sprintf("%03d", stats.Ammo[weapon.AmmoType()]))
+			txt.Hidden = false
+		} else {
+			txt.Hidden = true
+		}
+	}
+	if icon, ok := hud.ammoIcon.Get(); ok {
+		if weapon := hud.SelectedWeapon(); weapon != nil {
+			iconsTex := cache.GetTexture(TEX_HUD_ICONS)
+			if anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[weapon.AmmoType()]); ok && !icon.AnimPlayer.IsPlayingAnim(anim) {
+				icon.AnimPlayer.PlayNewAnim(anim)
+			}
+			icon.Hidden = false
+		} else {
+			icon.Hidden = true
+		}
+	}
+
+	// Decide which face to display
+	if stats.Health <= 0 {
+		hud.forcePlayerFace(FaceStateDead)
+		if heart, ok := hud.heartIcon.Get(); ok {
+			heart.AnimPlayer.Stop()
+		}
+	} else if stats.GodMode {
+		hud.forcePlayerFace(FaceStateGod)
+	} else if stats.Noclip {
+		hud.forcePlayerFace(FaceStateNoclip)
+	} else {
+		hud.faceTimer -= deltaTime
+		if hud.faceTimer <= 0.0 {
+			// Revert to idle face as a default
+			hud.forcePlayerFace(FaceStateIdle)
+		}
+	}
+
+	// Update weapons
+	weapon := hud.Weapon(hud.selectedWeapon)
+	if weapon == nil || !weapon.IsSelected() {
+		hud.selectedWeapon = hud.nextWeapon
+		if hud.selectedWeapon >= 0 {
+			weapon = hud.Weapon(hud.selectedWeapon)
+			weapon.Select()
+		}
+	}
+	if weapon != nil && stats.Ammo != nil {
+		weapon.Update(deltaTime, stats.MoveSpeed, stats.Ammo)
+	}
 }

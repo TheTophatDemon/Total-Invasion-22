@@ -31,6 +31,7 @@ const (
 )
 
 type Text struct {
+	Hidden         bool
 	alignment      TextAlign
 	color          color.Color
 	text           string
@@ -133,7 +134,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 		cursorX = originX
 		cursorY += float32(txt.font.Common.LineHeight)
 
-		if txt.alignment != TEXT_ALIGN_LEFT {
+		if txt.alignment != TEXT_ALIGN_LEFT && len(boxes) > 0 {
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
@@ -247,6 +248,9 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 		}
 
 		boxes, chars := txt.generateBoxes()
+		if boxes == nil || len(boxes) == 0 || chars == nil || len(chars) == 0 {
+			return nil, fmt.Errorf("generated empty mesh when rendering text")
+		}
 
 		// Regenerate text mesh
 		numVertsGuess := len(txt.text) * 4
@@ -353,7 +357,7 @@ func (txt *Text) Transform() mgl32.Mat4 {
 }
 
 func (txt *Text) Render(context *render.Context) {
-	if len(txt.text) == 0 {
+	if len(txt.text) == 0 || txt.Hidden {
 		return
 	}
 
@@ -377,10 +381,10 @@ func (txt *Text) Render(context *render.Context) {
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Transform())
 	failure.CheckOpenGLError()
 	// Draw
-	if mesh, err := txt.Mesh(); err == nil {
+	if mesh, err := txt.Mesh(); err == nil && mesh != nil {
 		mesh.Bind()
 		mesh.DrawAll()
-	} else {
+	} else if err != nil {
 		log.Println(err)
 	}
 
