@@ -88,9 +88,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player
 	// Initialize weapons
 	player.ammo[game.AMMO_TYPE_NONE] = 0
 	player.ammo[game.AMMO_TYPE_SICKLE] = 1
-	player.ammo[game.AMMO_TYPE_EGG] = 255
 	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_SICKLE)
-	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_CHICKEN)
 	player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 
 	return

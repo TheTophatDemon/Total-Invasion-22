@@ -46,8 +46,9 @@ void main() {
     //{{ end }}
 
     vec4 pos = uViewMatrix * modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-    float modelScale = sqrt(uModelMatrix[0][0] * uModelMatrix[0][0] + uModelMatrix[1][0] * uModelMatrix[1][0] + uModelMatrix[2][0] * uModelMatrix[2][0]);
-    vec2 spriteScale = vec2(modelScale, modelScale);
+    float modelScaleX = sqrt(uModelMatrix[0][0] * uModelMatrix[0][0] + uModelMatrix[1][0] * uModelMatrix[1][0] + uModelMatrix[2][0] * uModelMatrix[2][0]);
+    float modelScaleY = sqrt(uModelMatrix[0][1] * uModelMatrix[0][1] + uModelMatrix[1][1] * uModelMatrix[1][1] + uModelMatrix[2][1] * uModelMatrix[2][1]);
+    vec2 spriteScale = vec2(modelScaleX, modelScaleY);
 
     //{{ if .Instanced }}
     spriteScale *= aInstanceSize;

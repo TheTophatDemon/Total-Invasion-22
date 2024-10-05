@@ -1,8 +1,7 @@
 # TODO
-- Potential problem with chickens spawning inside of player hitbox
-- Weapon pickups
 - Level completion
 - Keycards
+- Enemy sound detection
 - Fire Wraiths
 - Grenade launcher & grenades
 - Switch
@@ -12,3 +11,4 @@
 - Airhorn
 - Fix color weirdness on Linux
 - Bounding box hierarchy for faster collision detection
+   

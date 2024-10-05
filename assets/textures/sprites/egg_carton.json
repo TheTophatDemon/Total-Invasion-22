@@ -12,7 +12,7 @@
  "meta": {
   "app": "https://www.aseprite.org/",
   "version": "1.3.2-x64",
-  "image": "egg_carton-sheet.png",
+  "image": "egg_carton.png",
   "format": "RGBA8888",
   "size": { "w": 32, "h": 32 },
   "scale": "1",

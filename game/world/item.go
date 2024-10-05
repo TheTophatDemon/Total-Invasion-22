@@ -14,8 +14,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/hud"
 )
 
+// Represents any object that can be 'picked up', like health and weapons.
 type Item struct {
 	body          comps.Body
 	spriteRender  comps.SpriteRender
@@ -25,9 +27,13 @@ type Item struct {
 	healAmount    float32
 	ammoType      game.AmmoType
 	ammoAmount    int
+	giveWeapon    hud.WeaponIndex
 	dontWasteAmmo bool // If true, the item will not be collected if the player has maximum ammo
 	onGround      bool
 	fallSpeed     float32
+	message       string
+	messageTime   float32
+	messageColor  color.Color
 
 	world *World
 	id    scene.Id[*Item]
@@ -48,6 +54,8 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		id, item, err = SpawnStimpack(world, ent.Position)
 	case "cartonofeggs", "egg_carton":
 		id, item, err = SpawnEggCarton(world, ent.Position)
+	case "chickencannon", "chickengun", "chicken_cannon", "chicken_gun":
+		id, item, err = SpawnChickenCannon(world, ent.Position)
 	default:
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}
@@ -85,7 +93,21 @@ func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item
 	item.ammoType = game.AMMO_TYPE_EGG
 	item.ammoAmount = 12
 	item.dontWasteAmmo = true
+	item.message = "Got a carton of eggs."
+	item.messageTime = 1.0
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/egg_carton.png"))
+	return
+}
+
+func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.25, 0.5})
+	item.ammoType = game.AMMO_TYPE_EGG
+	item.ammoAmount = 48
+	item.giveWeapon = hud.WEAPON_ORDER_CHICKEN
+	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
+	item.message = "Got a chicken cannon!"
+	item.messageTime = 1.5
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/chicken_cannon.png"))
 	return
 }
 
@@ -103,11 +125,13 @@ func spawnItemGeneric(world *World, position, rotation, scale mgl32.Vec3) (id sc
 			Filter:      0,
 			OnIntersect: item.onIntersect,
 		},
-		flashColor:  color.White.WithAlpha(0.75),
-		pickupSound: cache.GetSfx("assets/sounds/pickup.wav"),
-		world:       world,
-		id:          id,
-		fallSpeed:   2.0,
+		flashColor:   color.White.WithAlpha(0.75),
+		pickupSound:  cache.GetSfx("assets/sounds/pickup.wav"),
+		world:        world,
+		id:           id,
+		fallSpeed:    2.0,
+		giveWeapon:   hud.WEAPON_ORDER_NONE,
+		messageColor: color.Red,
 	}
 
 	return
@@ -145,6 +169,10 @@ func (item *Item) onIntersect(otherEnt comps.HasBody, result collision.Result, d
 		return
 	}
 
+	if item.giveWeapon != hud.WEAPON_ORDER_NONE {
+		item.world.Hud.EquipWeapon(item.giveWeapon)
+		item.world.Hud.SelectWeapon(item.giveWeapon)
+	}
 	if item.ammoAmount != 0 && item.ammoType != game.AMMO_TYPE_NONE {
 		notWasted := player.AddAmmo(item.ammoType, item.ammoAmount)
 		if item.dontWasteAmmo && !notWasted {
@@ -155,5 +183,9 @@ func (item *Item) onIntersect(otherEnt comps.HasBody, result collision.Result, d
 
 	item.pickupSound.PlayAttenuatedV(item.body.Transform.Position())
 	item.world.Hud.FlashScreen(item.flashColor, 1.5)
+	if len(item.message) > 0 {
+		item.world.Hud.ShowMessage(item.message, item.messageTime, 10, item.messageColor)
+	}
+
 	item.world.QueueRemoval(item.id.Handle)
 }

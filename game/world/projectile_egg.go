@@ -80,10 +80,10 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 			comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
 			1.0,
 			effects.EggShards(proj.body.Shape.(collision.Sphere).Radius()))
-		if rand.Float32() < CHICKEN_SPAWN_CHANCE {
-			SpawnChicken(proj.world,
-				proj.body.Transform.Position().Add(backwards.Mul(1.5)),
-				mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
+
+		chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
+		if rand.Float32() < CHICKEN_SPAWN_CHANCE && len(proj.world.BodiesInSphere(chickenSpot, 0.5, proj)) == 0 {
+			SpawnChicken(proj.world, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		}
 	}
 }

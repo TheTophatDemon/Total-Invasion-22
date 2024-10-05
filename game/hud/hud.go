@@ -34,7 +34,7 @@ type Hud struct {
 	flashRect                  scene.Id[*ui.Box]
 	flashSpeed                 float32
 	sickle                     Sickle
-	chickenGun                 ChickenGun
+	chickenGun                 ChickenCannon
 	weapons                    [WEAPON_ORDER_MAX]Weapon
 	selectedWeapon, nextWeapon WeaponIndex
 }
