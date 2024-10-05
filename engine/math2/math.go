@@ -46,6 +46,10 @@ func Vec3Up() mgl32.Vec3 {
 	return mgl32.Vec3{0.0, 1.0, 0.0}
 }
 
+func Vec3Down() mgl32.Vec3 {
+	return mgl32.Vec3{0.0, -1.0, 0.0}
+}
+
 func Vec3Zero() mgl32.Vec3 {
 	return mgl32.Vec3{0.0, 0.0, 0.0}
 }

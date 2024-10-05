@@ -1,6 +1,4 @@
 # TODO
-- Monsters should telefrag other monsters
-- Chickens should drop items
 - Potential problem with chickens spawning inside of player hitbox
 - Weapon pickups
 - Level completion
