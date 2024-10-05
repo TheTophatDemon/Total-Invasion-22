@@ -1,7 +1,9 @@
 # TODO
 - Level completion
+  - Victory pose
+  - Stats screen
+  - Music
 - Keycards
-- Enemy sound detection
 - Fire Wraiths
 - Grenade launcher & grenades
 - Switch

@@ -23,8 +23,9 @@ const (
 )
 
 const (
-	TRIGGER_ACTION_TELEPORT = "teleport"
-	TRIGGER_ACTION_DAMAGE   = "damage"
+	TRIGGER_ACTION_TELEPORT  = "teleport"
+	TRIGGER_ACTION_DAMAGE    = "damage"
+	TRIGGER_ACTION_END_LEVEL = "end level"
 )
 
 const (
@@ -44,6 +45,7 @@ type Trigger struct {
 	linkNumber      int
 	touching        [TRIGGER_TOUCH_MAX]scene.Handle
 	damagePerSecond float32
+	nextLevel       string
 }
 
 var _ Linkable = (*Trigger)(nil)
@@ -73,6 +75,10 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 			damageRate = 0.0
 		}
 		tr.damagePerSecond = float32(damageRate)
+	case TRIGGER_ACTION_END_LEVEL:
+		tr.filter = playerOnlyFilter
+		tr.onEnter = exitLevelAction
+		tr.nextLevel = ent.Properties["level"]
 	}
 
 	return
@@ -190,6 +196,11 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 	}
 }
 
+func exitLevelAction(tr *Trigger, handle scene.Handle) {
+	player, _ := scene.Get[*Player](handle)
+	player.nextLevel = tr.nextLevel
+}
+
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
 	if damageable, canDamage := scene.Get[Damageable](handle); canDamage {
 		damageable.OnDamage(tr, tr.damagePerSecond*deltaTime)
@@ -202,4 +213,9 @@ func liveActorsOnlyFilter(ent comps.HasBody) bool {
 		return false
 	}
 	return actorHaver.Actor().Health > 0
+}
+
+func playerOnlyFilter(ent comps.HasBody) bool {
+	_, isPlayer := ent.(*Player)
+	return isPlayer
 }

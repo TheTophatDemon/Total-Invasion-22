@@ -88,3 +88,7 @@ func (sickle *Sickle) Fire(ammo *game.Ammo) {
 		box.AnimPlayer.PlayFromStart()
 	}
 }
+
+func (sickle *Sickle) NoiseLevel() float32 {
+	return 10.0
+}

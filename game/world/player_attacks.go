@@ -18,4 +18,5 @@ func (player *Player) AttackWithWeapon() {
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, player.Body().Transform.Matrix())
 		SpawnEgg(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
 	}
+	player.noisyTimer = 0.5
 }

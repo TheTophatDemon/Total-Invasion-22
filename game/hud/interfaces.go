@@ -13,4 +13,5 @@ type Weapon interface {
 	CanFire(ammo *game.Ammo) bool
 	Update(deltaTime float32, swayAmount float32, ammo *game.Ammo)
 	AmmoType() game.AmmoType
+	NoiseLevel() float32 // The distince within which an enemy can hear the weapon fire.
 }

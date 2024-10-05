@@ -34,9 +34,11 @@ type Player struct {
 
 	initialCollisionLayers collision.Mask
 	cameraFall             float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
-	deathTimer             float32 // Counts the seconds until the player is allowed to restart after dying.
+	transitionTimer        float32 // Counts the seconds until the game resets after winning or dying.
 	godMode                bool    // If true, the player does not take damage.
+	nextLevel              string  // Contains the name of the next map after the player has reached the exit.
 	ammo                   game.Ammo
+	noisyTimer             float32 // While this timer is > 0, enemies will be able to 'hear' the player and activate when not facing her.
 }
 
 var _ HasActor = (*Player)(nil)
@@ -95,7 +97,16 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player
 }
 
 func (player *Player) Update(deltaTime float32) {
-	if player.actor.Health > 0 {
+	if len(player.nextLevel) != 0 {
+		// Win logic
+		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
+		player.actor.inputForward = 0.0
+		player.actor.inputStrafe = 0.0
+		player.transitionTimer += deltaTime
+		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 10.0 {
+			player.world.ChangeMap(player.nextLevel)
+		}
+	} else if player.actor.Health > 0 {
 		player.takeUserInput(deltaTime)
 		if player.actor.Health > player.actor.MaxHealth {
 			// When overhealed, gradually decrease health back to base level
@@ -117,11 +128,13 @@ func (player *Player) Update(deltaTime float32) {
 			player.cameraFall -= deltaTime * 10.0
 			player.Camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
 		}
-		player.deathTimer += deltaTime
-		if (player.deathTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.deathTimer > 10.0 {
+		player.transitionTimer += deltaTime
+		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 10.0 {
 			player.world.ChangeMap(player.world.GameMap.Name())
 		}
 	}
+
+	player.noisyTimer = max(0.0, player.noisyTimer-deltaTime)
 
 	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
 		if player.actor.MaxSpeed == player.WalkSpeed {

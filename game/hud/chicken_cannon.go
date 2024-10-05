@@ -51,6 +51,10 @@ func (chickenCannon *ChickenCannon) Order() WeaponIndex {
 	return WEAPON_ORDER_CHICKEN
 }
 
+func (ChickenCannon *ChickenCannon) NoiseLevel() float32 {
+	return 20.0
+}
+
 func (chickenCannon *ChickenCannon) Update(deltaTime float32, swayAmount float32, ammo *game.Ammo) {
 	chickenCannon.weaponBase.Update(deltaTime, swayAmount, ammo)
 

@@ -57,9 +57,9 @@ type Enemy struct {
 	voice                             tdaudio.VoiceId
 
 	// Player or target tracking variables
-	dirToTarget  mgl32.Vec3
-	distToTarget float32
-	canSeeTarget bool
+	dirToTarget                 mgl32.Vec3
+	distToTarget                float32
+	canSeeTarget, canHearTarget bool
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -98,6 +98,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 
 	// Check if the player is in view and not obstructed
 	enemy.canSeeTarget = false
+	enemy.canHearTarget = false
 	var vecToTarget mgl32.Vec3
 	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
 		vecToTarget = player.Body().Transform.Position().Sub(enemyPos)
@@ -106,17 +107,22 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			enemy.dirToTarget = vecToTarget.Normalize()
 		}
 
+		inHearingRange := player.noisyTimer > 0 && enemy.world.Hud.SelectedWeapon() != nil && enemy.distToTarget < enemy.world.Hud.SelectedWeapon().NoiseLevel()
+		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < ENEMY_FOV_RADS/2.0
 		if enemy.distToTarget < ENEMY_WAKE_PROXIMITY {
 			enemy.canSeeTarget = true
-		} else if angle := math2.Acos(enemy.dirToTarget.Dot(enemyDir)); angle < ENEMY_FOV_RADS/2.0 {
+		} else if inHearingRange || inFieldOfView {
 			res, handle := enemy.world.Raycast(enemyPos, enemy.dirToTarget, COL_LAYER_PLAYERS|COL_LAYER_MAP, 25.0, enemy)
 			if handle.Equals(player.id.Handle) && res.Hit {
 				enemy.canSeeTarget = true
+				enemy.canHearTarget = true
 			}
 		}
 	}
 
-	if !enemy.canSeeTarget {
+	if enemy.canHearTarget {
+		enemy.wakeTimer = enemy.WakeLimit
+	} else if !enemy.canSeeTarget {
 		enemy.wakeTimer = max(0.0, enemy.wakeTimer-deltaTime)
 	} else {
 		enemy.wakeTimer = min(enemy.WakeLimit, enemy.wakeTimer+deltaTime)
