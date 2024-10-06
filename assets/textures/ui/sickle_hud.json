@@ -65,6 +65,9 @@
    { "name": "throw", "from": 0, "to": 3, "direction": "forward", "repeat": "1", "color": "#000000ff" },
    { "name": "idle", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
    { "name": "catch", "from": 4, "to": 5, "direction": "forward", "repeat": "1", "color": "#000000ff" }
+  ],
+  "slices": [
+   { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 256, "h": 192 } }] }
   ]
  }
 }
