@@ -4,10 +4,12 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -25,7 +27,9 @@ const (
 )
 
 type Player struct {
-	Camera                                   comps.Camera
+	Camera                                   scene.Id[*Camera]
+	Sprite                                   comps.SpriteRender // Mainly shown during the victory state
+	AnimPlayer                               comps.AnimationPlayer
 	RunSpeed, WalkSpeed                      float32
 	StandFriction, WalkFriction, RunFriction float32
 	id                                       scene.Id[*Player]
@@ -36,7 +40,6 @@ type Player struct {
 	cameraFall             float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
 	transitionTimer        float32 // Counts the seconds until the game resets after winning or dying.
 	godMode                bool    // If true, the player does not take damage.
-	nextLevel              string  // Contains the name of the next map after the player has reached the exit.
 	ammo                   game.Ammo
 	noisyTimer             float32 // While this timer is > 0, enemies will be able to 'hear' the player and activate when not facing her.
 }
@@ -52,7 +55,7 @@ func (player *Player) Body() *comps.Body {
 	return &player.actor.body
 }
 
-func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player], player *Player, err error) {
+func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Camera]) (id scene.Id[*Player], player *Player, err error) {
 	id, player, err = world.Players.New()
 	if err != nil {
 		return
@@ -76,9 +79,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player
 		Health:    100,
 		world:     world,
 	}
-	player.Camera = comps.NewCamera(
-		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.1, 1000.0,
-	)
+	player.Camera = camera
 	player.RunSpeed = 12.0
 	player.WalkSpeed = 7.0
 	player.StandFriction = 80.0
@@ -86,6 +87,11 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player
 	player.RunFriction = 20.0
 	player.world = world
 	player.cameraFall = 2.0
+
+	tex := cache.GetTexture("assets/textures/sprites/segan.png")
+	player.Sprite = comps.NewSpriteRender(tex)
+	winAnim, _ := tex.GetAnimation("victory")
+	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
 	// Initialize weapons
 	player.ammo[game.AMMO_TYPE_NONE] = 0
@@ -97,14 +103,18 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3) (id scene.Id[*Player
 }
 
 func (player *Player) Update(deltaTime float32) {
-	if len(player.nextLevel) != 0 {
+	if player.world.HasPlayerWon() {
 		// Win logic
+		if !player.AnimPlayer.IsPlaying() {
+			player.AnimPlayer.Play()
+		}
+		player.AnimPlayer.Update(deltaTime)
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 10.0 {
-			player.world.ChangeMap(player.nextLevel)
+			player.world.ChangeMap(player.world.nextLevel)
 		}
 	} else if player.actor.Health > 0 {
 		player.takeUserInput(deltaTime)
@@ -115,18 +125,24 @@ func (player *Player) Update(deltaTime float32) {
 				player.actor.Health = player.actor.MaxHealth
 			}
 		}
+		if camera, ok := player.Camera.Get(); ok {
+			// Keep camera transform in sync with the player
+			camera.Transform = player.Body().Transform
+		}
 	} else {
 		// Death logic
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
 		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
-		if player.Camera.Transform.Rotation().X() > -math.Pi/4.0 {
-			player.Camera.Transform.Rotate(-deltaTime, 0.0, 0.0)
-		}
-		if player.Camera.Transform.Position().Y() > -player.Body().Shape.(collision.Sphere).Radius() {
-			player.cameraFall -= deltaTime * 10.0
-			player.Camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
+		if camera, ok := player.Camera.Get(); ok {
+			if camera.Transform.Rotation().X() > -math.Pi/4.0 {
+				camera.Transform.Rotate(-deltaTime, 0.0, 0.0)
+			}
+			if camera.Transform.Position().Y()-player.actor.Position().Y() > -player.Body().Shape.(collision.Sphere).Radius() {
+				player.cameraFall -= deltaTime * 10.0
+				camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
+			}
 		}
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 10.0 {
@@ -156,6 +172,12 @@ func (player *Player) Update(deltaTime float32) {
 		Ammo:      &player.ammo,
 		MoveSpeed: player.actor.body.Velocity.Len(),
 	})
+}
+
+func (player *Player) Render(context *render.Context) {
+	if player.world.HasPlayerWon() {
+		player.Sprite.Render(&player.Body().Transform, &player.AnimPlayer, context, player.actor.YawAngle)
+	}
 }
 
 func (player *Player) takeUserInput(deltaTime float32) {

@@ -1,8 +1,8 @@
 # TODO
 - Level completion
-  - Victory pose
   - Stats screen
   - Music
+  - Stop enemies from hurting the winner
 - Keycards
 - Fire Wraiths
 - Grenade launcher & grenades

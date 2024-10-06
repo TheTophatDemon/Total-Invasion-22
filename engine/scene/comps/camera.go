@@ -9,10 +9,10 @@ type Camera struct {
 	projection mgl32.Mat4
 }
 
-func NewCamera(fovDegrees, aspectRatio, nearDist, farDist float32) Camera {
+func NewCamera(fovDegrees, aspectRatio, nearDist, farDist float32, transform Transform) Camera {
 	return Camera{
 		projection: mgl32.Perspective(mgl32.DegToRad(fovDegrees), aspectRatio, nearDist, farDist),
-		Transform:  TransformFromTranslation(mgl32.Vec3{}),
+		Transform:  transform,
 	}
 }
 

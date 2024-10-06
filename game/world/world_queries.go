@@ -1,6 +1,7 @@
 package world
 
 import (
+	"iter"
 	"log"
 	"math"
 
@@ -99,4 +100,21 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 		return closestBodyHit, closestEnt
 	}
 	return collision.RaycastResult{}, scene.Handle{}
+}
+
+// Returns an iterator over all linkables with the given non-zero link number.
+func (world *World) LinkablesWithNumber(linkNumber int) iter.Seq2[scene.Handle, Linkable] {
+	return func(yield func(scene.Handle, Linkable) bool) {
+		// Link number 0 is the nil value
+		if linkNumber == 0 {
+			return
+		}
+		nextLinkable, stop := iter.Pull2(world.AllLinkables())
+		defer stop()
+		for handle, ent, ok := nextLinkable(); ok; handle, ent, ok = nextLinkable() {
+			if ent.LinkNumber() == linkNumber && !yield(handle, ent) {
+				return
+			}
+		}
+	}
 }

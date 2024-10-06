@@ -103,5 +103,12 @@ func (world *World) AllLinkables() iter.Seq2[scene.Handle, Linkable] {
 				return
 			}
 		}
+		nextCameras, stop := iter.Pull2(world.Cameras.All())
+		defer stop()
+		for handle, ent, ok := nextCameras(); ok; handle, ent, ok = nextCameras() {
+			if !yield(handle, ent) {
+				return
+			}
+		}
 	}
 }

@@ -56,10 +56,13 @@ type World struct {
 	Effects       scene.Storage[Effect]
 	Items         scene.Storage[Item]
 	DebugShapes   scene.Storage[DebugShape]
+	Cameras       scene.Storage[Camera]
 	GameMap       comps.Map
 	CurrentPlayer scene.Id[*Player]
+	CurrentCamera scene.Id[*Camera]
 	removalQueue  []scene.Handle  // Holds entities to be removed at the end of the frame.
 	app           engine.Observer // Communicates with the main application
+	nextLevel     string          // Path to the next level. Set once the player reaches an exit.
 }
 
 func NewWorld(app engine.Observer, mapPath string) (*World, error) {
@@ -70,7 +73,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	world.Hud.Init()
 
-	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, nil)
+	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
 	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
 	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
 	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
@@ -80,6 +83,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
+	world.Cameras = scene.NewStorage[Camera](64)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -148,38 +152,54 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	// Spawn player
 	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	world.CurrentPlayer, _, _ = SpawnPlayer(world, playerSpawn.Position, playerSpawn.Angles)
+	world.CurrentCamera, _, err = SpawnCameraFromTE3(world, playerSpawn)
+	if err != nil {
+		log.Printf("error spawning player camera: %v\n", err)
+	}
+	world.CurrentPlayer, _, err = SpawnPlayer(world, playerSpawn.Position, playerSpawn.Angles, world.CurrentCamera)
+	if err != nil {
+		log.Printf("player entity at %v caused an error: %v\n", playerSpawn.Position, err)
+	}
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		SpawnWraith(world, spawn.Position, spawn.Angles)
+		if _, _, err := SpawnWraith(world, spawn.Position, spawn.Angles); err != nil {
+			log.Printf("enemy entity at %v caused an error: %v\n", spawn.Position, err)
+		}
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
 		if _, _, err := SpawnWallFromTE3(world, spawn); err != nil {
-			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("wall entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
 		if _, _, err := SpawnPropFromTE3(world, spawn); err != nil {
-			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("prop entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
 		if _, _, err := SpawnTriggerFromTE3(world, spawn); err != nil {
-			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("trigger entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
 	// Spawn items
 	for _, spawn := range te3File.FindEntsWithProperty("type", "item") {
 		if _, _, err := SpawnItemFromTE3(world, spawn); err != nil {
-			log.Printf("entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("item entity at %v caused an error: %v\n", spawn.Position, err)
+		}
+	}
+
+	// Spawn cameras
+	for _, spawn := range te3File.FindEntsWithProperty("type", "camera") {
+		if _, _, err := SpawnCameraFromTE3(world, spawn); err != nil {
+			log.Printf("camera entity at %v caused an error: %v\n", spawn.Position, err)
 		}
 	}
 
@@ -236,16 +256,14 @@ func (world *World) Update(deltaTime float32) {
 
 func (world *World) Render() {
 	// Find camera
-	player, ok := world.CurrentPlayer.Get()
-	if !ok {
-		log.Println("Error: Missing player during rendering")
+	camera, cameraExists := world.CurrentCamera.Get()
+	if !cameraExists {
+		log.Println("Error: missing camera during rendering")
 		return
 	}
-	camera := player.Camera
-	cameraTransform := player.Body().Transform.Matrix().Mul4(camera.Transform.Matrix())
 
 	// Setup 3D game render context
-	viewMat := cameraTransform.Inv()
+	viewMat := camera.Transform.Matrix().Inv()
 	projMat := camera.ProjectionMatrix()
 	renderContext := render.Context{
 		View:           viewMat,
@@ -270,4 +288,14 @@ func (world *World) TearDown() {
 
 func (world *World) QueueRemoval(entHandle scene.Handle) {
 	world.removalQueue = append(world.removalQueue, entHandle)
+}
+
+func (world *World) HasPlayerWon() bool {
+	return len(world.nextLevel) != 0
+}
+
+func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
+	world.nextLevel = nextLevel
+	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
+	tdaudio.QueueSong("", false, 0.0)
 }

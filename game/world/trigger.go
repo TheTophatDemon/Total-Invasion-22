@@ -159,8 +159,8 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		return
 	}
 	teleportingBody := teleportingEnt.Body()
-	for _, link := range tr.world.AllLinkables() {
-		if link != tr && link.LinkNumber() == tr.linkNumber {
+	for _, link := range tr.world.LinkablesWithNumber(tr.linkNumber) {
+		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
 				actors := tr.world.ActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
@@ -197,8 +197,15 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 }
 
 func exitLevelAction(tr *Trigger, handle scene.Handle) {
-	player, _ := scene.Get[*Player](handle)
-	player.nextLevel = tr.nextLevel
+	var cameraHandle scene.Handle
+	for id, linkable := range tr.world.LinkablesWithNumber(tr.linkNumber) {
+		if _, isCamera := linkable.(*Camera); isCamera {
+			cameraHandle = id
+			break
+		}
+	}
+
+	tr.world.EnterWinState(tr.nextLevel, cameraHandle)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

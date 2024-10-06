@@ -57,7 +57,7 @@ func main() {
 		{
 			TypeName: "Linkable", MethodName: "AllLinkables",
 			StorageNames: []string{
-				"Triggers",
+				"Triggers", "Cameras",
 			},
 		},
 	}
