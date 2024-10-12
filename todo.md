@@ -2,7 +2,7 @@
 - Level completion
   - Stats screen
   - Music
-  - Stop enemies from hurting the winner
+- Even out chicken distribution
 - Keycards
 - Fire Wraiths
 - Grenade launcher & grenades

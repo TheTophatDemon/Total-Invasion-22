@@ -103,7 +103,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 }
 
 func (player *Player) Update(deltaTime float32) {
-	if player.world.HasPlayerWon() {
+	if player.world.InWinState() {
 		// Win logic
 		if !player.AnimPlayer.IsPlaying() {
 			player.AnimPlayer.Play()
@@ -175,7 +175,7 @@ func (player *Player) Update(deltaTime float32) {
 }
 
 func (player *Player) Render(context *render.Context) {
-	if player.world.HasPlayerWon() {
+	if player.world.InWinState() {
 		player.Sprite.Render(&player.Body().Transform, &player.AnimPlayer, context, player.actor.YawAngle)
 	}
 }

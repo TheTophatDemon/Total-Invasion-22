@@ -290,7 +290,7 @@ func (world *World) QueueRemoval(entHandle scene.Handle) {
 	world.removalQueue = append(world.removalQueue, entHandle)
 }
 
-func (world *World) HasPlayerWon() bool {
+func (world *World) InWinState() bool {
 	return len(world.nextLevel) != 0
 }
 
@@ -298,4 +298,7 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.nextLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
 	tdaudio.QueueSong("", false, 0.0)
+	for _, enemy := range world.Enemies.All() {
+		enemy.OnDamage(nil, 99999.0)
+	}
 }
