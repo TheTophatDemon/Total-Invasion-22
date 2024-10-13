@@ -215,7 +215,6 @@ func (hud *Hud) Update(deltaTime float32) {
 
 			runTime := hud.LevelEndTime.Sub(hud.LevelStartTime)
 			countedTime := hud.LevelStartTime.Add(time.Duration(float64(runTime.Nanoseconds()) * float64(hud.LevelTimePercent))).Sub(hud.LevelStartTime)
-			fmt.Printf("Dur: %v; Counted: %v\n", runTime, countedTime)
 
 			var statsText strings.Builder
 			statsText.Grow(256)
