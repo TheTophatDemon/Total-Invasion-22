@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -203,6 +204,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		}
 	}
 
+	world.Hud.LevelStartTime = time.Now()
 	return world, nil
 }
 
@@ -298,7 +300,9 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.nextLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
 	tdaudio.QueueSong("", false, 0.0)
+	world.Hud.LevelEndTime = time.Now()
+	world.Hud.InitVictory()
 	for _, enemy := range world.Enemies.All() {
-		enemy.OnDamage(nil, 99999.0)
+		enemy.OnPlayerVictory()
 	}
 }

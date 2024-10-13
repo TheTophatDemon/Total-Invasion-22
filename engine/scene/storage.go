@@ -113,12 +113,15 @@ func (st *Storage[T]) New() (Id[*T], *T, error) {
 
 // Marks the object with the given Id as non-active, so that its memory may be reused by a newer object.
 // If the Id is already not active, then nothing occurs.
-func (st *Storage[T]) Remove(h Handle) {
-	if !st.active[h.index] || st.owners[h.index] != h {
+func (st *Storage[T]) Remove(handle Handle) {
+	if !st.active[handle.index] || st.owners[handle.index] != handle {
 		return
 	}
-	st.active[h.index] = false
-	if h.index == uint16(st.lastActive) {
+	if hasFinalizer, ok := any(&st.data[handle.index]).(engine.HasFinalizer); ok {
+		hasFinalizer.Finalize()
+	}
+	st.active[handle.index] = false
+	if handle.index == uint16(st.lastActive) {
 		for i := st.lastActive; i >= 0; i -= 1 {
 			if st.active[i] {
 				st.lastActive = i
@@ -158,6 +161,13 @@ func (st *Storage[T]) Render(context *render.Context) {
 	}
 	for _, component := range st.All() {
 		st.RenderFunc(component, context)
+	}
+}
+
+// Deactivates all storage items.
+func (st *Storage[T]) Clear() {
+	for handle := range st.All() {
+		handle.Remove()
 	}
 }
 

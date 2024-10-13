@@ -74,6 +74,7 @@ func (enemy *Enemy) Body() *comps.Body {
 }
 
 func (enemy *Enemy) initDefaults(world *World) {
+	world.Hud.EnemiesTotal++
 	enemy.world = world
 	enemy.state = ENEMY_STATE_IDLE
 }
@@ -178,6 +179,13 @@ func (enemy *Enemy) Render(context *render.Context) {
 func (enemy *Enemy) ProcessSignal(signal any) {
 }
 
+func (enemy *Enemy) OnPlayerVictory() {
+	enemy.WakeTime = math2.Inf32()
+	enemy.WakeLimit = 0.0
+	enemy.wakeTimer = 0.0
+	enemy.changeState(ENEMY_STATE_IDLE)
+}
+
 func (enemy *Enemy) changeState(newStateId EnemyState) {
 	if newStateId == enemy.state {
 		return
@@ -211,6 +219,7 @@ func (enemy *Enemy) changeState(newStateId EnemyState) {
 	if newState.enterFunc != nil {
 		newState.enterFunc(enemy.state)
 	} else if newStateId == ENEMY_STATE_DIE {
+		enemy.world.Hud.EnemiesKilled++
 		enemy.actor.body.Layer = COL_LAYER_NONE
 		enemy.actor.body.Filter = COL_LAYER_MAP
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()

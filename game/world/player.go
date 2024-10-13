@@ -225,6 +225,16 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
+	if input.IsActionJustPressed(settings.ACTION_MARYSUE) {
+		player.world.Hud.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
+		for i := hud.WEAPON_ORDER_SICKLE; i < hud.WEAPON_ORDER_COUNT; i++ {
+			player.world.Hud.EquipWeapon(i)
+		}
+		for i := range player.ammo {
+			player.ammo[i] = game.AmmoLimits[i]
+		}
+	}
+
 	if input.IsActionJustPressed(settings.ACTION_DIE) {
 		player.actor.Health = 0
 	}

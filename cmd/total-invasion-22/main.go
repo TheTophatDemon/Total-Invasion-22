@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
 	"runtime"
+	"runtime/pprof"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 
@@ -95,6 +97,7 @@ func main() {
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})
+	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})
 	input.BindActionCharSequence(settings.ACTION_DIE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE})
 	input.BindActionCharSequence(settings.ACTION_KILL_ENEMIES, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE})
 
@@ -107,13 +110,13 @@ func main() {
 	app.LoadGame(mapName)
 	engine.Run(app)
 
-	// memProf, err := os.Create("memory_profile.pprof")
-	// if err != nil {
-	// 	log.Fatalf("could not create memory profile: %v", err)
-	// }
-	// defer memProf.Close()
-	// runtime.GC()
-	// if err := pprof.WriteHeapProfile(memProf); err != nil {
-	// 	log.Fatal("could not write memory profile: ", err)
-	// }
+	memProf, err := os.Create("memory_profile.pprof")
+	if err != nil {
+		log.Fatalf("could not create memory profile: %v", err)
+	}
+	defer memProf.Close()
+	runtime.GC()
+	if err := pprof.WriteHeapProfile(memProf); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
 }

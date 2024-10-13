@@ -26,6 +26,7 @@ const (
 	TRIGGER_ACTION_TELEPORT  = "teleport"
 	TRIGGER_ACTION_DAMAGE    = "damage"
 	TRIGGER_ACTION_END_LEVEL = "end level"
+	TRIGGER_ACTION_SECRET    = "secret"
 )
 
 const (
@@ -36,6 +37,7 @@ const (
 type Trigger struct {
 	Sphere          collision.Sphere
 	Transform       comps.Transform
+	id              scene.Id[*Trigger]
 	particles       comps.ParticleRender
 	filter          func(comps.HasBody) bool
 	onEnter         func(trigger *Trigger, entHandle scene.Handle)
@@ -57,6 +59,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	}
 
 	tr.world = world
+	tr.id = id
 	tr.Sphere = collision.NewSphere(ent.Radius)
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
@@ -79,6 +82,10 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 		tr.filter = playerOnlyFilter
 		tr.onEnter = exitLevelAction
 		tr.nextLevel = ent.Properties["level"]
+	case TRIGGER_ACTION_SECRET:
+		tr.filter = playerOnlyFilter
+		tr.onEnter = secretAreaAction
+		world.Hud.SecretsTotal++
 	}
 
 	return
@@ -204,8 +211,16 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 			break
 		}
 	}
+	if cameraHandle.IsNil() {
+		cameraHandle = tr.world.CurrentCamera.Handle
+	}
 
 	tr.world.EnterWinState(tr.nextLevel, cameraHandle)
+}
+
+func secretAreaAction(tr *Trigger, handle scene.Handle) {
+	tr.world.Hud.SecretsFound++
+	tr.world.QueueRemoval(tr.id.Handle)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

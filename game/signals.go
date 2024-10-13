@@ -4,6 +4,5 @@ type (
 	MapChangeSignal struct {
 		NextMapPath string
 	}
-	TeleportationSignal struct {
-	}
+	TeleportationSignal struct{}
 )

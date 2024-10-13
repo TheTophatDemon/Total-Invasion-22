@@ -1,8 +1,6 @@
 # TODO
 - Level completion
-  - Stats screen
-  - Music
-- Even out chicken distribution
+  - Music and sfx
 - Keycards
 - Fire Wraiths
 - Grenade launcher & grenades
