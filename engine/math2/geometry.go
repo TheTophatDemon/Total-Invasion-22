@@ -66,6 +66,15 @@ func RectFromPoints(point0, point1 mgl32.Vec2, points ...mgl32.Vec2) Rect {
 	}
 }
 
+func RectFromRadius(x, y, radiusX, radiusY float32) Rect {
+	return Rect{
+		X:      x - radiusX,
+		Y:      y - radiusY,
+		Width:  radiusX * 2,
+		Height: radiusY * 2,
+	}
+}
+
 func (r Rect) Center() (float32, float32) {
 	return (r.X + r.Width/2.0), (r.Y + r.Height/2.0)
 }

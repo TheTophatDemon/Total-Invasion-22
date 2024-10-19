@@ -47,3 +47,7 @@ func Sqrt[F Float](x F) F {
 func Inf32() float32 {
 	return float32(math.Inf(1))
 }
+
+func Mod[F Float](a, b F) F {
+	return F(math.Mod(float64(a), float64(b)))
+}

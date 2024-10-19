@@ -90,11 +90,12 @@ func (txt *Text) Text() string {
 	return txt.text
 }
 
-func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) {
+func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) *Text {
 	txt.textDirty = true
 	txt.shadowEnabled = true
 	txt.shadowColor = color
 	txt.shadowOffset = offset
+	return txt
 }
 
 func (txt *Text) DisableShadow() {

@@ -183,7 +183,9 @@ func (enemy *Enemy) OnPlayerVictory() {
 	enemy.WakeTime = math2.Inf32()
 	enemy.WakeLimit = 0.0
 	enemy.wakeTimer = 0.0
-	enemy.changeState(ENEMY_STATE_IDLE)
+	if enemy.actor.Health > 0 {
+		enemy.changeState(ENEMY_STATE_IDLE)
+	}
 }
 
 func (enemy *Enemy) changeState(newStateId EnemyState) {

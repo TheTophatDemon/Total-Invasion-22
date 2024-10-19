@@ -299,7 +299,7 @@ func (world *World) InWinState() bool {
 func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.nextLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
-	tdaudio.QueueSong("", false, 0.0)
+	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
 	world.Hud.LevelEndTime = time.Now()
 	world.Hud.InitVictory()
 	for _, enemy := range world.Enemies.All() {

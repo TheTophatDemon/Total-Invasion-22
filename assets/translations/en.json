@@ -7,5 +7,10 @@
     "godModeDeactivate": "God mode deactivated",
     "doorStuck": "The door can't move...",
     "doorNeedKey": "I need a key...",
-    "doorSwitch": "This door opens elsewhere..."
+    "doorSwitch": "This door opens elsewhere...",
+    "fireContinue": "Press the fire button to continue.",
+    "statTime": "Time",
+    "statKills": "Kills",
+    "statSecrets": "Secrets",
+    "levelComplete": "Level Complete"
 }

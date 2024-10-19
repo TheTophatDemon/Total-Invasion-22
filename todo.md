@@ -1,6 +1,4 @@
 # TODO
-- Level completion
-  - Music and sfx
 - Keycards
 - Fire Wraiths
 - Grenade launcher & grenades

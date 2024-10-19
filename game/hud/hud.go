@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -18,9 +19,11 @@ import (
 
 const (
 	MESSAGE_FADE_SPEED  = 2.0
-	VICTORY_COUNT_SPEED = 0.05
+	TEXT_FLICKER_SPEED  = 0.5
+	VICTORY_COUNT_SPEED = 0.1
 	DEFAULT_FONT_PATH   = "assets/textures/ui/font.fnt"
 	COUNTER_FONT_PATH   = "assets/textures/ui/hud_counter_font.fnt"
+	SFX_STATS_DING      = "assets/sounds/ui/stats_ding.wav"
 )
 
 type CountState uint8
@@ -28,7 +31,9 @@ type CountState uint8
 const (
 	COUNT_STATE_START CountState = iota
 	COUNT_STATE_TIME
+	COUNT_STATE_PAUSE1
 	COUNT_STATE_KILLS
+	COUNT_STATE_PAUSE2
 	COUNT_STATE_SECRETS
 	COUNT_STATE_DONE
 )
@@ -49,7 +54,7 @@ type Hud struct {
 	faceTimer                 float32
 	heartIcon, ammoIcon       scene.Id[*ui.Box]
 	healthStat, ammoStat      scene.Id[*ui.Text]
-	levelStats                scene.Id[*ui.Text]
+	levelStats, continueText  scene.Id[*ui.Text]
 
 	messageText     scene.Id[*ui.Text]
 	messageTimer    float32
@@ -62,6 +67,8 @@ type Hud struct {
 	chickenGun                 ChickenCannon
 	weapons                    [WEAPON_ORDER_COUNT]Weapon
 	selectedWeapon, nextWeapon WeaponIndex
+
+	flickerTime float32
 }
 
 func (hud *Hud) Init() {
@@ -132,7 +139,7 @@ func (hud *Hud) InitVictory() {
 	_, completeTxt, _ := hud.UI.Texts.New()
 	completeTxt.
 		SetFont(DEFAULT_FONT_PATH).
-		SetText("Level Complete").
+		SetText(settings.Localize("levelComplete")).
 		SetDest(math2.Rect{
 			X:      settings.UIWidth() / 4.0,
 			Y:      96.0,
@@ -140,7 +147,7 @@ func (hud *Hud) InitVictory() {
 			Height: 64.0,
 		}).
 		SetScale(3.0).
-		SetShadow(color.Black, mgl32.Vec2{2.0, 2.0})
+		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
 
 	hud.KillsCounted = 0
 	hud.SecretsCounted = 0
@@ -157,11 +164,16 @@ func (hud *Hud) InitVictory() {
 			Height: 256.0,
 		}).
 		SetScale(2.0).
-		SetShadow(color.Black, mgl32.Vec2{2.0, 2.0})
+		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
 }
 
 func (hud *Hud) Update(deltaTime float32) {
 	hud.UI.Update(deltaTime)
+
+	hud.flickerTime += deltaTime
+	if continueTxt, ok := hud.continueText.Get(); ok {
+		continueTxt.Hidden = math2.Mod(hud.flickerTime, TEXT_FLICKER_SPEED) > TEXT_FLICKER_SPEED*0.75
+	}
 
 	// Update message text
 	if message, ok := hud.messageText.Get(); ok {
@@ -191,26 +203,47 @@ func (hud *Hud) Update(deltaTime float32) {
 	// Update victory stats
 	if levelStats, ok := hud.levelStats.Get(); ok {
 		hud.countTimer += deltaTime
-		if hud.countTimer > VICTORY_COUNT_SPEED || hud.countState == COUNT_STATE_START {
+		if hud.countState != COUNT_STATE_DONE && (hud.countTimer > VICTORY_COUNT_SPEED || hud.countState == COUNT_STATE_START) {
 			hud.countTimer = 0.0
 			switch hud.countState {
 			case COUNT_STATE_START:
 				hud.countState++
 			case COUNT_STATE_TIME:
-				hud.LevelTimePercent = min(1.0, hud.LevelTimePercent+0.1)
-				if hud.LevelTimePercent >= 1.0 {
+				if hud.LevelTimePercent < 1.0 {
+					cache.GetSfx(SFX_STATS_DING).Play()
+					hud.LevelTimePercent += 0.1
+				} else {
 					hud.countState++
 				}
 			case COUNT_STATE_KILLS:
-				hud.KillsCounted = min(hud.EnemiesKilled, hud.KillsCounted+1)
-				if hud.KillsCounted == hud.EnemiesKilled {
+				if hud.KillsCounted < hud.EnemiesKilled {
+					hud.KillsCounted++
+					cache.GetSfx(SFX_STATS_DING).Play()
+				} else {
 					hud.countState++
 				}
 			case COUNT_STATE_SECRETS:
-				hud.SecretsCounted = min(hud.SecretsFound, hud.SecretsCounted+1)
-				if hud.SecretsCounted == hud.SecretsFound {
+				if hud.SecretsCounted < hud.SecretsFound {
+					cache.GetSfx(SFX_STATS_DING).Play()
+					hud.SecretsCounted += 1
+				} else {
 					hud.countState++
+
+					// Show continue prompt
+					var txt *ui.Text
+					var err error
+					if hud.continueText, txt, err = hud.UI.Texts.New(); err == nil {
+						txt.SetFont(DEFAULT_FONT_PATH).
+							SetText(settings.Localize("fireContinue")).
+							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 3.0*settings.UIHeight()/4.0, 256.0, 24.0)).
+							SetAlignment(ui.TEXT_ALIGN_CENTER).
+							SetScale(2.0).
+							SetColor(color.Color{R: 240, G: 240, B: 0, A: 255}).
+							SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+					}
 				}
+			default:
+				hud.countState++
 			}
 
 			runTime := hud.LevelEndTime.Sub(hud.LevelStartTime)
@@ -218,9 +251,9 @@ func (hud *Hud) Update(deltaTime float32) {
 
 			var statsText strings.Builder
 			statsText.Grow(256)
-			statsText.WriteString(fmt.Sprintf("Time: %02d:%02.2f\n", int(countedTime.Minutes()), countedTime.Seconds()))
-			statsText.WriteString(fmt.Sprintf("Kills: %02d/%02d\n", hud.KillsCounted, hud.EnemiesTotal))
-			statsText.WriteString(fmt.Sprintf("Secrets: %02d/%02d\n", hud.SecretsCounted, hud.SecretsTotal))
+			statsText.WriteString(settings.Localize("statTime") + fmt.Sprintf(": %02d:%02.2f\n", int(countedTime.Minutes()), countedTime.Seconds()))
+			statsText.WriteString(settings.Localize("statKills") + fmt.Sprintf(": %02d/%02d\n", hud.KillsCounted, hud.EnemiesTotal))
+			statsText.WriteString(settings.Localize("statSecrets") + fmt.Sprintf(": %02d/%02d\n", hud.SecretsCounted, hud.SecretsTotal))
 			levelStats.SetText(statsText.String())
 		}
 	}
