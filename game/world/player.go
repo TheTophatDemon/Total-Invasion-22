@@ -113,7 +113,7 @@ func (player *Player) Update(deltaTime float32) {
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
-		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 30.0 {
+		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 35.0 {
 			player.world.ChangeMap(player.world.nextLevel)
 		}
 	} else if player.actor.Health > 0 {

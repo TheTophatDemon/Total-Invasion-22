@@ -141,7 +141,7 @@ func (hud *Hud) InitVictory() {
 		SetFont(DEFAULT_FONT_PATH).
 		SetText(settings.Localize("levelComplete")).
 		SetDest(math2.Rect{
-			X:      settings.UIWidth() / 4.0,
+			X:      settings.UIWidth()/4.0 - 32.0,
 			Y:      96.0,
 			Width:  settings.UIWidth() / 2.0,
 			Height: 64.0,
@@ -235,10 +235,10 @@ func (hud *Hud) Update(deltaTime float32) {
 					if hud.continueText, txt, err = hud.UI.Texts.New(); err == nil {
 						txt.SetFont(DEFAULT_FONT_PATH).
 							SetText(settings.Localize("fireContinue")).
-							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 3.0*settings.UIHeight()/4.0, 256.0, 24.0)).
+							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 7.0*settings.UIHeight()/8.0, 256.0, 24.0)).
 							SetAlignment(ui.TEXT_ALIGN_CENTER).
 							SetScale(2.0).
-							SetColor(color.Color{R: 240, G: 240, B: 0, A: 255}).
+							SetColor(color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}).
 							SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
 					}
 				}
@@ -251,7 +251,7 @@ func (hud *Hud) Update(deltaTime float32) {
 
 			var statsText strings.Builder
 			statsText.Grow(256)
-			statsText.WriteString(settings.Localize("statTime") + fmt.Sprintf(": %02d:%02.2f\n", int(countedTime.Minutes()), countedTime.Seconds()))
+			statsText.WriteString(settings.Localize("statTime") + fmt.Sprintf(": %02d:%02.2f\n", int(countedTime.Minutes()), math2.Mod(countedTime.Seconds(), 60.0)))
 			statsText.WriteString(settings.Localize("statKills") + fmt.Sprintf(": %02d/%02d\n", hud.KillsCounted, hud.EnemiesTotal))
 			statsText.WriteString(settings.Localize("statSecrets") + fmt.Sprintf(": %02d/%02d\n", hud.SecretsCounted, hud.SecretsTotal))
 			levelStats.SetText(statsText.String())
