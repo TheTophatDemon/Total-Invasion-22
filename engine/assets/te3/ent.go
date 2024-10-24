@@ -23,11 +23,17 @@ type Ent struct {
 	Properties     map[string]string
 }
 
+type PropNotFoundError string
+
+func (err PropNotFoundError) Error() string {
+	return fmt.Sprintf("ent property not found: %v", string(err))
+}
+
 // Extracts and parses the value of a float property.
 func (ent *Ent) FloatProperty(key string) (float32, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {
-		return 0.0, fmt.Errorf("ent property not found: %v", key)
+		return 0.0, PropNotFoundError(key)
 	}
 	valF64, err := strconv.ParseFloat(prop, 32)
 	if err != nil {
@@ -39,7 +45,7 @@ func (ent *Ent) FloatProperty(key string) (float32, error) {
 func (ent *Ent) IntProperty(key string) (int, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {
-		return 0, fmt.Errorf("ent property not found: %v", key)
+		return 0, PropNotFoundError(key)
 	}
 	valI64, err := strconv.ParseInt(prop, 10, 32)
 	if err != nil {
@@ -51,7 +57,7 @@ func (ent *Ent) IntProperty(key string) (int, error) {
 func (ent *Ent) BoolProperty(key string) (bool, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {
-		return false, fmt.Errorf("ent property not found: %v", prop)
+		return false, PropNotFoundError(key)
 	}
 	return strconv.ParseBool(prop)
 }

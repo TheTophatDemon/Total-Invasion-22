@@ -15,13 +15,15 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/hud"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 // Represents any object that can be 'picked up', like health and weapons.
 type Item struct {
-	body          comps.Body
-	spriteRender  comps.SpriteRender
-	animPlayer    comps.AnimationPlayer
+	body         comps.Body
+	spriteRender comps.SpriteRender
+	animPlayer   comps.AnimationPlayer
+
 	flashColor    color.Color
 	pickupSound   tdaudio.SoundId
 	healAmount    float32
@@ -29,11 +31,16 @@ type Item struct {
 	ammoAmount    int
 	giveWeapon    hud.WeaponIndex
 	dontWasteAmmo bool // If true, the item will not be collected if the player has maximum ammo
-	onGround      bool
-	fallSpeed     float32
-	message       string
-	messageTime   float32
-	messageColor  color.Color
+	giveKey       game.KeyType
+
+	onGround                               bool
+	fallSpeed                              float32
+	floatSpeed, floatAmplitude, floatTimer float32
+	floatOrigin                            mgl32.Vec3
+
+	message      string
+	messageTime  float32
+	messageColor color.Color
 
 	world *World
 	id    scene.Id[*Item]
@@ -56,6 +63,18 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		id, item, err = SpawnEggCarton(world, ent.Position)
 	case "chickencannon", "chickengun", "chicken_cannon", "chicken_gun":
 		id, item, err = SpawnChickenCannon(world, ent.Position)
+	case "bluecard":
+		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BLUE)
+		return
+	case "graycard":
+		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_GRAY)
+		return
+	case "yellowcard":
+		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_YELLOW)
+		return
+	case "browncard":
+		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BROWN)
+		return
 	default:
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}
@@ -93,7 +112,7 @@ func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item
 	item.ammoType = game.AMMO_TYPE_EGG
 	item.ammoAmount = 12
 	item.dontWasteAmmo = true
-	item.message = "Got a carton of eggs."
+	item.message = settings.Localize("eggCartonGet")
 	item.messageTime = 1.0
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/egg_carton.png"))
 	return
@@ -105,9 +124,27 @@ func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], 
 	item.ammoAmount = 48
 	item.giveWeapon = hud.WEAPON_ORDER_CHICKEN
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
-	item.message = "Got a chicken cannon!"
+	item.message = settings.Localize("chickenCannonGet")
 	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/chicken_cannon.png"))
+	return
+}
+
+func SpawnKeycard(world *World, position mgl32.Vec3, keyType game.KeyType) (id scene.Id[*Item], item *Item, err error) {
+	if keyType == 0 {
+		err = fmt.Errorf("no key type supplied")
+		return
+	}
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25})
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/" + game.KeycardNames[keyType] + "card.png"))
+	item.message = settings.Localize(game.KeycardNames[keyType] + "KeyGet")
+	item.messageTime = 1.5
+	item.giveKey = keyType
+	item.fallSpeed = 0.0
+	item.pickupSound = cache.GetSfx("assets/sounds/key.wav")
+	item.floatSpeed = 2.0
+	item.floatAmplitude = 0.15
+	item.floatOrigin = position
 	return
 }
 
@@ -143,7 +180,7 @@ func (item *Item) Body() *comps.Body {
 
 func (item *Item) Update(deltaTime float32) {
 	item.animPlayer.Update(deltaTime)
-	if !item.onGround {
+	if !item.onGround && item.fallSpeed != 0.0 {
 		// Fall until the ground is touched.
 		cast := item.world.GameMap.Body().Shape.Raycast(
 			item.body.Transform.Position(),
@@ -156,6 +193,9 @@ func (item *Item) Update(deltaTime float32) {
 		} else {
 			item.Body().Transform.Translate(0.0, -deltaTime*item.fallSpeed, 0.0)
 		}
+	} else if item.floatAmplitude != 0.0 && item.floatSpeed != 0.0 {
+		item.floatTimer += deltaTime
+		item.body.Transform.SetPosition(item.floatOrigin.Add(mgl32.Vec3{0.0, math2.Sin(item.floatTimer*item.floatSpeed) * item.floatAmplitude, 0.0}))
 	}
 }
 
@@ -180,6 +220,10 @@ func (item *Item) onIntersect(otherEnt comps.HasBody, result collision.Result, d
 		}
 	}
 	player.actor.Health += item.healAmount
+
+	if item.giveKey != game.KEY_TYPE_INVALID {
+		player.keys |= item.giveKey
+	}
 
 	item.pickupSound.PlayAttenuatedV(item.body.Transform.Position())
 	item.world.Hud.FlashScreen(item.flashColor, 1.5)

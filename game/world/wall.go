@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -24,15 +25,6 @@ const (
 	MOVE_PHASE_OPENING
 	MOVE_PHASE_OPEN
 	MOVE_PHASE_CLOSING
-)
-
-type ActivationType int8
-
-const (
-	ACTIVATOR_NONE ActivationType = iota - 1
-	ACTIVATOR_ALL
-	ACTIVATOR_KEY
-	ACTIVATOR_TRIGGER
 )
 
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
@@ -47,8 +39,10 @@ type Wall struct {
 	waitTimer     float32
 	movePhase     MovePhase
 	world         *World
-	activator     ActivationType
+	unopenable    bool
 	activateSound string
+	key           game.KeyType
+	linkNumber    int
 }
 
 var _ Usable = (*Wall)(nil)
@@ -112,7 +106,9 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 	unopenable, _ := ent.BoolProperty("unopenable")
 	if !unopenable {
 		dist, err := ent.FloatProperty("distance")
-		if err != nil {
+		if _, notFound := err.(te3.PropNotFoundError); notFound {
+			dist = 1.8
+		} else if err != nil {
 			return err
 		}
 
@@ -157,9 +153,14 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		} else {
 			wall.Speed = 4.0
 		}
+
+		// Get key
+		if keyName, ok := ent.Properties["key"]; ok {
+			wall.key = game.KeyTypeFromName(keyName)
+		}
 	} else {
 		wall.Destination = wall.Origin
-		wall.activator = ACTIVATOR_NONE
+		wall.unopenable = true
 	}
 
 	if sfxStr, ok := ent.Properties["activateSound"]; ok {
@@ -238,6 +239,10 @@ func (wall *Wall) Update(deltaTime float32) {
 	}
 }
 
+func (wall *Wall) LinkNumber() int {
+	return wall.linkNumber
+}
+
 func (wall *Wall) Render(context *render.Context) {
 	if !render.IsBoxVisible(context, wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
 		wall.MeshRender.Mesh == nil {
@@ -253,27 +258,40 @@ func (wall *Wall) Body() *comps.Body {
 }
 
 func (wall *Wall) OnUse(player *Player) {
-	switch wall.activator {
-	case ACTIVATOR_NONE:
+	switch true {
+	case wall.unopenable:
 		wall.world.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
-	case ACTIVATOR_ALL:
-		if !wall.Origin.ApproxEqual(wall.Destination) {
-			switch wall.movePhase {
-			case MOVE_PHASE_CLOSED:
-				wall.movePhase = MOVE_PHASE_OPENING
-				wall.waitTimer = 0
-				if len(wall.activateSound) > 0 {
-					cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Transform.Position())
-				}
-			case MOVE_PHASE_OPEN:
-				if wall.WaitTime >= 0.0 {
-					wall.movePhase = MOVE_PHASE_CLOSING
-				}
-			}
-		}
-	case ACTIVATOR_KEY:
-		wall.world.Hud.ShowMessage(settings.Localize("doorNeedKey"), 2.0, 10, color.Red)
-	case ACTIVATOR_TRIGGER:
+	case wall.key != game.KEY_TYPE_INVALID && (player.keys&wall.key) != wall.key:
+		// Locked if keycard not retrieved
+		wall.world.Hud.ShowMessage(settings.Localize(game.KeycardNames[wall.key]+"KeyNeeded"), 2.0, 10, color.Red)
+		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Transform.Position())
+	case wall.linkNumber != 0:
+		// Door is opened by some other mechanism
 		wall.world.Hud.ShowMessage(settings.Localize("doorSwitch"), 2.0, 10, color.Red)
+	case !wall.Origin.ApproxEqual(wall.Destination):
+		wall.ToggleMovement()
+	}
+}
+
+func (wall *Wall) ToggleMovement() {
+	switch wall.movePhase {
+	case MOVE_PHASE_CLOSED:
+		wall.Open()
+	case MOVE_PHASE_OPEN:
+		wall.Close()
+	}
+}
+
+func (wall *Wall) Open() {
+	wall.movePhase = MOVE_PHASE_OPENING
+	wall.waitTimer = 0
+	if len(wall.activateSound) > 0 {
+		cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Transform.Position())
+	}
+}
+
+func (wall *Wall) Close() {
+	if wall.WaitTime >= 0.0 {
+		wall.movePhase = MOVE_PHASE_CLOSING
 	}
 }

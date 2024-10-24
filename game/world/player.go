@@ -41,6 +41,7 @@ type Player struct {
 	transitionTimer        float32 // Counts the seconds until the game resets after winning or dying.
 	godMode                bool    // If true, the player does not take damage.
 	ammo                   game.Ammo
+	keys                   game.KeyType
 	noisyTimer             float32 // While this timer is > 0, enemies will be able to 'hear' the player and activate when not facing her.
 }
 
@@ -170,6 +171,7 @@ func (player *Player) Update(deltaTime float32) {
 		Noclip:    player.Body().Layer == COL_LAYER_NONE,
 		GodMode:   player.godMode,
 		Ammo:      &player.ammo,
+		Keys:      player.keys,
 		MoveSpeed: player.actor.body.Velocity.Len(),
 	})
 }
@@ -233,6 +235,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		for i := range player.ammo {
 			player.ammo[i] = game.AmmoLimits[i]
 		}
+		player.keys = game.KEY_TYPE_ALL
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_DIE) {

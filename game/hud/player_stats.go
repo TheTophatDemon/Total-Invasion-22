@@ -21,6 +21,7 @@ type PlayerStats struct {
 	Health          int
 	Noclip, GodMode bool
 	Ammo            *game.Ammo
+	Keys            game.KeyType
 	MoveSpeed       float32
 }
 
@@ -146,6 +147,28 @@ func (hud *Hud) InitPlayerStats() {
 		SetScale(SpriteScale()).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
 		SetColor(color.Blue)
+
+	// Key icons
+	for i, key := range [...]game.KeyType{game.KEY_TYPE_BLUE, game.KEY_TYPE_BROWN, game.KEY_TYPE_YELLOW, game.KEY_TYPE_GRAY} {
+		var keyIcon *ui.Box
+		hud.keyIcons[i], keyIcon, _ = hud.UI.Boxes.New()
+		keyName := game.KeycardNames[key] + "Key"
+		slice := rightPanelTex.FindSlice(keyName)
+		keyIcon.SetDest(fitToSlice(rightPanel.Dest(), slice)).
+			SetTexture(cache.GetTexture("assets/textures/ui/hud_keycards.png")).
+			SetDepth(2.0)
+		switch key {
+		case game.KEY_TYPE_BLUE:
+			keyIcon.SetSrc(math2.Rect{X: 0, Y: 0, Width: 8, Height: 8})
+		case game.KEY_TYPE_BROWN:
+			keyIcon.SetSrc(math2.Rect{X: 8, Y: 0, Width: 8, Height: 8})
+		case game.KEY_TYPE_YELLOW:
+			keyIcon.SetSrc(math2.Rect{X: 0, Y: 8, Width: 8, Height: 8})
+		case game.KEY_TYPE_GRAY:
+			keyIcon.SetSrc(math2.Rect{X: 8, Y: 8, Width: 8, Height: 8})
+		}
+		keyIcon.Hidden = true
+	}
 }
 
 // Attempts to update the player's face to reflect in game events.
@@ -192,6 +215,13 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 			icon.Hidden = false
 		} else {
 			icon.Hidden = true
+		}
+	}
+
+	// Keycards
+	for i, keyHandle := range hud.keyIcons {
+		if keySpr, ok := keyHandle.Get(); ok {
+			keySpr.Hidden = (1<<i)&int(stats.Keys) == 0
 		}
 	}
 

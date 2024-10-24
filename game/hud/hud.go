@@ -53,6 +53,7 @@ type Hud struct {
 	faceState                 faceState
 	faceTimer                 float32
 	heartIcon, ammoIcon       scene.Id[*ui.Box]
+	keyIcons                  [4]scene.Id[*ui.Box]
 	healthStat, ammoStat      scene.Id[*ui.Text]
 	levelStats, continueText  scene.Id[*ui.Text]
 
@@ -73,8 +74,6 @@ type Hud struct {
 
 func (hud *Hud) Init() {
 	hud.UI = ui.NewUIScene(256, 64)
-
-	hud.messageTimer = 2.0
 
 	var fpsText *ui.Text
 	hud.FPSCounter, fpsText, _ = hud.UI.Texts.New()
@@ -98,11 +97,10 @@ func (hud *Hud) Init() {
 	hud.messageText, message, _ = hud.UI.Texts.New()
 	message.
 		SetFont(DEFAULT_FONT_PATH).
-		SetText(settings.Localize("testMessage")).
 		SetDest(math2.Rect{
-			X:      settings.UIWidth() / 3.0,
+			X:      settings.UIWidth() / 4.0,
 			Y:      settings.UIHeight() / 2.0,
-			Width:  settings.UIWidth() / 3.0,
+			Width:  settings.UIWidth() / 2.0,
 			Height: settings.UIHeight() / 2.0,
 		}).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
@@ -251,7 +249,7 @@ func (hud *Hud) Update(deltaTime float32) {
 
 			var statsText strings.Builder
 			statsText.Grow(256)
-			statsText.WriteString(settings.Localize("statTime") + fmt.Sprintf(": %02d:%02.2f\n", int(countedTime.Minutes()), math2.Mod(countedTime.Seconds(), 60.0)))
+			statsText.WriteString(settings.Localize("statTime") + fmt.Sprintf(": %02d:%05.2f\n", int(countedTime.Minutes()), math2.Mod(countedTime.Seconds(), 60.0)))
 			statsText.WriteString(settings.Localize("statKills") + fmt.Sprintf(": %02d/%02d\n", hud.KillsCounted, hud.EnemiesTotal))
 			statsText.WriteString(settings.Localize("statSecrets") + fmt.Sprintf(": %02d/%02d\n", hud.SecretsCounted, hud.SecretsTotal))
 			levelStats.SetText(statsText.String())

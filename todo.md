@@ -1,5 +1,4 @@
 # TODO
-- Keycards
 - Fire Wraiths
 - Grenade launcher & grenades
 - Switch

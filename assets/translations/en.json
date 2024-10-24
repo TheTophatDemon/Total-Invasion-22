@@ -6,11 +6,20 @@
     "godModeActivate": "God mode activated",
     "godModeDeactivate": "God mode deactivated",
     "doorStuck": "The door can't move...",
-    "doorNeedKey": "I need a key...",
+    "blueKeyNeeded": "I need a blue keycard...",
+    "brownKeyNeeded": "I need a brown keycard...",
+    "yellowKeyNeeded": "I need a yellow keycard...",
+    "grayKeyNeeded": "I need a gray keycard...",
     "doorSwitch": "This door opens elsewhere...",
     "fireContinue": "Press the fire button to continue.",
     "statTime": "Time",
     "statKills": "Kills",
     "statSecrets": "Secrets",
-    "levelComplete": "Level Complete"
+    "levelComplete": "Level Complete",
+    "blueKeyGet": "Got a blue keycard.",
+    "grayKeyGet": "Got a gray keycard.",
+    "yellowKeyGet": "Got a yellow keycard.",
+    "brownKeyGet": "Got a brown keycard.",
+    "chickenCannonGet": "Got a chicken cannon!",
+    "eggCartonGet": "Got a carton of eggs."
 }
