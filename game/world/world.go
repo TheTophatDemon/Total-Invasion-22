@@ -164,8 +164,14 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		if _, _, err := SpawnWraith(world, spawn.Position, spawn.Angles); err != nil {
-			log.Printf("enemy entity at %v caused an error: %v\n", spawn.Position, err)
+		if spawn.Properties["enemy"] == "fire wraith" {
+			if _, _, err := SpawnFireWraith(world, spawn.Position, spawn.Angles); err != nil {
+				log.Printf("fire wraith entity at %v caused an error: %v\n", spawn.Position, err)
+			}
+		} else {
+			if _, _, err := SpawnWraith(world, spawn.Position, spawn.Angles); err != nil {
+				log.Printf("wraith entity at %v caused an error: %v\n", spawn.Position, err)
+			}
 		}
 	}
 
