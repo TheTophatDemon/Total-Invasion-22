@@ -2,7 +2,10 @@ package te3
 
 import (
 	"fmt"
+	"math"
 	"strconv"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type EntDisplay uint8
@@ -60,4 +63,8 @@ func (ent *Ent) BoolProperty(key string) (bool, error) {
 		return false, PropNotFoundError(key)
 	}
 	return strconv.ParseBool(prop)
+}
+
+func (ent *Ent) AnglesInRadians() mgl32.Vec3 {
+	return mgl32.Vec3(ent.Angles).Mul(math.Pi / 180.0)
 }

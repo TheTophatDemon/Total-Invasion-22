@@ -69,7 +69,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 300
    },
    {
     "filename": "fire_wraith.png;back;8",
@@ -195,7 +195,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 300
    },
    {
     "filename": "fire_wraith.png;side;8",
@@ -321,7 +321,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 300
    },
    {
     "filename": "fire_wraith.png;front;8",
@@ -387,7 +387,7 @@
   "scale": "1",
   "frameTags": [
    { "name": "walk", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
-   { "name": "attack", "from": 4, "to": 8, "direction": "forward", "repeat": "1", "color": "#000000ff" },
+   { "name": "attack", "from": 4, "to": 8, "direction": "forward", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:2" },
    { "name": "hurt", "from": 9, "to": 9, "direction": "forward", "repeat": "1", "color": "#000000ff" },
    { "name": "die", "from": 10, "to": 13, "direction": "forward", "repeat": "1", "color": "#000000ff" }
   ],

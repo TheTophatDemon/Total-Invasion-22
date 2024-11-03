@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"math"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -52,7 +50,7 @@ func TransformFromTranslationAnglesScale(position, angles, scale mgl32.Vec3) Tra
 }
 
 func TransformFromTE3Ent(ent te3.Ent, scaleByRadius, stayOnFloor bool) Transform {
-	angles := mgl32.Vec3(ent.Angles).Mul(math.Pi / 180.0)
+	angles := ent.AnglesInRadians()
 	if scaleByRadius {
 		pos := mgl32.Vec3(ent.Position)
 		if stayOnFloor {

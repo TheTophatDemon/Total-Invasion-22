@@ -7,11 +7,12 @@ import (
 )
 
 type Animation struct {
-	Frames    []Frame
-	AtlasSize [2]uint
-	Name      string
-	Loop      bool
-	Default   bool
+	Frames        []Frame
+	AtlasSize     [2]uint
+	Name          string
+	Loop          bool
+	Default       bool
+	TriggerFrames []uint
 }
 
 type Frame struct {

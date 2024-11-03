@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	META_SLICE_NAME   = "meta"
-	DEFAULT_ANIM_FLAG = "default"
+	META_SLICE_NAME    = "meta"
+	DEFAULT_ANIM_FLAG  = "default"
+	TRIGGER_FRAME_FLAG = "triggerFrame"
 )
 
 type (
@@ -187,8 +188,28 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 			Loop: (len(ss.Meta.FrameTags[t].Repeat) == 0),
 		}
 
-		if ss.Meta.FrameTags[t].Data == DEFAULT_ANIM_FLAG {
-			anim.Default = true
+		tagFlags := strings.Split(ss.Meta.FrameTags[t].Data, " ")
+		for _, flag := range tagFlags {
+			switch true {
+			case flag == DEFAULT_ANIM_FLAG:
+				anim.Default = true
+			case strings.HasPrefix(flag, TRIGGER_FRAME_FLAG):
+				if len(flag) <= len(TRIGGER_FRAME_FLAG)+1 {
+					return nil, fmt.Errorf("flag %v does not have frame number", TRIGGER_FRAME_FLAG)
+				}
+				if flag[len(TRIGGER_FRAME_FLAG)] != ':' {
+					return nil, fmt.Errorf("flag %v must be followed by a colon and no spacing", TRIGGER_FRAME_FLAG)
+				}
+				frameStrings := strings.Split(flag[len(TRIGGER_FRAME_FLAG)+1:], ",")
+				anim.TriggerFrames = make([]uint, len(frameStrings))
+				for i, str := range frameStrings {
+					frameNum, err := strconv.ParseUint(str, 10, 32)
+					if err != nil {
+						return nil, fmt.Errorf("cannot parse triggerFrame frame number at position %v: %v", i, err)
+					}
+					anim.TriggerFrames[i] = uint(frameNum)
+				}
+			}
 		}
 
 		var err error

@@ -1,11 +1,14 @@
 # TODO
 - Fire Wraiths
-- Grenade launcher & grenades
+    - Friendly fire disable?
+    - Spawn facing the right way
 - Switch
-- Parusu
 - Triggers activating walls
+- Grenade launcher & grenades
+- Parusu
 - Cacowraith
 - Airhorn
-- Fix color weirdness on Linux
+- Level intro
+- Optimize level loading
 - Bounding box hierarchy for faster collision detection
    

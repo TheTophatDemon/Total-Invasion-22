@@ -10,8 +10,13 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world/effects"
+)
+
+const (
+	SFX_FIRE_WRAITH_WAKE = "assets/sounds/enemy/fire_wraith/fire_wraith_greeting.wav"
+	SFX_FIRE_WRAITH_HURT = "assets/sounds/enemy/fire_wraith/fire_wraith_hurt.wav"
+	SFX_FIRE_WRAITH_DIE  = "assets/sounds/enemy/fire_wraith/fire_wraith_die.wav"
 )
 
 func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*Enemy], enemy *Enemy, err error) {
@@ -20,51 +25,58 @@ func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*En
 		return
 	}
 
-	enemy.initDefaults(world)
-	enemy.bloodParticles = effects.Blood(15, color.Red, 0.5)
+	enemy.initDefaults(world, id)
+	enemy.bloodParticles = effects.Blood(15, color.Blue, 0.5)
 	enemy.bloodParticles.Init()
 
-	wraithTexture := cache.GetTexture("assets/textures/sprites/fire_wraith.png")
-	walkAnim, _ := wraithTexture.GetAnimation("walk;front")
-	attackAnim, _ := wraithTexture.GetAnimation("attack;front")
-	stunAnim, _ := wraithTexture.GetAnimation("hurt;front")
-	dieAnim, _ := wraithTexture.GetAnimation("die;front")
+	texture := cache.GetTexture("assets/textures/sprites/fire_wraith.png")
+	walkAnim, _ := texture.GetAnimation("walk;front")
+	attackAnim, _ := texture.GetAnimation("attack;front")
+	stunAnim, _ := texture.GetAnimation("hurt;front")
+	dieAnim, _ := texture.GetAnimation("die;front")
 
 	enemy.states = [...]enemyState{
 		ENEMY_STATE_IDLE: {
 			anim:       walkAnim,
 			stopAnim:   true,
-			leaveSound: cache.GetSfx(SFX_WRAITH_WAKE),
+			leaveSound: cache.GetSfx(SFX_FIRE_WRAITH_WAKE),
 		},
 		ENEMY_STATE_CHASE: {
 			anim: walkAnim,
+			enterFunc: func(oldState EnemyState) {
+				enemy.attackTimer = rand.Float32() + 0.5
+			},
 			updateFunc: func(deltaTime float32) {
-				enemy.chase(deltaTime, 3.0, 1.0)
-				if enemy.distToTarget < WRAITH_MELEE_RANGE {
+				enemy.stalk(deltaTime, 1.0)
+				enemy.attackTimer -= deltaTime
+				if enemy.attackTimer <= 0.0 {
 					enemy.changeState(ENEMY_STATE_ATTACK)
 				}
 			},
 		},
 		ENEMY_STATE_STUN: {
-			enterSound: cache.GetSfx(SFX_WRAITH_HURT),
+			enterSound: cache.GetSfx(SFX_FIRE_WRAITH_HURT),
 			anim:       stunAnim,
 		},
 		ENEMY_STATE_ATTACK: {
 			anim: attackAnim,
+			enterFunc: func(oldState EnemyState) {
+				enemy.attackTimer = 0.0
+				enemy.faceTarget()
+			},
 			updateFunc: func(deltaTime float32) {
 				enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
-				if enemy.stateTimer > 0.5 {
-					if enemy.distToTarget >= WRAITH_MELEE_RANGE {
-						enemy.changeState(ENEMY_STATE_CHASE)
-					} else if player, ok := enemy.world.CurrentPlayer.Get(); ok {
-						player.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
-					}
-					enemy.stateTimer = 0.0
+				if enemy.AnimPlayer.HitTriggerFrame(0) {
+					enemy.faceTarget()
+					SpawnFireball(enemy.world, enemy.actor.Position(), mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0}, enemy.id.Handle)
+				}
+				if enemy.AnimPlayer.IsAtEnd() {
+					enemy.changeState(ENEMY_STATE_CHASE)
 				}
 			},
 		},
 		ENEMY_STATE_DIE: {
-			enterSound: cache.GetSfx(SFX_WRAITH_DIE),
+			enterSound: cache.GetSfx(SFX_FIRE_WRAITH_DIE),
 			anim:       dieAnim,
 		},
 	}
@@ -82,17 +94,17 @@ func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*En
 		YawAngle:  mgl32.DegToRad(angles[1]),
 		AccelRate: 80.0,
 		Friction:  20.0,
-		MaxSpeed:  5.5,
+		MaxSpeed:  6.0,
 		world:     world,
 	}
-	enemy.SpriteRender = comps.NewSpriteRender(wraithTexture)
+	enemy.SpriteRender = comps.NewSpriteRender(texture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(walkAnim, false)
 	enemy.WakeTime = 0.5
 	enemy.WakeLimit = 5.0
 	enemy.StunChance = 1.0
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
-	enemy.actor.Health = 100.0
+	enemy.actor.Health = 200.0
 	enemy.actor.MaxHealth = enemy.actor.Health
 
 	return

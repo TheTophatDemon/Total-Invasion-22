@@ -30,7 +30,7 @@ func SpawnWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*Enemy]
 		return
 	}
 
-	enemy.initDefaults(world)
+	enemy.initDefaults(world, id)
 	enemy.bloodParticles = effects.Blood(15, color.Red, 0.5)
 	enemy.bloodParticles.Init()
 
@@ -63,13 +63,12 @@ func SpawnWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*Enemy]
 			anim: attackAnim,
 			updateFunc: func(deltaTime float32) {
 				enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
-				if enemy.stateTimer > 0.5 {
+				if enemy.AnimPlayer.HitATriggerFrame() {
 					if enemy.distToTarget >= WRAITH_MELEE_RANGE {
 						enemy.changeState(ENEMY_STATE_CHASE)
 					} else if player, ok := enemy.world.CurrentPlayer.Get(); ok {
 						player.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
 					}
-					enemy.stateTimer = 0.0
 				}
 			},
 		},

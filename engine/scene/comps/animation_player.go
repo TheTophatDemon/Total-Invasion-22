@@ -127,3 +127,21 @@ func (ap *AnimationPlayer) IsAtEnd() bool {
 func (ap *AnimationPlayer) IsPlayingAnim(anim textures.Animation) bool {
 	return ap.animation.BaseName() == anim.BaseName()
 }
+
+// Returns true if the animation player passed the specified trigger frame in its most recent update.
+func (ap *AnimationPlayer) HitTriggerFrame(triggerFrameNumber int) bool {
+	if ap.animation.TriggerFrames == nil || triggerFrameNumber >= len(ap.animation.TriggerFrames) {
+		return false
+	}
+	return uint(ap.currentIndex) == ap.animation.TriggerFrames[triggerFrameNumber] && ap.frameTimer == 0.0
+}
+
+// Returns true if the animation player passed any trigger frame in its most recent update.
+func (ap *AnimationPlayer) HitATriggerFrame() bool {
+	for _, triggerFrame := range ap.animation.TriggerFrames {
+		if uint(ap.currentIndex) == triggerFrame && ap.frameTimer == 0.0 {
+			return true
+		}
+	}
+	return false
+}

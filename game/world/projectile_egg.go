@@ -48,13 +48,13 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 	proj.StunChance = 0.1
 	proj.Damage = 15
 
-	proj.moveFunc = proj.eggMove
+	proj.moveFunc = proj.moveForward
 	proj.body.OnIntersect = proj.eggIntersect
 
 	return
 }
 
-func (proj *Projectile) eggMove(deltaTime float32) {
+func (proj *Projectile) moveForward(deltaTime float32) {
 	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
 }
 

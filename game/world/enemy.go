@@ -5,10 +5,12 @@ import (
 	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
@@ -39,22 +41,23 @@ type enemyState struct {
 }
 
 type Enemy struct {
-	SpriteRender                      comps.SpriteRender
-	AnimPlayer                        comps.AnimationPlayer
-	WakeTime                          float32 // Number of seconds player must be in sight before enemy begins to pursue.
-	WakeLimit                         float32 // Maximum number of seconds after losing sight of player before giving up.
-	StunTime                          float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
-	StunChance                        float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
-	bloodParticles                    comps.ParticleRender
-	bloodOffset                       mgl32.Vec3
-	actor                             Actor
-	world                             *World
-	states                            [ENEMY_STATE_COUNT]enemyState
-	wakeTimer, chaseTimer, stateTimer float32
-	chaseStrafeDir                    float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
-	spriteAngle                       float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
-	state, previousState              EnemyState
-	voice                             tdaudio.VoiceId
+	SpriteRender                                   comps.SpriteRender
+	AnimPlayer                                     comps.AnimationPlayer
+	WakeTime                                       float32 // Number of seconds player must be in sight before enemy begins to pursue.
+	WakeLimit                                      float32 // Maximum number of seconds after losing sight of player before giving up.
+	StunTime                                       float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
+	StunChance                                     float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
+	bloodParticles                                 comps.ParticleRender
+	bloodOffset                                    mgl32.Vec3
+	actor                                          Actor
+	id                                             scene.Id[*Enemy]
+	world                                          *World
+	states                                         [ENEMY_STATE_COUNT]enemyState
+	wakeTimer, chaseTimer, stateTimer, attackTimer float32
+	chaseStrafeDir                                 float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle                                    float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	state, previousState                           EnemyState
+	voice                                          tdaudio.VoiceId
 
 	// Player or target tracking variables
 	dirToTarget                 mgl32.Vec3
@@ -65,6 +68,15 @@ type Enemy struct {
 var _ HasActor = (*Enemy)(nil)
 var _ comps.HasBody = (*Enemy)(nil)
 
+func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
+	switch ent.Properties["enemy"] {
+	case "fire wraith":
+		return SpawnFireWraith(world, ent.Position, ent.AnglesInRadians())
+	default:
+		return SpawnWraith(world, ent.Position, ent.AnglesInRadians())
+	}
+}
+
 func (enemy *Enemy) Actor() *Actor {
 	return &enemy.actor
 }
@@ -73,10 +85,11 @@ func (enemy *Enemy) Body() *comps.Body {
 	return &enemy.actor.body
 }
 
-func (enemy *Enemy) initDefaults(world *World) {
+func (enemy *Enemy) initDefaults(world *World, id scene.Id[*Enemy]) {
 	world.Hud.EnemiesTotal++
 	enemy.world = world
 	enemy.state = ENEMY_STATE_IDLE
+	enemy.id = id
 }
 
 func (enemy *Enemy) Finalize() {
@@ -258,6 +271,10 @@ func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) bool {
 	return true
 }
 
+func (enemy *Enemy) faceTarget() {
+	enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z())
+}
+
 func (enemy *Enemy) chase(
 	deltaTime float32,
 	chaseStraightTime float32, // Number of seconds enemy chases in a straight line before turning.
@@ -266,7 +283,7 @@ func (enemy *Enemy) chase(
 	totalChaseTime := chaseStraightTime + chaseStrafeTime
 	enemy.actor.inputForward = 1.0
 	enemy.chaseTimer += deltaTime
-	enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z())
+	enemy.faceTarget()
 	if enemy.chaseTimer < chaseStraightTime {
 		// First, walk forward for a bit
 		enemy.chaseStrafeDir = 0.0
@@ -297,4 +314,40 @@ func (enemy *Enemy) chase(
 		}
 	}
 	enemy.actor.inputStrafe = enemy.chaseStrafeDir
+}
+
+// This will move the enemy in 4 directions relative to the player, only sometimes closing in on her position.
+// Useful for ranged enemies.
+func (enemy *Enemy) stalk(
+	deltaTime float32,
+	moveTime float32,
+) {
+	enemy.actor.inputForward = 1.0
+	enemy.chaseTimer += deltaTime
+
+	if enemy.chaseTimer >= moveTime {
+		switch rand.Intn(4) {
+		case 0:
+			enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z())
+		case 1:
+			enemy.actor.YawAngle = math2.Atan2(enemy.dirToTarget.X(), enemy.dirToTarget.Z())
+		case 2:
+			enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.Z(), enemy.dirToTarget.X())
+		case 3:
+			enemy.actor.YawAngle = math2.Atan2(enemy.dirToTarget.Z(), -enemy.dirToTarget.X())
+		}
+		enemy.chaseTimer = 0.0
+	} else {
+		// Cancel the movement if we are approaching an obstacle
+		hit, _ := enemy.world.Raycast(
+			enemy.actor.Position(),
+			enemy.actor.FacingVec(),
+			COL_LAYER_MAP|COL_LAYER_ACTORS,
+			WRAITH_MELEE_RANGE,
+			enemy,
+		)
+		if hit.Hit {
+			enemy.chaseTimer = moveTime
+		}
+	}
 }
