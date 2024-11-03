@@ -2,6 +2,7 @@ package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -17,7 +18,9 @@ type (
 
 	// Represents an entity that can be activated by another entity.
 	Linkable interface {
+		scene.HasHandle
 		LinkNumber() int
+		OnLinkActivate(source Linkable)
 	}
 
 	HasActor interface {

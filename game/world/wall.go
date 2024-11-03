@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -35,6 +36,7 @@ type Wall struct {
 	Destination   mgl32.Vec3 // The position in global space that the wall will move to.
 	WaitTime      float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
 	Speed         float32
+	id            scene.Id[*Wall]
 	body          comps.Body
 	waitTimer     float32
 	movePhase     MovePhase
@@ -43,6 +45,7 @@ type Wall struct {
 	activateSound string
 	key           game.KeyType
 	linkNumber    int
+	isSwitch      bool
 }
 
 var _ Usable = (*Wall)(nil)
@@ -54,6 +57,7 @@ func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall
 	}
 
 	wall.world = world
+	wall.id = id
 
 	transform := comps.TransformFromTE3Ent(ent, false, false)
 
@@ -90,11 +94,14 @@ func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall
 	} else {
 		switch typ {
 		case "door":
-			if err := wall.configureForDoor(ent); err != nil {
-				return scene.Id[*Wall]{}, nil, err
-			}
+			err = wall.configureForDoor(ent)
+		case "switch":
+			err = wall.configureForSwitch(ent)
 		default:
 			wall.Destination = wall.Origin
+		}
+		if err != nil {
+			return scene.Id[*Wall]{}, nil, err
 		}
 	}
 
@@ -158,6 +165,14 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		if keyName, ok := ent.Properties["key"]; ok {
 			wall.key = game.KeyTypeFromName(keyName)
 		}
+
+		if linkStr, ok := ent.Properties["link"]; ok {
+			if linkNum, err := strconv.ParseInt(linkStr, 10, 32); err == nil {
+				wall.linkNumber = int(linkNum)
+			} else {
+				return fmt.Errorf("could not parse link number; %v", err)
+			}
+		}
 	} else {
 		wall.Destination = wall.Origin
 		wall.unopenable = true
@@ -174,6 +189,21 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		// Preload the sound
 		cache.GetSfx(wall.activateSound)
 	}
+
+	return nil
+}
+
+func (wall *Wall) configureForSwitch(ent te3.Ent) error {
+	var err error
+
+	wall.isSwitch = true
+	wall.Destination = wall.Origin
+	wall.linkNumber, err = ent.IntProperty("link")
+	if err != nil {
+		return err
+	}
+
+	wall.AnimPlayer = comps.NewAnimationPlayer(wall.MeshRender.Texture.GetDefaultAnimation(), false)
 
 	return nil
 }
@@ -201,6 +231,13 @@ func SpawnInvisibleWall(
 }
 
 func (wall *Wall) Update(deltaTime float32) {
+	wall.AnimPlayer.Update(deltaTime)
+	if wall.isSwitch && wall.AnimPlayer.IsAtEnd() {
+		wall.world.ActivateLinks(wall)
+		//TODO: Make this reversible.
+		wall.isSwitch = false
+	}
+
 	switch wall.movePhase {
 	case MOVE_PHASE_OPENING:
 		targetDir := wall.Destination.Sub(wall.body.Transform.Position())
@@ -239,10 +276,6 @@ func (wall *Wall) Update(deltaTime float32) {
 	}
 }
 
-func (wall *Wall) LinkNumber() int {
-	return wall.linkNumber
-}
-
 func (wall *Wall) Render(context *render.Context) {
 	if !render.IsBoxVisible(context, wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
 		wall.MeshRender.Mesh == nil {
@@ -253,12 +286,28 @@ func (wall *Wall) Render(context *render.Context) {
 	wall.MeshRender.Render(&wall.body.Transform, &wall.AnimPlayer, context)
 }
 
+func (wall *Wall) LinkNumber() int {
+	return wall.linkNumber
+}
+
+func (wall *Wall) OnLinkActivate(source Linkable) {
+	if !wall.Origin.ApproxEqual(wall.Destination) {
+		wall.ToggleMovement()
+	}
+}
+
+func (wall *Wall) Handle() scene.Handle {
+	return wall.id.Handle
+}
+
 func (wall *Wall) Body() *comps.Body {
 	return &wall.body
 }
 
 func (wall *Wall) OnUse(player *Player) {
 	switch true {
+	case wall.isSwitch:
+		wall.AnimPlayer.PlayFromStart()
 	case wall.unopenable:
 		wall.world.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
 	case wall.key != game.KEY_TYPE_INVALID && (player.keys&wall.key) != wall.key:

@@ -118,3 +118,11 @@ func (world *World) LinkablesWithNumber(linkNumber int) iter.Seq2[scene.Handle, 
 		}
 	}
 }
+
+func (world *World) ActivateLinks(source Linkable) {
+	for handle, ent := range world.LinkablesWithNumber(source.LinkNumber()) {
+		if !handle.Equals(source.Handle()) {
+			ent.OnLinkActivate(source)
+		}
+	}
+}

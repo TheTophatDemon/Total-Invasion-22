@@ -1,5 +1,8 @@
 # TODO
 - Switch
+    - Animation issue
+    - Sound effect
+    - Turn back off again
 - Triggers activating walls
 - Grenade launcher & grenades
 - Parusu

@@ -49,7 +49,7 @@ func (proj *Projectile) disappearOnHit(otherEnt comps.HasBody, result collision.
 		return
 	}
 	otherBody := otherEnt.Body()
-	if otherBody.Layer == COL_LAYER_NONE || otherBody.Layer == COL_LAYER_INVISIBLE {
+	if otherBody.Layer == COL_LAYER_NONE || otherBody.OnLayer(COL_LAYER_INVISIBLE|COL_LAYER_PROJECTILES) {
 		return
 	}
 	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)

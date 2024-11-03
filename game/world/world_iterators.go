@@ -96,6 +96,13 @@ func (world *World) AllActors() iter.Seq2[scene.Handle, HasActor] {
 
 func (world *World) AllLinkables() iter.Seq2[scene.Handle, Linkable] {
 	return func(yield func(scene.Handle, Linkable) bool) {
+		nextWalls, stop := iter.Pull2(world.Walls.All())
+		defer stop()
+		for handle, ent, ok := nextWalls(); ok; handle, ent, ok = nextWalls() {
+			if !yield(handle, ent) {
+				return
+			}
+		}
 		nextTriggers, stop := iter.Pull2(world.Triggers.All())
 		defer stop()
 		for handle, ent, ok := nextTriggers(); ok; handle, ent, ok = nextTriggers() {

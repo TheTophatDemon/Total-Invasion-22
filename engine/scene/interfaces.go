@@ -12,4 +12,8 @@ type (
 		Render(renderContext *render.Context)
 		TearDown() // Called to release external resources held by storage items.
 	}
+
+	HasHandle interface {
+		Handle() Handle
+	}
 )

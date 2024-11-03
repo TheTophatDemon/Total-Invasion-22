@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -93,14 +92,14 @@ func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*En
 	enemy.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), math2.DegToRadVec3(angles), mgl32.Vec3{0.9, 0.9, 0.9},
+				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
 			Shape:  collision.NewSphere(0.7),
 			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
-		YawAngle:  mgl32.DegToRad(angles[1]),
+		YawAngle:  angles[1],
 		AccelRate: 80.0,
 		Friction:  20.0,
 		MaxSpeed:  6.0,

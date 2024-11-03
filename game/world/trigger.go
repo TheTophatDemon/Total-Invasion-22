@@ -143,6 +143,13 @@ func (tr *Trigger) LinkNumber() int {
 	return tr.linkNumber
 }
 
+func (tr *Trigger) Handle() scene.Handle {
+	return tr.id.Handle
+}
+
+func (tr *Trigger) OnLinkActivate(source Linkable) {
+}
+
 // Returns a bool that is true if the handle was added to a new slot.
 // The int returned is the index of the handle in the array if found, or -1.
 func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {

@@ -38,11 +38,14 @@ func (te3 *TE3File) FindEntWithProperty(key, value string) (Ent, error) {
 }
 
 // Returns an array of entities in the map with the given key value pair in their properties.
-func (te3 *TE3File) FindEntsWithProperty(key, value string) []Ent {
+func (te3 *TE3File) FindEntsWithProperty(key string, values ...string) []Ent {
 	out := make([]Ent, 0)
 	for _, ent := range te3.Ents {
-		if val, ok := ent.Properties[key]; ok && val == value {
-			out = append(out, ent)
+		for _, value := range values {
+			if val, ok := ent.Properties[key]; ok && val == value {
+				out = append(out, ent)
+				break
+			}
 		}
 	}
 	return out

@@ -84,7 +84,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
-	world.Cameras = scene.NewStorage[Camera](64)
+	world.Cameras = scene.NewStorageWithFuncs[Camera](64, (*Camera).Update, nil)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -170,7 +170,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	}
 
 	// Spawn dynamic tiles
-	for _, spawn := range te3File.FindEntsWithProperty("type", "door") {
+	for _, spawn := range te3File.FindEntsWithProperty("type", "door", "switch") {
 		if _, _, err := SpawnWallFromTE3(world, spawn); err != nil {
 			log.Printf("wall entity at %v caused an error: %v\n", spawn.Position, err)
 		}
@@ -281,7 +281,9 @@ func (world *World) Render() {
 	scene.RenderStores(world, &renderContext)
 
 	world.Hud.UpdateDebugCounters(&renderContext)
-	world.Hud.Render()
+	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {
+		world.Hud.Render()
+	}
 }
 
 func (world *World) TearDown() {
