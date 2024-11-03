@@ -50,7 +50,16 @@ func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*En
 				enemy.stalk(deltaTime, 1.0)
 				enemy.attackTimer -= deltaTime
 				if enemy.attackTimer <= 0.0 {
-					enemy.changeState(ENEMY_STATE_ATTACK)
+					hit, _ := enemy.world.Raycast(
+						enemy.actor.Position(),
+						enemy.dirToTarget,
+						COL_LAYER_MAP|COL_LAYER_NPCS,
+						enemy.distToTarget,
+						enemy,
+					)
+					if !hit.Hit {
+						enemy.changeState(ENEMY_STATE_ATTACK)
+					}
 				}
 			},
 		},

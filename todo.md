@@ -1,7 +1,4 @@
 # TODO
-- Fire Wraiths
-    - Friendly fire disable?
-    - Spawn facing the right way
 - Switch
 - Triggers activating walls
 - Grenade launcher & grenades

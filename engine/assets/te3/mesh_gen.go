@@ -86,12 +86,12 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 	var err error
 
 	mapVerts := geom.Vertices{
-		Pos:      make([]mgl32.Vec3, 0),
-		TexCoord: make([]mgl32.Vec2, 0),
-		Normal:   make([]mgl32.Vec3, 0),
+		Pos:      make([]mgl32.Vec3, 0, len(te3.Tiles.Data)*24),
+		TexCoord: make([]mgl32.Vec2, 0, len(te3.Tiles.Data)*24),
+		Normal:   make([]mgl32.Vec3, 0, len(te3.Tiles.Data)*24),
 		Color:    nil,
 	}
-	mapInds := make([]uint32, 0)
+	mapInds := make([]uint32, 0, len(te3.Tiles.Data)*12)
 
 	shapeMeshes := make([]*geom.Mesh, len(te3.Tiles.Shapes))
 	for i, path := range te3.Tiles.Shapes {
@@ -102,7 +102,7 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 	}
 
 	// Groups tile data indices by their texture
-	groupTiles := make(map[TextureID][]int)
+	groupTiles := make(map[TextureID][]int, len(te3.Tiles.Textures))
 
 	// Preprocess tiles
 	for t, tile := range te3.Tiles.Data {
