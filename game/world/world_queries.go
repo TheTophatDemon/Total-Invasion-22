@@ -126,3 +126,11 @@ func (world *World) ActivateLinks(source Linkable) {
 		}
 	}
 }
+
+func (world *World) DeactivateLinks(source Linkable) {
+	for handle, ent := range world.LinkablesWithNumber(source.LinkNumber()) {
+		if !handle.Equals(source.Handle()) {
+			ent.OnLinkDeactivate(source)
+		}
+	}
+}

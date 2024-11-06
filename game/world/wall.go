@@ -28,6 +28,14 @@ const (
 	MOVE_PHASE_CLOSING
 )
 
+type SwitchState uint8
+
+const (
+	NOT_A_SWITCH SwitchState = iota
+	SWITCH_OFF
+	SWITCH_ON
+)
+
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
 type Wall struct {
 	MeshRender    comps.MeshRender
@@ -45,7 +53,7 @@ type Wall struct {
 	activateSound string
 	key           game.KeyType
 	linkNumber    int
-	isSwitch      bool
+	switchState   SwitchState
 }
 
 var _ Usable = (*Wall)(nil)
@@ -196,7 +204,7 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	var err error
 
-	wall.isSwitch = true
+	wall.switchState = SWITCH_OFF
 	wall.Destination = wall.Origin
 	wall.linkNumber, err = ent.IntProperty("link")
 	if err != nil {
@@ -232,10 +240,14 @@ func SpawnInvisibleWall(
 
 func (wall *Wall) Update(deltaTime float32) {
 	wall.AnimPlayer.Update(deltaTime)
-	if wall.isSwitch && wall.AnimPlayer.IsAtEnd() {
-		wall.world.ActivateLinks(wall)
-		//TODO: Make this reversible.
-		wall.isSwitch = false
+	if wall.switchState != NOT_A_SWITCH && wall.AnimPlayer.HitATriggerFrame() {
+		if wall.switchState == SWITCH_OFF {
+			wall.switchState = SWITCH_ON
+			wall.world.ActivateLinks(wall)
+		} else {
+			wall.switchState = SWITCH_OFF
+			wall.world.DeactivateLinks(wall)
+		}
 	}
 
 	switch wall.movePhase {
@@ -291,9 +303,11 @@ func (wall *Wall) LinkNumber() int {
 }
 
 func (wall *Wall) OnLinkActivate(source Linkable) {
-	if !wall.Origin.ApproxEqual(wall.Destination) {
-		wall.ToggleMovement()
-	}
+	wall.Open()
+}
+
+func (wall *Wall) OnLinkDeactivate(source Linkable) {
+	wall.Close()
 }
 
 func (wall *Wall) Handle() scene.Handle {
@@ -306,8 +320,14 @@ func (wall *Wall) Body() *comps.Body {
 
 func (wall *Wall) OnUse(player *Player) {
 	switch true {
-	case wall.isSwitch:
-		wall.AnimPlayer.PlayFromStart()
+	case wall.switchState == SWITCH_OFF:
+		anim, _ := wall.MeshRender.Texture.GetAnimation("on")
+		wall.AnimPlayer.PlayNewAnim(anim)
+		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuatedV(wall.body.Transform.Position())
+	case wall.switchState == SWITCH_ON:
+		anim, _ := wall.MeshRender.Texture.GetAnimation("off")
+		wall.AnimPlayer.PlayNewAnim(anim)
+		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Transform.Position())
 	case wall.unopenable:
 		wall.world.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
 	case wall.key != game.KEY_TYPE_INVALID && (player.keys&wall.key) != wall.key:

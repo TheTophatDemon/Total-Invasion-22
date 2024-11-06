@@ -150,6 +150,9 @@ func (tr *Trigger) Handle() scene.Handle {
 func (tr *Trigger) OnLinkActivate(source Linkable) {
 }
 
+func (tr *Trigger) OnLinkDeactivate(source Linkable) {
+}
+
 // Returns a bool that is true if the handle was added to a new slot.
 // The int returned is the index of the handle in the array if found, or -1.
 func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {

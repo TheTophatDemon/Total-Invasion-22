@@ -44,7 +44,8 @@
   "size": { "w": 128, "h": 128 },
   "scale": "1",
   "frameTags": [
-   { "name": "switch", "from": 0, "to": 3, "direction": "forward", "repeat": "1", "color": "#000000ff" }
+   { "name": "on", "from": 0, "to": 3, "direction": "forward", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:3 default" },
+   { "name": "off", "from": 0, "to": 3, "direction": "reverse", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:3" }
   ]
  }
 }

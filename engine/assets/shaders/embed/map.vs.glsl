@@ -13,7 +13,7 @@ out vec2 vTexCoord;
 out vec3 vNormal;
 
 void main() {
-    vTexCoord = uSourceRect.xy + (aTexCoord * uSourceRect.zw);
+    vTexCoord = uSourceRect.xy + vec2(aTexCoord.x * uSourceRect.z, (aTexCoord.y * uSourceRect.w) + uSourceRect.w);
     mat3 rot = mat3(uModelMatrix[0].xyz, uModelMatrix[1].xyz, uModelMatrix[2].xyz);
     vNormal = normalize(rot * aNormal);
     gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aPos, 1);

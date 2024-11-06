@@ -21,6 +21,7 @@ type (
 		scene.HasHandle
 		LinkNumber() int
 		OnLinkActivate(source Linkable)
+		OnLinkDeactivate(source Linkable)
 	}
 
 	HasActor interface {

@@ -114,7 +114,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.canSeeTarget = false
 	enemy.canHearTarget = false
 	var vecToTarget mgl32.Vec3
-	if player, ok := enemy.world.CurrentPlayer.Get(); ok {
+	if player, ok := enemy.world.CurrentPlayer.Get(); ok && enemy.world.IsOnPlayerCamera() {
 		vecToTarget = player.Body().Transform.Position().Sub(enemyPos)
 		enemy.distToTarget = vecToTarget.Len()
 		if enemy.distToTarget != 0.0 {
@@ -132,6 +132,9 @@ func (enemy *Enemy) Update(deltaTime float32) {
 				enemy.canHearTarget = true
 			}
 		}
+	} else if enemy.state != ENEMY_STATE_DIE {
+		enemy.wakeTimer = 0.0
+		enemy.changeState(ENEMY_STATE_IDLE)
 	}
 
 	if enemy.canHearTarget {

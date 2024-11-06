@@ -63,9 +63,7 @@ func (camera *Camera) Update(deltaTime float32) {
 		camera.waitTimer += deltaTime
 		if camera.waitTimer > camera.waitTime {
 			camera.waitTimer = 0.0
-			if player, isPlayer := camera.world.CurrentPlayer.Get(); isPlayer {
-				camera.world.CurrentCamera = player.Camera
-			}
+			camera.world.ResetToPlayerCamera()
 		}
 	}
 }
@@ -76,6 +74,12 @@ func (camera *Camera) LinkNumber() int {
 
 func (camera *Camera) OnLinkActivate(source Linkable) {
 	camera.world.CurrentCamera = camera.id
+}
+
+func (camera *Camera) OnLinkDeactivate(source Linkable) {
+	if camera.world.CurrentCamera.Equals(camera.id.Handle) {
+		camera.world.ResetToPlayerCamera()
+	}
 }
 
 func (camera *Camera) Handle() scene.Handle {

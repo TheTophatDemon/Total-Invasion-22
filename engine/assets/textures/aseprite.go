@@ -3,6 +3,7 @@ package textures
 import (
 	"encoding/json"
 	"fmt"
+	"iter"
 	"slices"
 	"strconv"
 	"strings"
@@ -54,10 +55,11 @@ type (
 	}
 
 	aseTag struct {
-		Name     string
-		From, To uint
-		Repeat   string
-		Data     string
+		Name      string
+		From, To  uint
+		Repeat    string
+		Direction string
+		Data      string
 	}
 
 	aseLayer struct {
@@ -115,14 +117,20 @@ func (ss *aseSpriteSheet) loadFlags() []string {
 	return []string{}
 }
 
-func (ss *aseSpriteSheet) loadFrames(layer *aseLayer, tag *aseTag) (frames []Frame, err error) {
+func (ss *aseSpriteSheet) loadFrames(layer *aseLayer, tag *aseTag, reversed bool) (frames []Frame, err error) {
 	capacity := len(ss.Frames)
 	if tag != nil {
 		capacity = int(tag.To) - int(tag.From) + 1
 	}
 	frames = make([]Frame, 0, capacity)
 
-	for _, frame := range ss.Frames {
+	var frameIter iter.Seq2[int, aseFrame]
+	if reversed {
+		frameIter = slices.Backward(ss.Frames)
+	} else {
+		frameIter = slices.All(ss.Frames)
+	}
+	for _, frame := range frameIter {
 		if layer != nil {
 			var layerName string
 			layerName, err = frame.getLayerName()
@@ -187,6 +195,7 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 			},
 			Loop: (len(ss.Meta.FrameTags[t].Repeat) == 0),
 		}
+		reversed := ss.Meta.FrameTags[t].Direction == "reverse"
 
 		tagFlags := strings.Split(ss.Meta.FrameTags[t].Data, " ")
 		for _, flag := range tagFlags {
@@ -216,7 +225,7 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 		for l := range ss.Meta.Layers {
 			anim.Name = ss.Meta.FrameTags[t].Name + ";" + ss.Meta.Layers[l].Name
 			// Load a separate animation for each layer
-			anim.Frames, err = ss.loadFrames(&ss.Meta.Layers[l], &ss.Meta.FrameTags[t])
+			anim.Frames, err = ss.loadFrames(&ss.Meta.Layers[l], &ss.Meta.FrameTags[t], reversed)
 			if err != nil {
 				return nil, err
 			}
@@ -225,7 +234,7 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 		if ss.Meta.Layers == nil || len(ss.Meta.Layers) == 0 {
 			anim.Name = ss.Meta.FrameTags[t].Name
 			// When there are no layers, just load all of the frames in the tag as one animation
-			anim.Frames, err = ss.loadFrames(nil, &ss.Meta.FrameTags[t])
+			anim.Frames, err = ss.loadFrames(nil, &ss.Meta.FrameTags[t], reversed)
 			if err != nil {
 				return nil, err
 			}

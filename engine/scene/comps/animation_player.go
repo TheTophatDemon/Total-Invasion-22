@@ -130,7 +130,7 @@ func (ap *AnimationPlayer) IsPlayingAnim(anim textures.Animation) bool {
 
 // Returns true if the animation player passed the specified trigger frame in its most recent update.
 func (ap *AnimationPlayer) HitTriggerFrame(triggerFrameNumber int) bool {
-	if ap.animation.TriggerFrames == nil || triggerFrameNumber >= len(ap.animation.TriggerFrames) {
+	if ap.animation.TriggerFrames == nil || triggerFrameNumber >= len(ap.animation.TriggerFrames) || triggerFrameNumber < 0 {
 		return false
 	}
 	return uint(ap.currentIndex) == ap.animation.TriggerFrames[triggerFrameNumber] && ap.frameTimer == 0.0

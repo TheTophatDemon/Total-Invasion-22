@@ -304,7 +304,20 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
 	world.Hud.LevelEndTime = time.Now()
 	world.Hud.InitVictory()
-	for _, enemy := range world.Enemies.All() {
-		enemy.OnPlayerVictory()
+	// for _, enemy := range world.Enemies.All() {
+	// 	enemy.OnPlayerVictory()
+	// }
+}
+
+func (world *World) ResetToPlayerCamera() {
+	if player, isPlayer := world.CurrentPlayer.Get(); isPlayer {
+		world.CurrentCamera = player.Camera
 	}
+}
+
+func (world *World) IsOnPlayerCamera() bool {
+	if player, isPlayer := world.CurrentPlayer.Get(); isPlayer {
+		return world.CurrentCamera.Handle.Equals(player.Camera.Handle)
+	}
+	return false
 }
