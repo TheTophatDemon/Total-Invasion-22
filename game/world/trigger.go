@@ -27,6 +27,7 @@ const (
 	TRIGGER_ACTION_DAMAGE    = "damage"
 	TRIGGER_ACTION_END_LEVEL = "end level"
 	TRIGGER_ACTION_SECRET    = "secret"
+	TRIGGER_ACTION_ACTIVATE  = "activate"
 )
 
 const (
@@ -86,6 +87,9 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
 		world.Hud.SecretsTotal++
+	case TRIGGER_ACTION_ACTIVATE:
+		tr.filter = playerOnlyFilter
+		tr.onEnter = activateAction
 	}
 
 	return
@@ -231,6 +235,10 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
 	tr.world.Hud.SecretsFound++
 	tr.world.QueueRemoval(tr.id.Handle)
+}
+
+func activateAction(tr *Trigger, handle scene.Handle) {
+	tr.world.ActivateLinks(tr)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

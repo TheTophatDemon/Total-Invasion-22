@@ -54,6 +54,7 @@ type Wall struct {
 	key           game.KeyType
 	linkNumber    int
 	switchState   SwitchState
+	blockUse      bool
 }
 
 var _ Usable = (*Wall)(nil)
@@ -172,6 +173,12 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 		// Get key
 		if keyName, ok := ent.Properties["key"]; ok {
 			wall.key = game.KeyTypeFromName(keyName)
+		}
+
+		if blockUse, err := ent.BoolProperty("blockUse"); err == nil {
+			wall.blockUse = blockUse
+		} else if _, notFound := err.(te3.PropNotFoundError); !notFound {
+			return fmt.Errorf("could not parse blockuse property: %v", err)
 		}
 
 		if linkStr, ok := ent.Properties["link"]; ok {
@@ -319,6 +326,9 @@ func (wall *Wall) Body() *comps.Body {
 }
 
 func (wall *Wall) OnUse(player *Player) {
+	if wall.blockUse {
+		return
+	}
 	switch true {
 	case wall.switchState == SWITCH_OFF:
 		anim, _ := wall.MeshRender.Texture.GetAnimation("on")

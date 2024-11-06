@@ -1,5 +1,4 @@
 # TODO
-- Triggers activating walls
 - Grenade launcher & grenades
 - Parusu
 - Cacowraith
