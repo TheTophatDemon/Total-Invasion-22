@@ -112,7 +112,7 @@ func SpawnFireWraith(world *World, position, angles mgl32.Vec3) (id scene.Id[*En
 	enemy.StunChance = 1.0
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
-	enemy.actor.Health = 200.0
+	enemy.actor.Health = 175.0
 	enemy.actor.MaxHealth = enemy.actor.Health
 
 	return
