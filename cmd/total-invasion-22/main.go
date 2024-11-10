@@ -95,6 +95,7 @@ func main() {
 	input.BindActionMouseButton(settings.ACTION_FIRE, glfw.MouseButton1)
 	input.BindActionKey(settings.ACTION_SICKLE, glfw.Key1)
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
+	input.BindActionKey(settings.ACTION_GRENADE, glfw.Key3)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})
 	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})

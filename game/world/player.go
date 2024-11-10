@@ -257,6 +257,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 	} else if input.IsActionJustPressed(settings.ACTION_CHICKEN) {
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_CHICKEN)
+	} else if input.IsActionJustPressed(settings.ACTION_GRENADE) {
+		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_GRENADE)
 	}
 
 	if input.IsActionPressed(settings.ACTION_SLOW) {

@@ -66,6 +66,7 @@ type Hud struct {
 
 	sickle                     Sickle
 	chickenGun                 ChickenCannon
+	grenadeLauncher            GrenadeLauncher
 	weapons                    [WEAPON_ORDER_COUNT]Weapon
 	selectedWeapon, nextWeapon WeaponIndex
 
@@ -121,9 +122,11 @@ func (hud *Hud) Init() {
 
 	hud.sickle.Init(hud)
 	hud.chickenGun.Init(hud)
+	hud.grenadeLauncher.Init(hud)
 	hud.weapons = [WEAPON_ORDER_COUNT]Weapon{
 		WEAPON_ORDER_SICKLE:  &hud.sickle,
 		WEAPON_ORDER_CHICKEN: &hud.chickenGun,
+		WEAPON_ORDER_GRENADE: &hud.grenadeLauncher,
 	}
 
 	hud.InitPlayerStats()

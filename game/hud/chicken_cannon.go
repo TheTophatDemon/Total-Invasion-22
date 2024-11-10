@@ -51,7 +51,7 @@ func (chickenCannon *ChickenCannon) Order() WeaponIndex {
 	return WEAPON_ORDER_CHICKEN
 }
 
-func (ChickenCannon *ChickenCannon) NoiseLevel() float32 {
+func (chickenCannon *ChickenCannon) NoiseLevel() float32 {
 	return 20.0
 }
 
