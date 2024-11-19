@@ -33,7 +33,7 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	tex := cache.GetTexture("assets/textures/sprites/fireball.png")
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
-	proj.speed = 70.0
+	proj.forwardSpeed = 70.0
 	proj.voices[0] = cache.GetSfx(SFX_FIREBALL).PlayAttenuatedV(position)
 	proj.StunChance = 0.1
 	proj.Damage = 15
@@ -45,19 +45,12 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 }
 
 func (proj *Projectile) disappearOnHit(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
-	if !proj.body.OnLayer(COL_LAYER_PROJECTILES) {
+	if !proj.shouldIntersect(otherEnt) {
 		return
 	}
-	otherBody := otherEnt.Body()
-	if otherBody.Layer == COL_LAYER_NONE || otherBody.OnLayer(COL_LAYER_INVISIBLE|COL_LAYER_PROJECTILES) {
-		return
+	if damageable, canDamage := otherEnt.(Damageable); canDamage {
+		damageable.OnDamage(proj, proj.Damage)
 	}
-	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
-	if !hasOwner || (hasOwner && otherBody != owner.Body()) {
-		if damageable, canDamage := otherEnt.(Damageable); canDamage {
-			damageable.OnDamage(proj, proj.Damage)
-		}
 
-		proj.world.QueueRemoval(proj.id.Handle)
-	}
+	proj.world.QueueRemoval(proj.id.Handle)
 }

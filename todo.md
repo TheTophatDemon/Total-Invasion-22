@@ -1,7 +1,9 @@
 # TODO
 - Grenades
-    - Ammo pickup
     - Projectile
+        - Swept collision?
+        - Why does it only go through walls in one direction
+    - Ammo pickup
     - Sounds
     - HUD icon
     - Explosion

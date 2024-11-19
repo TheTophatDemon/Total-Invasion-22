@@ -46,7 +46,7 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 		log.Println("could not find animation for thrown sickle sprite")
 	}
 	proj.AnimPlayer = comps.NewAnimationPlayer(throwAnim, true)
-	proj.speed = 35.0
+	proj.forwardSpeed = 35.0
 	proj.voices[0] = cache.GetSfx(SFX_SICKLE_THROW).PlayAttenuatedV(position)
 	proj.StunChance = 0.1
 	proj.Damage = 200.0
@@ -62,16 +62,16 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 	if !input.IsActionPressed(settings.ACTION_FIRE) {
 		decelerationRate = 100.0
 	}
-	proj.speed = max(-35.0, proj.speed-deltaTime*decelerationRate)
+	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*decelerationRate)
 	if owner, ok := scene.Get[HasActor](proj.owner); ok {
-		if proj.speed < 0.0 {
+		if proj.forwardSpeed < 0.0 {
 			ownerPos := owner.Body().Transform.Position()
 			projPos := proj.body.Transform.Position()
 			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
 		}
 	}
 
-	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.speed}, proj.body.Transform.Matrix())
+	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
@@ -82,7 +82,7 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 	owner, hasOwner := scene.Get[HasActor](proj.owner)
 
 	otherBody := otherEnt.Body()
-	if proj.speed <= -1.0 {
+	if proj.forwardSpeed <= -1.0 {
 		if hasOwner && otherBody == owner.Body() {
 			proj.voices[0].Stop()
 			proj.id.Remove()
@@ -91,7 +91,7 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 			}
 		}
 	} else if otherBody.OnLayer(COL_LAYER_MAP) {
-		proj.speed = -math2.Abs(proj.speed) / 2.0
+		proj.forwardSpeed = -math2.Abs(proj.forwardSpeed) / 2.0
 		proj.voices[1] = cache.GetSfx(SFX_SICKLE_CLINK).PlayAttenuatedV(result.Position)
 	}
 

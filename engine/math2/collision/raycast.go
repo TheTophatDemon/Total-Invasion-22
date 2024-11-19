@@ -13,6 +13,21 @@ type RaycastResult struct {
 	Distance         float32
 }
 
+func RayPlaneCollision(rayOrigin, rayDir mgl32.Vec3, plane math2.Plane, twoSided bool) RaycastResult {
+	if denom := rayDir.Dot(plane.Normal); math2.Abs(denom) > 0.0001 && (twoSided || denom < 0) {
+		t := plane.Normal.Mul(plane.Dist).Sub(rayOrigin).Dot(plane.Normal) / denom
+		if t > 0.0001 {
+			return RaycastResult{
+				Hit:      true,
+				Position: rayOrigin.Add(rayDir.Mul(t)),
+				Normal:   plane.Normal.Mul(-math2.Signum(denom)),
+				Distance: t,
+			}
+		}
+	}
+	return RaycastResult{}
+}
+
 func RayBoxCollision(rayOrigin, rayDir mgl32.Vec3, box math2.Box) RaycastResult {
 	// Tests the ray against an axis aligned plane.
 	testAxisPlane := func(axis int, planeOffset float32) (bool, mgl32.Vec3, float32) {

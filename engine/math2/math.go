@@ -88,6 +88,10 @@ func Vec3WithY(vec mgl32.Vec3, newY float32) mgl32.Vec3 {
 	return mgl32.Vec3{vec.X(), newY, vec.Z()}
 }
 
+func Vec3Reflect(direction, normal mgl32.Vec3) mgl32.Vec3 {
+	return direction.Sub(normal.Mul(2 * direction.Dot(normal)))
+}
+
 // Returns a unit vector pointing in a random direction.
 func RandomDir() mgl32.Vec3 {
 	dir := mgl32.Vec3{
