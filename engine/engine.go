@@ -68,6 +68,7 @@ func Init(screenWidth, screenHeight int, windowTitle string) error {
 func Run(app App) {
 	previousTime := time.Now()
 	var accumulator float64
+	var pollEventsTime float64
 
 	// FPS counters
 	var fpsTimer float64
@@ -75,26 +76,33 @@ func Run(app App) {
 	for !window.ShouldClose() {
 		// Update
 		now := time.Now()
-		deltaTime := float64(now.Sub(previousTime).Seconds())
-		previousTime = now
-
-		//Calc FPS
-		fpsTimer += deltaTime
-		fpsTicks++
-		if fpsTimer > 1.0 {
-			fpsTimer = 0.0
-			fps = fpsTicks
-			fpsTicks = 0
+		if window.GetAttrib(glfw.Focused) == glfw.False {
+			previousTime = now
 		}
 
-		// Run updates by splitting the time since the last from into fixed time steps.
-		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
-		updateCount := 0
-		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
-			app.Update(float32(updateRate))
-			input.Update()
-			tdaudio.Update()
-			updateCount++
+		deltaTime := float64(now.Sub(previousTime).Seconds()) - pollEventsTime // Subtract pollEventsTime to prevent game speedup when moving the window.
+		previousTime = now
+
+		if deltaTime >= 0 {
+
+			//Calc FPS
+			fpsTimer += deltaTime
+			fpsTicks++
+			if fpsTimer > 1.0 {
+				fpsTimer = 0.0
+				fps = fpsTicks
+				fpsTicks = 0
+			}
+
+			// Run updates by splitting the time since the last from into fixed time steps.
+			// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
+			updateCount := 0
+			for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
+				app.Update(float32(updateRate))
+				input.Update()
+				tdaudio.Update()
+				updateCount++
+			}
 		}
 
 		// OpenGL settings
@@ -112,7 +120,10 @@ func Run(app App) {
 		failure.CheckOpenGLError()
 
 		window.SwapBuffers()
+
+		startPollTime := time.Now()
 		glfw.PollEvents()
+		pollEventsTime = time.Now().Sub(startPollTime).Seconds()
 
 		// Throttle the update rate if the game is running faster than max FPS
 		for {
