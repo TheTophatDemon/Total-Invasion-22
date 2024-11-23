@@ -65,7 +65,7 @@ func (body *Body) ResolveCollision(movement mgl32.Vec3, otherEnt HasBody, deltaT
 		log.Printf("collision is not implemented for shape %v.\n", body.Shape)
 	}
 
-	res := body.Shape.ResolveCollision(nextPosition, otherBody.Transform.Position(), otherBody.Shape)
+	res := body.Shape.ResolveCollision(body.Transform.Position(), movement, otherBody.Transform.Position(), otherBody.Shape)
 	if res.Hit {
 		if body.Filter&otherBody.Layer != 0 {
 			body.Transform.TranslateV(res.Normal.Mul(res.Penetration))

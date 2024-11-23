@@ -35,7 +35,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3, owner scene.Hand
 
 	proj.body = comps.Body{
 		Transform:   comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25}),
-		Shape:       collision.NewSphere(0.25),
+		Shape:       collision.NewSphere(1.0),
 		Velocity:    direction.Mul(20.0),
 		Layer:       COL_LAYER_PROJECTILES,
 		Filter:      COL_LAYER_MAP,

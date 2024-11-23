@@ -7,7 +7,8 @@ import (
 
 type Sphere struct {
 	shape
-	radius float32
+	radius     float32
+	continuous bool
 }
 
 var _ Shape = (*Sphere)(nil)
@@ -19,6 +20,12 @@ func NewSphere(radius float32) Sphere {
 		},
 		radius: radius,
 	}
+}
+
+func NewContinuousSphere(radius float32) Sphere {
+	sphere := NewSphere(radius)
+	sphere.continuous = true
+	return sphere
 }
 
 func (sphere Sphere) String() string {
@@ -42,10 +49,18 @@ func (sphere Sphere) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist 
 	}
 }
 
-func (sphere Sphere) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (sphere Sphere) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	myNextPosition := myPosition.Add(myMovement)
+	if myMovement.LenSqr() == 0.0 {
+		return sphere.ResolveCollisionDiscrete(myNextPosition, theirPosition, theirShape)
+	}
+
+	boundingCenter := myPosition.Add(myMovement.Mul(0.5))
+	boundingRadius := myMovement.Len() * 0.5
+
 	switch otherShape := theirShape.(type) {
 	case Sphere:
-		return ResolveSphereSphere(myPosition, theirPosition, sphere, otherShape)
+
 	case Box:
 		return ResolveSphereBox(myPosition, theirPosition, sphere, otherShape)
 	case Mesh:
@@ -80,7 +95,50 @@ func (sphere Sphere) ResolveCollision(myPosition, theirPosition mgl32.Vec3, thei
 			Penetration: overallDistance,
 		}
 	case Grid:
-		return otherShape.ResolveOtherBodysCollision(theirPosition, myPosition, sphere)
+		return otherShape.ResolveOtherBodysCollision(theirPosition, myPosition, myMovement, sphere)
+	}
+	return Result{}
+}
+
+func (sphere Sphere) ResolveCollisionDiscrete(myNextPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	switch otherShape := theirShape.(type) {
+	case Sphere:
+		return ResolveSphereSphere(myNextPosition, theirPosition, sphere, otherShape)
+	case Box:
+		return ResolveSphereBox(myNextPosition, theirPosition, sphere, otherShape)
+	case Mesh:
+		// Check for triangle hits in the center first, then the edges.
+		// This prevents triangle edges from stopping smooth movement along neighboring triangles.
+		var res1, res2 Result
+		var firstHitPosition, originalPosition, overallMovement, overallNormal mgl32.Vec3
+		var overallDistance float32
+
+		originalPosition = myNextPosition
+		res1 = ResolveSphereTriangles(myNextPosition, theirPosition, sphere, otherShape, TRI_PART_CENTER)
+		if res1.Hit {
+			firstHitPosition = res1.Position
+			myNextPosition = myNextPosition.Add(res1.Normal.Mul(res1.Penetration))
+		}
+		res2 = ResolveSphereTriangles(myNextPosition, theirPosition, sphere, otherShape, TRI_PART_ALL)
+		if res2.Hit {
+			if !res1.Hit {
+				firstHitPosition = res2.Position
+			}
+			myNextPosition = myNextPosition.Add(res2.Normal.Mul(res2.Penetration))
+		}
+		overallMovement = myNextPosition.Sub(originalPosition)
+		overallDistance = overallMovement.Len()
+		if overallDistance > 0.0 {
+			overallNormal = overallMovement.Mul(1.0 / overallDistance)
+		}
+		return Result{
+			Hit:         res1.Hit || res2.Hit,
+			Position:    firstHitPosition,
+			Normal:      overallNormal,
+			Penetration: overallDistance,
+		}
+	case Grid:
+		return otherShape.ResolveOtherBodysCollision(theirPosition, myNextPosition, mgl32.Vec3{}, sphere)
 	}
 	return Result{}
 }

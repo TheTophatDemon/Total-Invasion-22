@@ -72,6 +72,6 @@ func (mesh Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 	return
 }
 
-func (mesh Mesh) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (mesh Mesh) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
 	panic("collision resolution not implemented for mesh")
 }

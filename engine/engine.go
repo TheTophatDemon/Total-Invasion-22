@@ -84,7 +84,6 @@ func Run(app App) {
 		previousTime = now
 
 		if deltaTime >= 0 {
-
 			//Calc FPS
 			fpsTimer += deltaTime
 			fpsTicks++

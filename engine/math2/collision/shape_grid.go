@@ -258,13 +258,13 @@ func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 	return RaycastResult{}
 }
 
-func (grid Grid) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (grid Grid) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
 	// The map doesn't move, silly!
 	return Result{}
 }
 
 // Call this to resolve collisions another body has with the grid using an optimized grid-walking method.
-func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
 	var firstHitPosition mgl32.Vec3
 	var numberOfHits uint
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
@@ -300,7 +300,7 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition mgl32.Vec
 			// Resolve collision against this tile
 			tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
 			tileShape := grid.cels[t]
-			var res Result = theirShape.ResolveCollision(theirPositionRelative, tileCenter, tileShape)
+			var res Result = theirShape.ResolveCollision(theirPositionRelative, theirMovement, tileCenter, tileShape)
 			if res.Hit {
 				theirPositionRelative = theirPositionRelative.Add(res.Normal.Mul(res.Penetration))
 				if numberOfHits == 0 {

@@ -36,10 +36,11 @@ func (box Box) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float3
 	}
 }
 
-func (box Box) ResolveCollision(myPosition, theirPosition mgl32.Vec3, theirShape Shape) Result {
+func (box Box) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
+	nextPosition := myPosition.Add(myMovement)
 	switch otherShape := theirShape.(type) {
 	case Sphere:
-		return ResolveSphereBox(theirPosition, myPosition, otherShape, box)
+		return ResolveSphereBox(nextPosition, myPosition, otherShape, box)
 	default:
 		panic("collision resolution not implemented for boxes and " + otherShape.String())
 	}

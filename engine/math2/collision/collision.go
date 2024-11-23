@@ -129,7 +129,6 @@ func ResolveSphereBox(spherePos, boxPos mgl32.Vec3, sphere Sphere, box Box) (res
 	projectedPoint := math2.Vec3Max(math2.Vec3Min(spherePos, worldSpaceBox.Max), worldSpaceBox.Min)
 	diff := spherePos.Sub(projectedPoint)
 	distSq := diff.LenSqr()
-
 	if distSq > 0.0 && distSq < sphere.Radius()*sphere.Radius() {
 		result.Hit = true
 		dist := math2.Sqrt(distSq)
