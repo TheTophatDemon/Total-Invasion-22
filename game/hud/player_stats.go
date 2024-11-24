@@ -44,9 +44,10 @@ var (
 )
 
 var ammoTypeIconNames = [game.AMMO_TYPE_COUNT]string{
-	game.AMMO_TYPE_NONE:   "",
-	game.AMMO_TYPE_SICKLE: "sickle",
-	game.AMMO_TYPE_EGG:    "egg",
+	game.AMMO_TYPE_NONE:    "",
+	game.AMMO_TYPE_SICKLE:  "sickle",
+	game.AMMO_TYPE_EGG:     "egg",
+	game.AMMO_TYPE_GRENADE: "grenade",
 }
 
 func (hud *Hud) InitPlayerStats() {
@@ -252,7 +253,11 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 			weapon.Select()
 		}
 	}
-	if weapon != nil && stats.Ammo != nil {
-		weapon.Update(deltaTime, stats.MoveSpeed, stats.Ammo)
+	if stats.Ammo != nil {
+		for _, wep := range hud.weapons {
+			if wep != nil {
+				wep.Update(deltaTime, stats.MoveSpeed, stats.Ammo)
+			}
+		}
 	}
 }

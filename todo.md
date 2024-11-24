@@ -1,10 +1,7 @@
 # TODO
 - Grenades
-    - Ammo pickup
-    - Fix sudden loudness when shooting at certain angles.
-    - HUD icon
     - Make explosions raycast
-    - Optimize continous collision
+    - Optimize continous collision?
 - Parusu
 - Cacowraith
 - Airhorn

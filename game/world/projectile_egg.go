@@ -14,10 +14,6 @@ import (
 )
 
 const (
-	SFX_EGG_SHOOT = "assets/sounds/chickengun.wav"
-)
-
-const (
 	CHICKEN_SPAWN_CHANCE = 0.3
 )
 
@@ -44,7 +40,6 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 	eggTex := cache.GetTexture("assets/textures/sprites/egg.png")
 	proj.SpriteRender = comps.NewSpriteRender(eggTex)
 	proj.forwardSpeed = 100.0
-	proj.voices[0] = cache.GetSfx(SFX_EGG_SHOOT).PlayAttenuatedV(position)
 	proj.StunChance = 0.1
 	proj.Damage = 15
 

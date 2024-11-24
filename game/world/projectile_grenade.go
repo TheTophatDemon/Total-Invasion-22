@@ -9,10 +9,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-const (
-	SFX_GRENADE = "assets/sounds/grenadelaunch.wav"
-)
-
 func SpawnGrenade(world *World, position, direction mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = world.Projectiles.New()
 	if err != nil {
@@ -26,7 +22,6 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3, owner scene.Hand
 	tex := cache.GetTexture("assets/textures/sprites/grenade.png")
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
-	proj.voices[0] = cache.GetSfx(SFX_GRENADE).PlayAttenuatedV(position)
 	proj.StunChance = 0.0
 	proj.Damage = 15
 	proj.gravity = -25.0

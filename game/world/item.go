@@ -61,6 +61,8 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		id, item, err = SpawnStimpack(world, ent.Position)
 	case "cartonofeggs", "egg_carton":
 		id, item, err = SpawnEggCarton(world, ent.Position)
+	case "grenades":
+		id, item, err = SpawnGrenades(world, ent.Position)
 	case "chickencannon", "chickengun", "chicken_cannon", "chicken_gun":
 		id, item, err = SpawnChickenCannon(world, ent.Position)
 	case "grenadelauncher", "grenade_launcher", "grenade launcher":
@@ -117,6 +119,17 @@ func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item
 	item.message = settings.Localize("eggCartonGet")
 	item.messageTime = 1.0
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/egg_carton.png"))
+	return
+}
+
+func SpawnGrenades(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
+	item.ammoType = game.AMMO_TYPE_GRENADE
+	item.ammoAmount = 3
+	item.dontWasteAmmo = true
+	item.message = settings.Localize("grenadesGet")
+	item.messageTime = 1.0
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/grenades.png"))
 	return
 }
 
