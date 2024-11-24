@@ -15,7 +15,7 @@ func Teleport(radius float32) comps.ParticleRender {
 		Texture:          poofTexture,
 		SpawnRate:        0.01,
 		SpawnRadius:      radius,
-		SpawnCount:       20,
+		BurstCount:       20,
 		VisibilityRadius: 5.0,
 		EmissionTimer:    0.0,
 		MaxCount:         20,

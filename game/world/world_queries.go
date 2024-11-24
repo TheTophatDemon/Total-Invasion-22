@@ -2,7 +2,6 @@ package world
 
 import (
 	"iter"
-	"log"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -35,21 +34,7 @@ func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 		}
 		body := bodyEnt.Body()
 
-		var hit bool
-		switch shape := body.Shape.(type) {
-		case collision.Sphere:
-			hit = collision.SphereTouchesSphere(spherePos, sphereRadius, body.Transform.Position(), shape.Radius())
-		case collision.Box:
-			hit = collision.SphereTouchesBox(spherePos, sphereRadius, shape.Extents().Translate(body.Transform.Position()))
-		case collision.Mesh:
-			for _, tri := range shape.Triangles() {
-				if h, _ := collision.SphereTriangleCollision(spherePos, sphereRadius, tri, body.Transform.Position()); h != collision.TRI_PART_NONE {
-					hit = true
-					break
-				}
-			}
-		}
-		if hit {
+		if collision.NewSphere(sphereRadius).Touches(spherePos, body.Transform.Position(), body.Shape) {
 			result = append(result, bodyId)
 		}
 	}
@@ -64,14 +49,7 @@ func (world *World) ProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float
 		}
 		body := proj.Body()
 
-		var hit bool
-		switch shape := body.Shape.(type) {
-		case collision.Sphere:
-			hit = collision.SphereTouchesSphere(spherePos, sphereRadius, body.Transform.Position(), shape.Radius())
-		default:
-			log.Printf("Warning: invalid collision shape for projectile detected (%s)\n", shape.String())
-		}
-		if hit {
+		if collision.NewSphere(sphereRadius).Touches(spherePos, body.Transform.Position(), body.Shape) {
 			result = append(result, projId)
 		}
 	}

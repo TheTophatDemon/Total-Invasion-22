@@ -19,7 +19,7 @@ func EggShards(radius float32) comps.ParticleRender {
 		MaxCount:      4,
 		SpawnRadius:   radius,
 		SpawnRate:     1.0,
-		SpawnCount:    6,
+		BurstCount:    6,
 		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
 			form.Color = color.White.Vector()
 			form.Size = mgl32.Vec2{0.2, 0.2}

@@ -71,6 +71,9 @@ func (grid *Grid) AreCoordsValid(x, y, z int) bool {
 }
 
 func (grid *Grid) SetShapeAt(x, y, z int, shape Shape) {
+	if _, isGrid := shape.(Grid); isGrid {
+		panic("grids inside of grids are not allowed")
+	}
 	if !grid.AreCoordsValid(x, y, z) {
 		return
 	}
@@ -78,6 +81,9 @@ func (grid *Grid) SetShapeAt(x, y, z int, shape Shape) {
 }
 
 func (grid *Grid) SetShapeAtFlatIndex(index int, shape Shape) {
+	if _, isGrid := shape.(Grid); isGrid {
+		panic("grids inside of grids are not allowed")
+	}
 	if index > 0 && index < len(grid.cels) {
 		grid.cels[index] = shape
 	}
@@ -258,13 +264,8 @@ func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 	return RaycastResult{}
 }
 
-func (grid Grid) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
-	// The map doesn't move, silly!
-	return Result{}
-}
-
 // Call this to resolve collisions another body has with the grid using an optimized grid-walking method.
-func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
+func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape MovingShape) Result {
 	var firstHitPosition mgl32.Vec3
 	var numberOfHits uint
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
@@ -343,4 +344,35 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition, theirMov
 		Normal:      overallNormal,
 		Penetration: overallDistance,
 	}
+}
+
+// Returns true if the other body touches a tile in the grid.
+func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirShape MovingShape) bool {
+	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
+
+	// Iterate over the subset of tiles that the body occupies
+	bbox := theirShape.Extents().Translate(theirPositionRelative)
+	if !bbox.Intersects(grid.extents) {
+		return false
+	}
+	i, j, k := grid.WorldToGridPos(bbox.Max)
+	l, m, n := grid.WorldToGridPos(bbox.Min)
+	minX, minY, minZ := max(0, min(i, l)), max(0, min(j, m)), max(0, min(k, n))
+	maxX, maxY, maxZ := min(max(i, l), grid.width-1), min(max(j, m), grid.height-1), min(max(k, n), grid.length-1)
+
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				if tileShape := grid.cels[grid.FlattenGridPos(x, y, z)]; tileShape != nil {
+					// Resolve collision against this tile
+					tileCenter := grid.GridToWorldPos(x, y, z, true)
+					if theirShape.Touches(theirPositionRelative, tileCenter, tileShape) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }

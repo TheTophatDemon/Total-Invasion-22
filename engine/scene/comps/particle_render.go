@@ -55,7 +55,7 @@ type ParticleRender struct {
 	EmissionTimer       float32 // Number of seconds before emission stops. Set this to >0 to start emitting particles.
 	SpawnRadius         float32 // The spherical radius within which particles will be spawned.
 	SpawnRate           float32 // The rate at which new particles will be spawned, in seconds per particle.
-	SpawnCount          int     // Each time a particle is spawned, spawn this many particles.
+	BurstCount          int     // Each time a particle is spawned, spawn this many particles.
 	VisibilityRadius    float32 // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
 	LocalSpaceParticles bool    // If true, then particle positions will be in the space of the transform passed to the render method.
 	MaxCount            int     // Maxmimum number of particles to render at one time
@@ -97,8 +97,8 @@ func (parts *ParticleRender) Init() {
 	if parts.VisibilityRadius == 0 {
 		parts.VisibilityRadius = 5.0
 	}
-	if parts.SpawnCount == 0 {
-		parts.SpawnCount = 1
+	if parts.BurstCount == 0 {
+		parts.BurstCount = 1
 	}
 
 	parts.spawnTimer = parts.SpawnRate // Make particles emit as soon as it's spawned.
@@ -154,7 +154,7 @@ func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
 		if parts.spawnTimer > parts.SpawnRate {
 			parts.spawnTimer = 0.0
 
-			for range parts.SpawnCount {
+			for range parts.BurstCount {
 				dir := math2.RandomDir()
 				position := dir.Mul(parts.SpawnRadius)
 				if !parts.LocalSpaceParticles {

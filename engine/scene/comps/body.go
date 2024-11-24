@@ -2,7 +2,6 @@ package comps
 
 import (
 	"iter"
-	"log"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -53,19 +52,20 @@ func (body *Body) ResolveCollision(movement mgl32.Vec3, otherEnt HasBody, deltaT
 		return
 	}
 
+	movingShape, isMovingShape := body.Shape.(collision.MovingShape)
+	if !isMovingShape {
+		return
+	}
+
 	nextPosition := body.Transform.Position().Add(movement)
 
 	// Bounding box check
-	bbox := body.Shape.Extents().Translate(nextPosition)
+	bbox := movingShape.Extents().Translate(nextPosition)
 	if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Transform.Position())) {
 		return
 	}
 
-	if _, isSphere := body.Shape.(collision.Sphere); !isSphere {
-		log.Printf("collision is not implemented for shape %v.\n", body.Shape)
-	}
-
-	res := body.Shape.ResolveCollision(body.Transform.Position(), movement, otherBody.Transform.Position(), otherBody.Shape)
+	res := movingShape.ResolveCollision(body.Transform.Position(), movement, otherBody.Transform.Position(), otherBody.Shape)
 	if res.Hit {
 		if body.Filter&otherBody.Layer != 0 {
 			body.Transform.TranslateV(res.Normal.Mul(res.Penetration))

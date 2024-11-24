@@ -17,8 +17,10 @@ type Projectile struct {
 	body                                           comps.Body
 	owner                                          scene.Handle
 	moveFunc                                       func(deltaTime float32)
+	onDie                                          func()
 	forwardSpeed, fallSpeed, maxFallSpeed, gravity float32
 	voices                                         [4]tdaudio.VoiceId
+	maxLife, lifeTimer                             float32
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -34,6 +36,13 @@ func (proj *Projectile) Update(deltaTime float32) {
 	}
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)
+	}
+	proj.lifeTimer += deltaTime
+	if (proj.lifeTimer > proj.maxLife && proj.maxLife > 0) || proj.lifeTimer > 10.0 {
+		if proj.onDie != nil {
+			proj.onDie()
+		}
+		proj.world.QueueRemoval(proj.id.Handle)
 	}
 }
 
