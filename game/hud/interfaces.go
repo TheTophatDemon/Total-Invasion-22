@@ -3,6 +3,7 @@ package hud
 import "tophatdemon.com/total-invasion-ii/game"
 
 type Weapon interface {
+	Init(hud *Hud)
 	Order() WeaponIndex
 	Equip()
 	IsEquipped() bool
