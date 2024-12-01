@@ -49,10 +49,6 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 	return
 }
 
-func (proj *Projectile) moveForward(deltaTime float32) {
-	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
-}
-
 func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
 	if !proj.shouldIntersect(otherEnt) {
 		return

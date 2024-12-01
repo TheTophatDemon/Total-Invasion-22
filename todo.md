@@ -3,8 +3,8 @@
     - Make explosions raycast
 	- Grenade clipping from outside of map
     - Redesign gun
+	- Redesign ammo sprite
 - Parusu
-	- Projectile
 	- Knockback
 - Cacowraith
 - Airhorn

@@ -54,7 +54,7 @@ func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, collision collision.R
 	}
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
-		proj.explodeOnDie()
+		proj.explodeOnDie(deltaTime)
 		proj.world.QueueRemoval(proj.id.Handle)
 	} else if otherEnt.Body().OnLayer(COL_LAYER_MAP) {
 		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
@@ -76,7 +76,9 @@ func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, collision collision.R
 	}
 }
 
-func (proj *Projectile) explodeOnDie() {
+func (proj *Projectile) explodeOnDie(deltaTime float32) {
+	_ = deltaTime
 	proj.body.Transform.Translate(0.0, 0.5, 0.0)
 	SpawnSingleExplosion(proj.world, proj.body.Transform)
+	proj.world.QueueRemoval(proj.id.Handle)
 }

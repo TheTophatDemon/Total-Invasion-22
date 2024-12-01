@@ -1,6 +1,10 @@
 package world
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -17,10 +21,11 @@ type Projectile struct {
 	body                                           comps.Body
 	owner                                          scene.Handle
 	moveFunc                                       func(deltaTime float32)
-	onDie                                          func()
+	onDie                                          func(deltaTime float32)
 	forwardSpeed, fallSpeed, maxFallSpeed, gravity float32
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
+	dieAnim                                        textures.Animation
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -36,13 +41,16 @@ func (proj *Projectile) Update(deltaTime float32) {
 	}
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)
+	} else if proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) && proj.AnimPlayer.IsAtEnd() {
+		proj.world.QueueRemoval(proj.id.Handle)
 	}
 	proj.lifeTimer += deltaTime
 	if (proj.lifeTimer > proj.maxLife && proj.maxLife > 0) || proj.lifeTimer > 10.0 {
 		if proj.onDie != nil {
-			proj.onDie()
+			proj.onDie(deltaTime)
+		} else {
+			proj.removeOnDie(deltaTime)
 		}
-		proj.world.QueueRemoval(proj.id.Handle)
 	}
 }
 
@@ -63,4 +71,38 @@ func (proj *Projectile) shouldIntersect(otherEnt comps.HasBody) bool {
 		return true
 	}
 	return false
+}
+
+func (proj *Projectile) moveForward(deltaTime float32) {
+	_ = deltaTime
+	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
+}
+
+func (proj *Projectile) removeOnDie(deltaTime float32) {
+	_ = deltaTime
+	proj.world.QueueRemoval(proj.id.Handle)
+}
+
+func (proj *Projectile) playAnimOnDie(deltaTime float32) {
+	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
+		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
+		proj.body.Layer = 0
+		proj.body.Filter = 0
+		proj.body.OnIntersect = nil
+		proj.body.Transform.TranslateV(proj.body.Velocity.Mul(-deltaTime))
+		proj.body.Velocity = mgl32.Vec3{}
+		proj.moveFunc = nil
+	}
+}
+
+func (proj *Projectile) dieOnHit(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+	_ = deltaTime
+	if !proj.shouldIntersect(otherEnt) {
+		return
+	}
+	if damageable, canDamage := otherEnt.(Damageable); canDamage {
+		damageable.OnDamage(proj, proj.Damage)
+	}
+
+	proj.lifeTimer = math2.Inf32()
 }
