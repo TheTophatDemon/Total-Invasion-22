@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	SFX_GRENADE   = "assets/sounds/grenadelaunch.wav"
-	SFX_EGG_SHOOT = "assets/sounds/chickengun.wav"
+	SFX_GRENADE      = "assets/sounds/weapon/grenadelaunch.wav"
+	SFX_EGG_SHOOT    = "assets/sounds/weapon/chickengun.wav"
+	SFX_PARUSU_SHOOT = "assets/sounds/weapon/parusu.wav"
 )
 
 func (player *Player) AttackWithWeapon() {
@@ -27,8 +28,9 @@ func (player *Player) AttackWithWeapon() {
 	case hud.WEAPON_ORDER_GRENADE:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.15, -0.5}, player.Body().Transform.Matrix())
 		SpawnGrenade(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle)
-
 		cache.GetSfx(SFX_GRENADE).Play()
+	case hud.WEAPON_ORDER_PARUSU:
+		cache.GetSfx(SFX_PARUSU_SHOOT).Play()
 	}
 	player.noisyTimer = 0.5
 }

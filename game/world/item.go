@@ -63,10 +63,14 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		id, item, err = SpawnEggCarton(world, ent.Position)
 	case "grenades":
 		id, item, err = SpawnGrenades(world, ent.Position)
+	case "plasmavial", "plasma_vial", "plasma vial":
+		id, item, err = SpawnPlasmaVials(world, ent.Position)
 	case "chickencannon", "chickengun", "chicken_cannon", "chicken_gun":
 		id, item, err = SpawnChickenCannon(world, ent.Position)
 	case "grenadelauncher", "grenade_launcher", "grenade launcher":
 		id, item, err = SpawnGrenadeLauncher(world, ent.Position)
+	case "parusu":
+		id, item, err = SpawnParusu(world, ent.Position)
 	case "bluecard":
 		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BLUE)
 		return
@@ -133,6 +137,19 @@ func SpawnGrenades(world *World, position mgl32.Vec3) (id scene.Id[*Item], item 
 	return
 }
 
+func SpawnPlasmaVials(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.375, 0.25, 0.5})
+	item.ammoType = game.AMMO_TYPE_PLASMA
+	item.ammoAmount = 50
+	item.dontWasteAmmo = true
+	item.message = settings.Localize("plasmaVialsGet")
+	item.messageTime = 1.0
+	tex := cache.GetTexture("assets/textures/sprites/plasma_vials.png")
+	item.spriteRender = comps.NewSpriteRender(tex)
+	item.animPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
+	return
+}
+
 func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
 	item.ammoType = game.AMMO_TYPE_EGG
@@ -154,6 +171,18 @@ func SpawnGrenadeLauncher(world *World, position mgl32.Vec3) (id scene.Id[*Item]
 	item.message = settings.Localize("grenadeLauncherGet")
 	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/grenade_launcher.png"))
+	return
+}
+
+func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
+	item.ammoType = game.AMMO_TYPE_PLASMA
+	item.ammoAmount = 100
+	item.giveWeapon = hud.WEAPON_ORDER_PARUSU
+	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
+	item.message = settings.Localize("parusuGet")
+	item.messageTime = 1.5
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/parusu.png"))
 	return
 }
 

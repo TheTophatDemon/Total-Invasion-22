@@ -48,6 +48,7 @@ var ammoTypeIconNames = [game.AMMO_TYPE_COUNT]string{
 	game.AMMO_TYPE_SICKLE:  "sickle",
 	game.AMMO_TYPE_EGG:     "egg",
 	game.AMMO_TYPE_GRENADE: "grenade",
+	game.AMMO_TYPE_PLASMA:  "plasma",
 }
 
 func (hud *Hud) InitPlayerStats() {

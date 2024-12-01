@@ -19,7 +19,7 @@ type Parusu struct {
 func (parusu *Parusu) Init(hud *Hud) {
 	parusu.weaponBase = weaponBase{
 		hud:           hud,
-		cooldown:      0.10,
+		cooldown:      0.075,
 		spriteTexture: cache.GetTexture("assets/textures/ui/parusu_hud.png"),
 		swayExtents:   mgl32.Vec2{16.0, 8.0},
 		swaySpeed:     mgl32.Vec2{0.5, 1.0},
@@ -64,11 +64,11 @@ func (parusu *Parusu) Update(deltaTime float32, swayAmount float32, ammo *game.A
 		return
 	}
 
-	//TODO: Go to idle animation when no longer firing.
-	if ammo[parusu.AmmoType()] == 0 {
-		sprite.AnimPlayer.ChangeAnimation(parusu.idleAnim)
-	}
 	sprite.AnimPlayer.Update(deltaTime)
+
+	if sprite.AnimPlayer.CurrentAnimation().Name == parusu.fireAnim.Name && sprite.AnimPlayer.IsAtEnd() {
+		sprite.AnimPlayer.PlayNewAnim(parusu.idleAnim)
+	}
 }
 
 func (parusu *Parusu) Fire(ammo *game.Ammo) {

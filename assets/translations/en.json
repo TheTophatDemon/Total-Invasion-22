@@ -22,6 +22,8 @@
     "brownKeyGet": "Got a brown keycard.",
     "chickenCannonGet": "Got a chicken cannon!",
     "grenadeLauncherGet": "Got a grenade launcher!",
+    "parusuGet": "Got a parusu!",
     "eggCartonGet": "Got a carton of eggs.",
-    "grenadesGet": "Got some grenades."
+    "grenadesGet": "Got some grenades.",
+    "plasmaVialsGet": "Got some vials of plasma."
 }
