@@ -1,2 +1,2 @@
-stb_vorbis.c -linguist-vendored
-miniaudio.h -linguist-vendored
+stb_vorbis.c linguist-vendored
+miniaudio.h linguist-vendored
