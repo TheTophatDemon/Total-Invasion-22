@@ -9,7 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-func SpawnGrenade(world *World, position, direction mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = world.Projectiles.New()
 	if err != nil {
 		return
@@ -17,7 +17,6 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3, owner scene.Hand
 
 	proj.world = world
 	proj.id = id
-	proj.owner = owner
 
 	tex := cache.GetTexture("assets/textures/sprites/grenade.png")
 	proj.SpriteRender = comps.NewSpriteRender(tex)

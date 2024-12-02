@@ -1,9 +1,6 @@
 # TODO
 - Grenades
-    - Make explosions raycast
-	- Grenade clipping from outside of map
     - Redesign gun
-	- Redesign ammo sprite
 - Parusu
 	- Knockback
 - Cacowraith

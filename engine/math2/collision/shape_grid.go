@@ -288,26 +288,25 @@ func (grid *Grid) ResolveOtherBodysCollision(myPosition, theirPosition, theirMov
 	clear(visitBuffer)
 	visitQueue := containers.NewRingBuffer(visitBuffer)
 	startX, startY, startZ := grid.WorldToGridPos(theirPositionRelative)
-	if !grid.AreCoordsValid(startX, startY, startZ) {
-		return Result{}
-	}
+
 	start := [3]int{startX, startY, startZ}
 	visitQueue.Enqueue(start)
 	grid.celsChecked[start] = true
 
 	for pos, empty := visitQueue.Dequeue(); !empty; pos, empty = visitQueue.Dequeue() {
-		t := grid.FlattenGridPos(pos[0], pos[1], pos[2])
-		if grid.cels[t] != nil {
-			// Resolve collision against this tile
-			tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
-			tileShape := grid.cels[t]
-			var res Result = theirShape.ResolveCollision(theirPositionRelative, theirMovement, tileCenter, tileShape)
-			if res.Hit {
-				theirPositionRelative = theirPositionRelative.Add(res.Normal.Mul(res.Penetration))
-				if numberOfHits == 0 {
-					firstHitPosition = res.Position
+		if grid.AreCoordsValid(pos[0], pos[1], pos[2]) {
+			if t := grid.FlattenGridPos(pos[0], pos[1], pos[2]); grid.cels[t] != nil {
+				// Resolve collision against this tile
+				tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
+				tileShape := grid.cels[t]
+				var res Result = theirShape.ResolveCollision(theirPositionRelative, theirMovement, tileCenter, tileShape)
+				if res.Hit {
+					theirPositionRelative = theirPositionRelative.Add(res.Normal.Mul(res.Penetration))
+					if numberOfHits == 0 {
+						firstHitPosition = res.Position
+					}
+					numberOfHits++
 				}
-				numberOfHits++
 			}
 		}
 
