@@ -33,6 +33,7 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.forwardSpeed = 90.0
 	proj.StunChance = 0.1
 	proj.Damage = 6
+	proj.knockbackForce = 10.0
 
 	proj.moveFunc = proj.moveForward
 	proj.body.OnIntersect = proj.dieOnHit

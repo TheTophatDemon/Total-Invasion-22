@@ -16,6 +16,7 @@ type Actor struct {
 	inputForward, inputStrafe     float32
 	onGround                      bool
 	world                         *World
+	knockbackForce                mgl32.Vec3
 }
 
 func (actor *Actor) Update(deltaTime float32) {
@@ -47,9 +48,23 @@ func (actor *Actor) Update(deltaTime float32) {
 		frictionVec := actor.body.Velocity.Mul(-min(speed, actor.Friction*deltaTime) / speed)
 		actor.body.Velocity = actor.body.Velocity.Add(frictionVec)
 	}
-	// Limit speed
+
+	// Limit moving speed
 	if speed := actor.body.Velocity.Len(); speed > actor.MaxSpeed && actor.MaxSpeed > mgl32.Epsilon {
 		actor.body.Velocity = actor.body.Velocity.Mul(actor.MaxSpeed / speed)
+	}
+
+	// Apply knockback
+	if !actor.knockbackForce.ApproxEqual(mgl32.Vec3{}) {
+		// Apply friction to knockback
+		if knockbackSpeed := actor.knockbackForce.Len(); knockbackSpeed > mgl32.Epsilon {
+			frictionVec := actor.knockbackForce.Mul(-min(knockbackSpeed, actor.Friction*deltaTime) / knockbackSpeed)
+			actor.knockbackForce = actor.knockbackForce.Add(frictionVec)
+		} else {
+			actor.knockbackForce = mgl32.Vec3{}
+		}
+
+		actor.body.Velocity = actor.body.Velocity.Add(actor.knockbackForce)
 	}
 }
 
@@ -71,4 +86,8 @@ func (actor *Actor) Body() *comps.Body {
 
 func (actor *Actor) Position() mgl32.Vec3 {
 	return actor.body.Transform.Position()
+}
+
+func (actor *Actor) ApplyKnockback(force mgl32.Vec3) {
+	actor.knockbackForce = force
 }

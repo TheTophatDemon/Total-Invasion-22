@@ -1,8 +1,6 @@
 # TODO
 - Grenades
     - Redesign gun
-- Parusu
-	- Knockback
 - Cacowraith
 - Airhorn
 - Skybox

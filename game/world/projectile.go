@@ -23,6 +23,7 @@ type Projectile struct {
 	moveFunc                                       func(deltaTime float32)
 	onDie                                          func(deltaTime float32)
 	forwardSpeed, fallSpeed, maxFallSpeed, gravity float32
+	knockbackForce                                 float32
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
@@ -102,6 +103,9 @@ func (proj *Projectile) dieOnHit(otherEnt comps.HasBody, result collision.Result
 	}
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
+	}
+	if actorHaver, hasActor := otherEnt.(HasActor); hasActor && proj.knockbackForce != 0.0 && !proj.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
+		actorHaver.Actor().ApplyKnockback(proj.body.Velocity.Normalize().Mul(proj.knockbackForce))
 	}
 
 	proj.lifeTimer = math2.Inf32()
