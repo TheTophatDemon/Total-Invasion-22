@@ -15,11 +15,11 @@ import (
 )
 
 type Map struct {
+	GridShape      collision.Grid
 	name           string
 	body           Body
 	tiles          te3.Tiles
 	mesh           *geom.Mesh
-	gridShape      collision.Grid
 	triMap         te3.TriMap        // Maps a flattened tile index to its indices in the mesh's triangles array.
 	tileAnims      []AnimationPlayer // Animates each texture group of tiles
 	groupRenderers []MeshRender      // Renders each texture group of tiles
@@ -63,7 +63,7 @@ func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 			Shape: gridShape,
 			Layer: collisionLayer,
 		},
-		gridShape:      gridShape,
+		GridShape:      gridShape,
 		tiles:          te3File.Tiles,
 		mesh:           mesh,
 		triMap:         triMap,
@@ -131,7 +131,7 @@ func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax,
 			tile.Yaw >= yawMin && tile.Yaw < yawMax &&
 			tile.Pitch >= pitchMin && tile.Pitch < pitchMax {
 
-			gm.gridShape.SetShapeAtFlatIndex(index, shape)
+			gm.GridShape.SetShapeAtFlatIndex(index, shape)
 		}
 	}
 	return

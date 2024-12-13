@@ -41,7 +41,8 @@ const (
 
 const (
 	TEX_FLAG_INVISIBLE string = "invisible"
-	TEX_FLAG_KILLZONE  string = "killzone"
+	TEX_FLAG_KILLZONE         = "killzone"
+	TEX_FLAG_LIQUID           = "liquid"
 )
 
 //go:generate ../../world_gen_iters.exe
@@ -84,31 +85,27 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
-	world.Cameras = scene.NewStorageWithFuncs[Camera](64, (*Camera).Update, nil)
+	world.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
+	// Pre process tiles before mesh is generated.
 	for texID, texPath := range te3File.Tiles.Textures {
 		tex := cache.GetTexture(texPath)
-		if tex.HasFlag(TEX_FLAG_INVISIBLE) {
-			// Filter out invisible tiles and spawn invisible wall entities instead
-			invisibleTileIDs := te3File.Tiles.WithTextureId(te3.TextureID(texID))
-			te3File.Tiles.EraseTiles(invisibleTileIDs...)
-			for _, id := range invisibleTileIDs {
-				box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
-				pos := box.Center()
+		for id, tile := range te3File.Tiles.Data {
+			if tile.TextureID != te3.TextureID(texID) {
+				continue
+			}
+			box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
+			pos := box.Center()
+			if tex.HasFlag(TEX_FLAG_INVISIBLE) {
+				te3File.Tiles.EraseTile(id)
 				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
 			}
-		}
-		if tex.HasFlag(TEX_FLAG_KILLZONE) {
-			// Add trigger objects that kill actors that touch them. Used for lava.
-			killerTileIDs := te3File.Tiles.WithTextureId(te3.TextureID(texID))
-			for _, id := range killerTileIDs {
-				box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
-				pos := box.Center()
+			if tex.HasFlag(TEX_FLAG_KILLZONE) {
 				SpawnKillzone(world, pos, box.Size().Len()/2.0, 9999.0)
 			}
 		}
@@ -142,6 +139,20 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		"assets/models/shapes/bridge.obj",
 	} {
 		world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
+	}
+
+	// Process tiles after mesh is generated.
+	for texID, texPath := range te3File.Tiles.Textures {
+		tex := cache.GetTexture(texPath)
+		for id, tile := range te3File.Tiles.Data {
+			if tile.TextureID != te3.TextureID(texID) {
+				continue
+			}
+			if tex.HasFlag(TEX_FLAG_LIQUID) {
+				// Remove collision from liquid tiles.
+				world.GameMap.GridShape.SetShapeAtFlatIndex(id, nil)
+			}
+		}
 	}
 
 	// Read level properties

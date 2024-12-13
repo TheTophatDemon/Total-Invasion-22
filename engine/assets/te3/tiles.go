@@ -158,3 +158,7 @@ func (tiles *Tiles) EraseTiles(tileIDs ...int) {
 		tiles.Data[t] = Tile{ShapeID: -1, TextureID: -1}
 	}
 }
+
+func (tiles *Tiles) EraseTile(tileID int) {
+	tiles.Data[tileID] = Tile{ShapeID: -1, TextureID: -1}
+}

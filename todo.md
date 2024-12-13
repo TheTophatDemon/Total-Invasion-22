@@ -1,6 +1,4 @@
 # TODO
-- Grenades
-    - Redesign gun
 - Cacowraith
 - Airhorn
 - Skybox

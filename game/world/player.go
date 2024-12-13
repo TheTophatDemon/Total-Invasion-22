@@ -118,7 +118,12 @@ func (player *Player) Update(deltaTime float32) {
 			player.world.ChangeMap(player.world.nextLevel)
 		}
 	} else if player.actor.Health > 0 {
-		player.takeUserInput(deltaTime)
+		if player.world.IsOnPlayerCamera() {
+			player.takeUserInput(deltaTime)
+		} else {
+			player.actor.inputForward = 0
+			player.actor.inputStrafe = 0
+		}
 		if player.actor.Health > player.actor.MaxHealth {
 			// When overhealed, gradually decrease health back to base level
 			player.actor.Health -= OVERHEAL_RESTORE_RATE * deltaTime
