@@ -1,5 +1,6 @@
 # TODO
 - Cacowraith
+- Fix the jittering
 - Airhorn
 - Skybox
 - Level intro
