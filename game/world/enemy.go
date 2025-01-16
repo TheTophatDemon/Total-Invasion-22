@@ -72,6 +72,8 @@ func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, err
 	switch ent.Properties["enemy"] {
 	case "fire wraith":
 		return SpawnFireWraith(world, ent.Position, ent.AnglesInRadians())
+	case "mother wraith":
+		return SpawnMotherWraith(world, ent.Position, ent.AnglesInRadians())
 	default:
 		return SpawnWraith(world, ent.Position, ent.AnglesInRadians())
 	}
