@@ -45,7 +45,7 @@ const (
 	TEX_FLAG_LIQUID           = "liquid"
 )
 
-//go:generate ../../world_gen_iters.exe
+//go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
 	Hud           hud.Hud
 	Players       scene.Storage[Player]
