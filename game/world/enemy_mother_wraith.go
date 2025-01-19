@@ -1,6 +1,9 @@
 package world
 
 import (
+	"math/rand"
+
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 )
@@ -21,7 +24,7 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 	}
 	enemy.chaseState = enemyState{
 		anim:       floatAnim,
-		enterFunc:  fireWraithEnterChase,
+		enterFunc:  motherWraithEnterChase,
 		updateFunc: fireWraithUpdateChase,
 	}
 	enemy.stunState = enemyState{
@@ -30,8 +33,8 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 	}
 	enemy.attackState = enemyState{
 		anim:       attackAnim,
-		enterFunc:  fireWraithEnterAttack,
-		updateFunc: fireWraithUpdateAttack,
+		enterFunc:  motherWraithEnterAttack,
+		updateFunc: motherWraithUpdateAttack,
 	}
 	enemy.dieState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/mother_wraith/mother_wraith_die.wav"),
@@ -43,4 +46,24 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 	enemy.actor.MaxHealth = 350.0
 
 	return
+}
+
+func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
+	enemy.attackTimer = rand.Float32() + 1.5
+}
+
+func motherWraithEnterAttack(enemy *Enemy, oldState *enemyState) {
+	enemy.attackTimer = 0.0
+	enemy.faceTarget()
+}
+
+func motherWraithUpdateAttack(enemy *Enemy, deltaTime float32) {
+	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+	if enemy.AnimPlayer.HitTriggerFrame(0) {
+		enemy.faceTarget()
+		SpawnBlessing(enemy.world, enemy.actor.Position(), mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0}, enemy.id.Handle)
+	}
+	if enemy.AnimPlayer.IsAtEnd() {
+		enemy.changeState(&enemy.chaseState)
+	}
 }
