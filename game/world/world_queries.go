@@ -1,7 +1,6 @@
 package world
 
 import (
-	"iter"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -11,10 +10,12 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
+// TODO: Replace with iterator.
 func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
 	radiusSq := sphereRadius * sphereRadius
 	result := make([]scene.Handle, 0)
-	for actorId, actorEnt := range world.AllActors() {
+	iter := world.IterActors()
+	for actorEnt, actorId := iter.Next(); actorEnt != nil; actorEnt, actorId = iter.Next() {
 		if actorEnt == exception {
 			continue
 		}
@@ -26,9 +27,11 @@ func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 	return result
 }
 
+// TODO: Replace with iterator.
 func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
 	result := make([]scene.Handle, 0)
-	for bodyId, bodyEnt := range world.AllBodies() {
+	iter := world.IterBodies()
+	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
 		if bodyEnt == exception {
 			continue
 		}
@@ -41,19 +44,15 @@ func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, e
 	return result
 }
 
-func (world *World) ProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception *Projectile) []scene.Handle {
-	result := make([]scene.Handle, 0)
-	for projId, proj := range world.Projectiles.All() {
-		if proj == exception {
-			continue
-		}
+func (world *World) AnyProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32) bool {
+	iter := world.Projectiles.Iter()
+	for proj, _ := iter.Next(); proj != nil; proj, _ = iter.Next() {
 		body := proj.Body()
-
 		if collision.NewSphere(sphereRadius).Touches(spherePos, body.Transform.Position(), body.Shape) {
-			result = append(result, projId)
+			return true
 		}
 	}
-	return result
+	return false
 }
 
 func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
@@ -61,7 +60,8 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 	var closestEnt scene.Handle
 	var closestBodyHit collision.RaycastResult
 	closestBodyHit.Distance = math.MaxFloat32
-	for bodyId, bodyEnt := range world.AllBodies() {
+	iter := world.IterBodies()
+	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
 		body := bodyEnt.Body()
 		if bodyEnt == excludeBody ||
 			!bodyEnt.Body().OnLayer(filter) ||
@@ -81,24 +81,26 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 }
 
 // Returns an iterator over all linkables with the given non-zero link number.
-func (world *World) LinkablesWithNumber(linkNumber int) iter.Seq2[scene.Handle, Linkable] {
-	return func(yield func(scene.Handle, Linkable) bool) {
-		// Link number 0 is the nil value
-		if linkNumber == 0 {
-			return
-		}
-		nextLinkable, stop := iter.Pull2(world.AllLinkables())
-		defer stop()
-		for handle, ent, ok := nextLinkable(); ok; handle, ent, ok = nextLinkable() {
-			if ent.LinkNumber() == linkNumber && !yield(handle, ent) {
-				return
-			}
+func (world *World) NextLinkableWithNumber(iter *LinkablesIter, linkNumber int) (Linkable, scene.Handle) {
+	if linkNumber == 0 {
+		return nil, scene.Handle{}
+	}
+
+	for ent, id := iter.Next(); ent != nil; ent, id = iter.Next() {
+		if ent.LinkNumber() == linkNumber {
+			return ent, id
 		}
 	}
+	return nil, scene.Handle{}
 }
 
 func (world *World) ActivateLinks(source Linkable) {
-	for handle, ent := range world.LinkablesWithNumber(source.LinkNumber()) {
+	iter := world.IterLinkables()
+	for {
+		ent, handle := world.NextLinkableWithNumber(&iter, source.LinkNumber())
+		if ent == nil {
+			break
+		}
 		if !handle.Equals(source.Handle()) {
 			ent.OnLinkActivate(source)
 		}
@@ -106,7 +108,12 @@ func (world *World) ActivateLinks(source Linkable) {
 }
 
 func (world *World) DeactivateLinks(source Linkable) {
-	for handle, ent := range world.LinkablesWithNumber(source.LinkNumber()) {
+	iter := world.IterLinkables()
+	for {
+		ent, handle := world.NextLinkableWithNumber(&iter, source.LinkNumber())
+		if ent == nil {
+			break
+		}
 		if !handle.Equals(source.Handle()) {
 			ent.OnLinkDeactivate(source)
 		}

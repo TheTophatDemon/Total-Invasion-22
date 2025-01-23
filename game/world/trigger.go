@@ -180,7 +180,12 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		return
 	}
 	teleportingBody := teleportingEnt.Body()
-	for _, link := range tr.world.LinkablesWithNumber(tr.linkNumber) {
+	iter := tr.world.IterLinkables()
+	for {
+		link, _ := tr.world.NextLinkableWithNumber(&iter, tr.linkNumber)
+		if link == nil {
+			break
+		}
 		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
@@ -219,7 +224,12 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 
 func exitLevelAction(tr *Trigger, handle scene.Handle) {
 	var cameraHandle scene.Handle
-	for id, linkable := range tr.world.LinkablesWithNumber(tr.linkNumber) {
+	iter := tr.world.IterLinkables()
+	for {
+		linkable, id := tr.world.NextLinkableWithNumber(&iter, tr.linkNumber)
+		if linkable == nil {
+			break
+		}
 		if _, isCamera := linkable.(*Camera); isCamera {
 			cameraHandle = id
 			break

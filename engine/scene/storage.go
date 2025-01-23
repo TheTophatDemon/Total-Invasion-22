@@ -2,7 +2,6 @@ package scene
 
 import (
 	"fmt"
-	"iter"
 	"reflect"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -132,15 +131,11 @@ func (st *Storage[T]) Remove(handle Handle) {
 	}
 }
 
-func (st *Storage[T]) All() iter.Seq2[Handle, *T] {
-	return func(yield func(Handle, *T) bool) {
-		for i := 0; i <= st.lastActive; i += 1 {
-			if st.active[i] {
-				if !yield(st.owners[i], &st.data[i]) {
-					break
-				}
-			}
-		}
+// Returns an object for iterating through the store.
+func (st *Storage[T]) Iter() StorageIter[T] {
+	return StorageIter[T]{
+		storage: st,
+		index:   -1,
 	}
 }
 
@@ -149,7 +144,8 @@ func (st *Storage[T]) Update(deltaTime float32) {
 	if st.UpdateFunc == nil {
 		return
 	}
-	for _, component := range st.All() {
+	iter := st.Iter()
+	for component, _ := iter.Next(); component != nil; component, _ = iter.Next() {
 		st.UpdateFunc(component, deltaTime)
 	}
 }
@@ -159,14 +155,16 @@ func (st *Storage[T]) Render(context *render.Context) {
 	if st.RenderFunc == nil {
 		return
 	}
-	for _, component := range st.All() {
+	iter := st.Iter()
+	for component, _ := iter.Next(); component != nil; component, _ = iter.Next() {
 		st.RenderFunc(component, context)
 	}
 }
 
 // Deactivates all storage items.
 func (st *Storage[T]) Clear() {
-	for handle := range st.All() {
+	iter := st.Iter()
+	for component, handle := iter.Next(); component != nil; component, handle = iter.Next() {
 		handle.Remove()
 	}
 }

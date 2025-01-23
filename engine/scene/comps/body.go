@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"iter"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -28,11 +26,11 @@ func (body *Body) Body() *Body {
 	return body
 }
 
-func (body *Body) MoveAndCollide(deltaTime float32, bodies iter.Seq2[scene.Handle, HasBody]) {
+func (body *Body) MoveAndCollide(deltaTime float32, bodiesIter func() (HasBody, scene.Handle)) {
 	before := body.Transform.Position()
 
 	movement := body.Velocity.Mul(deltaTime)
-	for _, collidingEnt := range bodies {
+	for collidingEnt, _ := bodiesIter(); collidingEnt != nil; collidingEnt, _ = bodiesIter() {
 		body.ResolveCollision(movement, collidingEnt, deltaTime)
 	}
 

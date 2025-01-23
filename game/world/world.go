@@ -59,7 +59,8 @@ type World struct {
 	Items         scene.Storage[Item]
 	DebugShapes   scene.Storage[DebugShape]
 	Cameras       scene.Storage[Camera]
-	GameMap       comps.Map
+	GameMaps      scene.Storage[comps.Map]
+	GameMap       *comps.Map
 	CurrentPlayer scene.Id[*Player]
 	CurrentCamera scene.Id[*Camera]
 	removalQueue  []scene.Handle  // Holds entities to be removed at the end of the frame.
@@ -86,6 +87,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 	world.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
+	world.GameMaps = scene.NewStorageWithFuncs(1, (*comps.Map).Update, (*comps.Map).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -111,7 +113,11 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		}
 	}
 
-	world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
+	_, world.GameMap, err = world.GameMaps.New()
+	if err != nil {
+		return nil, err
+	}
+	*world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +235,8 @@ func (world *World) Update(deltaTime float32) {
 	world.removalQueue = world.removalQueue[0:0]
 
 	if input.IsActionJustPressed(settings.ACTION_KILL_ENEMIES) {
-		for handle, actor := range world.AllActors() {
+		iter := world.IterActors()
+		for actor, handle := iter.Next(); actor != nil; actor, handle = iter.Next() {
 			if !handle.Equals(world.CurrentPlayer.Handle) {
 				actor.Actor().Health = 0
 			}
@@ -257,8 +264,10 @@ func (world *World) Update(deltaTime float32) {
 	}
 
 	// Update bodies and resolve collisions
-	for _, bodyEnt := range world.AllBodies() {
-		bodyEnt.Body().MoveAndCollide(deltaTime, world.AllBodies())
+	iter := world.IterBodies()
+	for bodyEnt, _ := iter.Next(); bodyEnt != nil; bodyEnt, _ = iter.Next() {
+		innerIter := world.IterBodies()
+		bodyEnt.Body().MoveAndCollide(deltaTime, innerIter.Next)
 	}
 
 	// Remove deleted entities

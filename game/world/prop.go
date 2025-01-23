@@ -122,8 +122,7 @@ func (prop *Prop) Update(deltaTime float32) {
 			}
 		} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 			// Check for incoming projectiles and trigger the disappearing animation.
-			projectiles := prop.world.ProjectilesInSphere(prop.body.Transform.Position(), GEOFFREY_SAFETY_RADIUS, nil)
-			if len(projectiles) > 0 {
+			if prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), GEOFFREY_SAFETY_RADIUS) {
 				prop.AnimPlayer.PlayNewAnim(vanishAnim)
 				prop.body.Layer = 0
 				cache.GetSfx(SFX_HONK).PlayAttenuatedV(prop.body.Transform.Position())

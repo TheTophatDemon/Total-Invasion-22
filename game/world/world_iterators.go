@@ -2,120 +2,164 @@
 package world
 
 import (
-	"iter"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
-
-func (world *World) AllBodies() iter.Seq2[scene.Handle, comps.HasBody] {
-	return func(yield func(scene.Handle, comps.HasBody) bool) {
-		nextPlayers, stop := iter.Pull2(world.Players.All())
-		defer stop()
-		for handle, ent, ok := nextPlayers(); ok; handle, ent, ok = nextPlayers() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextEnemies, stop := iter.Pull2(world.Enemies.All())
-		defer stop()
-		for handle, ent, ok := nextEnemies(); ok; handle, ent, ok = nextEnemies() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextChickens, stop := iter.Pull2(world.Chickens.All())
-		defer stop()
-		for handle, ent, ok := nextChickens(); ok; handle, ent, ok = nextChickens() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextWalls, stop := iter.Pull2(world.Walls.All())
-		defer stop()
-		for handle, ent, ok := nextWalls(); ok; handle, ent, ok = nextWalls() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextProps, stop := iter.Pull2(world.Props.All())
-		defer stop()
-		for handle, ent, ok := nextProps(); ok; handle, ent, ok = nextProps() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextProjectiles, stop := iter.Pull2(world.Projectiles.All())
-		defer stop()
-		for handle, ent, ok := nextProjectiles(); ok; handle, ent, ok = nextProjectiles() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextItems, stop := iter.Pull2(world.Items.All())
-		defer stop()
-		for handle, ent, ok := nextItems(); ok; handle, ent, ok = nextItems() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextGameMap, stop := iter.Pull2(world.GameMap.All())
-		defer stop()
-		for handle, ent, ok := nextGameMap(); ok; handle, ent, ok = nextGameMap() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-	}
+type BodiesIter struct {
+	iterPlayers scene.StorageIter[Player]
+	iterEnemies scene.StorageIter[Enemy]
+	iterChickens scene.StorageIter[Chicken]
+	iterWalls scene.StorageIter[Wall]
+	iterProps scene.StorageIter[Prop]
+	iterProjectiles scene.StorageIter[Projectile]
+	iterItems scene.StorageIter[Item]
+	iterGameMaps scene.StorageIter[comps.Map]
+	storageIndex int
 }
 
-func (world *World) AllActors() iter.Seq2[scene.Handle, HasActor] {
-	return func(yield func(scene.Handle, HasActor) bool) {
-		nextPlayers, stop := iter.Pull2(world.Players.All())
-		defer stop()
-		for handle, ent, ok := nextPlayers(); ok; handle, ent, ok = nextPlayers() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextEnemies, stop := iter.Pull2(world.Enemies.All())
-		defer stop()
-		for handle, ent, ok := nextEnemies(); ok; handle, ent, ok = nextEnemies() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
-		nextChickens, stop := iter.Pull2(world.Chickens.All())
-		defer stop()
-		for handle, ent, ok := nextChickens(); ok; handle, ent, ok = nextChickens() {
-			if !yield(handle, ent) {
-				return
-			}
+func (iter *BodiesIter) Next() (comps.HasBody, scene.Handle) {
+	if iter == nil {
+		return nil, scene.Handle{}
+	}
+	for ; iter.storageIndex < 8; iter.storageIndex++ {
+		switch iter.storageIndex {
+			case 0:
+				item, handle := iter.iterPlayers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterEnemies.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterChickens.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 3:
+				item, handle := iter.iterWalls.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 4:
+				item, handle := iter.iterProps.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 5:
+				item, handle := iter.iterProjectiles.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 6:
+				item, handle := iter.iterItems.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 7:
+				item, handle := iter.iterGameMaps.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
 	}
+	return nil, scene.Handle{}
 }
 
-func (world *World) AllLinkables() iter.Seq2[scene.Handle, Linkable] {
-	return func(yield func(scene.Handle, Linkable) bool) {
-		nextWalls, stop := iter.Pull2(world.Walls.All())
-		defer stop()
-		for handle, ent, ok := nextWalls(); ok; handle, ent, ok = nextWalls() {
-			if !yield(handle, ent) {
-				return
-			}
+func (world *World) IterBodies() BodiesIter {
+	return BodiesIter {
+		iterPlayers: world.Players.Iter(),
+		iterEnemies: world.Enemies.Iter(),
+		iterChickens: world.Chickens.Iter(),
+		iterWalls: world.Walls.Iter(),
+		iterProps: world.Props.Iter(),
+		iterProjectiles: world.Projectiles.Iter(),
+		iterItems: world.Items.Iter(),
+		iterGameMaps: world.GameMaps.Iter(),
+		storageIndex: 0,
+	}
+}
+type ActorsIter struct {
+	iterPlayers scene.StorageIter[Player]
+	iterEnemies scene.StorageIter[Enemy]
+	iterChickens scene.StorageIter[Chicken]
+	storageIndex int
+}
+
+func (iter *ActorsIter) Next() (HasActor, scene.Handle) {
+	if iter == nil {
+		return nil, scene.Handle{}
+	}
+	for ; iter.storageIndex < 3; iter.storageIndex++ {
+		switch iter.storageIndex {
+			case 0:
+				item, handle := iter.iterPlayers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterEnemies.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterChickens.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
-		nextTriggers, stop := iter.Pull2(world.Triggers.All())
-		defer stop()
-		for handle, ent, ok := nextTriggers(); ok; handle, ent, ok = nextTriggers() {
-			if !yield(handle, ent) {
-				return
-			}
+	}
+	return nil, scene.Handle{}
+}
+
+func (world *World) IterActors() ActorsIter {
+	return ActorsIter {
+		iterPlayers: world.Players.Iter(),
+		iterEnemies: world.Enemies.Iter(),
+		iterChickens: world.Chickens.Iter(),
+		storageIndex: 0,
+	}
+}
+type LinkablesIter struct {
+	iterWalls scene.StorageIter[Wall]
+	iterTriggers scene.StorageIter[Trigger]
+	iterCameras scene.StorageIter[Camera]
+	storageIndex int
+}
+
+func (iter *LinkablesIter) Next() (Linkable, scene.Handle) {
+	if iter == nil {
+		return nil, scene.Handle{}
+	}
+	for ; iter.storageIndex < 3; iter.storageIndex++ {
+		switch iter.storageIndex {
+			case 0:
+				item, handle := iter.iterWalls.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterTriggers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterCameras.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
-		nextCameras, stop := iter.Pull2(world.Cameras.All())
-		defer stop()
-		for handle, ent, ok := nextCameras(); ok; handle, ent, ok = nextCameras() {
-			if !yield(handle, ent) {
-				return
-			}
-		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (world *World) IterLinkables() LinkablesIter {
+	return LinkablesIter {
+		iterWalls: world.Walls.Iter(),
+		iterTriggers: world.Triggers.Iter(),
+		iterCameras: world.Cameras.Iter(),
+		storageIndex: 0,
 	}
 }

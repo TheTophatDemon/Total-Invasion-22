@@ -1,8 +1,6 @@
 package comps
 
 import (
-	"iter"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -26,7 +24,6 @@ type Map struct {
 }
 
 var _ HasBody = (*Map)(nil)
-var _ scene.StorageOps = (*Map)(nil) // There is only one map, so it stores itself.
 
 func NewMap(te3File *te3.TE3File, collisionLayer collision.Mask) (Map, error) {
 	mesh, triMap, err := te3File.BuildMesh()
@@ -146,11 +143,5 @@ func (gm *Map) Update(deltaTime float32) {
 func (gm *Map) Render(context *render.Context) {
 	for i := range gm.groupRenderers {
 		gm.groupRenderers[i].Render(nil, &gm.tileAnims[i], context)
-	}
-}
-
-func (gameMap *Map) All() iter.Seq2[scene.Handle, *Map] {
-	return func(yield func(scene.Handle, *Map) bool) {
-		yield(scene.NewHandle(0, 0, gameMap), gameMap)
 	}
 }
