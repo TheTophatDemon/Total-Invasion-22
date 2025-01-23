@@ -84,6 +84,7 @@ func Run(app App) {
 			fpsTimer = 0.0
 			fps = fpsTicks
 			fpsTicks = 0
+			//fmt.Println("FPS:", fps)
 		}
 
 		if deltaTime > updateRate {
@@ -91,7 +92,7 @@ func Run(app App) {
 		}
 		previousTime = now
 
-		// Run updates by splitting the time since the last from into fixed time steps.
+		// Run updates by splitting the time since the last frame into fixed time steps.
 		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
 		updateCount := 0
 		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {

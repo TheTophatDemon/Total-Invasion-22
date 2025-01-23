@@ -35,7 +35,18 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.Damage = 15
 
 	proj.moveFunc = proj.moveForward
-	proj.body.OnIntersect = proj.dieOnHit
+	proj.body.OnIntersect = proj.blessingOnHit
 
 	return
+}
+
+func (proj *Projectile) blessingOnHit(collidingEntity comps.HasBody, collision collision.Result, deltaTime float32) {
+	if enemy, isEnemy := collidingEntity.(*Enemy); isEnemy {
+		if enemy.actor.Health <= 0.0 {
+			enemy.actor.Health = enemy.actor.MaxHealth
+			enemy.changeState(&enemy.stunState)
+		}
+	} else {
+		proj.dieOnHit(collidingEntity, collision, deltaTime)
+	}
 }
