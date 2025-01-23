@@ -3,8 +3,8 @@
   - Hierarchical inter-entity collision
   - Make level loading quicker
 - Cacowraith
-  - Projectile
-  - Reviving
+  - Aim attack towards corpses as well as the player
+  - Animation and sound for when enemies revive
 - Airhorn
 - Skybox
 - Level intro

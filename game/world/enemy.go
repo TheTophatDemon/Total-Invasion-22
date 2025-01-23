@@ -22,6 +22,7 @@ import (
 const (
 	ENEMY_FOV_RADS       = math.Pi
 	ENEMY_WAKE_PROXIMITY = 1.7
+	ENEMY_COL_LAYERS     = COL_LAYER_ACTORS | COL_LAYER_NPCS
 )
 
 type Enemy struct {
@@ -113,7 +114,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
 			Shape:  collision.NewSphere(0.7),
-			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
+			Layer:  ENEMY_COL_LAYERS,
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
@@ -267,6 +268,10 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 	}
 	if oldState.leaveFunc != nil {
 		oldState.leaveFunc(enemy, newState)
+	} else if oldState == &enemy.dieState {
+		enemy.world.Hud.EnemiesKilled--
+		enemy.actor.body.Layer = ENEMY_COL_LAYERS
+		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS
 	}
 
 	if newState.anim.Frames != nil {

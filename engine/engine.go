@@ -121,6 +121,7 @@ func Run(app App) {
 		glfw.PollEvents()
 
 		// Throttle the update rate if the game is running faster than max FPS
+		// Only necessary on Windows for some reason.
 		for {
 			now = time.Now()
 			if frameTime := now.Sub(previousTime).Seconds(); frameTime >= updateRate {
