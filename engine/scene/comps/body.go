@@ -22,15 +22,34 @@ type Body struct {
 	)
 }
 
+type BodySliceIter struct {
+	i     int
+	Slice []scene.Handle
+}
+
+func (bi *BodySliceIter) Next() (HasBody, scene.Handle) {
+	if bi.Slice == nil || bi.i >= len(bi.Slice) {
+		return nil, scene.Handle{}
+	}
+	handle := bi.Slice[bi.i]
+	ent, _ := scene.Get[HasBody](handle)
+	bi.i++
+	return ent, handle
+}
+
 func (body *Body) Body() *Body {
 	return body
 }
 
-func (body *Body) MoveAndCollide(deltaTime float32, bodiesIter func() (HasBody, scene.Handle)) {
+func (body *Body) MoveAndCollide(deltaTime float32, bodiesIter BodyIter) {
 	before := body.Transform.Position()
 
 	movement := body.Velocity.Mul(deltaTime)
-	for collidingEnt, _ := bodiesIter(); collidingEnt != nil; collidingEnt, _ = bodiesIter() {
+	for {
+		collidingEnt, _ := bodiesIter.Next()
+		if collidingEnt == nil {
+			break
+		}
 		body.ResolveCollision(movement, collidingEnt, deltaTime)
 	}
 

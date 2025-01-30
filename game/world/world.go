@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/scene/tree"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/hud"
@@ -66,6 +67,8 @@ type World struct {
 	removalQueue  []scene.Handle  // Holds entities to be removed at the end of the frame.
 	app           engine.Observer // Communicates with the main application
 	nextLevel     string          // Path to the next level. Set once the player reaches an exit.
+
+	avgCollisionTime int64
 }
 
 func NewWorld(app engine.Observer, mapPath string) (*World, error) {
@@ -263,11 +266,34 @@ func (world *World) Update(deltaTime float32) {
 		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
 	}
 
+	startTime := time.Now()
 	// Update bodies and resolve collisions
-	iter := world.IterBodies()
-	for bodyEnt, _ := iter.Next(); bodyEnt != nil; bodyEnt, _ = iter.Next() {
-		innerIter := world.IterBodies()
-		bodyEnt.Body().MoveAndCollide(deltaTime, innerIter.Next)
+	it := world.IterBodies()
+	bvh := tree.BuildBvhTree(&it, world.GameMap)
+	it = world.IterBodies()
+	for {
+		bodyEnt, _ := it.Next()
+		if bodyEnt == nil {
+			break
+		}
+
+		innerIter := comps.BodySliceIter{
+			Slice: bvh.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
+		}
+
+		// The game map msut be excluded from the bvh tree due to its large size.
+		mapIter := world.GameMaps.Iter()
+		_, mapHandle := mapIter.Next()
+		innerIter.Slice = append(innerIter.Slice, mapHandle)
+
+		bodyEnt.Body().MoveAndCollide(deltaTime, &innerIter)
+	}
+
+	duration := time.Now().Sub(startTime).Milliseconds()
+	if world.avgCollisionTime != 0 {
+		world.avgCollisionTime = (world.avgCollisionTime + duration) / 2
+	} else {
+		world.avgCollisionTime = duration
 	}
 
 	// Remove deleted entities
@@ -300,7 +326,7 @@ func (world *World) Render() {
 	// Render 3D game elements
 	scene.RenderStores(world, &renderContext)
 
-	world.Hud.UpdateDebugCounters(&renderContext)
+	world.Hud.UpdateDebugCounters(&renderContext, world.avgCollisionTime)
 	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {
 		world.Hud.Render()
 	}

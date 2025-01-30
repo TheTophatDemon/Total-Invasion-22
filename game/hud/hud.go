@@ -91,7 +91,7 @@ func (hud *Hud) Init() {
 	spriteCounter.
 		SetFont(DEFAULT_FONT_PATH).
 		SetText("Sprites drawn: 0\nWalls drawn: 0\nParticles drawn: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 320.0, Height: 64.0}).
+		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0}).
 		SetScale(1.0).
 		SetColor(color.Blue)
 
@@ -264,13 +264,14 @@ func (hud *Hud) Update(deltaTime float32) {
 	}
 }
 
-func (hud *Hud) UpdateDebugCounters(renderContext *render.Context) {
+func (hud *Hud) UpdateDebugCounters(renderContext *render.Context, avgCollisionTime int64) {
 	if sprCountTxt, ok := hud.SpriteCounter.Get(); ok {
 		sprCountTxt.SetText(
-			fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v",
+			fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v\nAvg. Collision MS: %v",
 				renderContext.DrawnSpriteCount,
 				renderContext.DrawnWallCount,
-				renderContext.DrawnParticlesCount))
+				renderContext.DrawnParticlesCount,
+				avgCollisionTime))
 	}
 }
 

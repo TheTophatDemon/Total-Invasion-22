@@ -1,6 +1,8 @@
 package scene
 
-import "tophatdemon.com/total-invasion-ii/engine/render"
+import (
+	"tophatdemon.com/total-invasion-ii/engine/render"
+)
 
 type (
 	// Type-agnostic abstraction of Storage
