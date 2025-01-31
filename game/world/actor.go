@@ -17,9 +17,13 @@ type Actor struct {
 	onGround                      bool
 	world                         *World
 	knockbackForce                mgl32.Vec3
+	noisyTimer                    float32 // While this timer is > 0, enemies will be able to 'hear' the actor
 }
 
 func (actor *Actor) Update(deltaTime float32) {
+	// Diminish noise level
+	actor.noisyTimer = max(0.0, actor.noisyTimer-deltaTime)
+
 	if actor.GravityAccel != 0.0 && actor.body.Filter&COL_LAYER_MAP != 0 {
 		distToBottom := (actor.body.Shape.Extents().Max.Y()) + 0.01
 		downCast, _ := actor.world.Raycast(actor.body.Transform.Position(), mgl32.Vec3{0.0, -1.0, 0.0}, COL_LAYER_MAP, distToBottom, nil)

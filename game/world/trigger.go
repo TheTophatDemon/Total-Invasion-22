@@ -189,8 +189,12 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
-				actors := tr.world.ActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
-				for _, actorHandle := range actors {
+				actorsIter := tr.world.IterActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
+				for {
+					_, actorHandle := actorsIter.Next()
+					if actorHandle.IsNil() {
+						break
+					}
 					victimEnt, _ := scene.Get[HasActor](actorHandle)
 					if player, isPlayer := victimEnt.(*Player); isPlayer && player != teleportingEnt {
 						// If the player is on the other side, kill the NPC instead.

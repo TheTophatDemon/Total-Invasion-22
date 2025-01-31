@@ -42,7 +42,6 @@ type Player struct {
 	godMode                bool    // If true, the player does not take damage.
 	ammo                   game.Ammo
 	keys                   game.KeyType
-	noisyTimer             float32 // While this timer is > 0, enemies will be able to 'hear' the player and activate when not facing her.
 }
 
 var _ HasActor = (*Player)(nil)
@@ -155,8 +154,6 @@ func (player *Player) Update(deltaTime float32) {
 			player.world.ChangeMap(player.world.GameMap.Name())
 		}
 	}
-
-	player.noisyTimer = max(0.0, player.noisyTimer-deltaTime)
 
 	if math2.Abs(player.actor.inputForward) > mgl32.Epsilon || math2.Abs(player.actor.inputStrafe) > mgl32.Epsilon {
 		if player.actor.MaxSpeed == player.WalkSpeed {

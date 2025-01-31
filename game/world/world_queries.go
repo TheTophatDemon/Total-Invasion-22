@@ -10,21 +10,37 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-// TODO: Replace with iterator.
-func (world *World) ActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) []scene.Handle {
-	radiusSq := sphereRadius * sphereRadius
-	result := make([]scene.Handle, 0)
-	iter := world.IterActors()
-	for actorEnt, actorId := iter.Next(); actorEnt != nil; actorEnt, actorId = iter.Next() {
-		if actorEnt == exception {
+type ActorsInSphereIter struct {
+	ActorsIter
+	radiusSq  float32
+	spherePos mgl32.Vec3
+	exception HasActor
+}
+
+func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
+	for {
+		actorEnt, actorId := iter.ActorsIter.Next()
+		if actorEnt == nil {
+			break
+		}
+		if actorEnt == iter.exception {
 			continue
 		}
 		body := actorEnt.Body()
-		if body.Transform.Position().Sub(spherePos).LenSqr() < radiusSq {
-			result = append(result, actorId)
+		if body.Transform.Position().Sub(iter.spherePos).LenSqr() < iter.radiusSq {
+			return actorEnt, actorId
 		}
 	}
-	return result
+	return nil, scene.Handle{}
+}
+
+func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) ActorsInSphereIter {
+	return ActorsInSphereIter{
+		ActorsIter: world.IterActors(),
+		radiusSq:   sphereRadius * sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
 }
 
 // TODO: Replace with iterator.

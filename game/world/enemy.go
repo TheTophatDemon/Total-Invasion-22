@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	ENEMY_FOV_RADS       = math.Pi
-	ENEMY_WAKE_PROXIMITY = 1.7
-	ENEMY_COL_LAYERS     = COL_LAYER_ACTORS | COL_LAYER_NPCS
+	ENEMY_FOV_RADS         = math.Pi
+	ENEMY_WAKE_PROXIMITY   = 1.7
+	ENEMY_COL_LAYERS       = COL_LAYER_ACTORS | COL_LAYER_NPCS
+	ENEMY_NOTICE_PROXIMITY = 25.0
 )
 
 type Enemy struct {
@@ -45,6 +46,7 @@ type Enemy struct {
 	voice                                                   tdaudio.VoiceId
 
 	// Player or target tracking variables
+	targetHandle                scene.Handle
 	dirToTarget                 mgl32.Vec3
 	distToTarget                float32
 	canSeeTarget, canHearTarget bool
@@ -165,20 +167,23 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.canSeeTarget = false
 	enemy.canHearTarget = false
 	var vecToTarget mgl32.Vec3
-	if player, ok := enemy.world.CurrentPlayer.Get(); ok && enemy.world.IsOnPlayerCamera() {
-		vecToTarget = player.Body().Transform.Position().Sub(enemyPos)
+	if enemy.targetHandle.IsNil() {
+		enemy.targetHandle = enemy.world.CurrentPlayer.Handle
+	}
+	if targetActor, ok := scene.Get[HasActor](enemy.targetHandle); ok && enemy.world.IsOnPlayerCamera() {
+		vecToTarget = targetActor.Body().Transform.Position().Sub(enemyPos)
 		enemy.distToTarget = vecToTarget.Len()
 		if enemy.distToTarget != 0.0 {
 			enemy.dirToTarget = vecToTarget.Normalize()
 		}
 
-		inHearingRange := player.noisyTimer > 0 && enemy.world.Hud.SelectedWeapon() != nil && enemy.distToTarget < enemy.world.Hud.SelectedWeapon().NoiseLevel()
+		inHearingRange := targetActor.Actor().noisyTimer > 0 && enemy.world.Hud.SelectedWeapon() != nil && enemy.distToTarget < enemy.world.Hud.SelectedWeapon().NoiseLevel()
 		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < ENEMY_FOV_RADS/2.0
 		if enemy.distToTarget < ENEMY_WAKE_PROXIMITY {
 			enemy.canSeeTarget = true
 		} else if inHearingRange || inFieldOfView {
-			res, handle := enemy.world.Raycast(enemyPos, enemy.dirToTarget, COL_LAYER_PLAYERS|COL_LAYER_MAP, 25.0, enemy)
-			if handle.Equals(player.id.Handle) && res.Hit {
+			res, _ := enemy.world.Raycast(enemyPos, enemy.dirToTarget, COL_LAYER_MAP, enemy.distToTarget, nil)
+			if !res.Hit && enemy.distToTarget < ENEMY_NOTICE_PROXIMITY {
 				enemy.canSeeTarget = true
 				enemy.canHearTarget = true
 			}

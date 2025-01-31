@@ -34,5 +34,5 @@ func (player *Player) AttackWithWeapon() {
 		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
 		cache.GetSfx(SFX_PARUSU_SHOOT).Play()
 	}
-	player.noisyTimer = 0.5
+	player.actor.noisyTimer = 0.5
 }

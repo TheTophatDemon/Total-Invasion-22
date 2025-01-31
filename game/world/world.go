@@ -48,26 +48,26 @@ const (
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
-	Hud           hud.Hud
-	Players       scene.Storage[Player]
-	Enemies       scene.Storage[Enemy]
-	Chickens      scene.Storage[Chicken]
-	Walls         scene.Storage[Wall]
-	Props         scene.Storage[Prop]
-	Triggers      scene.Storage[Trigger]
-	Projectiles   scene.Storage[Projectile]
-	Effects       scene.Storage[Effect]
-	Items         scene.Storage[Item]
-	DebugShapes   scene.Storage[DebugShape]
-	Cameras       scene.Storage[Camera]
-	GameMaps      scene.Storage[comps.Map]
-	GameMap       *comps.Map
-	CurrentPlayer scene.Id[*Player]
-	CurrentCamera scene.Id[*Camera]
-	removalQueue  []scene.Handle  // Holds entities to be removed at the end of the frame.
-	app           engine.Observer // Communicates with the main application
-	nextLevel     string          // Path to the next level. Set once the player reaches an exit.
-
+	Hud              hud.Hud
+	Players          scene.Storage[Player]
+	Enemies          scene.Storage[Enemy]
+	Chickens         scene.Storage[Chicken]
+	Walls            scene.Storage[Wall]
+	Props            scene.Storage[Prop]
+	Triggers         scene.Storage[Trigger]
+	Projectiles      scene.Storage[Projectile]
+	Effects          scene.Storage[Effect]
+	Items            scene.Storage[Item]
+	DebugShapes      scene.Storage[DebugShape]
+	Cameras          scene.Storage[Camera]
+	GameMaps         scene.Storage[comps.Map]
+	GameMap          *comps.Map
+	CurrentPlayer    scene.Id[*Player]
+	CurrentCamera    scene.Id[*Camera]
+	removalQueue     []scene.Handle  // Holds entities to be removed at the end of the frame.
+	app              engine.Observer // Communicates with the main application
+	nextLevel        string          // Path to the next level. Set once the player reaches an exit.
+	bvhTree          tree.BvhTree    // The bounding volume hierarchy built in the previous frame.
 	avgCollisionTime int64
 }
 
@@ -269,7 +269,7 @@ func (world *World) Update(deltaTime float32) {
 	startTime := time.Now()
 	// Update bodies and resolve collisions
 	it := world.IterBodies()
-	bvh := tree.BuildBvhTree(&it, world.GameMap)
+	world.bvhTree = tree.BuildBvhTree(&it, world.GameMap)
 	it = world.IterBodies()
 	for {
 		bodyEnt, _ := it.Next()
@@ -278,7 +278,7 @@ func (world *World) Update(deltaTime float32) {
 		}
 
 		innerIter := comps.BodySliceIter{
-			Slice: bvh.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
+			Slice: world.bvhTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
 		}
 
 		// The game map msut be excluded from the bvh tree due to its large size.

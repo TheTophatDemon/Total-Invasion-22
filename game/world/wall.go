@@ -272,8 +272,8 @@ func (wall *Wall) Update(deltaTime float32) {
 		targetDir := wall.Origin.Sub(wall.body.Transform.Position())
 		targetDist := targetDir.Len()
 		// Detect if something is standing in the way
-		blockers := wall.world.ActorsInSphere(wall.Origin, wall.body.Shape.Extents().LongestDimension(), nil)
-		if len(blockers) > 0 {
+		actorsIter := wall.world.IterActorsInSphere(wall.Origin, wall.body.Shape.Extents().LongestDimension(), nil)
+		if actor, _ := actorsIter.Next(); actor != nil {
 			wall.body.Velocity = mgl32.Vec3{}
 			wall.movePhase = MOVE_PHASE_OPENING
 		} else if targetDist <= wall.Speed*deltaTime {
