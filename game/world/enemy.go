@@ -135,14 +135,6 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 
 	params := enemyTypeConfigFuncs[variant](enemy)
 
-	if enemy.reviveState.anim.Frames == nil {
-		// Override revive animation with default when not specified
-		reviveAnim, _ := params.texture.GetAnimation("revive;front")
-		enemy.reviveState = enemyState{
-			anim: reviveAnim,
-		}
-	}
-
 	enemy.bloodParticles = effects.Blood(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
@@ -287,9 +279,16 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 	} else if oldState == &enemy.dieState {
 		// Ensure nobody's standing on top of the enemy that is getting revived.
 		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.(collision.Sphere).Radius(), enemy)
-		if actor, _ := actorsIter.Next(); actor != nil {
-			return
+		for {
+			actor, _ := actorsIter.Next()
+			if actor == nil {
+				break
+			}
+			if actor.Actor().Health > 0 {
+				return
+			}
 		}
+
 		enemy.world.Hud.EnemiesKilled--
 		enemy.actor.body.Layer = ENEMY_COL_LAYERS
 		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS

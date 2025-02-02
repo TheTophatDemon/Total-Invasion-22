@@ -41,6 +41,12 @@ func configureWraith(enemy *Enemy) (params enemyConfig) {
 		anim:       dieAnim,
 	}
 
+	reviveAnim, _ := params.texture.GetAnimation("revive;front")
+	enemy.reviveState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/wraith/wraith_revive.wav"),
+		anim:       reviveAnim,
+	}
+
 	enemy.actor.MaxHealth = 100.0
 
 	return

@@ -8,14 +8,14 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 )
 
-func configureFireWraith(enemy *Enemy) (config enemyConfig) {
-	config.bloodColor = color.Blue
-	config.texture = cache.GetTexture("assets/textures/sprites/fire_wraith.png")
-	walkAnim, _ := config.texture.GetAnimation("walk;front")
-	attackAnim, _ := config.texture.GetAnimation("attack;front")
-	stunAnim, _ := config.texture.GetAnimation("hurt;front")
-	dieAnim, _ := config.texture.GetAnimation("die;front")
-	config.defaultAnim = walkAnim
+func configureFireWraith(enemy *Enemy) (params enemyConfig) {
+	params.bloodColor = color.Blue
+	params.texture = cache.GetTexture("assets/textures/sprites/fire_wraith.png")
+	walkAnim, _ := params.texture.GetAnimation("walk;front")
+	attackAnim, _ := params.texture.GetAnimation("attack;front")
+	stunAnim, _ := params.texture.GetAnimation("hurt;front")
+	dieAnim, _ := params.texture.GetAnimation("die;front")
+	params.defaultAnim = walkAnim
 
 	enemy.idleState = enemyState{
 		anim:       walkAnim,
@@ -39,6 +39,12 @@ func configureFireWraith(enemy *Enemy) (config enemyConfig) {
 	enemy.dieState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/fire_wraith/fire_wraith_die.wav"),
 		anim:       dieAnim,
+	}
+
+	reviveAnim, _ := params.texture.GetAnimation("revive;front")
+	enemy.reviveState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/fire_wraith/fire_wraith_revive.wav"),
+		anim:       reviveAnim,
 	}
 
 	enemy.actor.MaxSpeed = 6.0

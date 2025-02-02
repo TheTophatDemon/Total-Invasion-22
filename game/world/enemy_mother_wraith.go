@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -45,6 +44,12 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 		anim:       dieAnim,
 	}
 
+	reviveAnim, _ := params.texture.GetAnimation("revive;front")
+	enemy.reviveState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/mother_wraith/mother_wraith_revive.wav"),
+		anim:       reviveAnim,
+	}
+
 	enemy.actor.AccelRate = 50.0
 	enemy.actor.MaxSpeed = 4.0
 	enemy.actor.MaxHealth = 350.0
@@ -58,7 +63,6 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 	// Switch periodically between shooting at the player and shooting to revive nearby enemies.
 	if rand.Float32() < 0.5 {
 		enemy.targetHandle = enemy.world.CurrentPlayer.Handle
-		fmt.Println("Now we lookin' at the playah")
 	} else {
 		nearbyEnemiesIter := enemy.world.Enemies.Iter()
 		var nearestCorpseHandle scene.Handle
@@ -90,7 +94,6 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 		}
 		if !nearestCorpseHandle.IsNil() {
 			enemy.targetHandle = nearestCorpseHandle
-			fmt.Println("Now we lookin' at the enumee")
 		} else {
 			enemy.targetHandle = enemy.world.CurrentPlayer.Handle
 		}

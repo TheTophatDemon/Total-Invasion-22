@@ -199,7 +199,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
 		if _, _, err := SpawnPropFromTE3(world, spawn); err != nil {
-			log.Printf("prop entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("prop entity at %v caused an error: %v\n", mgl32.Vec3(spawn.Position).Mul(0.5), err)
 		}
 	}
 
@@ -281,7 +281,7 @@ func (world *World) Update(deltaTime float32) {
 			Slice: world.bvhTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
 		}
 
-		// The game map msut be excluded from the bvh tree due to its large size.
+		// The game map should be excluded from the bvh tree due to its large size.
 		mapIter := world.GameMaps.Iter()
 		_, mapHandle := mapIter.Next()
 		innerIter.Slice = append(innerIter.Slice, mapHandle)

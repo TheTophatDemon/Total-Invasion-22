@@ -12,7 +12,7 @@ import (
 
 type ActorsInSphereIter struct {
 	ActorsIter
-	radiusSq  float32
+	radius    float32
 	spherePos mgl32.Vec3
 	exception HasActor
 }
@@ -27,7 +27,8 @@ func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
 			continue
 		}
 		body := actorEnt.Body()
-		if body.Transform.Position().Sub(iter.spherePos).LenSqr() < iter.radiusSq {
+		actorRadius := body.Shape.(collision.Sphere).Radius()
+		if body.Transform.Position().Sub(iter.spherePos).Len() < iter.radius+actorRadius {
 			return actorEnt, actorId
 		}
 	}
@@ -37,7 +38,7 @@ func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
 func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) ActorsInSphereIter {
 	return ActorsInSphereIter{
 		ActorsIter: world.IterActors(),
-		radiusSq:   sphereRadius * sphereRadius,
+		radius:     sphereRadius,
 		spherePos:  spherePos,
 		exception:  exception,
 	}

@@ -50,9 +50,14 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 			break
 		}
 		if enemy.actor.Health <= 0.0 {
-			lenSqr := proj.body.Transform.Position().Sub(enemy.Body().Transform.Position()).LenSqr()
-			if lenSqr < 2.5*2.5 {
-				enemy.changeState(&enemy.reviveState)
+			diff := enemy.Body().Transform.Position().Sub(proj.body.Transform.Position())
+			dist := diff.Len()
+			if dist < 2.0 {
+				// Ensure we are not reviving an enemy from behind a wall.
+				rayHit, _ := proj.world.Raycast(proj.body.Transform.Position(), diff.Mul(1.0/dist), COL_LAYER_MAP, dist, nil)
+				if !rayHit.Hit {
+					enemy.changeState(&enemy.reviveState)
+				}
 			}
 		}
 	}
