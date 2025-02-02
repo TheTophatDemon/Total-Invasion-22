@@ -1,7 +1,7 @@
 # TODO
 - Cacowraith
-  - Aim attack towards corpses as well as the player
-  - Animation and sound for when enemies revive
+  - Fix for some enemies not being revived
+  - Sound for when enemies revive
 - Airhorn
 - Skybox
 - Level intro

@@ -27,23 +27,24 @@ const (
 )
 
 type Enemy struct {
-	SpriteRender                                            comps.SpriteRender
-	AnimPlayer                                              comps.AnimationPlayer
-	WakeTime                                                float32 // Number of seconds player must be in sight before enemy begins to pursue.
-	WakeLimit                                               float32 // Maximum number of seconds after losing sight of player before giving up.
-	StunTime                                                float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
-	StunChance                                              float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
-	bloodParticles                                          comps.ParticleRender
-	bloodOffset                                             mgl32.Vec3
-	actor                                                   Actor
-	id                                                      scene.Id[*Enemy]
-	world                                                   *World
-	wakeTimer, chaseTimer, stateTimer, attackTimer          float32
-	chaseStrafeDir                                          float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
-	spriteAngle                                             float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
-	idleState, chaseState, stunState, attackState, dieState enemyState
-	state, previousState                                    *enemyState
-	voice                                                   tdaudio.VoiceId
+	SpriteRender                                   comps.SpriteRender
+	AnimPlayer                                     comps.AnimationPlayer
+	WakeTime                                       float32 // Number of seconds player must be in sight before enemy begins to pursue.
+	WakeLimit                                      float32 // Maximum number of seconds after losing sight of player before giving up.
+	StunTime                                       float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
+	StunChance                                     float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
+	bloodParticles                                 comps.ParticleRender
+	bloodOffset                                    mgl32.Vec3
+	actor                                          Actor
+	id                                             scene.Id[*Enemy]
+	world                                          *World
+	wakeTimer, chaseTimer, stateTimer, attackTimer float32
+	chaseStrafeDir                                 float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle                                    float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	idleState, chaseState, stunState               enemyState
+	attackState, dieState, reviveState             enemyState
+	state, previousState                           *enemyState
+	voice                                          tdaudio.VoiceId
 
 	// Player or target tracking variables
 	targetHandle                scene.Handle
@@ -134,6 +135,14 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 
 	params := enemyTypeConfigFuncs[variant](enemy)
 
+	if enemy.reviveState.anim.Frames == nil {
+		// Override revive animation with default when not specified
+		reviveAnim, _ := params.texture.GetAnimation("revive;front")
+		enemy.reviveState = enemyState{
+			anim: reviveAnim,
+		}
+	}
+
 	enemy.bloodParticles = effects.Blood(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
@@ -201,7 +210,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		enemy.wakeTimer = min(enemy.WakeLimit, enemy.wakeTimer+deltaTime)
 	}
 
-	if enemy.actor.Health <= 0.0 {
+	if enemy.actor.Health <= 0.0 && enemy.state != &enemy.reviveState {
 		enemy.changeState(&enemy.dieState)
 	}
 
@@ -232,6 +241,12 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			enemy.bloodOffset = enemy.bloodOffset.Sub(mgl32.Vec3{0.0, deltaTime, 0.0})
 		} else {
 			enemy.bloodOffset = mgl32.Vec3{0.0, -radius, 0.0}
+		}
+	case &enemy.reviveState:
+		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+		if enemy.AnimPlayer.IsAtEnd() {
+			enemy.actor.Health = enemy.actor.MaxHealth
+			enemy.changeState(&enemy.chaseState)
 		}
 	}
 
@@ -267,16 +282,21 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 
 	oldState := enemy.state
 
-	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
-		enemy.voice.Stop()
-		enemy.voice = leaveSound.PlayAttenuatedV(enemy.actor.Position())
-	}
 	if oldState.leaveFunc != nil {
 		oldState.leaveFunc(enemy, newState)
 	} else if oldState == &enemy.dieState {
+		// Ensure nobody's standing on top of the enemy that is getting revived.
+		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.(collision.Sphere).Radius(), enemy)
+		if actor, _ := actorsIter.Next(); actor != nil {
+			return
+		}
 		enemy.world.Hud.EnemiesKilled--
 		enemy.actor.body.Layer = ENEMY_COL_LAYERS
 		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS
+	}
+	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
+		enemy.voice.Stop()
+		enemy.voice = leaveSound.PlayAttenuatedV(enemy.actor.Position())
 	}
 
 	if newState.anim.Frames != nil {

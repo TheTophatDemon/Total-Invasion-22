@@ -34,19 +34,32 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.StunChance = 0.0
 	proj.Damage = 15
 
-	proj.moveFunc = proj.moveForward
+	proj.moveFunc = proj.moveForwardAndRevive
 	proj.body.OnIntersect = proj.blessingOnHit
 
 	return
 }
 
-func (proj *Projectile) blessingOnHit(collidingEntity comps.HasBody, collision collision.Result, deltaTime float32) {
-	if enemy, isEnemy := collidingEntity.(*Enemy); isEnemy {
-		if enemy.actor.Health <= 0.0 {
-			enemy.actor.Health = enemy.actor.MaxHealth
-			enemy.changeState(&enemy.stunState)
+func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
+	proj.moveForward(deltaTime)
+
+	enemiesIter := proj.world.Enemies.Iter()
+	for {
+		enemy, _ := enemiesIter.Next()
+		if enemy == nil {
+			break
 		}
-	} else {
+		if enemy.actor.Health <= 0.0 {
+			lenSqr := proj.body.Transform.Position().Sub(enemy.Body().Transform.Position()).LenSqr()
+			if lenSqr < 2.5*2.5 {
+				enemy.changeState(&enemy.reviveState)
+			}
+		}
+	}
+}
+
+func (proj *Projectile) blessingOnHit(collidingEntity comps.HasBody, collision collision.Result, deltaTime float32) {
+	if _, isEnemy := collidingEntity.(*Enemy); !isEnemy {
 		proj.dieOnHit(collidingEntity, collision, deltaTime)
 	}
 }
