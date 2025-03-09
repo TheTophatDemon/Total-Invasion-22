@@ -21,25 +21,25 @@ type Tiles struct {
 	Shapes                []string
 }
 
-type ShapeID int32
-type TextureID int32
+type ShapeID int16
+type TextureID int16
 
 type Tile struct {
-	ShapeID   ShapeID
-	Yaw       int32 //Yaw in whole number of degrees
-	TextureID TextureID
-	Pitch     int32 //Pitch in whole number of degrees
+	ShapeID    ShapeID
+	TextureIDs [2]TextureID
+	Yaw        uint8 // 0-3 for each 90 degree increment.
+	Pitch      uint8 // 0-3 for each 90 degree increment.
 }
 
 // Returns the rotation matrix based off of the tile's yaw and pitch values.
 func (t *Tile) GetRotationMatrix() mgl32.Mat4 {
-	return mgl32.HomogRotate3DY(mgl32.DegToRad(float32(-t.Yaw))).Mul4(
-		mgl32.HomogRotate3DX(mgl32.DegToRad(float32(-t.Pitch))))
+	return mgl32.HomogRotate3DY(float32(-t.Yaw) * math2.HALF_PI).Mul4(
+		mgl32.HomogRotate3DX(float32(-t.Pitch) * math2.HALF_PI))
 }
 
 // Parses tile data from JSON file (manually, since Tile has non-decoded fields)
 func (tiles *Tiles) UnmarshalJSON(b []byte) error {
-	//Get JSON data
+	// Get JSON data
 	var jData map[string]any
 	if err := json.Unmarshal(b, &jData); err != nil {
 		return err
@@ -49,45 +49,49 @@ func (tiles *Tiles) UnmarshalJSON(b []byte) error {
 	tiles.Height = int(jData["height"].(float64))
 	tiles.Length = int(jData["length"].(float64))
 
-	//Parse and convert texture paths
+	// Parse and convert texture paths
 	textures := jData["textures"].([]any)
 	tiles.Textures = make([]string, len(textures))
 	for t, tex := range textures {
 		tiles.Textures[t] = tex.(string)
 	}
 
-	//Parse and convert model paths
+	// Parse and convert model paths
 	shapes := jData["shapes"].([]any)
 	tiles.Shapes = make([]string, len(shapes))
 	for s, shape := range shapes {
 		tiles.Shapes[s] = shape.(string)
 	}
 
-	//Convert tile data from base64
+	// Convert tile data from base64
 	tileString := jData["data"].(string)
 	tileBytes, err := base64.StdEncoding.DecodeString(tileString)
 	if err != nil {
 		return err
 	}
 
-	//Parse bytes as tile array
+	// Parse bytes as tile array
 	reader := bytes.NewReader(tileBytes)
-	tiles.Data = make([]Tile, 0)
-	var tile Tile
-	for t := int64(0); t < reader.Size(); t++ {
-		if binary.Read(reader, binary.LittleEndian, &tile.ShapeID) != io.ErrUnexpectedEOF &&
+	tiles.Data = make([]Tile, tiles.Width*tiles.Height*tiles.Length)
+	tileIndex := 0
+	for tileIndex < len(tiles.Data) {
+		var tile Tile
+		if binary.Read(reader, binary.LittleEndian, &tile.ShapeID) == io.ErrUnexpectedEOF {
+			return io.ErrUnexpectedEOF
+		}
+
+		if tile.ShapeID < 0 {
+			// Negative shape ID represents a run of empty tiles
+			for range -tile.ShapeID {
+				tiles.Data[tileIndex] = Tile{ShapeID: ShapeID(-1)}
+				tileIndex++
+			}
+		} else if binary.Read(reader, binary.LittleEndian, tile.TextureIDs[:]) != io.ErrUnexpectedEOF &&
 			binary.Read(reader, binary.LittleEndian, &tile.Yaw) != io.ErrUnexpectedEOF &&
-			binary.Read(reader, binary.LittleEndian, &tile.TextureID) != io.ErrUnexpectedEOF &&
 			binary.Read(reader, binary.LittleEndian, &tile.Pitch) != io.ErrUnexpectedEOF {
 
-			if tile.ShapeID < 0 {
-				//Negative shape ID represents a run of empty tiles
-				for r := 0; r < -int(tile.ShapeID); r++ {
-					tiles.Data = append(tiles.Data, Tile{ShapeID: ShapeID(-1), Yaw: 0, TextureID: TextureID(-1), Pitch: 0})
-				}
-			} else {
-				tiles.Data = append(tiles.Data, tile)
-			}
+			tiles.Data[tileIndex] = tile
+			tileIndex++
 		} else {
 			return io.ErrUnexpectedEOF
 		}
@@ -143,22 +147,6 @@ func (tiles *Tiles) BBoxOfTile(i, j, k int) math2.Box {
 	}
 }
 
-func (tiles *Tiles) WithTextureId(texID TextureID) []int {
-	result := make([]int, 0)
-	for t, tile := range tiles.Data {
-		if tile.TextureID == texID {
-			result = append(result, t)
-		}
-	}
-	return result
-}
-
-func (tiles *Tiles) EraseTiles(tileIDs ...int) {
-	for _, t := range tileIDs {
-		tiles.Data[t] = Tile{ShapeID: -1, TextureID: -1}
-	}
-}
-
 func (tiles *Tiles) EraseTile(tileID int) {
-	tiles.Data[tileID] = Tile{ShapeID: -1, TextureID: -1}
+	tiles.Data[tileID] = Tile{ShapeID: -1}
 }

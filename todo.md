@@ -1,7 +1,4 @@
 # TODO
-- Fix bug with grenades falling through the floor.
-  - Nothing can collide with corner_height_2 floors bc it extends outside of its tile.
-  - We need to find a different way to handle the diagonally sliced textures.
 - Airhorn
 - Skybox
 - Prop graphics for

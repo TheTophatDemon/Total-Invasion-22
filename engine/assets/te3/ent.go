@@ -68,3 +68,11 @@ func (ent *Ent) BoolProperty(key string) (bool, error) {
 func (ent *Ent) AnglesInRadians() mgl32.Vec3 {
 	return mgl32.Vec3(ent.Angles).Mul(math.Pi / 180.0)
 }
+
+func (ent *Ent) GridPosition() [3]int {
+	return [3]int{
+		int(ent.Position[0] / GRID_SPACING),
+		int(ent.Position[1] / GRID_SPACING),
+		int(ent.Position[2] / GRID_SPACING),
+	}
+}

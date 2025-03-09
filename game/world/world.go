@@ -101,7 +101,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	for texID, texPath := range te3File.Tiles.Textures {
 		tex := cache.GetTexture(texPath)
 		for id, tile := range te3File.Tiles.Data {
-			if tile.TextureID != te3.TextureID(texID) {
+			if tile.TextureIDs[0] != te3.TextureID(texID) {
 				continue
 			}
 			box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
@@ -132,29 +132,29 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		"assets/models/shapes/bars.obj",
 		"assets/models/shapes/panel.obj",
 	} {
-		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 0, 45, 0, 360, panelShapeX)
-		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 45, 135, 0, 360, panelShapeZ)
-		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 135, 225, 0, 360, panelShapeX)
-		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 225, 315, 0, 360, panelShapeZ)
-		world.GameMap.SetTileCollisionShapesForAngles(shapeName, 315, 360, 0, 360, panelShapeX)
+		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 0, panelShapeX)
+		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 1, panelShapeZ)
+		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 2, panelShapeX)
+		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 3, panelShapeZ)
 	}
 
 	// Set cube collision shapes
 	for _, shapeName := range [...]string{
 		"assets/models/shapes/cube.obj",
-		"assets/models/shapes/cube_2tex.obj",
+		"assets/models/shapes/diagonal_split_cube.obj",
 		"assets/models/shapes/edge_panel.obj",
 		"assets/models/shapes/cube_marker.obj",
 		"assets/models/shapes/bridge.obj",
 	} {
 		world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
 	}
+	// TODO: We can use the for loop below to set the collision shapes as well.
 
 	// Process tiles after mesh is generated.
 	for texID, texPath := range te3File.Tiles.Textures {
 		tex := cache.GetTexture(texPath)
 		for id, tile := range te3File.Tiles.Data {
-			if tile.TextureID != te3.TextureID(texID) {
+			if tile.TextureIDs[0] != te3.TextureID(texID) {
 				continue
 			}
 			if tex.HasFlag(TEX_FLAG_LIQUID) {
@@ -179,48 +179,48 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	}
 	world.CurrentPlayer, _, err = SpawnPlayer(world, playerSpawn.Position, playerSpawn.Angles, world.CurrentCamera)
 	if err != nil {
-		log.Printf("player entity at %v caused an error: %v\n", playerSpawn.Position, err)
+		log.Printf("player entity at %v caused an error: %v\n", playerSpawn.GridPosition(), err)
 	}
 
 	// Spawn enemies
 	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
 		if _, _, err := SpawnEnemyFromTE3(world, spawn); err != nil {
-			log.Printf("enemy entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("enemy entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 
 	// Spawn dynamic tiles
 	for _, spawn := range te3File.FindEntsWithProperty("type", "door", "switch") {
 		if _, _, err := SpawnWallFromTE3(world, spawn); err != nil {
-			log.Printf("wall entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("wall entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 
 	// Spawn props
 	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
 		if _, _, err := SpawnPropFromTE3(world, spawn); err != nil {
-			log.Printf("prop entity at %v caused an error: %v\n", mgl32.Vec3(spawn.Position).Mul(0.5), err)
+			log.Printf("prop entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 
 	// Spawn triggers
 	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
 		if _, _, err := SpawnTriggerFromTE3(world, spawn); err != nil {
-			log.Printf("trigger entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("trigger entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 
 	// Spawn items
 	for _, spawn := range te3File.FindEntsWithProperty("type", "item") {
 		if _, _, err := SpawnItemFromTE3(world, spawn); err != nil {
-			log.Printf("item entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("item entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 
 	// Spawn cameras
 	for _, spawn := range te3File.FindEntsWithProperty("type", "camera") {
 		if _, _, err := SpawnCameraFromTE3(world, spawn); err != nil {
-			log.Printf("camera entity at %v caused an error: %v\n", spawn.Position, err)
+			log.Printf("camera entity at %v caused an error: %v\n", spawn.GridPosition(), err)
 		}
 	}
 

@@ -107,12 +107,27 @@ func (gameMap *Map) TearDown() {
 }
 
 func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) {
-	gm.SetTileCollisionShapesForAngles(shapeName, 0, 360, 0, 360, shape)
+	var shapeID te3.ShapeID = -1
+	for id, name := range gm.tiles.Shapes {
+		if name == shapeName {
+			shapeID = te3.ShapeID(id)
+			break
+		}
+	}
+	if shapeID < 0 {
+		return
+	}
+	for index, tile := range gm.tiles.Data {
+		if tile.ShapeID == shapeID {
+			gm.GridShape.SetShapeAtFlatIndex(index, shape)
+		}
+	}
+	return
 }
 
-// Sets the collision shape of all tiles that have the specified shape, and whose angles are within the designated ranges.
-// 'yawMin' and 'pitchMin' are inclusive bounds, but 'yawMax' and 'pitchMax' are exclusive.
-func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax, pitchMin, pitchMax int32, shape collision.Shape) {
+// Sets the collision shape of all tiles that have the specified shape with the given yaw value.
+// The yaw value is 0-3 representing increments of 90 degrees.
+func (gm *Map) SetTileCollisionShapesForYaw(shapeName string, yaw uint8, shape collision.Shape) {
 	var shapeID te3.ShapeID = -1
 	for id, name := range gm.tiles.Shapes {
 		if name == shapeName {
@@ -125,9 +140,7 @@ func (gm *Map) SetTileCollisionShapesForAngles(shapeName string, yawMin, yawMax,
 	}
 	for index, tile := range gm.tiles.Data {
 		if tile.ShapeID == shapeID &&
-			tile.Yaw >= yawMin && tile.Yaw < yawMax &&
-			tile.Pitch >= pitchMin && tile.Pitch < pitchMax {
-
+			tile.Yaw == yaw {
 			gm.GridShape.SetShapeAtFlatIndex(index, shape)
 		}
 	}

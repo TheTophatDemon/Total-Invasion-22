@@ -11,23 +11,22 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
-type OBJIndex [3]int //The three indices into the .obj's vertex elements (1-based)
+type OBJIndex [3]int // The three indices into the .obj's vertex elements (1-based)
 
-type OBJFace [4]OBJIndex //May be a quad or a triangle. For triangles, last index is all -1.
+type OBJFace [4]OBJIndex // May be a quad or a triangle. For triangles, last index is all -1.
 
-type OBJGroup struct {
+type OBJMaterial struct {
 	faces []OBJFace
 }
 
 type OBJ struct {
-	pos    [][3]float32
-	tex    [][2]float32
-	norm   [][3]float32
-	groups map[string]*OBJGroup
+	pos       [][3]float32
+	tex       [][2]float32
+	norm      [][3]float32
+	materials map[string]*OBJMaterial
 }
 
 func LoadOBJMesh(path string) (*Mesh, error) {
-
 	file, err := assets.GetFile(path)
 	if err != nil {
 		return nil, err
@@ -46,22 +45,22 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 	scanner.Split(bufio.ScanLines)
 
 	obj := OBJ{
-		pos:    make([][3]float32, 0, 16),
-		tex:    make([][2]float32, 0, 16),
-		norm:   make([][3]float32, 0, 16),
-		groups: make(map[string]*OBJGroup),
+		pos:       make([][3]float32, 0, 16),
+		tex:       make([][2]float32, 0, 16),
+		norm:      make([][3]float32, 0, 16),
+		materials: make(map[string]*OBJMaterial),
 	}
 
-	//Takes a .obj face vertex definition "A/B/C"
-	//And stores the index into `verts` of the corresponding mesh vertex.
+	// Takes a .obj face vertex definition "A/B/C"
+	// And stores the index into `verts` of the corresponding mesh vertex.
 	vertSet := make(map[OBJIndex]int)
 
-	groupName := ""
-	obj.groups[groupName] = &OBJGroup{
+	materialName := ""
+	obj.materials[materialName] = &OBJMaterial{
 		faces: make([]OBJFace, 0),
 	}
 
-	//Scan .obj file
+	// Scan .obj file
 	for scanner.Scan() {
 		line := scanner.Text()
 		tokens := strings.Split(line, " ")
@@ -107,11 +106,11 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 				return nil, err
 			}
 			obj.norm = append(obj.norm, [3]float32{float32(x), float32(y), float32(z)})
-		case "g":
-			groupName = tokens[1]
-			_, ok := obj.groups[groupName]
+		case "usemtl":
+			materialName = tokens[1]
+			_, ok := obj.materials[materialName]
 			if !ok {
-				obj.groups[groupName] = &OBJGroup{
+				obj.materials[materialName] = &OBJMaterial{
 					faces: make([]OBJFace, 0),
 				}
 			}
@@ -121,9 +120,9 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 				continue
 			}
 			var face OBJFace
-			face[3] = OBJIndex{-1, -1, -1} //Marks a triangle unless overwritten
+			face[3] = OBJIndex{-1, -1, -1} // Marks a triangle unless overwritten
 			for i := 1; i < len(tokens); i++ {
-				//Parse index
+				// Parse index
 				var faceTokens = strings.Split(tokens[i], "/")
 				var idx OBJIndex
 				for t, str := range faceTokens {
@@ -135,37 +134,37 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 				}
 				face[i-1] = idx
 
-				//Create vertices for each face's vertex
+				// Create vertices for each face's vertex
 				_, ok := vertSet[idx]
 				if !ok {
 					v := len(verts.Pos)
 					vertSet[idx] = v
 
-					if idx[0] >= 0 { //Position
+					if idx[0] >= 0 { // Position
 						verts.Pos = append(verts.Pos,
 							mgl32.Vec3(obj.pos[idx[0]-1]))
 					}
-					if idx[1] >= 0 { //Tex coord
+					if idx[1] >= 0 { // Tex coord
 						verts.TexCoord = append(verts.TexCoord,
 							mgl32.Vec2(obj.tex[idx[1]-1]))
 					}
-					if idx[2] >= 0 { //Normal
+					if idx[2] >= 0 { // Normal
 						verts.Normal = append(verts.Normal,
 							mgl32.Vec3(obj.norm[idx[2]-1]))
 					}
 				}
 			}
-			obj.groups[groupName].faces = append(obj.groups[groupName].faces, face)
+			obj.materials[materialName].faces = append(obj.materials[materialName].faces, face)
 		}
 	}
 
 	meshGroups := make(map[string]Group)
-	for name, group := range obj.groups {
+	for name, group := range obj.materials {
 		meshGroup := Group{Offset: len(inds)}
 		for _, face := range group.faces {
-			//Add indices from faces
+			// Add indices from faces
 			if face[3][0] == -1 {
-				//Triangle
+				// Triangle
 				inds = append(inds,
 					uint32(vertSet[face[0]]),
 					uint32(vertSet[face[1]]),
@@ -173,7 +172,7 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 				)
 				meshGroup.Length += 3
 			} else {
-				//Quad (two triangles)
+				// Quad (two triangles)
 				inds = append(inds,
 					uint32(vertSet[face[0]]),
 					uint32(vertSet[face[1]]),

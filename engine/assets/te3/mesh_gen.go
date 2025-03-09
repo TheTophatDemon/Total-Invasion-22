@@ -24,7 +24,7 @@ type TriMap [][]int
 // Transforms the triangle from a tile's shape mesh into the space of a tile.
 func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, rotation mgl32.Mat4) math2.Triangle {
 	outTriangle := math2.Triangle{}
-	for i := 0; i < len(triangle); i++ {
+	for i := range len(triangle) {
 		// Rotate and translate the points of the triangle to the tile's final position
 		outTriangle[i] = mgl32.TransformCoordinate(triangle[i], rotation)
 		outTriangle[i][0] += float32(gridX)*GRID_SPACING + HALF_GRID_SPACING
@@ -59,12 +59,12 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 	if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
 		// Check the faces of the neighboring tile
 		nborTile := te3.Tiles.Data[te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)]
-		if nborTile.ShapeID < 0 || cache.GetTexture(te3.Tiles.Textures[nborTile.TextureID]).HasFlag("invisible") {
+		if nborTile.ShapeID < 0 {
 			return false
 		}
 		nborRotation := nborTile.GetRotationMatrix()
 		nborMesh := shapeMeshes[nborTile.ShapeID]
-		for nt := 0; nt < len(nborMesh.Inds())/3; nt++ {
+		for nt := range len(nborMesh.Inds()) / 3 {
 			nborTriangle := transformedTileTriangle(nborX, nborY, nborZ, nborMesh.Triangles()[nt], nborRotation)
 			nborPlane := nborTriangle.Plane()
 
@@ -107,16 +107,18 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 	// Preprocess tiles
 	for t, tile := range te3.Tiles.Data {
 		// Only visible tiles are processed here
-		if tile.ShapeID < 0 || tile.TextureID < 0 {
+		if tile.ShapeID < 0 {
 			continue
 		}
 
-		// Assign to group based on texture
-		group, ok := groupTiles[tile.TextureID]
-		if !ok {
-			group = make([]int, 0, 16)
+		// Assign to group(s) based on texture
+		for _, texId := range tile.TextureIDs {
+			group, ok := groupTiles[texId]
+			if !ok {
+				group = make([]int, 0, 16)
+			}
+			groupTiles[texId] = append(group, t)
 		}
-		groupTiles[tile.TextureID] = append(group, t)
 	}
 
 	meshGroups := make([]geom.Group, 0, len(groupTiles))
@@ -126,7 +128,7 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 
 	// Add vertex data from tiles to map mesh
 	for texID, tileIndices := range groupTiles {
-		group := geom.Group{Offset: len(mapInds), Length: 0}
+		outGroup := geom.Group{Offset: len(mapInds), Length: 0}
 
 		for _, ti := range tileIndices {
 			tile := te3.Tiles.Data[ti]
@@ -138,9 +140,25 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 			// Create triangle map array for this tile
 			triMap[ti] = make([]int, 0, 8)
 
-			for tri := 0; tri < len(shapeMesh.Inds())/3; tri++ {
+			// Pick the material on the mesh used for this texture
+			var shapeGroup geom.Group
+			switch texID {
+			case tile.TextureIDs[0]:
+				shapeGroup = shapeMesh.Group("primary")
+			case tile.TextureIDs[1]:
+				shapeGroup = shapeMesh.Group("secondary")
+			}
+			shapeInds := shapeMesh.Inds()
+			if tile.TextureIDs[0] == tile.TextureIDs[1] {
+				// Both textures are the same, so use the whole mesh.
+				shapeGroup = geom.Group{}
+			} else if shapeGroup != (geom.Group{}) {
+				shapeInds = shapeInds[shapeGroup.Offset:][:shapeGroup.Length]
+			}
+
+			for tri := range len(shapeInds) / 3 {
 				// Get triangle coordinates
-				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeMesh.Triangles()[tri], rotMatrix)
+				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeMesh.Triangles()[(shapeGroup.Offset/3)+tri], rotMatrix)
 
 				// Skip if culling tile
 				if te3.shouldCull(gridX, gridY, gridZ, triangle, shapeMeshes) {
@@ -151,8 +169,8 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 				triMap[ti] = append(triMap[ti], len(mapInds)/3)
 
 				// Add the triangle's indices to the map mesh
-				for i := 0; i < 3; i++ {
-					ind := shapeMesh.Inds()[tri*3+i]
+				for i := range 3 {
+					ind := shapeInds[(tri*3)+i]
 					mapInds = append(mapInds, uint32(len(mapVerts.Pos)))
 
 					// Add the shape's vertex position to the aggregate mesh, offset by the overall tile position
@@ -165,11 +183,11 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 					normal := mgl32.TransformNormal(shapeMesh.Verts().Normal[ind], rotMatrix)
 					mapVerts.Normal = append(mapVerts.Normal, normal)
 				}
-				group.Length += 3
+				outGroup.Length += 3
 			}
 		}
 
-		meshGroups = append(meshGroups, group)
+		meshGroups = append(meshGroups, outGroup)
 		meshGroupNames = append(meshGroupNames, te3.Tiles.Textures[texID])
 	}
 
