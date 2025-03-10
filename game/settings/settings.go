@@ -34,6 +34,7 @@ const (
 	ACTION_CHICKEN
 	ACTION_GRENADE
 	ACTION_PARUSU
+	ACTION_AIRHORN
 	ACTION_USE
 	ACTION_NOCLIP
 	ACTION_GODMODE
@@ -56,6 +57,8 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_SICKLE:     "Select Sickle",
 	ACTION_CHICKEN:    "Select Chicken Cannon",
 	ACTION_GRENADE:    "Select Grenade Launcher",
+	ACTION_PARUSU:     "Select Parusu",
+	ACTION_AIRHORN:    "Select Airhorn",
 	ACTION_USE:        "Use",
 	ACTION_NOCLIP:     "Noclip",
 	ACTION_GODMODE:    "God Mode",

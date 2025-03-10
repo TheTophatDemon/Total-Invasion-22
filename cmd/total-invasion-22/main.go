@@ -95,6 +95,9 @@ func main() {
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionKey(settings.ACTION_GRENADE, glfw.Key3)
 	input.BindActionKey(settings.ACTION_PARUSU, glfw.Key4)
+	// Double grenade
+	// Sign of madness
+	input.BindActionKey(settings.ACTION_AIRHORN, glfw.Key7)
 	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
 	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})
 	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})

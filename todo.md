@@ -1,5 +1,9 @@
 # TODO
+- Fix sounds being extremely loud when up close
 - Airhorn
+  - Sound effect
+  - Fix HUD animation
+  - Do damage to enemies?
 - Skybox
 - Prop graphics for
   - Eyeball

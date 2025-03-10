@@ -68,6 +68,7 @@ type Hud struct {
 	chickenGun                 ChickenCannon
 	grenadeLauncher            GrenadeLauncher
 	parusu                     Parusu
+	airhorn                    Airhorn
 	weapons                    [WEAPON_ORDER_COUNT]Weapon
 	selectedWeapon, nextWeapon WeaponIndex
 
@@ -126,6 +127,7 @@ func (hud *Hud) Init() {
 		WEAPON_ORDER_CHICKEN: &hud.chickenGun,
 		WEAPON_ORDER_GRENADE: &hud.grenadeLauncher,
 		WEAPON_ORDER_PARUSU:  &hud.parusu,
+		WEAPON_ORDER_AIRHORN: &hud.airhorn,
 	}
 	for _, weapon := range hud.weapons {
 		if weapon != nil {
