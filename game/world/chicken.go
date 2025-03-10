@@ -82,7 +82,7 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 	chk.AnimPlayer = comps.NewAnimationPlayer(chk.walkAnim, false)
 
 	chk.actor.Health = 45.0
-	chk.actor.MaxHealth = chk.actor.Health
+	chk.actor.MaxHealth, chk.actor.TargetHealth = chk.actor.Health, chk.actor.Health
 
 	chk.voice = cache.GetSfx(SFX_CHICKEN_BOK).PlayAttenuatedV(position)
 

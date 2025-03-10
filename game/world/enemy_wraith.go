@@ -47,7 +47,7 @@ func configureWraith(enemy *Enemy) (params enemyConfig) {
 		anim:       reviveAnim,
 	}
 
-	enemy.actor.MaxHealth = 100.0
+	enemy.actor.MaxHealth = 90.0
 
 	return
 }

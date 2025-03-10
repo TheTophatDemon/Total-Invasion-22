@@ -48,7 +48,7 @@ func configureFireWraith(enemy *Enemy) (params enemyConfig) {
 	}
 
 	enemy.actor.MaxSpeed = 6.0
-	enemy.actor.MaxHealth = 175.0
+	enemy.actor.MaxHealth = 150.0
 
 	return
 }

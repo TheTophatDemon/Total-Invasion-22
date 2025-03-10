@@ -7,17 +7,17 @@ import (
 )
 
 type Actor struct {
-	MaxSpeed, AccelRate, Friction float32
-	GravityAccel                  float32
-	MaxFallSpeed                  float32
-	YawAngle                      float32 // Radians
-	Health, MaxHealth             float32
-	body                          comps.Body
-	inputForward, inputStrafe     float32
-	onGround                      bool
-	world                         *World
-	knockbackForce                mgl32.Vec3
-	noisyTimer                    float32 // While this timer is > 0, enemies will be able to 'hear' the actor
+	MaxSpeed, AccelRate, Friction   float32
+	GravityAccel                    float32
+	MaxFallSpeed                    float32
+	YawAngle                        float32 // Radians
+	Health, MaxHealth, TargetHealth float32 // Health cannot be more than MaxHealth but will gradually drop to TargetHealth if overhealed.
+	body                            comps.Body
+	inputForward, inputStrafe       float32
+	onGround                        bool
+	world                           *World
+	knockbackForce                  mgl32.Vec3
+	noisyTimer                      float32 // While this timer is > 0, enemies will be able to 'hear' the actor
 }
 
 func (actor *Actor) Update(deltaTime float32) {

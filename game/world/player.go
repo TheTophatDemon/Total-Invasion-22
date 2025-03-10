@@ -72,12 +72,13 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 			Filter: COL_FILTER_FOR_ACTORS,
 			LockY:  true,
 		},
-		YawAngle:  mgl32.DegToRad(angles[1]),
-		AccelRate: 100.0,
-		Friction:  20.0,
-		MaxHealth: 100,
-		Health:    100,
-		world:     world,
+		YawAngle:     mgl32.DegToRad(angles[1]),
+		AccelRate:    100.0,
+		Friction:     20.0,
+		MaxHealth:    200,
+		TargetHealth: 100,
+		Health:       100,
+		world:        world,
 	}
 	player.Camera = camera
 	player.RunSpeed = 12.0
@@ -123,12 +124,9 @@ func (player *Player) Update(deltaTime float32) {
 			player.actor.inputForward = 0
 			player.actor.inputStrafe = 0
 		}
-		if player.actor.Health > player.actor.MaxHealth {
+		if player.actor.Health > player.actor.TargetHealth {
 			// When overhealed, gradually decrease health back to base level
-			player.actor.Health -= OVERHEAL_RESTORE_RATE * deltaTime
-			if player.actor.Health < player.actor.MaxHealth {
-				player.actor.Health = player.actor.MaxHealth
-			}
+			player.actor.Health = math2.Clamp(player.actor.Health-OVERHEAL_RESTORE_RATE*deltaTime, player.actor.TargetHealth, player.actor.MaxHealth)
 		}
 		if camera, ok := player.Camera.Get(); ok {
 			// Keep camera transform in sync with the player

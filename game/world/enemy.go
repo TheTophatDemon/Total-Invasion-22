@@ -138,7 +138,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 	enemy.bloodParticles = effects.Blood(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
-	enemy.actor.Health = enemy.actor.MaxHealth
+	enemy.actor.Health, enemy.actor.TargetHealth = enemy.actor.MaxHealth, enemy.actor.MaxHealth
 
 	enemy.SpriteRender = comps.NewSpriteRender(params.texture)
 	enemy.AnimPlayer = comps.NewAnimationPlayer(params.defaultAnim, false)
@@ -237,7 +237,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	case &enemy.reviveState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 		if enemy.AnimPlayer.IsAtEnd() {
-			enemy.actor.Health = enemy.actor.MaxHealth
+			enemy.actor.Health = enemy.actor.TargetHealth
 			enemy.changeState(&enemy.chaseState)
 		}
 	}
