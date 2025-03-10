@@ -10,8 +10,8 @@ import (
 const BVH_MAX_DEPTH = 10
 const BVH_MIN_OBJECTS = 2
 
-// A bounding volume hierarchy tree that splits objects into sections on the X and Z axes to speed up collision detection.
-type BvhTree struct {
+// A BSP tree that splits objects into sections on the X and Z axes to speed up collision detection.
+type BspTree struct {
 	nodes []bvhNode
 }
 
@@ -54,7 +54,7 @@ func (node bvhNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 	return
 }
 
-func BuildBvhTree(bodiesIter comps.BodyIter, exception comps.HasBody) BvhTree {
+func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 	// Collect iterator into slice that we can sort independently
 	bodies := make([]scene.Handle, 0)
 	for {
@@ -65,7 +65,7 @@ func BuildBvhTree(bodiesIter comps.BodyIter, exception comps.HasBody) BvhTree {
 		bodies = append(bodies, handle)
 	}
 
-	tree := BvhTree{
+	tree := BspTree{
 		nodes: make([]bvhNode, 0, len(bodies)),
 	}
 
@@ -74,7 +74,7 @@ func BuildBvhTree(bodiesIter comps.BodyIter, exception comps.HasBody) BvhTree {
 	return tree
 }
 
-func (tree *BvhTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
+func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 	if len(bodies) <= BVH_MIN_OBJECTS || depth >= BVH_MAX_DEPTH {
 		// Create leaf node
 		node := bvhNode{
@@ -142,11 +142,11 @@ func (tree *BvhTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 
 // Returns handles to entities with physics bodies that are in the leaves of the BVH tree where the given
 // collision shape is residing.
-func (tree *BvhTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
+func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
-func (tree *BvhTree) potentiallyTouchingEntsRecursive(node *bvhNode, pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
+func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bvhNode, pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
 	if node.IsLeaf() {
 		return node.objects
 	}

@@ -67,7 +67,7 @@ type World struct {
 	removalQueue     []scene.Handle  // Holds entities to be removed at the end of the frame.
 	app              engine.Observer // Communicates with the main application
 	nextLevel        string          // Path to the next level. Set once the player reaches an exit.
-	bvhTree          tree.BvhTree    // The bounding volume hierarchy built in the previous frame.
+	bspTree          tree.BspTree    // The BSP tree built in the previous frame.
 	avgCollisionTime int64
 }
 
@@ -106,6 +106,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 			}
 			box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
 			pos := box.Center()
+			// Remove invisible tiles and spawn entities in their place
 			if tex.HasFlag(TEX_FLAG_INVISIBLE) {
 				te3File.Tiles.EraseTile(id)
 				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
@@ -125,102 +126,115 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		return nil, err
 	}
 
-	// Set panel collision shapes
-	panelShapeX := collision.NewBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
-	panelShapeZ := collision.NewBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
-	for _, shapeName := range [...]string{
-		"assets/models/shapes/bars.obj",
-		"assets/models/shapes/panel.obj",
-	} {
-		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 0, panelShapeX)
-		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 1, panelShapeZ)
-		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 2, panelShapeX)
-		world.GameMap.SetTileCollisionShapesForYaw(shapeName, 3, panelShapeZ)
+	type transformedShape struct {
+		shapeName  string
+		yaw, pitch uint8
 	}
-
-	// Set cube collision shapes
-	for _, shapeName := range [...]string{
-		"assets/models/shapes/cube.obj",
-		"assets/models/shapes/diagonal_split_cube.obj",
-		"assets/models/shapes/edge_panel.obj",
-		"assets/models/shapes/cube_marker.obj",
-		"assets/models/shapes/bridge.obj",
-	} {
-		world.GameMap.SetTileCollisionShapes(shapeName, collision.NewBox(math2.BoxFromRadius(1.0)))
-	}
-	// TODO: We can use the for loop below to set the collision shapes as well.
+	// Contains the collision meshes of shapes at various rotations for reuse.
+	transformedShapesCache := make(map[transformedShape]collision.Mesh)
 
 	// Process tiles after mesh is generated.
-	for texID, texPath := range te3File.Tiles.Textures {
-		tex := cache.GetTexture(texPath)
-		for id, tile := range te3File.Tiles.Data {
-			if tile.TextureIDs[0] != te3.TextureID(texID) {
-				continue
+	for id, tile := range te3File.Tiles.Data {
+		if tile.ShapeID < 0 {
+			continue
+		}
+
+		if cache.GetTexture(te3File.Tiles.Textures[tile.TextureIDs[0]]).HasFlag(TEX_FLAG_LIQUID) {
+			// Remove collision from liquid tiles.
+			world.GameMap.GridShape.SetShapeAtFlatIndex(id, nil)
+			continue
+		}
+
+		// Set collision shapes
+		switch shapeName := te3File.Tiles.Shapes[tile.ShapeID]; shapeName {
+		case "assets/models/shapes/corner.obj",
+			"assets/models/shapes/cylinder.obj",
+			"assets/models/shapes/right_tetrahedron.obj",
+			"assets/models/shapes/tetrahedron_transition.obj",
+			"assets/models/shapes/wedge_corner_inner.obj",
+			"assets/models/shapes/wedge_corner_outer.obj",
+			"assets/models/shapes/wedge.obj":
+
+			// Triangles
+			cacheKey := transformedShape{shapeName, tile.Yaw, tile.Pitch}
+			trianglesShape, ok := transformedShapesCache[cacheKey]
+			if !ok {
+				shapeMesh, err := cache.GetMesh(shapeName)
+				if err != nil {
+					log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
+					continue
+				}
+				transform := tile.GetRotationMatrix()
+				rawTriangles := shapeMesh.Triangles()
+				transformedTriangles := make([]math2.Triangle, len(rawTriangles))
+				// Transform the vertices of the triangle according to the tile's orientation.
+				for i := range rawTriangles {
+					for p := range rawTriangles[i] {
+						transformedTriangles[i][p] = mgl32.TransformNormal(rawTriangles[i][p], transform)
+					}
+				}
+				trianglesShape = collision.NewMeshFromTriangles(transformedTriangles)
+				transformedShapesCache[cacheKey] = trianglesShape
 			}
-			if tex.HasFlag(TEX_FLAG_LIQUID) {
-				// Remove collision from liquid tiles.
-				world.GameMap.GridShape.SetShapeAtFlatIndex(id, nil)
+
+			world.GameMap.GridShape.SetShapeAtFlatIndex(id, trianglesShape)
+		case "assets/models/shapes/bars.obj",
+			"assets/models/shapes/panel.obj":
+
+			// Panel
+			var panelShape collision.Shape
+			switch tile.Yaw {
+			case 0, 2:
+				panelShape = collision.NewBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
+			case 1, 3:
+				panelShape = collision.NewBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
 			}
+			world.GameMap.GridShape.SetShapeAtFlatIndex(id, panelShape)
+		default:
+			// Box
+			world.GameMap.GridShape.SetShapeAtFlatIndex(id, collision.NewBox(math2.BoxFromRadius(1.0)))
 		}
 	}
 
-	// Read level properties
-	levelProps, _ := te3File.FindEntWithProperty("name", "level properties")
-	if songPath, hasSong := levelProps.Properties["song"]; hasSong {
-		// Play the song
-		tdaudio.QueueSong(songPath, true, 0)
-	}
-
-	// Spawn player
-	playerSpawn, _ := te3File.FindEntWithProperty("type", "player")
-	world.CurrentCamera, _, err = SpawnCameraFromTE3(world, playerSpawn)
-	if err != nil {
-		log.Printf("error spawning player camera: %v\n", err)
-	}
-	world.CurrentPlayer, _, err = SpawnPlayer(world, playerSpawn.Position, playerSpawn.Angles, world.CurrentCamera)
-	if err != nil {
-		log.Printf("player entity at %v caused an error: %v\n", playerSpawn.GridPosition(), err)
-	}
-
-	// Spawn enemies
-	for _, spawn := range te3File.FindEntsWithProperty("type", "enemy") {
-		if _, _, err := SpawnEnemyFromTE3(world, spawn); err != nil {
-			log.Printf("enemy entity at %v caused an error: %v\n", spawn.GridPosition(), err)
+	// Spawn entities
+	for _, ent := range te3File.Ents {
+		if ent.Properties == nil {
+			continue
 		}
-	}
 
-	// Spawn dynamic tiles
-	for _, spawn := range te3File.FindEntsWithProperty("type", "door", "switch") {
-		if _, _, err := SpawnWallFromTE3(world, spawn); err != nil {
-			log.Printf("wall entity at %v caused an error: %v\n", spawn.GridPosition(), err)
+		// Read level properties
+		if ent.Properties["name"] == "level properties" {
+			if songPath, hasSong := ent.Properties["song"]; hasSong {
+				// Play the song
+				tdaudio.QueueSong(songPath, true, 0)
+			}
+			continue
 		}
-	}
 
-	// Spawn props
-	for _, spawn := range te3File.FindEntsWithProperty("type", "prop") {
-		if _, _, err := SpawnPropFromTE3(world, spawn); err != nil {
-			log.Printf("prop entity at %v caused an error: %v\n", spawn.GridPosition(), err)
+		entType := ent.Properties["type"]
+		var err error
+		switch entType {
+		case "enemy":
+			_, _, err = SpawnEnemyFromTE3(world, ent)
+		case "door", "switch":
+			_, _, err = SpawnWallFromTE3(world, ent)
+		case "prop":
+			_, _, err = SpawnPropFromTE3(world, ent)
+		case "trigger":
+			_, _, err = SpawnTriggerFromTE3(world, ent)
+		case "item":
+			_, _, err = SpawnItemFromTE3(world, ent)
+		case "camera":
+			_, _, err = SpawnCameraFromTE3(world, ent)
+		case "player":
+			world.CurrentCamera, _, err = SpawnCameraFromTE3(world, ent)
+			if err != nil {
+				log.Printf("error spawning player camera: %v\n", err)
+			}
+			world.CurrentPlayer, _, err = SpawnPlayer(world, ent.Position, ent.Angles, world.CurrentCamera)
 		}
-	}
-
-	// Spawn triggers
-	for _, spawn := range te3File.FindEntsWithProperty("type", "trigger") {
-		if _, _, err := SpawnTriggerFromTE3(world, spawn); err != nil {
-			log.Printf("trigger entity at %v caused an error: %v\n", spawn.GridPosition(), err)
-		}
-	}
-
-	// Spawn items
-	for _, spawn := range te3File.FindEntsWithProperty("type", "item") {
-		if _, _, err := SpawnItemFromTE3(world, spawn); err != nil {
-			log.Printf("item entity at %v caused an error: %v\n", spawn.GridPosition(), err)
-		}
-	}
-
-	// Spawn cameras
-	for _, spawn := range te3File.FindEntsWithProperty("type", "camera") {
-		if _, _, err := SpawnCameraFromTE3(world, spawn); err != nil {
-			log.Printf("camera entity at %v caused an error: %v\n", spawn.GridPosition(), err)
+		if err != nil {
+			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
 		}
 	}
 
@@ -269,7 +283,7 @@ func (world *World) Update(deltaTime float32) {
 	startTime := time.Now()
 	// Update bodies and resolve collisions
 	it := world.IterBodies()
-	world.bvhTree = tree.BuildBvhTree(&it, world.GameMap)
+	world.bspTree = tree.BuildBspTree(&it, world.GameMap)
 	it = world.IterBodies()
 	for {
 		bodyEnt, _ := it.Next()
@@ -278,7 +292,7 @@ func (world *World) Update(deltaTime float32) {
 		}
 
 		innerIter := comps.BodySliceIter{
-			Slice: world.bvhTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
+			Slice: world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
 		}
 
 		// The game map should be excluded from the bvh tree due to its large size.
