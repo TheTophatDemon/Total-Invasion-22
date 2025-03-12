@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -62,6 +63,10 @@ func (airhorn *Airhorn) Update(deltaTime float32, swayAmount float32, ammo *game
 		return
 	}
 
+	if sprite.AnimPlayer.IsPlayingAnim(airhorn.honkAnim) && sprite.AnimPlayer.IsAtEnd() && !input.IsActionPressed(settings.ACTION_FIRE) {
+		sprite.AnimPlayer.PlayNewAnim(airhorn.idleAnim)
+	}
+
 	sprite.AnimPlayer.Update(deltaTime)
 }
 
@@ -69,7 +74,9 @@ func (airhorn *Airhorn) Fire(ammo *game.Ammo) {
 	airhorn.weaponBase.Fire(ammo)
 	if box, ok := airhorn.sprite.Get(); ok {
 		box.AnimPlayer.ChangeAnimation(airhorn.honkAnim)
-		box.AnimPlayer.PlayFromStart()
+		if !box.AnimPlayer.IsPlaying() {
+			box.AnimPlayer.PlayFromStart()
+		}
 	}
 }
 

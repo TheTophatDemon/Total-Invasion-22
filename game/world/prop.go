@@ -82,7 +82,9 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	prop.SpriteRender = comps.NewSpriteRender(sprite)
 
 	anim := sprite.GetDefaultAnimation()
-	prop.AnimPlayer = comps.NewAnimationPlayer(anim, true)
+	if anim.Frames != nil {
+		prop.AnimPlayer = comps.NewAnimationPlayer(anim, true)
+	}
 
 	radius, err := ent.FloatProperty("radius")
 	if err != nil {
