@@ -6,15 +6,21 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
+)
+
+const (
+	SFX_AIRHORN = "assets/sounds/weapon/airhorn.wav"
 )
 
 type Airhorn struct {
 	weaponBase
 	idleAnim, honkAnim textures.Animation
+	heldDown           bool
+	honker             tdaudio.VoiceId
 }
 
 func (airhorn *Airhorn) Init(hud *Hud) {
@@ -39,7 +45,7 @@ func (airhorn *Airhorn) Init(hud *Hud) {
 		airhorn.idleAnim.Frames[0].Rect.Height * SpriteScale(),
 	}
 	airhorn.spriteEndPos = mgl32.Vec2{
-		settings.UIWidth()/2 - airhorn.spriteSize.X()/2.0 + settings.UIWidth()/4.0,
+		settings.UIWidth()/2 - airhorn.spriteSize.X()/2.0 + settings.UIWidth()/6.0,
 		settings.UIHeight() - airhorn.spriteSize.Y() + 16.0,
 	}
 	airhorn.spriteStartPos = airhorn.spriteEndPos.Add(mgl32.Vec2{0.0, airhorn.spriteSize.Y()})
@@ -63,23 +69,32 @@ func (airhorn *Airhorn) Update(deltaTime float32, swayAmount float32, ammo *game
 		return
 	}
 
-	if sprite.AnimPlayer.IsPlayingAnim(airhorn.honkAnim) && sprite.AnimPlayer.IsAtEnd() && !input.IsActionPressed(settings.ACTION_FIRE) {
+	if !airhorn.heldDown {
 		sprite.AnimPlayer.PlayNewAnim(airhorn.idleAnim)
+		if airhorn.honker.IsPlaying() && airhorn.honker.GetTime() < 800 {
+			airhorn.honker.Seek(800)
+		}
 	}
 
 	sprite.AnimPlayer.Update(deltaTime)
+	airhorn.heldDown = false
 }
 
 func (airhorn *Airhorn) Fire(ammo *game.Ammo) {
 	airhorn.weaponBase.Fire(ammo)
+	airhorn.heldDown = true
 	if box, ok := airhorn.sprite.Get(); ok {
-		box.AnimPlayer.ChangeAnimation(airhorn.honkAnim)
-		if !box.AnimPlayer.IsPlaying() {
-			box.AnimPlayer.PlayFromStart()
+		if !box.AnimPlayer.IsPlayingAnim(airhorn.honkAnim) {
+			box.AnimPlayer.PlayNewAnim(airhorn.honkAnim)
+			airhorn.honker = cache.GetSfx(SFX_AIRHORN).Play()
 		}
 	}
 }
 
 func (airhorn *Airhorn) NoiseLevel() float32 {
 	return 100.0
+}
+
+func (airhorn *Airhorn) IsShooter() bool {
+	return false
 }

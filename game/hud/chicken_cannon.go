@@ -79,3 +79,7 @@ func (chickenCannon *ChickenCannon) Fire(ammo *game.Ammo) {
 		}
 	}
 }
+
+func (ChickenCannon *ChickenCannon) IsShooter() bool {
+	return true
+}

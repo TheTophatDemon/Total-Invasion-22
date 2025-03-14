@@ -67,6 +67,15 @@ func (voice VoiceId) Stop() {
 	C.td_audio_stop_sound(C.td_voice_id(voice))
 }
 
+func (voice VoiceId) Seek(timeMs uint64) {
+	C.td_audio_seek_sound(C.td_voice_id(voice), C.uint64_t(timeMs))
+}
+
+// Returns the current audio track time in milliseconds.
+func (voice VoiceId) GetTime() uint64 {
+	return uint64(C.td_audio_get_sound_time(C.td_voice_id(voice)))
+}
+
 // General audio functions
 
 func Init() bool {

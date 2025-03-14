@@ -271,10 +271,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	if input.IsActionPressed(settings.ACTION_FIRE) {
-		// Don't fire if there is a wall too close in front
+	if weap := player.world.Hud.SelectedWeapon(); weap != nil && input.IsActionPressed(settings.ACTION_FIRE) {
 		var cast collision.RaycastResult
-		cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
+		if weap.IsShooter() {
+			// Don't fire if there is a wall too close in front
+			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
+		}
+
 		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
 			player.AttackWithWeapon()
 		}

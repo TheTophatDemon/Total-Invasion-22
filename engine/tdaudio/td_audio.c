@@ -271,6 +271,26 @@ void td_audio_stop_sound(td_voice_id voice) {
     ma_sound_stop(&player->voices[voice.id].sound);
 }
 
+void td_audio_seek_sound(td_voice_id voice, uint64_t time_ms) {
+    if (!td_audio_voice_is_valid(voice)) return;
+    td_player *player = &g_players.items[voice.player.id];
+    ma_sound *ma_player = &player->voices[voice.id].sound;
+    ma_uint64 sound_length;
+    ma_result result = ma_sound_get_length_in_pcm_frames(ma_player, &sound_length);
+    if (result != MA_SUCCESS) LOG_ERR("failed to get sound length with id %d, code %d", voice.player.id, result);
+    ma_uint64 time_pcm = (time_ms * ma_engine_get_sample_rate(&g_engine)) / 1000;
+    if (time_pcm >= sound_length) time_pcm = sound_length - 1;
+    result = ma_sound_seek_to_pcm_frame(ma_player, time_pcm);
+    if (result != MA_SUCCESS) LOG_ERR("failed to seek sound with id %d, code %d", voice.player.id, result);
+}
+
+uint64_t td_audio_get_sound_time(td_voice_id voice) {
+    if (!td_audio_voice_is_valid(voice)) return 0;
+    td_player *player = &g_players.items[voice.player.id];
+    ma_sound *ma_player = &player->voices[voice.id].sound;
+    return (uint64_t) ma_sound_get_time_in_milliseconds(ma_player);
+}
+
 void td_audio_set_listener_orientation(float pos_x, float pos_y, float pos_z, float dir_x, float dir_y, float dir_z) {
     ma_engine_listener_set_position(&g_engine, 0, pos_x, pos_y, pos_z);
     ma_engine_listener_set_direction(&g_engine, 0, dir_x, dir_y, dir_z);

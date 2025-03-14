@@ -2,3 +2,4 @@ chicken/chicken_pain.wav - https://freesound.org/people/JarredGibb/sounds/233092
 honk.wav - https://freesound.org/people/Stickinthemud/sounds/27882/ - modified
 door_locked.wav - https://opengameart.org/content/cabinet-lock-sfx-sound-effect - modified
 switch_on.wav & switch_off.wav - https://opengameart.org/content/equipment-click - modified
+weapons/airhorn.wav - https://freesound.org/people/CGEffex/sounds/121896/ - modified - CC attrib

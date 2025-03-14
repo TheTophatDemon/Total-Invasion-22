@@ -79,3 +79,7 @@ func (grenadeLauncher *GrenadeLauncher) Fire(ammo *game.Ammo) {
 		}
 	}
 }
+
+func (grenadeLauncher *GrenadeLauncher) IsShooter() bool {
+	return true
+}

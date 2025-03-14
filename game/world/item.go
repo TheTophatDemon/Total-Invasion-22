@@ -71,6 +71,8 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 		id, item, err = SpawnGrenadeLauncher(world, ent.Position)
 	case "parusu":
 		id, item, err = SpawnParusu(world, ent.Position)
+	case "airhorn":
+		id, item, err = SpawnAirhorn(world, ent.Position)
 	case "bluecard":
 		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BLUE)
 		return
@@ -183,6 +185,16 @@ func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *I
 	item.message = settings.Localize("parusuGet")
 	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/parusu.png"))
+	return
+}
+
+func SpawnAirhorn(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
+	item.giveWeapon = hud.WEAPON_ORDER_AIRHORN
+	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
+	item.message = settings.Localize("airhornGet")
+	item.messageTime = 1.5
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/airhorn.png"))
 	return
 }
 

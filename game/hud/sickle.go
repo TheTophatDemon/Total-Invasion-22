@@ -92,3 +92,7 @@ func (sickle *Sickle) Fire(ammo *game.Ammo) {
 func (sickle *Sickle) NoiseLevel() float32 {
 	return 10.0
 }
+
+func (sickle *Sickle) IsShooter() bool {
+	return true
+}

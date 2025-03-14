@@ -80,3 +80,7 @@ func (parusu *Parusu) Fire(ammo *game.Ammo) {
 		}
 	}
 }
+
+func (parusu *Parusu) IsShooter() bool {
+	return true
+}
