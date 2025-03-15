@@ -2,7 +2,6 @@
 - Airhorn
   - Do damage to enemies?
 - Fix sounds being extremely loud when up close
-- Fix mother wraiths reviving themselves
 - Skybox
 - Prop graphics for
   - Eyeball

@@ -45,8 +45,8 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 
 	enemiesIter := proj.world.Enemies.Iter()
 	for {
-		enemy, _ := enemiesIter.Next()
-		if enemy == nil {
+		enemy, handle := enemiesIter.Next()
+		if enemy == nil || handle.Equals(proj.owner) {
 			break
 		}
 		if enemy.actor.Health <= 0.0 {
