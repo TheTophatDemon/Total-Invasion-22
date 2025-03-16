@@ -1,17 +1,18 @@
 # TODO
-- Airhorn
-  - Do damage to enemies?
+- Fix grenades getting caught underneath spheres
+  - May need to introduce a cylinder collision shape.
 - Fix sounds being extremely loud when up close
 - Skybox
+- Refactor world package to separate entities into folders
 - Prop graphics for
   - Eyeball
   - Balloon stand
   - Fire
 - Level intro
+- Script for converting TI2 levels
 - Message for when you don't have the weapon
 - Re-record enemy voices
-- Optimzations
-  - Make level loading quicker
+- Loading screen?
 
 ## Ideas
 

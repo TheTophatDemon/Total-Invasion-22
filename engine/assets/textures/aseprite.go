@@ -1,7 +1,6 @@
 package textures
 
 import (
-	"encoding/json"
 	"fmt"
 	"iter"
 	"slices"
@@ -197,8 +196,8 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 		}
 		reversed := ss.Meta.FrameTags[t].Direction == "reverse"
 
-		tagFlags := strings.Split(ss.Meta.FrameTags[t].Data, " ")
-		for _, flag := range tagFlags {
+		tagFlags := strings.SplitSeq(ss.Meta.FrameTags[t].Data, " ")
+		for flag := range tagFlags {
 			switch true {
 			case flag == DEFAULT_ANIM_FLAG:
 				anim.Default = true
@@ -259,22 +258,42 @@ func frameFromAesprite(af aseFrame) Frame {
 }
 
 func layerFromAseprite(af aseLayer) (Layer, error) {
-	if len(af.Data) == 0 {
-		return Layer{Name: af.Name, ViewRange: [2]int{0, 360}}, nil
+	layer := Layer{
+		Name:      af.Name,
+		ViewRange: [2]int{0, 360},
 	}
 
-	var layerData struct {
-		ViewRange, FlippedViewRange [2]int
+	// Parse the tags from the sprite metadata
+	for cmd := range strings.SplitSeq(af.Data, " ") {
+		colonLocation := strings.IndexRune(cmd, ':')
+		if colonLocation < 0 {
+			continue
+		}
+		key := cmd[:colonLocation]
+		value := cmd[colonLocation+1:]
+		switch key {
+		case "viewRange", "flippedViewRange":
+			commaLocation := strings.IndexRune(value, ',')
+			if commaLocation < 0 || commaLocation >= len(value) {
+				return Layer{}, fmt.Errorf("layer tag '%v' is missing value", cmd)
+			}
+			minAngle, err := strconv.ParseInt(value[:commaLocation], 10, 32)
+			if err != nil {
+				return Layer{}, err
+			}
+			maxAngle, err := strconv.ParseInt(value[commaLocation+1:], 10, 32)
+			if err != nil {
+				return Layer{}, err
+			}
+			if key == "flippedViewRange" {
+				layer.FlippedViewRange = [2]int{int(minAngle), int(maxAngle)}
+			} else {
+				layer.ViewRange = [2]int{int(minAngle), int(maxAngle)}
+			}
+		case "lang":
+			layer.Lang = value
+		}
 	}
 
-	err := json.Unmarshal([]byte(af.Data), &layerData)
-	if err != nil {
-		return Layer{}, err
-	}
-
-	return Layer{
-		Name:             af.Name,
-		ViewRange:        layerData.ViewRange,
-		FlippedViewRange: layerData.FlippedViewRange,
-	}, nil
+	return layer, nil
 }

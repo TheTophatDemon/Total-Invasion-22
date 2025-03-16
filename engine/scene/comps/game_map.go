@@ -84,47 +84,6 @@ func (gameMap *Map) Remove(handle scene.Handle) {
 func (gameMap *Map) TearDown() {
 }
 
-func (gm *Map) SetTileCollisionShapes(shapeName string, shape collision.Shape) {
-	var shapeID te3.ShapeID = -1
-	for id, name := range gm.tiles.Shapes {
-		if name == shapeName {
-			shapeID = te3.ShapeID(id)
-			break
-		}
-	}
-	if shapeID < 0 {
-		return
-	}
-	for index, tile := range gm.tiles.Data {
-		if tile.ShapeID == shapeID {
-			gm.GridShape.SetShapeAtFlatIndex(index, shape)
-		}
-	}
-	return
-}
-
-// Sets the collision shape of all tiles that have the specified shape with the given yaw value.
-// The yaw value is 0-3 representing increments of 90 degrees.
-func (gm *Map) SetTileCollisionShapesForYaw(shapeName string, yaw uint8, shape collision.Shape) {
-	var shapeID te3.ShapeID = -1
-	for id, name := range gm.tiles.Shapes {
-		if name == shapeName {
-			shapeID = te3.ShapeID(id)
-			break
-		}
-	}
-	if shapeID < 0 {
-		return
-	}
-	for index, tile := range gm.tiles.Data {
-		if tile.ShapeID == shapeID &&
-			tile.Yaw == yaw {
-			gm.GridShape.SetShapeAtFlatIndex(index, shape)
-		}
-	}
-	return
-}
-
 func (gm *Map) Update(deltaTime float32) {
 	for i := range gm.tileAnims {
 		gm.tileAnims[i].Update(deltaTime)

@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type SpriteRender struct {
@@ -45,7 +46,7 @@ func (sr *SpriteRender) Render(
 
 	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
 		// Change animation layer based on angle to the camera
-		cameraPos := context.View.Inv().Col(3).Vec3()
+		cameraPos := context.View.Inv().Col(3).Vec3() //TODO: We can store the inverse view matrix in the context
 		toCamera := cameraPos.Sub(transform.Position())
 		if toCamera.LenSqr() > mgl32.Epsilon {
 			toCamera = toCamera.Normalize()
@@ -57,7 +58,7 @@ func (sr *SpriteRender) Render(
 			if cross.Dot(math2.Vec3Up()) < 0.0 {
 				angleDifference *= -1
 			}
-			layer, flip, found := sr.meshRender.Texture.FindLayerWithinAngle(angleDifference)
+			layer, flip, found := sr.meshRender.Texture.FindLayerToDisplay(angleDifference, settings.Current.Locale)
 			if found {
 				anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
 				if found {

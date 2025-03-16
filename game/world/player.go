@@ -279,7 +279,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 
 		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
-			player.AttackWithWeapon()
+			player.AttackWithWeapon(input.IsActionJustPressed(settings.ACTION_FIRE))
 		}
 	}
 

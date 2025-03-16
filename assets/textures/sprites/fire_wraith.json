@@ -393,9 +393,9 @@
    { "name": "revive", "from": 10, "to": 13, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" }
   ],
   "layers": [
-   { "name": "back", "opacity": 255, "blendMode": "normal", "data": "{\"viewRange\": [135, 225]}" },
-   { "name": "side", "opacity": 255, "blendMode": "normal", "data": "{\"viewRange\": [45, 135], \"flippedViewRange\": [-135, -45]}" },
-   { "name": "front", "opacity": 255, "blendMode": "normal", "data": "{\"viewRange\": [-45, 45]}" }
+   { "name": "back", "opacity": 255, "blendMode": "normal", "data": "viewRange:135,225" },
+   { "name": "side", "opacity": 255, "blendMode": "normal", "data": "viewRange:45,135 flippedViewRange:-135,-45" },
+   { "name": "front", "opacity": 255, "blendMode": "normal", "data": "viewRange:-45,45" }
   ],
   "slices": [
    { "name": "meta", "color": "#0000ffff", "data": "clampBorder", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 64, "h": 64 } }] }

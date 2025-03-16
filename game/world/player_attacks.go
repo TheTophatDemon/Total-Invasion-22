@@ -12,7 +12,7 @@ const (
 	SFX_PARUSU_SHOOT = "assets/sounds/weapon/parusu.wav"
 )
 
-func (player *Player) AttackWithWeapon() {
+func (player *Player) AttackWithWeapon(justPressed bool) {
 	weapon := player.world.Hud.SelectedWeapon()
 	if weapon == nil {
 		return
@@ -33,6 +33,24 @@ func (player *Player) AttackWithWeapon() {
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.25, -0.5}, player.Body().Transform.Matrix())
 		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
 		cache.GetSfx(SFX_PARUSU_SHOOT).Play()
+	case hud.WEAPON_ORDER_AIRHORN:
+		if justPressed {
+			enemyIter := player.world.Enemies.Iter()
+			for {
+				enemy, _ := enemyIter.Next()
+				if enemy == nil {
+					break
+				}
+				if enemy.actor.Health > 0 && enemy.state != &enemy.stunState {
+					diff := enemy.actor.Position().Sub(player.actor.Position())
+					dist := diff.Len()
+					if dist > 0.0 && dist < 3.0 && diff.Mul(1.0/dist).Dot(player.actor.FacingVec()) > 0.9 {
+						enemy.OnDamage(player, 1.0)
+						enemy.changeState(&enemy.stunState)
+					}
+				}
+			}
+		}
 	}
 	player.actor.noisyTimer = 0.5
 }

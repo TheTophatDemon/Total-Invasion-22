@@ -20,12 +20,13 @@ type Texture struct {
 	height     uint32               // Size of the entire texture
 	flags      []string             // Flags indicate the in-game properties of the texture
 	slices     map[string]Slice     // Holds the slices defined in Aseprite (excluding the meta slice). Indexed by name.
-	animations map[string]Animation // Map of animations by name
+	animations map[string]Animation // Map of animations by name. If layers are present, the names will be in the format animName;layerName
 	layers     map[string]Layer
 }
 
 type Layer struct {
 	Name             string
+	Lang             string // The locale or language code this layer should show for. If blank, it will show for any locale.
 	ViewRange        [2]int // The range of yaw angles at which this layer will be shown, in degrees.
 	FlippedViewRange [2]int // The range of yaw angles at which this layer will be shown flipped horizontally, in degrees.
 }
@@ -115,23 +116,24 @@ func (tex *Texture) FindSlice(name string) Slice {
 	return tex.slices[name]
 }
 
-// Searches for a layer in this texture with the given degrees angle in its range.
-//
+// Finds the appropriate layer of the sprite to show for the given angle relative to the camera and for the correct locale.
 // The first boolean returned indicates whether the angle is within the flipped view range.
-//
 // The second boolean indicates whether the angle is within either view range.
-func (tex *Texture) FindLayerWithinAngle(angle int) (Layer, bool, bool) {
-	angle %= 360
-	if angle < 0 {
-		angle += 360
+func (tex *Texture) FindLayerToDisplay(cameraAngle int, lang string) (Layer, bool, bool) {
+	cameraAngle %= 360
+	if cameraAngle < 0 {
+		cameraAngle += 360
 	}
-	for l := range tex.layers {
-		for a := angle; a >= angle-360; a -= 360 {
-			if a >= tex.layers[l].ViewRange[0] && a < tex.layers[l].ViewRange[1] {
-				return tex.layers[l], false, true
+	for _, layer := range tex.layers {
+		if len(layer.Lang) > 0 && layer.Lang != lang {
+			continue
+		}
+		for a := cameraAngle; a >= cameraAngle-360; a -= 360 {
+			if a >= layer.ViewRange[0] && a < layer.ViewRange[1] {
+				return layer, false, true
 			}
-			if a >= tex.layers[l].FlippedViewRange[0] && a < tex.layers[l].FlippedViewRange[1] {
-				return tex.layers[l], true, true
+			if a >= layer.FlippedViewRange[0] && a < layer.FlippedViewRange[1] {
+				return layer, true, true
 			}
 		}
 	}
@@ -165,8 +167,8 @@ func ErrorTexture() *Texture {
 
 		data := make([]uint8, 0, ERROR_TEXTURE_SIZE*ERROR_TEXTURE_SIZE)
 
-		for x := 0; x < ERROR_TEXTURE_SIZE; x++ {
-			for y := 0; y < ERROR_TEXTURE_SIZE; y++ {
+		for x := range ERROR_TEXTURE_SIZE {
+			for y := range ERROR_TEXTURE_SIZE {
 				isBlack := false
 				if ((x/16)%2 == 0) && ((y/16)%2 == 0) {
 					isBlack = true
