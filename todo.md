@@ -6,7 +6,6 @@
 - Prop graphics for
   - Eyeball
   - Balloon stand
-  - Exit sign
   - Fire
 - Level intro
 - Message for when you don't have the weapon

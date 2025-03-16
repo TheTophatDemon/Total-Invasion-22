@@ -17,3 +17,4 @@ bmfont_gen.exe
 game_settings.json
 *.blend1
 /world_gen_iters
+te3_settings.json
