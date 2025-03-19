@@ -20,6 +20,7 @@ type PropType uint8
 const (
 	PROP_TYPE_GENERIC PropType = iota
 	PROP_TYPE_GEOFFREY
+	PROP_TYPE_FIRE
 )
 
 const (
@@ -103,6 +104,10 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
 		prop.body.Layer = GEOFFREY_COL_LAYERS
+	case "fire":
+		prop.propType = PROP_TYPE_FIRE
+		prop.body.Layer = COL_LAYER_NONE
+		SpawnKillzone(world, prop.body.Transform.Position(), 0.5, 25.0)
 	}
 
 	return

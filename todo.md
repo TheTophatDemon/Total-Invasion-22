@@ -7,7 +7,7 @@
 - Prop graphics for
   - Eyeball
   - Balloon stand
-  - Fire
+- Transparent glow for fires?
 - Level intro
 - Script for converting TI2 levels
 - Message for when you don't have the weapon
