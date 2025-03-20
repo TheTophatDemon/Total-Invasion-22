@@ -1,12 +1,12 @@
 # TODO
 - Fix grenades getting caught underneath spheres
   - May need to introduce a cylinder collision shape.
+- Fire noise
 - Fix sounds being extremely loud when up close
 - Skybox
 - Refactor world package to separate entities into folders
 - Prop graphics for
   - Eyeball
-  - Balloon stand
 - Transparent glow for fires?
 - Level intro
 - Script for converting TI2 levels
