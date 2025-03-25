@@ -1,7 +1,6 @@
 # TODO
 - Fix grenades getting caught underneath spheres
   - May need to introduce a cylinder collision shape.
-- Fire noise
 - Fix sounds being extremely loud when up close
 - Skybox
 - Refactor world package to separate entities into folders
