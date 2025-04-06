@@ -64,8 +64,9 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 		}
 		nborRotation := nborTile.GetRotationMatrix()
 		nborMesh := shapeMeshes[nborTile.ShapeID]
-		for nt := range len(nborMesh.Inds()) / 3 {
-			nborTriangle := transformedTileTriangle(nborX, nborY, nborZ, nborMesh.Triangles()[nt], nborRotation)
+		for iter := nborMesh.IterTriangles(); iter.HasNext(); {
+			nborTri := iter.Next()
+			nborTriangle := transformedTileTriangle(nborX, nborY, nborZ, nborTri, nborRotation)
 			nborPlane := nborTriangle.Plane()
 
 			// The triangle is culled if the neighbor has a triangle facing the opposite direction sharing all three points.
@@ -156,9 +157,14 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 				shapeInds = shapeInds[shapeGroup.Offset:][:shapeGroup.Length]
 			}
 
+			shapeTriIter := shapeMesh.IterTriangles()
+			for range shapeGroup.Offset / 3 {
+				shapeTriIter.Next()
+			}
+
 			for tri := range len(shapeInds) / 3 {
 				// Get triangle coordinates
-				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeMesh.Triangles()[(shapeGroup.Offset/3)+tri], rotMatrix)
+				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix)
 
 				// Skip if culling tile
 				if te3.shouldCull(gridX, gridY, gridZ, triangle, shapeMeshes) {

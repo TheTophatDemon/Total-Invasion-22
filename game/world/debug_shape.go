@@ -30,7 +30,7 @@ func (debugShape *DebugShape) Update(deltaTime float32) {
 }
 
 func (debugShape *DebugShape) Render(context *render.Context) {
-	debugShape.MeshRender.Render(nil, nil, context)
+	debugShape.MeshRender.Render(&debugShape.Transform, nil, context)
 }
 
 func SpawnDebugLine(

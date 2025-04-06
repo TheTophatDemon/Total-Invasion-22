@@ -36,11 +36,13 @@ type Prop struct {
 	id           scene.Id[*Prop]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
+	debugShape   DebugShape
 	body         comps.Body
 	world        *World
 	propType     PropType
 	voice        tdaudio.VoiceId
 	isSeen       bool
+	radius       float32
 }
 
 var _ comps.HasBody = (*Prop)(nil)
@@ -87,18 +89,33 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		prop.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 	}
 
-	radius, err := ent.FloatProperty("radius")
+	prop.radius, err = ent.FloatProperty("radius")
 	if err != nil {
-		radius = ent.Radius
+		prop.radius = ent.Radius
 		err = nil
 	}
 
+	// mesh, err := cache.GetMesh("assets/models/shapes/cylinder.obj")
+	// if err != nil {
+	// 	log.Printf("Error loading cylinder mesh for prop: %v.\n", err)
+	// }
+
+	// shapeMesh := collision.NewMesh(mesh, prop.radius)
 	prop.body = comps.Body{
 		Transform: comps.TransformFromTE3Ent(ent, true, true),
-		Shape:     collision.NewSphere(radius),
-		Layer:     COL_LAYER_MAP,
-		Filter:    COL_LAYER_NONE,
+		// Shape:     shapeMesh,
+		Shape:  collision.NewSphere(prop.radius),
+		Layer:  COL_LAYER_MAP,
+		Filter: COL_LAYER_NONE,
 	}
+
+	// wireMesh := collision.WireMeshFromMeshCollisionShape(&shapeMesh, color.Red)
+
+	// prop.debugShape = DebugShape{
+	// 	MeshRender: comps.NewMeshRender(wireMesh, shaders.DebugShader, nil),
+	// 	Transform:  prop.body.Transform,
+	// 	TimeLeft:   math2.Inf32(),
+	// }
 
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
@@ -120,7 +137,7 @@ func (prop *Prop) Update(deltaTime float32) {
 	switch prop.propType {
 	case PROP_TYPE_GEOFFREY:
 		vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_VANISH)
-		if !prop.isSeen && len(prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.body.Shape.(collision.Sphere).Radius(), prop)) == 0 {
+		if !prop.isSeen && len(prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.radius, prop)) == 0 {
 			// Make Geoffrey re-appear when nobody is looking.
 			if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
 				idleAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_IDLE)
@@ -140,4 +157,5 @@ func (prop *Prop) Update(deltaTime float32) {
 
 func (prop *Prop) Render(context *render.Context) {
 	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	prop.debugShape.Render(context)
 }

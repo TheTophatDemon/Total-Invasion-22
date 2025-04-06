@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -15,15 +16,25 @@ type Mesh struct {
 
 var _ Shape = (*Mesh)(nil)
 
-func NewMesh(mesh *geom.Mesh) Mesh {
+func NewMesh(mesh *geom.Mesh, scale float32) Mesh {
 	if mesh == nil {
 		panic("mesh must not be nil")
+	}
+	triIter := mesh.IterTriangles()
+	triangles := triIter.Collect()
+	if scale != 1.0 {
+		// Scale the triangles
+		for i := range triangles {
+			triangles[i][0] = triangles[i][0].Mul(scale)
+			triangles[i][1] = triangles[i][1].Mul(scale)
+			triangles[i][2] = triangles[i][2].Mul(scale)
+		}
 	}
 	return Mesh{
 		shape: shape{
 			extents: mesh.BoundingBox(),
 		},
-		triangles: mesh.Triangles(),
+		triangles: triangles,
 	}
 }
 
@@ -74,4 +85,25 @@ func (mesh Mesh) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 
 func (mesh Mesh) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) Result {
 	panic("collision resolution not implemented for mesh")
+}
+
+func WireMeshFromMeshCollisionShape(meshShape *Mesh, col color.Color) *geom.Mesh {
+	tris := meshShape.Triangles()
+
+	wireVerts := geom.Vertices{
+		Pos:   make([]mgl32.Vec3, len(tris)*3),
+		Color: make([]mgl32.Vec4, len(tris)*3),
+	}
+	wireInds := make([]uint32, 0, len(tris)*3)
+
+	for _, tri := range tris {
+		baseIndex := uint32(len(wireVerts.Pos))
+		for v := range tri {
+			wireVerts.Pos = append(wireVerts.Pos, tri[v])
+			wireVerts.Color = append(wireVerts.Color, col.Vector())
+		}
+		wireInds = append(wireInds, baseIndex, baseIndex+1, baseIndex, baseIndex+2, baseIndex+1, baseIndex+2)
+	}
+
+	return geom.CreateWireMesh(wireVerts, wireInds)
 }

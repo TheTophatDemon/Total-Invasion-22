@@ -1,11 +1,11 @@
 # TODO
-- Fix grenades getting caught underneath spheres
-  - May need to introduce a cylinder collision shape.
+- Implement cylinder collision for props
+- Fix clipping through triangle meshes when they are against a wall
+  - Consider replacing triangle meshes with convex hulls
 - Fix sounds being extremely loud when up close
-- Skybox
-- Refactor world package to separate entities into folders
 - Prop graphics for
   - Eyeball
+- Skybox
 - Transparent glow for fires?
 - Level intro
 - Script for converting TI2 levels

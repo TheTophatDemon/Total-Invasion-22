@@ -165,12 +165,13 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 					continue
 				}
 				transform := tile.GetRotationMatrix()
-				rawTriangles := shapeMesh.Triangles()
-				transformedTriangles := make([]math2.Triangle, len(rawTriangles))
+				rawTrianglesIter := shapeMesh.IterTriangles()
+				transformedTriangles := make([]math2.Triangle, rawTrianglesIter.Count())
 				// Transform the vertices of the triangle according to the tile's orientation.
-				for i := range rawTriangles {
-					for p := range rawTriangles[i] {
-						transformedTriangles[i][p] = mgl32.TransformNormal(rawTriangles[i][p], transform)
+				for i := 0; rawTrianglesIter.HasNext(); i++ {
+					rawTriangle := rawTrianglesIter.Next()
+					for p := range rawTriangle {
+						transformedTriangles[i][p] = mgl32.TransformNormal(rawTriangle[p], transform)
 					}
 				}
 				trianglesShape = collision.NewMeshFromTriangles(transformedTriangles)

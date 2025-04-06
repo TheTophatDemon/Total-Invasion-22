@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -29,6 +31,11 @@ type Mesh struct {
 	vertArray             uint32 //VAO
 }
 
+type MeshTriangleIter struct {
+	mesh          *Mesh
+	triangleIndex int
+}
+
 func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
 		verts:         verts,
@@ -48,6 +55,26 @@ func CreateWireMesh(verts Vertices, inds []uint32) *Mesh {
 		groups:        make(map[string]Group, 0),
 		primitiveType: gl.LINES,
 	}
+}
+
+func WireMeshFromTriangleMesh(triangleMesh *Mesh, col color.Color) *Mesh {
+	wireVerts := Vertices{
+		Pos:   slices.Clone(triangleMesh.Verts().Pos),
+		Color: make([]mgl32.Vec4, len(triangleMesh.Verts().Pos)),
+	}
+
+	for i := range wireVerts.Color {
+		wireVerts.Color[i] = col.Vector()
+	}
+
+	wireInds := make([]uint32, 0, len(triangleMesh.inds)*2)
+	for i := 0; i < len(triangleMesh.inds); i += 3 {
+		wireInds = append(wireInds, triangleMesh.inds[i], triangleMesh.inds[i+1])
+		wireInds = append(wireInds, triangleMesh.inds[i], triangleMesh.inds[i+2])
+		wireInds = append(wireInds, triangleMesh.inds[i+1], triangleMesh.inds[i+2])
+	}
+
+	return CreateWireMesh(wireVerts, wireInds)
 }
 
 func WireMeshFromBoundingBox(bbox math2.Box) *Mesh {
@@ -114,21 +141,56 @@ func (m *Mesh) Inds() []uint32 {
 	return m.inds
 }
 
-// Returns the mathematical triangles that make up the mesh (lazily evaluated).
-func (m *Mesh) Triangles() []math2.Triangle {
-	if m.tris == nil && m.primitiveType == gl.TRIANGLES {
+// Iterates over the triangles in the mesh (triangles are lazily evaluated)
+func (mesh *Mesh) IterTriangles() MeshTriangleIter {
+	if mesh.tris == nil && mesh.primitiveType == gl.TRIANGLES {
 		// Determine the triangles from the indices & vertex positions.
-		m.tris = make([]math2.Triangle, len(m.inds)/3)
-		for t := range m.tris {
-			m.tris[t] = math2.Triangle{
-				m.verts.Pos[m.inds[t*3+0]],
-				m.verts.Pos[m.inds[t*3+1]],
-				m.verts.Pos[m.inds[t*3+2]],
+		mesh.tris = make([]math2.Triangle, len(mesh.inds)/3)
+		for t := range mesh.tris {
+			mesh.tris[t] = math2.Triangle{
+				mesh.verts.Pos[mesh.inds[t*3+0]],
+				mesh.verts.Pos[mesh.inds[t*3+1]],
+				mesh.verts.Pos[mesh.inds[t*3+2]],
 			}
 		}
 	}
 
-	return m.tris
+	return MeshTriangleIter{
+		mesh:          mesh,
+		triangleIndex: 0,
+	}
+}
+
+func (iter *MeshTriangleIter) Next() math2.Triangle {
+	if iter == nil || iter.mesh == nil {
+		return math2.Triangle{}
+	}
+	tri := iter.mesh.tris[iter.triangleIndex]
+	iter.triangleIndex += 1
+	return tri
+}
+
+func (iter *MeshTriangleIter) HasNext() bool {
+	return iter != nil && iter.mesh != nil && iter.triangleIndex < len(iter.mesh.tris)
+}
+
+func (iter *MeshTriangleIter) Collect() []math2.Triangle {
+	if iter == nil || iter.mesh == nil {
+		return []math2.Triangle{}
+	}
+	tris := make([]math2.Triangle, 0, len(iter.mesh.tris))
+	for iter.HasNext() {
+		tris = append(tris, iter.Next())
+	}
+	return tris
+}
+
+// Returns the total number of triangles in the mesh.
+func (iter *MeshTriangleIter) Count() int {
+	if iter == nil || iter.mesh == nil {
+		return 0
+	}
+	return len(iter.mesh.tris)
 }
 
 func (m *Mesh) BoundingBox() math2.Box {

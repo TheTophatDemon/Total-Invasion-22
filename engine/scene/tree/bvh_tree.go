@@ -12,22 +12,22 @@ const BVH_MIN_OBJECTS = 2
 
 // A BSP tree that splits objects into sections on the X and Z axes to speed up collision detection.
 type BspTree struct {
-	nodes []bvhNode
+	nodes []bspNode
 }
 
-type bvhNode struct {
+type bspNode struct {
 	splitAxis                   int
 	planeOffset                 float32
 	objects                     []scene.Handle
 	leftChildIdx, rightChildIdx int
 }
 
-func (node bvhNode) IsLeaf() bool {
+func (node bspNode) IsLeaf() bool {
 	return node.leftChildIdx < 0 && node.rightChildIdx < 0
 }
 
 // Returns whether a shape at a given position intersects with the left or right region of the node.
-func (node bvhNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3) (touchesLeft, touchesRight bool) {
+func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3) (touchesLeft, touchesRight bool) {
 	switch sh := shape.(type) {
 	case collision.Sphere:
 		touchesRight = shapePosition[node.splitAxis]+sh.Radius() >= node.planeOffset
@@ -41,10 +41,11 @@ func (node bvhNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 				break
 			}
 			for _, vert := range tri {
-				if vert[node.splitAxis] >= node.planeOffset {
+				coord := vert[node.splitAxis] + shapePosition[node.splitAxis]
+				if coord >= node.planeOffset {
 					touchesRight = true
 				}
-				if vert[node.splitAxis] <= node.planeOffset {
+				if coord <= node.planeOffset {
 					touchesLeft = true
 				}
 			}
@@ -66,8 +67,16 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 	}
 
 	tree := BspTree{
-		nodes: make([]bvhNode, 0, len(bodies)),
+		nodes: make([]bspNode, 0, len(bodies)),
 	}
+
+	// Uncomment this to put all the objects in the root node in order
+	// to bypass the BSP tree when debugging.
+	// tree.nodes = append(tree.nodes, bvhNode{
+	// 	leftChildIdx:  -1,
+	// 	rightChildIdx: -1,
+	// 	objects:       bodies,
+	// })
 
 	tree.buildBvhNode(0, 0, bodies)
 
@@ -77,7 +86,7 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 	if len(bodies) <= BVH_MIN_OBJECTS || depth >= BVH_MAX_DEPTH {
 		// Create leaf node
-		node := bvhNode{
+		node := bspNode{
 			leftChildIdx:  -1,
 			rightChildIdx: -1,
 			objects:       bodies,
@@ -96,7 +105,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 	}
 	avgPos /= float32(len(bodies))
 
-	node := bvhNode{
+	node := bspNode{
 		splitAxis:     splitAxis,
 		planeOffset:   avgPos,
 		leftChildIdx:  -1,
@@ -140,13 +149,13 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 
 }
 
-// Returns handles to entities with physics bodies that are in the leaves of the BVH tree where the given
+// Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
 func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
-func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bvhNode, pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
+func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
 	if node.IsLeaf() {
 		return node.objects
 	}
