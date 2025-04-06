@@ -2,7 +2,6 @@
 - Implement cylinder collision for props
 - Fix clipping through triangle meshes when they are against a wall
   - Consider replacing triangle meshes with convex hulls
-- Fix sounds being extremely loud when up close
 - Prop graphics for
   - Eyeball
 - Skybox

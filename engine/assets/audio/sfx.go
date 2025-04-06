@@ -33,7 +33,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 
 	polyphony := uint8(4)
 	looped := false
-	rolloff := float32(0.75)
+	rolloff := float32(0.1)
 	if metadata != nil {
 		if metadata.Polyphony != 0 {
 			polyphony = uint8(metadata.Polyphony)

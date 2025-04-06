@@ -105,6 +105,7 @@ td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool loopi
         }
         ma_sound_set_looping(sound, (ma_bool32) looping);
         ma_sound_set_rolloff(sound, rolloff);
+        ma_sound_set_min_distance(sound, 0.5f);
         ma_sound_set_doppler_factor(sound, 0.0);
         ma_sound_set_pinned_listener_index(sound, 0);
         ma_sound_set_directional_attenuation_factor(sound, 0);
