@@ -85,6 +85,8 @@ func (sphere Sphere) ResolveCollisionDiscrete(myNextPosition, theirPosition mgl3
 		return ResolveSphereSphere(myNextPosition, theirPosition, sphere, otherShape)
 	case Box:
 		return ResolveSphereBox(myNextPosition, theirPosition, sphere, otherShape)
+	case Cylinder:
+		return ResolveSphereCylinder(myNextPosition, theirPosition, sphere, otherShape)
 	case Mesh:
 		// Check for triangle hits in the center first, then the edges.
 		// This prevents triangle edges from stopping smooth movement along neighboring triangles.

@@ -45,6 +45,8 @@ func (box Box) ResolveCollision(myPosition, myMovement, theirPosition mgl32.Vec3
 		//TODO: Box to box collision
 	case Mesh:
 		//TODO: Box to mesh collision
+	case Cylinder:
+		//TODO: Box to cylinder collision
 	case Grid:
 		return otherShape.ResolveOtherBodysCollision(theirPosition, myPosition, myMovement, box)
 	default:

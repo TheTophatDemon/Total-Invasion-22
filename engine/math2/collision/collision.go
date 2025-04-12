@@ -147,6 +147,35 @@ func ResolveSphereBox(spherePos, boxPos mgl32.Vec3, sphere Sphere, box Box) (res
 	return
 }
 
+func ResolveSphereCylinder(spherePos, cylinderPos mgl32.Vec3, sphere Sphere, cylinder Cylinder) (result Result) {
+	if spherePos == cylinderPos {
+		return
+	}
+	horizontalDiff := mgl32.Vec3{spherePos[0] - cylinderPos[0], 0.0, spherePos[2] - cylinderPos[2]}
+	// projectedPoint := cylinderPos.Add(horizontalDiff.Normalize().Mul(cylinder.radius))
+	// projectedPoint[1] = math2.Clamp(spherePos[1], cylinderPos[1]-cylinder.halfHeight, cylinderPos[1]+cylinder.halfHeight)
+	distSq := horizontalDiff.LenSqr()
+	if distSq < (sphere.radius*sphere.radius)+(cylinder.radius*cylinder.radius) &&
+		spherePos[1]+sphere.radius > cylinderPos[1]-cylinder.halfHeight &&
+		spherePos[1]-sphere.radius < cylinderPos[1]+cylinder.halfHeight {
+
+		result.Hit = true
+		result.Normal[0] = horizontalDiff[0]
+		if spherePos[1] > cylinderPos[1]+cylinder.halfHeight {
+			result.Normal[1] = 1.0
+		} else if spherePos[1] < cylinderPos[1]-cylinder.halfHeight {
+			result.Normal[1] = -1.0
+		}
+		result.Normal[2] = horizontalDiff[2]
+		result.Normal = result.Normal.Normalize()
+
+		dist := math2.Sqrt(distSq)
+		result.Penetration = sphere.Radius() - dist
+		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
+	}
+	return
+}
+
 func ResolveSphereTriangles(spherePos, meshPos mgl32.Vec3, sphere Sphere, mesh Mesh, filter TriParts) (result Result) {
 	if filter == TRI_PART_NONE {
 		return
