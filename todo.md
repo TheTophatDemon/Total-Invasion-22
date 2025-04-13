@@ -5,7 +5,9 @@
 - Prop graphics for
   - Eyeball
 - Skybox
-- Transparent glow for fires?
+- Fires
+  - Transparent glow
+  - Smoke particles
 - Level intro
 - Script for converting TI2 levels
 - Message for when you don't have the weapon
@@ -14,6 +16,7 @@
 
 ## Ideas
 
+- Eyeball monsters give tutorial text if you stare at them
 - Episode 4: Titan Loose Ends
   - Electric sand
   - Wraiths on motorcycles??
