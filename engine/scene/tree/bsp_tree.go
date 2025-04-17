@@ -7,8 +7,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-const BVH_MAX_DEPTH = 10
-const BVH_MIN_OBJECTS = 2
+const BSP_MAX_DEPTH = 10
+const BSP_MIN_OBJECTS = 2
 
 // A BSP tree that splits objects into sections on the X and Z axes to speed up collision detection.
 type BspTree struct {
@@ -28,8 +28,13 @@ func (node bspNode) IsLeaf() bool {
 
 // Returns whether a shape at a given position intersects with the left or right region of the node.
 func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3) (touchesLeft, touchesRight bool) {
+	// Covers spheres and cylinders
+	type ShapeWithRadius interface {
+		Radius() float32
+	}
+
 	switch sh := shape.(type) {
-	case collision.Sphere:
+	case ShapeWithRadius:
 		touchesRight = shapePosition[node.splitAxis]+sh.Radius() >= node.planeOffset
 		touchesLeft = shapePosition[node.splitAxis]-sh.Radius() <= node.planeOffset
 	case collision.Box, collision.Grid:
@@ -50,6 +55,8 @@ func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 				}
 			}
 		}
+	default:
+		panic("bspNode.TouchesChild must be implemented for " + sh.String())
 	}
 
 	return
@@ -84,7 +91,7 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 }
 
 func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
-	if len(bodies) <= BVH_MIN_OBJECTS || depth >= BVH_MAX_DEPTH {
+	if len(bodies) <= BSP_MIN_OBJECTS || depth >= BSP_MAX_DEPTH {
 		// Create leaf node
 		node := bspNode{
 			leftChildIdx:  -1,

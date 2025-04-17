@@ -130,6 +130,8 @@ func (sphere Sphere) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Sh
 		return SphereTouchesSphere(myPosition, sphere.radius, theirPosition, otherShape.radius)
 	case Box:
 		return SphereTouchesBox(myPosition, sphere.radius, otherShape.Extents().Translate(theirPosition))
+	case Cylinder:
+		return SphereTouchesCylinder(myPosition, sphere.radius, theirPosition, otherShape.radius, otherShape.halfHeight)
 	case Mesh:
 		for _, triangle := range otherShape.triangles {
 			if hit, _ := SphereTriangleCollision(myPosition, sphere.Radius(), triangle, theirPosition); hit != TRI_PART_NONE {
@@ -140,6 +142,8 @@ func (sphere Sphere) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Sh
 		if otherShape.OtherBodyTouches(theirPosition, myPosition, sphere) {
 			return true
 		}
+	default:
+		panic("Sphere.Touches must be implemented for shape " + otherShape.String())
 	}
 	return false
 }

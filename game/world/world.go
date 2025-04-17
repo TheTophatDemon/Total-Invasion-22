@@ -147,8 +147,10 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 		// Set collision shapes
 		switch shapeName := te3File.Tiles.Shapes[tile.ShapeID]; shapeName {
+		case "assets/models/shapes/cylinder.obj":
+			// Cylinder
+			world.GameMap.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
 		case "assets/models/shapes/corner.obj",
-			"assets/models/shapes/cylinder.obj",
 			"assets/models/shapes/right_tetrahedron.obj",
 			"assets/models/shapes/tetrahedron_transition.obj",
 			"assets/models/shapes/wedge_corner_inner.obj",

@@ -129,19 +129,19 @@ func ResolveSphereBox(spherePos, boxPos mgl32.Vec3, sphere Sphere, box Box) (res
 	projectedPoint := math2.Vec3Max(math2.Vec3Min(spherePos, worldSpaceBox.Max), worldSpaceBox.Min)
 	diff := spherePos.Sub(projectedPoint)
 	distSq := diff.LenSqr()
-	if distSq > 0.0 && distSq < sphere.Radius()*sphere.Radius() {
+	if distSq > 0.0 && distSq < sphere.radius*sphere.radius {
 		result.Hit = true
 		dist := math2.Sqrt(distSq)
 		result.Normal = diff.Mul(1.0 / dist)
-		result.Penetration = sphere.Radius() - dist
-		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
+		result.Penetration = sphere.radius - dist
+		result.Position = spherePos.Add(result.Normal.Mul(-dist))
 	} else if distSq == 0.0 {
 		result.Hit = true
 		diffToCenter := spherePos.Sub(boxPos)
 		distToCenter := diffToCenter.Len()
 		result.Normal = diffToCenter.Mul(1.0 / distToCenter)
-		result.Penetration = sphere.Radius() - distToCenter
-		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
+		result.Penetration = sphere.radius - distToCenter // This is so wrong! Maybe I should actually learn some math...
+		result.Position = spherePos
 	}
 
 	return
@@ -152,28 +152,32 @@ func ResolveSphereCylinder(spherePos, cylinderPos mgl32.Vec3, sphere Sphere, cyl
 		return
 	}
 	horizontalDiff := mgl32.Vec3{spherePos[0] - cylinderPos[0], 0.0, spherePos[2] - cylinderPos[2]}
-	// projectedPoint := cylinderPos.Add(horizontalDiff.Normalize().Mul(cylinder.radius))
-	// projectedPoint[1] = math2.Clamp(spherePos[1], cylinderPos[1]-cylinder.halfHeight, cylinderPos[1]+cylinder.halfHeight)
-	distSq := horizontalDiff.LenSqr()
-	if distSq < (sphere.radius*sphere.radius)+(cylinder.radius*cylinder.radius) &&
-		spherePos[1]+sphere.radius > cylinderPos[1]-cylinder.halfHeight &&
-		spherePos[1]-sphere.radius < cylinderPos[1]+cylinder.halfHeight {
-
+	horizontalDist := horizontalDiff.Len()
+	projectedPoint := cylinderPos.Add(horizontalDiff.Mul(min(horizontalDist, cylinder.radius) / horizontalDist))
+	projectedPoint[1] = math2.Clamp(spherePos[1], cylinderPos[1]-cylinder.halfHeight, cylinderPos[1]+cylinder.halfHeight)
+	diffToProj := spherePos.Sub(projectedPoint)
+	distSq := diffToProj.LenSqr()
+	if distSq > 0.0 && distSq < sphere.radius*sphere.radius {
 		result.Hit = true
-		result.Normal[0] = horizontalDiff[0]
-		if spherePos[1] > cylinderPos[1]+cylinder.halfHeight {
-			result.Normal[1] = 1.0
-		} else if spherePos[1] < cylinderPos[1]-cylinder.halfHeight {
-			result.Normal[1] = -1.0
-		}
-		result.Normal[2] = horizontalDiff[2]
-		result.Normal = result.Normal.Normalize()
-
 		dist := math2.Sqrt(distSq)
-		result.Penetration = sphere.Radius() - dist
-		result.Position = spherePos.Add(result.Normal.Mul(-sphere.Radius()))
+		result.Normal = diffToProj.Mul(1.0 / dist)
+		result.Penetration = sphere.radius - dist
+		result.Position = spherePos.Add(result.Normal.Mul(-dist))
+	} else if horizontalDist < cylinder.radius && spherePos[1] > cylinderPos[1]-cylinder.halfHeight && spherePos[1] < cylinderPos[1]+cylinder.halfHeight {
+		// Push out horizontally when sphere is fully inside
+		result.Hit = true
+		result.Normal = horizontalDiff.Mul(1.0 / horizontalDist)
+		result.Penetration = cylinder.radius - horizontalDist + sphere.radius
+		result.Position = spherePos
 	}
+
 	return
+}
+
+func SphereTouchesCylinder(spherePos mgl32.Vec3, sphereRadius float32, cylinderPos mgl32.Vec3, cylinderRadius, cylinderHalfHeight float32) bool {
+	horizontalDiff := mgl32.Vec3{spherePos[0] - cylinderPos[0], 0.0, spherePos[2] - cylinderPos[2]}
+	return horizontalDiff.LenSqr() < (cylinderRadius+sphereRadius)*(cylinderRadius+sphereRadius) &&
+		spherePos[1] > cylinderPos[1]-cylinderHalfHeight && spherePos[1] < cylinderPos[1]+cylinderHalfHeight
 }
 
 func ResolveSphereTriangles(spherePos, meshPos mgl32.Vec3, sphere Sphere, mesh Mesh, filter TriParts) (result Result) {
