@@ -177,7 +177,7 @@ func ResolveSphereCylinder(spherePos, cylinderPos mgl32.Vec3, sphere Sphere, cyl
 func SphereTouchesCylinder(spherePos mgl32.Vec3, sphereRadius float32, cylinderPos mgl32.Vec3, cylinderRadius, cylinderHalfHeight float32) bool {
 	horizontalDiff := mgl32.Vec3{spherePos[0] - cylinderPos[0], 0.0, spherePos[2] - cylinderPos[2]}
 	return horizontalDiff.LenSqr() < (cylinderRadius+sphereRadius)*(cylinderRadius+sphereRadius) &&
-		spherePos[1] > cylinderPos[1]-cylinderHalfHeight && spherePos[1] < cylinderPos[1]+cylinderHalfHeight
+		spherePos[1]+sphereRadius > cylinderPos[1]-cylinderHalfHeight && spherePos[1]-sphereRadius < cylinderPos[1]+cylinderHalfHeight
 }
 
 func ResolveSphereTriangles(spherePos, meshPos mgl32.Vec3, sphere Sphere, mesh Mesh, filter TriParts) (result Result) {
