@@ -1,9 +1,11 @@
 # TODO
-- Prop graphics for
-  - Eyeball
 - Skybox
+  - Mechanism for customizing texture per level / disabling
+  - Increase resolution on starry sky texture.
+- Eyeball interactions
 - Fires
   - Transparent glow
+  - Use particle system for transluscent sprite sorting
   - Smoke particles
 - Level intro
 - Script for converting TI2 levels

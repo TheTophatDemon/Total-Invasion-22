@@ -140,15 +140,15 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 					v := len(verts.Pos)
 					vertSet[idx] = v
 
-					if idx[0] >= 0 { // Position
+					if idx[0] > 0 { // Position
 						verts.Pos = append(verts.Pos,
 							mgl32.Vec3(obj.pos[idx[0]-1]))
 					}
-					if idx[1] >= 0 { // Tex coord
+					if idx[1] > 0 { // Tex coord
 						verts.TexCoord = append(verts.TexCoord,
 							mgl32.Vec2(obj.tex[idx[1]-1]))
 					}
-					if idx[2] >= 0 { // Normal
+					if idx[2] > 0 { // Normal
 						verts.Normal = append(verts.Normal,
 							mgl32.Vec3(obj.norm[idx[2]-1]))
 					}

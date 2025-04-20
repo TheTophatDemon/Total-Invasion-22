@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -68,7 +69,8 @@ type World struct {
 	app              engine.Observer // Communicates with the main application
 	nextLevel        string          // Path to the next level. Set once the player reaches an exit.
 	bspTree          tree.BspTree    // The BSP tree built in the previous frame.
-	avgCollisionTime int64
+	avgCollisionTime int64           // Average number of milliseconds spent per frame solving collisions.
+	skyRender        comps.SkyRender
 }
 
 func NewWorld(app engine.Observer, mapPath string) (*World, error) {
@@ -241,6 +243,15 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		}
 	}
 
+	// Create sky model
+	skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
+	skyTex := cache.GetTexture("assets/textures/skies/starry_sky.png")
+	if meshErr != nil {
+		log.Printf("Error loading sky: %v\n", meshErr)
+	} else {
+		world.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
+	}
+
 	world.Hud.LevelStartTime = time.Now()
 	return world, nil
 }
@@ -308,6 +319,7 @@ func (world *World) Update(deltaTime float32) {
 
 	duration := time.Now().Sub(startTime).Milliseconds()
 	if world.avgCollisionTime != 0 {
+		// This is not how you calculate a rolling average, but close enough...?
 		world.avgCollisionTime = (world.avgCollisionTime + duration) / 2
 	} else {
 		world.avgCollisionTime = duration
@@ -339,6 +351,9 @@ func (world *World) Render() {
 		LightDirection: mgl32.Vec3{1.0, 0.0, 1.0}.Normalize(),
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
+
+	// Render sky
+	world.skyRender.Render(&renderContext)
 
 	// Render 3D game elements
 	scene.RenderStores(world, &renderContext)

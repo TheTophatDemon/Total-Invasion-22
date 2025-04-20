@@ -49,6 +49,12 @@ var (
 	//go:embed embed/map.fs.glsl
 	mapFragShaderSrc string
 
+	SkyShader *Shader
+	//go:embed embed/sky.vs.glsl
+	skyVertShaderSrc string
+	//go:embed embed/sky.fs.glsl
+	skyFragShaderSrc string
+
 	DebugShader *Shader
 	//go:embed embed/debug.vs.glsl
 	debugVertShaderSrc string
@@ -80,6 +86,11 @@ func Init() {
 	MapShader, err = CreateShader(mapVertShaderSrc, mapFragShaderSrc)
 	if err != nil {
 		log.Fatalln("Couldn't compile map shader: ", err)
+	}
+
+	SkyShader, err = CreateShader(skyVertShaderSrc, skyFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile sky shader: ", err)
 	}
 
 	DebugShader, err = CreateShader(debugVertShaderSrc, debugFragShaderSrc)
