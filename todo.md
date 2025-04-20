@@ -1,7 +1,4 @@
 # TODO
-- Skybox
-  - Mechanism for customizing texture per level / disabling
-  - Increase resolution on starry sky texture.
 - Eyeball interactions
 - Fires
   - Transparent glow

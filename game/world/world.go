@@ -213,6 +213,18 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 				// Play the song
 				tdaudio.QueueSong(songPath, true, 0)
 			}
+
+			if skyPath, hasSky := ent.Properties["sky"]; hasSky {
+				// Create sky model
+				skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
+				skyTex := cache.GetTexture(skyPath)
+				if meshErr != nil {
+					log.Printf("Error loading sky: %v\n", meshErr)
+				} else {
+					world.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
+				}
+			}
+
 			continue
 		}
 
@@ -241,15 +253,6 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
 		}
-	}
-
-	// Create sky model
-	skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
-	skyTex := cache.GetTexture("assets/textures/skies/starry_sky.png")
-	if meshErr != nil {
-		log.Printf("Error loading sky: %v\n", meshErr)
-	} else {
-		world.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
 	}
 
 	world.Hud.LevelStartTime = time.Now()
