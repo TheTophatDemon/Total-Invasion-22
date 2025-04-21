@@ -46,7 +46,7 @@ func (sr *SpriteRender) Render(
 
 	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
 		// Change animation layer based on angle to the camera
-		cameraPos := context.View.Inv().Col(3).Vec3() //TODO: We can store the inverse view matrix in the context
+		cameraPos := context.ViewInverse.Col(3).Vec3()
 		toCamera := cameraPos.Sub(transform.Position())
 		if toCamera.LenSqr() > mgl32.Epsilon {
 			toCamera = toCamera.Normalize()

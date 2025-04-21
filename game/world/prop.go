@@ -21,14 +21,14 @@ const (
 	PROP_TYPE_GENERIC PropType = iota
 	PROP_TYPE_GEOFFREY
 	PROP_TYPE_FIRE
+	PROP_TYPE_EYEBALL
 )
 
 const (
-	GEOFFREY_SAFETY_RADIUS = 2.5
-	GEOFFREY_COL_LAYERS    = COL_LAYER_MAP | COL_LAYER_NPCS
-	SFX_HONK               = "assets/sounds/honk.wav"
-	GEOFFREY_ANIM_IDLE     = "idle"
-	GEOFFREY_ANIM_VANISH   = "vanish"
+	PROJECTILE_SAFETY_RADIUS = 2.5
+	SFX_HONK                 = "assets/sounds/honk.wav"
+	GEOFFREY_ANIM_IDLE       = "idle"
+	GEOFFREY_ANIM_VANISH     = "vanish"
 )
 
 // A (generally) unmoving object in the game world used as decoration
@@ -36,26 +36,27 @@ type Prop struct {
 	id           scene.Id[*Prop]
 	SpriteRender comps.SpriteRender
 	AnimPlayer   comps.AnimationPlayer
-	debugShape   DebugShape
 	body         comps.Body
 	world        *World
 	propType     PropType
 	voice        tdaudio.VoiceId
 	isSeen       bool
 	radius       float32
+	stareTimer   float32
+	messageKey   string // Key into the localization table for messages displayed on the HUD when interacting with the object
 }
 
 var _ comps.HasBody = (*Prop)(nil)
 var _ Usable = (*Prop)(nil)
 
-func (p *Prop) Body() *comps.Body {
-	return &p.body
+func (prop *Prop) Body() *comps.Body {
+	return &prop.body
 }
 
-func (p *Prop) OnUse(player *Player) {
-	switch p.propType {
+func (prop *Prop) OnUse(player *Player) {
+	switch prop.propType {
 	case PROP_TYPE_GEOFFREY:
-		p.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+		prop.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
 	}
 }
 
@@ -95,32 +96,21 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		err = nil
 	}
 
-	// mesh, err := cache.GetMesh("assets/models/shapes/cylinder.obj")
-	// if err != nil {
-	// 	log.Printf("Error loading cylinder mesh for prop: %v.\n", err)
-	// }
-
-	// shapeMesh := collision.NewMesh(mesh, prop.radius)
 	prop.body = comps.Body{
 		Transform: comps.TransformFromTE3Ent(ent, true, true),
-		// Shape:     shapeMesh,
-		Shape:  collision.NewCylinder(prop.radius, 2.0),
-		Layer:  COL_LAYER_MAP,
-		Filter: COL_LAYER_NONE,
+		Shape:     collision.NewCylinder(prop.radius, 2.0),
+		Layer:     COL_LAYER_MAP,
+		Filter:    COL_LAYER_NONE,
 	}
-
-	// wireMesh := collision.WireMeshFromMeshCollisionShape(&shapeMesh, color.Red)
-
-	// prop.debugShape = DebugShape{
-	// 	MeshRender: comps.NewMeshRender(wireMesh, shaders.DebugShader, nil),
-	// 	Transform:  prop.body.Transform,
-	// 	TimeLeft:   math2.Inf32(),
-	// }
 
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
-		prop.body.Layer = GEOFFREY_COL_LAYERS
+		prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
+	case "eyeball":
+		prop.propType = PROP_TYPE_EYEBALL
+		prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
+		prop.messageKey = ent.Properties["messageKey"]
 	case "fire":
 		prop.propType = PROP_TYPE_FIRE
 		prop.body.Layer = COL_LAYER_NONE
@@ -142,20 +132,48 @@ func (prop *Prop) Update(deltaTime float32) {
 			if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
 				idleAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_IDLE)
 				prop.AnimPlayer.PlayNewAnim(idleAnim)
-				prop.body.Layer = GEOFFREY_COL_LAYERS
+				prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
 			}
 		} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 			// Check for incoming projectiles and trigger the disappearing animation.
-			if prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), GEOFFREY_SAFETY_RADIUS) {
+			if prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), PROJECTILE_SAFETY_RADIUS) {
 				prop.AnimPlayer.PlayNewAnim(vanishAnim)
 				prop.body.Layer = 0
 				cache.GetSfx(SFX_HONK).PlayAttenuatedV(prop.body.Transform.Position())
 			}
 		}
+	case PROP_TYPE_EYEBALL:
+		idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
+		openAnim, _ := prop.SpriteRender.Texture().GetAnimation("open")
+		stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
+		eyeContact := false
+		if !prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), PROJECTILE_SAFETY_RADIUS) {
+			if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
+				toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
+				if camera.Forward().Dot(toCamera) < -0.95 {
+					res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, COL_LAYER_MAP|COL_LAYER_NPCS|COL_LAYER_PLAYERS, 15.0, prop)
+					if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
+						prop.stareTimer += deltaTime
+						eyeContact = true
+						if prop.AnimPlayer.IsPlayingAnim(idleAnim) {
+							prop.AnimPlayer.PlayAnimSequence(openAnim, stareAnim)
+						}
+					}
+				}
+			}
+		}
+		if !eyeContact {
+			prop.stareTimer = 0.0
+			if prop.AnimPlayer.IsPlayingAnim(stareAnim) {
+				prop.AnimPlayer.PlayAnimSequence(openAnim, idleAnim)
+			}
+		} else if prop.stareTimer > 1.0 {
+			prop.world.Hud.ShowMessage(settings.Localize(prop.messageKey), 1.0, 50, color.Magenta)
+		}
+
 	}
 }
 
 func (prop *Prop) Render(context *render.Context) {
 	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
-	prop.debugShape.Render(context)
 }

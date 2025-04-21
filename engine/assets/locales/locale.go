@@ -32,8 +32,19 @@ func (trans *Translation) UnmarshalJSON(b []byte) error {
 		switch val := value.(type) {
 		case string:
 			(*trans)[key] = val
-		case []string:
-			(*trans)[key] = strings.Join(val, "\n")
+		case []any:
+			lines := make([]string, 0, len(val))
+			for _, item := range val {
+				str, isStr := item.(string)
+				if !isStr {
+					err = fmt.Errorf("array contains non string data")
+					break
+				}
+				lines = append(lines, str)
+			}
+			if err == nil {
+				(*trans)[key] = strings.Join(lines, "\n")
+			}
 		default:
 			if err == nil {
 				err = fmt.Errorf("locale values should be string or array of strings")

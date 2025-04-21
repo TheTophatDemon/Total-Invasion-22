@@ -44,3 +44,7 @@ func (anim *Animation) Duration() float32 {
 	}
 	return sum
 }
+
+func (anim *Animation) IsNil() bool {
+	return anim.Frames == nil
+}

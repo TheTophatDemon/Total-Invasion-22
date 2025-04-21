@@ -26,5 +26,7 @@
     "airhornGet": "Time to get rekt!!",
     "eggCartonGet": "Got a carton of eggs.",
     "grenadesGet": "Got some grenades.",
-    "plasmaVialsGet": "Got some vials of plasma."
+    "plasmaVialsGet": "Got some vials of plasma.",
+    "eyeballMessage1": ["When the moon hits your eye like a big pizza pie,", "that's amore."],
+    "eyeballMessage2": "'Eye' can't believe you've done this!"
 }

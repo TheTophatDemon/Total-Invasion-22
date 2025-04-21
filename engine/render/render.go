@@ -10,7 +10,7 @@ import (
 
 // Contains global information useful for rendering.
 type Context struct {
-	View                                                  mgl32.Mat4
+	View, ViewInverse                                     mgl32.Mat4
 	Projection                                            mgl32.Mat4
 	FogStart                                              float32
 	FogLength                                             float32

@@ -347,6 +347,7 @@ func (world *World) Render() {
 	projMat := camera.ProjectionMatrix()
 	renderContext := render.Context{
 		View:           viewMat,
+		ViewInverse:    viewMat.Inv(),
 		Projection:     projMat,
 		AspectRatio:    settings.Current.WindowAspectRatio(),
 		FogStart:       1.0,

@@ -8,10 +8,11 @@ import (
 )
 
 type AnimationPlayer struct {
-	animation    textures.Animation // Animation currently being played
-	currentIndex int                // The current index into the animation data's frames array
-	playing      bool
-	frameTimer   float32
+	animation     textures.Animation // Animation currently being played
+	nextAnimation textures.Animation // Animation to switch to after the current one is finished.
+	currentIndex  int                // The current index into the animation data's frames array
+	playing       bool
+	frameTimer    float32
 }
 
 func NewAnimationPlayer(anim textures.Animation, autoPlay bool) AnimationPlayer {
@@ -28,6 +29,7 @@ func (ap *AnimationPlayer) ChangeAnimation(newAnim textures.Animation) {
 	ap.animation = newAnim
 	ap.currentIndex = 0
 	ap.frameTimer = 0.0
+	ap.nextAnimation = textures.Animation{}
 }
 
 func (ap *AnimationPlayer) CurrentAnimation() textures.Animation {
@@ -50,8 +52,13 @@ func (ap *AnimationPlayer) Update(deltaTime float32) {
 		ap.currentIndex += 1
 		if ap.currentIndex >= len(ap.animation.Frames) {
 			if !ap.animation.Loop {
-				ap.currentIndex = len(ap.animation.Frames) - 1
-				ap.playing = false
+				if !ap.nextAnimation.IsNil() {
+					ap.PlayNewAnim(ap.nextAnimation)
+					ap.nextAnimation = textures.Animation{}
+				} else {
+					ap.currentIndex = len(ap.animation.Frames) - 1
+					ap.playing = false
+				}
 			} else {
 				ap.frameTimer = 0.0
 				ap.currentIndex = 0
@@ -114,6 +121,11 @@ func (ap *AnimationPlayer) PlayFromStart() {
 func (ap *AnimationPlayer) PlayNewAnim(newAnim textures.Animation) {
 	ap.ChangeAnimation(newAnim)
 	ap.PlayFromStart()
+}
+
+func (ap *AnimationPlayer) PlayAnimSequence(anim1, anim2 textures.Animation) {
+	ap.PlayNewAnim(anim1)
+	ap.nextAnimation = anim2
 }
 
 func (ap *AnimationPlayer) IsPlaying() bool {
