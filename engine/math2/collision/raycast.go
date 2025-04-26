@@ -155,6 +155,56 @@ func RaySphereCollision(rayOrigin, rayDir, spherePos mgl32.Vec3, sphereRadius fl
 	}
 }
 
+func RayCylinderCollision(rayOrigin, rayDir, cylinderPos mgl32.Vec3, cylinderRadius, cylinderHalfHeight float32) RaycastResult {
+	var endNormal mgl32.Vec3
+	var endDifference float32
+	if endDifference = cylinderPos[1] + cylinderHalfHeight - rayOrigin[1]; endDifference < 0.0 {
+		// Ray starts from above cylinder
+		if rayDir[1] >= 0.0 {
+			// Pointing away
+			return RaycastResult{}
+		}
+
+		endNormal[1] = 1.0
+	} else if endDifference = cylinderPos[1] - cylinderHalfHeight - rayOrigin[1]; endDifference > 0.0 {
+		// Ray starts from below cylinder
+		if rayDir[1] <= 0.0 {
+			// Pointing away
+			return RaycastResult{}
+		}
+		endNormal[1] = -1.0
+	}
+	if endDifference != 0.0 && endNormal != (mgl32.Vec3{}) {
+		// Find point of contact with plane on top/bottom of cylinder
+		t := endDifference / rayDir[1]
+		// X and Z distance from center of cylinder
+		dx := (rayOrigin[0] + rayDir[0]*t) - cylinderPos[0]
+		dz := (rayOrigin[2] + rayDir[2]*t) - cylinderPos[2]
+		if (dx*dx)+(dz*dz) < cylinderRadius*cylinderRadius {
+			// Ray hits plane within the circle on top/bottom of the cylinder.
+			return RaycastResult{
+				Hit:      true,
+				Position: mgl32.Vec3{dx + cylinderPos[0], endDifference + rayOrigin[1], dz + cylinderPos[2]},
+				Normal:   endNormal,
+				Distance: t,
+			}
+		}
+	}
+
+	// See if the ray hits the circle the cylinder projects onto the XZ plane.
+	diff := mgl32.Vec2{cylinderPos[0] - rayOrigin[0], cylinderPos[2] - rayOrigin[2]}
+	dist := diff.Len()
+	dp := diff.Dot(mgl32.Vec2{rayDir[0], rayDir[2]})
+	d := cylinderRadius*cylinderRadius - (dist*dist - dp*dp)
+	if d < 0.0 {
+		return RaycastResult{}
+	}
+
+	// The ray reaches the cylinder on the XZ plane, but now we must check the height.
+
+	return RaycastResult{}
+}
+
 func RayTriangleCollision(rayOrigin, rayDir mgl32.Vec3, tri math2.Triangle) RaycastResult {
 	// Uses the Trumbore intersection algorithm
 	// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
