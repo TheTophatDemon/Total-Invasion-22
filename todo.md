@@ -1,5 +1,4 @@
 # TODO
-- Implement raycasting for cylinders
 - Make message text more readable
   - Display messages at the bottom of the screen with a black background and a marquee?
 - Fires

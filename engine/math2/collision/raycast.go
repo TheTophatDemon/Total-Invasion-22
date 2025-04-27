@@ -164,7 +164,6 @@ func RayCylinderCollision(rayOrigin, rayDir, cylinderPos mgl32.Vec3, cylinderRad
 			// Pointing away
 			return RaycastResult{}
 		}
-
 		endNormal[1] = 1.0
 	} else if endDifference = cylinderPos[1] - cylinderHalfHeight - rayOrigin[1]; endDifference > 0.0 {
 		// Ray starts from below cylinder
@@ -200,7 +199,24 @@ func RayCylinderCollision(rayOrigin, rayDir, cylinderPos mgl32.Vec3, cylinderRad
 		return RaycastResult{}
 	}
 
-	// The ray reaches the cylinder on the XZ plane, but now we must check the height.
+	// The ray reaches the cylinder on the XZ plane, but now we find the collision point and check if the Y is within the cylinder's height
+	var result RaycastResult
+	if dist < cylinderRadius {
+		// Ray is inside of the projected circle
+		result.Distance = dp + math2.Sqrt(d)
+		result.Position = rayOrigin.Add(rayDir.Mul(result.Distance))
+		result.Normal = result.Position.Sub(cylinderPos).Normalize()
+	} else {
+		// Ray is outside of the projected circle
+		result.Distance = dp - math2.Sqrt(d)
+		result.Position = rayOrigin.Add(rayDir.Mul(result.Distance))
+		result.Normal = result.Position.Sub(cylinderPos).Normalize()
+	}
+
+	if result.Position[1] > cylinderPos[1]-cylinderHalfHeight && result.Position[1] < cylinderPos[1]+cylinderHalfHeight {
+		result.Hit = true
+		return result
+	}
 
 	return RaycastResult{}
 }

@@ -43,6 +43,10 @@ func (cylinder Cylinder) Height() float32 {
 }
 
 func (cylinder Cylinder) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) RaycastResult {
-	//TODO
-	return RaycastResult{}
+	var res RaycastResult = RayCylinderCollision(rayOrigin, rayDir, shapeOffset, cylinder.radius, cylinder.halfHeight)
+	if res.Distance <= maxDist {
+		return res
+	} else {
+		return RaycastResult{}
+	}
 }

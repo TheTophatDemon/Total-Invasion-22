@@ -73,6 +73,60 @@ func TestRayPlaneCollision(t *testing.T) {
 	})
 }
 
+func TestRayCylinderCollision(t *testing.T) {
+	t.Run("hit from top", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, 5.0, 0.0}, mgl32.Vec3{0.0, -1.0, 0.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{
+			Hit:      true,
+			Distance: 4.0,
+			Normal:   mgl32.Vec3{0.0, 1.0, 0.0},
+			Position: mgl32.Vec3{0.0, 1.0, 0.0},
+		})
+	})
+	t.Run("miss from top going down", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{5.0, 5.0, 0.0}, mgl32.Vec3{0.0, -1.0, 0.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+	t.Run("miss from top going across", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, 5.0, 5.0}, mgl32.Vec3{0.0, 0.0, -1.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+	t.Run("hit from bottom", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, -5.0, 0.0}, mgl32.Vec3{0.0, 1.0, 0.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{
+			Hit:      true,
+			Distance: 4.0,
+			Normal:   mgl32.Vec3{0.0, -1.0, 0.0},
+			Position: mgl32.Vec3{0.0, -1.0, 0.0},
+		})
+	})
+	t.Run("miss from bottom going up", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, -5.0, 5.0}, mgl32.Vec3{0.0, 1.0, 0.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+	t.Run("miss from bottom going across", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, -5.0, 5.0}, mgl32.Vec3{1.0, 0.0, 1.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+	t.Run("hit middle", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, 0.0, 5.0}, mgl32.Vec3{0.0, 0.0, -1.0}, mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{
+			Hit:      true,
+			Distance: 4.0,
+			Normal:   mgl32.Vec3{0.0, 0.0, 1.0},
+			Position: mgl32.Vec3{0.0, 0.0, 1.0},
+		})
+	})
+	t.Run("miss middle horizontally", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, 0.0, 5.0}, mgl32.Vec3{1.0, 0.0, -1.0}.Normalize(), mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+	t.Run("miss middle vertically", func(t *testing.T) {
+		res := RayCylinderCollision(mgl32.Vec3{0.0, 0.0, 5.0}, mgl32.Vec3{0.0, 1.0, -1.0}.Normalize(), mgl32.Vec3{}, 1.0, 1.0)
+		checkRaycastResult(t, res, RaycastResult{})
+	})
+}
+
 func checkRaycastResult(t *testing.T, actual, expected RaycastResult) {
 	if actual.Hit != expected.Hit {
 		if expected.Hit {
