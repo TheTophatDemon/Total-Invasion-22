@@ -46,6 +46,8 @@ type Text struct {
 	scale, depth   float32
 	transform      mgl32.Mat4
 	transformDirty bool
+	lineCount      int
+	wrapWords      bool // Whether text wrapping around the boundary is done by word instead of by character
 }
 
 var _ engine.HasDefault = (*Text)(nil)
@@ -55,6 +57,7 @@ func (txt *Text) InitDefault() {
 	*txt = zero
 	txt.color = color.White
 	txt.scale = 1.0
+	txt.wrapWords = true
 }
 
 func (txt *Text) SetAlignment(align TextAlign) *Text {
@@ -90,6 +93,15 @@ func (txt *Text) Text() string {
 	return txt.text
 }
 
+func (txt *Text) WrapWords() bool {
+	return txt.wrapWords
+}
+
+func (txt *Text) SetWrapWords(newValue bool) {
+	txt.wrapWords = newValue
+	txt.textDirty = true
+}
+
 func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) *Text {
 	txt.textDirty = true
 	txt.shadowEnabled = true
@@ -113,8 +125,16 @@ func (txt *Text) SetDepth(value float32) *Text {
 	return txt
 }
 
+// Returns the number of lines needed to fit the text into the destination box horizontally.
+// Can be used to detect text overflow.
+func (txt *Text) LineCount() int {
+	_, _ = txt.Mesh() // Calculates box positions to update line count
+	return txt.lineCount
+}
+
 // Calculates positions for each character's rectangle
 func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
+	txt.lineCount = 1
 	var originX, originY float32 = 0.0, 0.0
 	cursorX, cursorY := originX, originY
 	var prevRune rune = scanner.EOF
@@ -156,6 +176,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 	for token := scan.Scan(); token != scanner.EOF; token = scan.Scan() {
 		if token == '\n' {
 			newLine()
+			txt.lineCount += 1
 			continue
 		} else if unicode.IsSpace(token) {
 			cursorX += 16
@@ -193,17 +214,23 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 				break
 			}
 
-			if i == len(word)-runeWidth {
+			if i == len(word)-runeWidth || !txt.wrapWords {
 				// On the last character in the word, determine if the word should go on a new line
 				overflowsBounds := (charRect.X+charRect.Width >= txt.dest.Width)
 				firstWordOnLine := (firstBox.X == originX)
 
 				if overflowsBounds && !firstWordOnLine {
 					// Remove the previous letters in this word
-					boxes = boxes[:len(boxes)-runeIndex]
-					chars = chars[:len(chars)-runeIndex]
-
-					numCharsInLine -= runeIndex
+					if txt.wrapWords {
+						boxes = boxes[:len(boxes)-runeIndex]
+						chars = chars[:len(chars)-runeIndex]
+						numCharsInLine -= runeIndex
+					} else {
+						boxes = boxes[:len(boxes)-1]
+						chars = chars[:len(chars)-1]
+						numCharsInLine -= 1
+					}
+					txt.lineCount += 1
 					newLine()
 
 					// Restart building the word

@@ -42,7 +42,7 @@ func (chickenCannon *ChickenCannon) Init(hud *Hud) {
 	}
 	chickenCannon.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - chickenCannon.spriteSize.X()/2.0,
-		settings.UIHeight() - chickenCannon.spriteSize.Y() + 16.0,
+		settings.UIHeight() - chickenCannon.spriteSize.Y(),
 	}
 	chickenCannon.spriteStartPos = chickenCannon.spriteEndPos.Add(mgl32.Vec2{0.0, chickenCannon.spriteSize.Y()})
 }

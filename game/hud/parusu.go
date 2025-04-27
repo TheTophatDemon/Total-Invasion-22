@@ -42,7 +42,7 @@ func (parusu *Parusu) Init(hud *Hud) {
 	}
 	parusu.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - parusu.spriteSize.X()/2.0,
-		settings.UIHeight() - parusu.spriteSize.Y() + 16.0,
+		settings.UIHeight() - parusu.spriteSize.Y(),
 	}
 	parusu.spriteStartPos = parusu.spriteEndPos.Add(mgl32.Vec2{0.0, parusu.spriteSize.Y()})
 }

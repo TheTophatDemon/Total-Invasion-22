@@ -46,7 +46,7 @@ func (airhorn *Airhorn) Init(hud *Hud) {
 	}
 	airhorn.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - airhorn.spriteSize.X()/2.0 + settings.UIWidth()/6.0,
-		settings.UIHeight() - airhorn.spriteSize.Y() + 16.0,
+		settings.UIHeight() - airhorn.spriteSize.Y(),
 	}
 	airhorn.spriteStartPos = airhorn.spriteEndPos.Add(mgl32.Vec2{0.0, airhorn.spriteSize.Y()})
 

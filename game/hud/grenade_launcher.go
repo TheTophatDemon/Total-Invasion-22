@@ -42,7 +42,7 @@ func (grenadeLauncher *GrenadeLauncher) Init(hud *Hud) {
 	}
 	grenadeLauncher.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - grenadeLauncher.spriteSize.X()/2.0,
-		settings.UIHeight() - grenadeLauncher.spriteSize.Y() + 16.0,
+		settings.UIHeight() - grenadeLauncher.spriteSize.Y(),
 	}
 	grenadeLauncher.spriteStartPos = grenadeLauncher.spriteEndPos.Add(mgl32.Vec2{0.0, grenadeLauncher.spriteSize.Y()})
 }

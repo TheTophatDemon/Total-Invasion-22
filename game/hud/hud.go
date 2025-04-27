@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -18,12 +19,13 @@ import (
 )
 
 const (
-	MESSAGE_FADE_SPEED  = 2.0
-	TEXT_FLICKER_SPEED  = 0.5
-	VICTORY_COUNT_SPEED = 0.1
-	DEFAULT_FONT_PATH   = "assets/textures/ui/font.fnt"
-	COUNTER_FONT_PATH   = "assets/textures/ui/hud_counter_font.fnt"
-	SFX_STATS_DING      = "assets/sounds/ui/stats_ding.wav"
+	MESSAGE_FADE_SPEED   = 2.0
+	MESSAGE_SCROLL_SPEED = 0.1
+	TEXT_FLICKER_SPEED   = 0.5
+	VICTORY_COUNT_SPEED  = 0.1
+	DEFAULT_FONT_PATH    = "assets/textures/ui/font.fnt"
+	COUNTER_FONT_PATH    = "assets/textures/ui/hud_counter_font.fnt"
+	SFX_STATS_DING       = "assets/sounds/ui/stats_ding.wav"
 )
 
 type CountState uint8
@@ -96,19 +98,34 @@ func (hud *Hud) Init() {
 		SetScale(1.0).
 		SetColor(color.Blue)
 
+	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
+	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
+
+	_, messageBackground, _ := hud.UI.Boxes.New()
+	messageBackground.
+		SetDest(math2.Rect{
+			X:      float32(leftPanelTex.Width()) * SpriteScale(),
+			Y:      settings.UIHeight() - 32.0,
+			Width:  settings.UIWidth() - float32(leftPanelTex.Width()+rightPanelTex.Width())*SpriteScale(),
+			Height: 32.0,
+		}).
+		SetDepth(2.0).
+		SetColor(color.Black)
+
 	var message *ui.Text
 	hud.messageText, message, _ = hud.UI.Texts.New()
 	message.
 		SetFont(DEFAULT_FONT_PATH).
 		SetDest(math2.Rect{
-			X:      settings.UIWidth() / 4.0,
-			Y:      settings.UIHeight() / 2.0,
-			Width:  settings.UIWidth() / 2.0,
-			Height: settings.UIHeight() / 2.0,
+			X:      messageBackground.Dest().X + 8.0,
+			Y:      messageBackground.Dest().Y + 1.0,
+			Width:  messageBackground.Dest().Width - 16.0,
+			Height: messageBackground.Dest().Height - 2.0,
 		}).
-		SetAlignment(ui.TEXT_ALIGN_CENTER).
+		SetAlignment(ui.TEXT_ALIGN_LEFT).
 		SetColor(color.Red).
-		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+		SetDepth(3.0).
+		SetWrapWords(false)
 
 	var flashBox *ui.Box
 	hud.flashRect, flashBox, _ = hud.UI.Boxes.New()
@@ -149,7 +166,7 @@ func (hud *Hud) InitVictory() {
 		SetText(settings.Localize("levelComplete")).
 		SetDest(math2.Rect{
 			X:      settings.UIWidth()/4.0 - 32.0,
-			Y:      96.0,
+			Y:      24.0,
 			Width:  settings.UIWidth() / 2.0,
 			Height: 64.0,
 		}).
@@ -166,7 +183,7 @@ func (hud *Hud) InitVictory() {
 		SetText("").
 		SetDest(math2.Rect{
 			X:      64.0,
-			Y:      180.0,
+			Y:      108.0,
 			Width:  256.0,
 			Height: 256.0,
 		}).
@@ -184,15 +201,19 @@ func (hud *Hud) Update(deltaTime float32) {
 
 	// Update message text
 	if message, ok := hud.messageText.Get(); ok {
-		if hud.messageTimer > 0.0 {
-			hud.messageTimer -= deltaTime
-		} else {
-			message.SetColor(message.Color().Fade(deltaTime * MESSAGE_FADE_SPEED))
-			if message.Color().A <= 0.0 {
-				message.SetColor(color.Transparent)
+		hud.messageTimer -= deltaTime
+		if hud.messageTimer <= 0.0 {
+			if hud.messageTimer < -MESSAGE_SCROLL_SPEED {
 				hud.messageTimer = 0.0
-				hud.messagePriority = 0
-				message.SetText("")
+				msgText := message.Text()
+				if len(msgText) > 1 {
+					_, byteCount := utf8.DecodeRuneInString(msgText)
+					message.SetText(msgText[byteCount:])
+				} else {
+					hud.messagePriority = 0
+					message.SetColor(color.Transparent)
+					message.SetText("")
+				}
 			}
 		}
 	}
@@ -242,7 +263,7 @@ func (hud *Hud) Update(deltaTime float32) {
 					if hud.continueText, txt, err = hud.UI.Texts.New(); err == nil {
 						txt.SetFont(DEFAULT_FONT_PATH).
 							SetText(settings.Localize("fireContinue")).
-							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 7.0*settings.UIHeight()/8.0, 256.0, 24.0)).
+							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 7.0*settings.UIHeight()/8.0, 256.0, 48.0)).
 							SetAlignment(ui.TEXT_ALIGN_CENTER).
 							SetScale(2.0).
 							SetColor(color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}).

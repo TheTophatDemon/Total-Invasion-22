@@ -73,7 +73,7 @@ func generateMainFont() {
 		FontName:   "Total Invasion 22 Font",
 		ImagePath:  "font.png",
 		ImageWidth: 256, ImageHeight: 288,
-		LineHeight: 24, Base: 19, FontSize: 16,
+		LineHeight: 24, Base: 0, FontSize: 16,
 		Spacing: [2]int{2, 2},
 		Chars:   chars,
 	})

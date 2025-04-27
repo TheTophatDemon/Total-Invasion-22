@@ -44,7 +44,7 @@ func (sickle *Sickle) Init(hud *Hud) {
 	}
 	sickle.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - sickle.spriteSize.X()/2.0 + settings.UIWidth()/4.0,
-		settings.UIHeight() - sickle.spriteSize.Y() + 16.0,
+		settings.UIHeight() - sickle.spriteSize.Y(),
 	}
 	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})
 

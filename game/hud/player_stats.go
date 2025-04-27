@@ -65,7 +65,7 @@ func (hud *Hud) InitPlayerStats() {
 		leftPanelTex,
 		color.White,
 	)
-	leftPanel.SetDepth(1.0)
+	leftPanel.SetDepth(5.0)
 
 	fitToSlice := func(parent math2.Rect, slice textures.Slice) math2.Rect {
 		return math2.Rect{
@@ -82,7 +82,9 @@ func (hud *Hud) InitPlayerStats() {
 	var heart *ui.Box
 	hud.heartIcon, heart, _ = hud.UI.Boxes.New()
 	heartSlice := leftPanelTex.FindSlice("healthIcon")
-	heart.SetTexture(hudIconsTexture).SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).SetDepth(2.0)
+	heart.SetTexture(hudIconsTexture).
+		SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).
+		SetDepth(6.0)
 	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
 		heart.AnimPlayer.ChangeAnimation(heartAnim)
 		heart.AnimPlayer.PlayFromStart()
@@ -94,7 +96,9 @@ func (hud *Hud) InitPlayerStats() {
 	var face *ui.Box
 	hud.face, face, _ = hud.UI.Boxes.New()
 	faceSlice := leftPanelTex.FindSlice("face")
-	face.SetTexture(faceTex).SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).SetDepth(2.0)
+	face.SetTexture(faceTex).
+		SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).
+		SetDepth(6.0)
 	if faceAnim, ok := faceTex.GetAnimation(FaceStateIdle.anim); ok {
 		face.AnimPlayer.PlayNewAnim(faceAnim)
 	}
@@ -107,7 +111,7 @@ func (hud *Hud) InitPlayerStats() {
 		SetFont(COUNTER_FONT_PATH).
 		SetText("000").
 		SetDest(fitToSlice(leftPanel.Dest(), healthStatSlice)).
-		SetDepth(2.0).
+		SetDepth(6.0).
 		SetScale(SpriteScale()).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
 		SetColor(color.Red)
@@ -126,7 +130,7 @@ func (hud *Hud) InitPlayerStats() {
 		rightPanelTex,
 		color.White,
 	)
-	rightPanel.SetDepth(1.0)
+	rightPanel.SetDepth(5.0)
 
 	// Ammo icon
 	var ammoIcon *ui.Box
@@ -134,18 +138,17 @@ func (hud *Hud) InitPlayerStats() {
 	ammoIconSlice := rightPanelTex.FindSlice("ammoIcon")
 	ammoIcon.SetTexture(hudIconsTexture).
 		SetDest(fitToSlice(rightPanel.Dest(), ammoIconSlice)).
-		SetDepth(2.0)
+		SetDepth(6.0)
 	ammoIcon.Hidden = true
 
 	// Ammo counter
 	var ammoStat *ui.Text
 	hud.ammoStat, ammoStat, _ = hud.UI.Texts.New()
 	ammoStatSlice := rightPanelTex.FindSlice("ammoStat")
-	ammoStat.
-		SetFont(COUNTER_FONT_PATH).
+	ammoStat.SetFont(COUNTER_FONT_PATH).
 		SetText("000").
 		SetDest(fitToSlice(rightPanel.Dest(), ammoStatSlice)).
-		SetDepth(2.0).
+		SetDepth(6.0).
 		SetScale(SpriteScale()).
 		SetAlignment(ui.TEXT_ALIGN_CENTER).
 		SetColor(color.Blue)
@@ -158,7 +161,7 @@ func (hud *Hud) InitPlayerStats() {
 		slice := rightPanelTex.FindSlice(keyName)
 		keyIcon.SetDest(fitToSlice(rightPanel.Dest(), slice)).
 			SetTexture(cache.GetTexture("assets/textures/ui/hud_keycards.png")).
-			SetDepth(2.0)
+			SetDepth(6.0)
 		switch key {
 		case game.KEY_TYPE_BLUE:
 			keyIcon.SetSrc(math2.Rect{X: 0, Y: 0, Width: 8, Height: 8})

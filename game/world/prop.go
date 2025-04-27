@@ -167,7 +167,7 @@ func (prop *Prop) Update(deltaTime float32) {
 			if prop.AnimPlayer.IsPlayingAnim(stareAnim) {
 				prop.AnimPlayer.PlayAnimSequence(openAnim, idleAnim)
 			}
-		} else if prop.stareTimer > 1.0 {
+		} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
 			prop.world.Hud.ShowMessage(settings.Localize(prop.messageKey), 1.0, 50, color.Magenta)
 		}
 
