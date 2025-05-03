@@ -41,16 +41,14 @@ func (body *Body) Body() *Body {
 	return body
 }
 
-func (body *Body) MoveAndCollide(deltaTime float32, bodiesIter BodyIter) {
+func (body *Body) MoveAndCollide(deltaTime float32, bodies map[scene.Handle]struct{}) {
 	before := body.Transform.Position()
 
 	movement := body.Velocity.Mul(deltaTime)
-	for {
-		collidingEnt, _ := bodiesIter.Next()
-		if collidingEnt == nil {
-			break
+	for handle := range bodies {
+		if collidingEnt, ok := scene.Get[HasBody](handle); ok {
+			body.ResolveCollision(movement, collidingEnt, deltaTime)
 		}
-		body.ResolveCollision(movement, collidingEnt, deltaTime)
 	}
 
 	body.Transform.TranslateV(movement)

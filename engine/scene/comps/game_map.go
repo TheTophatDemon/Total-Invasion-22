@@ -7,7 +7,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
 
 type Map struct {
@@ -67,18 +66,6 @@ func (gameMap *Map) Name() string {
 
 func (gameMap *Map) Body() *Body {
 	return &gameMap.body
-}
-
-func (gameMap *Map) GetUntyped(handle scene.Handle) (any, bool) {
-	return gameMap, true
-}
-
-func (gameMap *Map) Has(handle scene.Handle) bool {
-	return true
-}
-
-func (gameMap *Map) Remove(handle scene.Handle) {
-	// You fool! I am eternal.
 }
 
 func (gameMap *Map) TearDown() {

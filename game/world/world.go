@@ -308,16 +308,9 @@ func (world *World) Update(deltaTime float32) {
 			break
 		}
 
-		innerIter := comps.BodySliceIter{
-			Slice: world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape),
-		}
-
-		// The game map should be excluded from the bvh tree due to its large size.
-		mapIter := world.GameMaps.Iter()
-		_, mapHandle := mapIter.Next()
-		innerIter.Slice = append(innerIter.Slice, mapHandle)
-
-		bodyEnt.Body().MoveAndCollide(deltaTime, &innerIter)
+		collidableBodies := world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
+		collidableBodies[scene.NewHandle(0, 1, &world.GameMaps)] = struct{}{}
+		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)
 	}
 
 	duration := time.Now().Sub(startTime).Milliseconds()

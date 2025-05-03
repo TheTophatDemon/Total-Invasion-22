@@ -18,7 +18,7 @@ type BspTree struct {
 type bspNode struct {
 	splitAxis                   int
 	planeOffset                 float32
-	objects                     []scene.Handle
+	objects                     map[scene.Handle]struct{}
 	leftChildIdx, rightChildIdx int
 }
 
@@ -63,14 +63,14 @@ func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 }
 
 func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
-	// Collect iterator into slice that we can sort independently
-	bodies := make([]scene.Handle, 0)
+	// Collect iterator into set that we can sort independently
+	bodies := make(map[scene.Handle]struct{}, 0)
 	for {
 		ent, handle := bodiesIter.Next()
 		if ent == nil || ent == exception {
 			break
 		}
-		bodies = append(bodies, handle)
+		bodies[handle] = struct{}{}
 	}
 
 	tree := BspTree{
@@ -79,7 +79,7 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 
 	// Uncomment this to put all the objects in the root node in order
 	// to bypass the BSP tree when debugging.
-	// tree.nodes = append(tree.nodes, bvhNode{
+	// tree.nodes = append(tree.nodes, bspNode{
 	// 	leftChildIdx:  -1,
 	// 	rightChildIdx: -1,
 	// 	objects:       bodies,
@@ -90,7 +90,7 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 	return tree
 }
 
-func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
+func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies map[scene.Handle]struct{}) {
 	if len(bodies) <= BSP_MIN_OBJECTS || depth >= BSP_MAX_DEPTH {
 		// Create leaf node
 		node := bspNode{
@@ -103,7 +103,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 	}
 
 	var avgPos float32 = 0.0
-	for _, handle := range bodies {
+	for handle := range bodies {
 		bodyHaver, ok := scene.Get[comps.HasBody](handle)
 		if !ok {
 			continue
@@ -119,9 +119,9 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 		rightChildIdx: -1,
 	}
 
-	leftBodies := make([]scene.Handle, 0, len(bodies))
-	rightBodies := make([]scene.Handle, 0, len(bodies))
-	for _, handle := range bodies {
+	leftBodies := make(map[scene.Handle]struct{}, len(bodies))
+	rightBodies := make(map[scene.Handle]struct{}, len(bodies))
+	for handle := range bodies {
 		bodyHaver, ok := scene.Get[comps.HasBody](handle)
 		if !ok {
 			continue
@@ -129,10 +129,10 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 
 		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Transform.Position())
 		if touchesLeft {
-			leftBodies = append(leftBodies, handle)
+			leftBodies[handle] = struct{}{}
 		}
 		if touchesRight {
-			rightBodies = append(rightBodies, handle)
+			rightBodies[handle] = struct{}{}
 		}
 	}
 
@@ -158,21 +158,25 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 
 // Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
-func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
+func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) map[scene.Handle]struct{} {
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
-func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) []scene.Handle {
+func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) map[scene.Handle]struct{} {
 	if node.IsLeaf() {
 		return node.objects
 	}
-	res := make([]scene.Handle, 0)
+	res := make(map[scene.Handle]struct{}, 0)
 	touchesLeft, touchesRight := node.TouchesChild(shape, pos)
 	if node.rightChildIdx >= 0 && touchesRight {
-		res = append(res, tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.rightChildIdx], pos, shape)...)
+		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.rightChildIdx], pos, shape) {
+			res[handle] = struct{}{}
+		}
 	}
 	if node.leftChildIdx >= 0 && touchesLeft {
-		res = append(res, tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.leftChildIdx], pos, shape)...)
+		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.leftChildIdx], pos, shape) {
+			res[handle] = struct{}{}
+		}
 	}
 	return res
 }
