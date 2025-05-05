@@ -1,8 +1,5 @@
 # TODO
-- Fires
-  - Transparent glow
-  - Use particle system for transluscent sprite sorting
-  - Smoke particles
+- Blessings are not reviving enemies that are nearby sometimes...
 - Level intro
 - Script for converting TI2 levels
 - Message for when you don't have the weapon

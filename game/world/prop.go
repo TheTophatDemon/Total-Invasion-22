@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -83,7 +84,6 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	prop.world = world
 
 	sprite := cache.GetTexture(texturePath)
-	prop.SpriteRender = comps.NewSpriteRender(sprite)
 
 	anim := sprite.GetDefaultAnimation()
 	if anim.Frames != nil {
@@ -103,6 +103,9 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		Filter:    COL_LAYER_NONE,
 	}
 
+	colr := color.White
+	additive := false
+
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
@@ -114,14 +117,23 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	case "fire":
 		prop.propType = PROP_TYPE_FIRE
 		prop.body.Layer = COL_LAYER_NONE
+		colr = color.Color{R: 1.0, G: 1.0, B: 1.0, A: 0.5}
+		additive = true
+		prop.body.Transform.SetScale(1.0, 1.25, 1.0)
+		prop.body.Transform.Translate(0.0, 0.25, 0.0)
 		SpawnKillzone(world, prop.body.Transform.Position(), 0.5, 25.0)
 	}
+
+	prop.SpriteRender = comps.NewSpriteRenderWithColor(sprite, colr)
+	prop.SpriteRender.AdditiveBlending = additive
 
 	return
 }
 
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
+	particlesTransform := prop.Body().Transform
+	particlesTransform.TranslateV(mgl32.Vec3{0.0, 0.0, 0.0})
 	prop.voice.SetPositionV(prop.Body().Transform.Position())
 
 	switch prop.propType {
@@ -174,6 +186,17 @@ func (prop *Prop) Update(deltaTime float32) {
 	}
 }
 
+func (prop *Prop) DistanceFromScreen(context *render.Context) float32 {
+	return mgl32.TransformCoordinate(
+		mgl32.Vec3{0.0, 0.0, 1.0},
+		context.ViewInverse.Mul4(prop.body.Transform.Matrix()),
+	)[2]
+}
+
 func (prop *Prop) Render(context *render.Context) {
-	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	if prop.SpriteRender.DiffuseColor.A < 1.0 && !context.DrawingTranslucent {
+		context.EnqueueTranslucentRender(prop)
+	} else {
+		prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	}
 }

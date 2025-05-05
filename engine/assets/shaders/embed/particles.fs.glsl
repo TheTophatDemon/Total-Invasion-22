@@ -13,7 +13,7 @@ out vec4 oColor;
 void main() {
     //Sample texture
     vec4 diffuse = texture(uTex, vTexCoord);
-    
+
     //Discard transparent pixels
     if (diffuse.a < 0.01) {
         discard;

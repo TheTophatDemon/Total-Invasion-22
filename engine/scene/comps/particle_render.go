@@ -193,14 +193,14 @@ func (parts *ParticleRender) Render(
 	transform *Transform,
 	context *render.Context,
 ) {
-	if parts.Mesh == nil || len(parts.particleInfos) == 0 || !render.IsSphereVisible(context, transform.Position(), parts.VisibilityRadius) {
+	if parts.Mesh == nil || len(parts.particleInfos) == 0 || !context.IsSphereVisible(transform.Position(), parts.VisibilityRadius) {
 		return
 	}
 
 	parts.updateBuffers()
 
 	// Set uniforms
-	shader := shaders.SpriteShaderInstanced
+	shader := shaders.ParticlesShader
 	shader.Use()
 	_ = context.SetUniforms(shader)
 	_ = shader.SetUniformInt(shaders.UniformTex, 0)

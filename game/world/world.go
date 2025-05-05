@@ -54,7 +54,6 @@ type World struct {
 	Enemies          scene.Storage[Enemy]
 	Chickens         scene.Storage[Chicken]
 	Walls            scene.Storage[Wall]
-	Props            scene.Storage[Prop]
 	Triggers         scene.Storage[Trigger]
 	Projectiles      scene.Storage[Projectile]
 	Effects          scene.Storage[Effect]
@@ -62,6 +61,7 @@ type World struct {
 	DebugShapes      scene.Storage[DebugShape]
 	Cameras          scene.Storage[Camera]
 	GameMaps         scene.Storage[comps.Map]
+	Props            scene.Storage[Prop]
 	GameMap          *comps.Map
 	CurrentPlayer    scene.Id[*Player]
 	CurrentCamera    scene.Id[*Camera]
@@ -354,6 +354,7 @@ func (world *World) Render() {
 
 	// Render 3D game elements
 	scene.RenderStores(world, &renderContext)
+	renderContext.RenderTranslucentObjects()
 
 	world.Hud.UpdateDebugCounters(&renderContext, world.avgCollisionTime)
 	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {

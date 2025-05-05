@@ -296,7 +296,7 @@ func (wall *Wall) Update(deltaTime float32) {
 }
 
 func (wall *Wall) Render(context *render.Context) {
-	if !render.IsBoxVisible(context, wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
+	if !context.IsBoxVisible(wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
 		wall.MeshRender.Mesh == nil {
 		return
 	}

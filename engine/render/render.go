@@ -2,7 +2,9 @@ package render
 
 import (
 	"errors"
+	"slices"
 
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -18,9 +20,16 @@ type Context struct {
 	AmbientColor                                          mgl32.Vec3
 	AspectRatio                                           float32
 	DrawnSpriteCount, DrawnWallCount, DrawnParticlesCount uint32
+	DrawingTranslucent                                    bool
 
-	viewProjection mgl32.Mat4
-	cameraFrustum  math2.Frustum
+	viewProjection   mgl32.Mat4
+	cameraFrustum    math2.Frustum
+	translucentQueue []translucentPair // Queue for rendering translucent objects after opaque objects.
+}
+
+type translucentPair struct {
+	TranslucentRender
+	distance float32 // Distance from the camera / value of Z axis in screen space.
 }
 
 func (context *Context) SetUniforms(shader *shaders.Shader) error {
@@ -48,14 +57,39 @@ func (context *Context) CameraFrustum() math2.Frustum {
 	return context.cameraFrustum
 }
 
-func IsPointVisible(context *Context, point mgl32.Vec3) bool {
-	return context.CameraFrustum().ContainsPoint(point)
-}
-
-func IsBoxVisible(context *Context, box math2.Box) bool {
+func (context *Context) IsBoxVisible(box math2.Box) bool {
 	return context.CameraFrustum().IntersectsBox(box)
 }
 
-func IsSphereVisible(context *Context, point mgl32.Vec3, radius float32) bool {
+func (context *Context) IsSphereVisible(point mgl32.Vec3, radius float32) bool {
 	return context.CameraFrustum().IntersectsSphere(point, radius)
+}
+
+func (context *Context) EnqueueTranslucentRender(item TranslucentRender) {
+	distance := item.DistanceFromScreen(context)
+	for i := range context.translucentQueue {
+		// Maintains sorted order from farthest to nearest towards the camera plane.
+		if context.translucentQueue[i].distance < distance {
+			context.translucentQueue = slices.Insert(context.translucentQueue, i, translucentPair{
+				TranslucentRender: item,
+				distance:          distance,
+			})
+			return
+		}
+	}
+	context.translucentQueue = append(context.translucentQueue, translucentPair{
+		TranslucentRender: item,
+		distance:          distance,
+	})
+}
+
+func (context *Context) RenderTranslucentObjects() {
+	gl.DepthMask(false)
+	defer gl.DepthMask(true)
+	context.DrawingTranslucent = true
+	defer func() { context.DrawingTranslucent = false }()
+	for _, obj := range context.translucentQueue {
+		obj.Render(context)
+	}
+	context.translucentQueue = context.translucentQueue[0:0]
 }

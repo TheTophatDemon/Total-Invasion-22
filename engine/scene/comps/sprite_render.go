@@ -1,10 +1,12 @@
 package comps
 
 import (
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -12,7 +14,9 @@ import (
 )
 
 type SpriteRender struct {
-	meshRender MeshRender
+	meshRender       MeshRender
+	DiffuseColor     color.Color
+	AdditiveBlending bool
 }
 
 func NewSpriteRender(texture *textures.Texture) SpriteRender {
@@ -22,6 +26,18 @@ func NewSpriteRender(texture *textures.Texture) SpriteRender {
 			shaders.SpriteShader,
 			texture,
 		),
+		DiffuseColor: color.White,
+	}
+}
+
+func NewSpriteRenderWithColor(texture *textures.Texture, diffuseColor color.Color) SpriteRender {
+	return SpriteRender{
+		meshRender: NewMeshRender(
+			cache.QuadMesh,
+			shaders.SpriteShader,
+			texture,
+		),
+		DiffuseColor: diffuseColor,
 	}
 }
 
@@ -35,7 +51,7 @@ func (sr *SpriteRender) Render(
 	context *render.Context,
 	yawAngle float32,
 ) bool {
-	if !render.IsSphereVisible(context, transform.Position(), transform.Scale().X()) {
+	if !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
 		return false
 	}
 
@@ -77,6 +93,15 @@ func (sr *SpriteRender) Render(
 		}
 	}
 
+	err := sr.meshRender.Shader.SetUniformVec4(shaders.UniformDiffuseColor, sr.DiffuseColor.Vector())
+	if err != nil {
+		failure.LogErrWithLocation("error setting diffuse color uniform: %v", err)
+	}
+
+	if sr.AdditiveBlending {
+		gl.BlendFunc(gl.ONE, gl.ONE)
+		defer gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	}
 	sr.meshRender.Render(transform, animPlayer, context)
 
 	context.DrawnSpriteCount++

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"text/template"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -61,11 +60,17 @@ var (
 	//go:embed embed/debug.fs.glsl
 	debugFragShaderSrc string
 
-	SpriteShader, SpriteShaderInstanced *Shader
+	SpriteShader *Shader
 	//go:embed embed/sprite.vs.glsl
-	spriteVertShaderSrcTemplate string
+	spriteVertShaderSrc string
 	//go:embed embed/sprite.fs.glsl
 	spriteFragShaderSrc string
+
+	ParticlesShader *Shader
+	//go:embed embed/particles.vs.glsl
+	particlesVertShaderSrc string
+	//go:embed embed/particles.fs.glsl
+	particlesFragShaderSrc string
 
 	UIShader *Shader
 	//go:embed embed/ui_box.vs.glsl
@@ -98,26 +103,14 @@ func Init() {
 		log.Fatalln("Couldn't compile debug shader: ", err)
 	}
 
-	{
-		// Generate the instanced and non-instanced sprite shaders
-		type templInput struct{ Instanced bool }
-		shaderTempl, err := template.New("spriteShader").Parse(spriteVertShaderSrcTemplate)
-		if err != nil {
-			log.Fatalln("Couldn't parse template for sprite shader: ", err)
-		}
-		var vertSrcNonInstanced, vertSrcInstanced strings.Builder
-		shaderTempl.Execute(&vertSrcNonInstanced, templInput{Instanced: false})
-		shaderTempl.Execute(&vertSrcInstanced, templInput{Instanced: true})
+	SpriteShader, err = CreateShader(spriteVertShaderSrc, spriteFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile sprite shader: ", err)
+	}
 
-		SpriteShader, err = CreateShader(vertSrcNonInstanced.String(), spriteFragShaderSrc)
-		if err != nil {
-			log.Fatalln("Couldn't compile sprite shader: ", err)
-		}
-
-		SpriteShaderInstanced, err = CreateShader(vertSrcInstanced.String(), spriteFragShaderSrc)
-		if err != nil {
-			log.Fatalln("Couldn't compile instanced sprite shader: ", err)
-		}
+	ParticlesShader, err = CreateShader(particlesVertShaderSrc, particlesFragShaderSrc)
+	if err != nil {
+		log.Fatalln("Couldn't compile particles shader: ", err)
 	}
 
 	UIShader, err = CreateShader(uiVertShaderSrc, uiFragShaderSrc)
@@ -131,7 +124,7 @@ func Free() {
 	MapShader.Free()
 	DebugShader.Free()
 	SpriteShader.Free()
-	SpriteShaderInstanced.Free()
+	ParticlesShader.Free()
 	UIShader.Free()
 }
 
