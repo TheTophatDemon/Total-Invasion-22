@@ -1,15 +1,15 @@
 # TODO
-- Blessings are not reviving enemies that are nearby sometimes...
+- The player can avoid dying by teleporting at the last moment
 - Level intro
 - Script for converting TI2 levels
-- Message for when you don't have the weapon
+- Weapon wheel / menu
+- Feedback when you try to select a weapon you don't have.
 - Re-record enemy voices
 - Loading screen?
 - Armor
 
 ## Ideas
 
-- Eyeball monsters give tutorial text if you stare at them
 - Episode 4: Titan Loose Ends
   - Electric sand
   - Wraiths on motorcycles??
