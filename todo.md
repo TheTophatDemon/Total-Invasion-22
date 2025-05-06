@@ -1,5 +1,4 @@
 # TODO
-- The player can avoid dying by teleporting at the last moment
 - Level intro
 - Script for converting TI2 levels
 - Weapon wheel / menu

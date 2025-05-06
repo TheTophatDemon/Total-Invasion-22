@@ -51,3 +51,11 @@ func Inf32() float32 {
 func Mod[F Float](a, b F) F {
 	return F(math.Mod(float64(a), float64(b)))
 }
+
+func Floor[F Float](a F) F {
+	return F(math.Floor(float64(a)))
+}
+
+func Ceil[F Float](a F) F {
+	return F(math.Ceil(float64(a)))
+}

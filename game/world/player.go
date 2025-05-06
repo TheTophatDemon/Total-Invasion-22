@@ -174,7 +174,7 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.Update(deltaTime)
 
 	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health:    int(player.actor.Health),
+		Health:    int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Noclip:    player.Body().Layer == COL_LAYER_NONE,
 		GodMode:   player.godMode,
 		Ammo:      &player.ammo,
@@ -345,10 +345,6 @@ func (player *Player) AddAmmo(ammoType game.AmmoType, amount int) bool {
 		return false
 	}
 	newAmmo := player.ammo[ammoType] + amount
-	if newAmmo > limit {
-		player.ammo[ammoType] = limit
-	} else {
-		player.ammo[ammoType] = newAmmo
-	}
+	player.ammo[ammoType] = min(newAmmo, limit)
 	return true
 }
