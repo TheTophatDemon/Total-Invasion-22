@@ -7,8 +7,12 @@ import (
 )
 
 type TE3File struct {
-	Ents     []Ent
-	Tiles    Tiles
+	Meta struct {
+		Editor  string `json:"editor"`
+		Version string `json:"version"`
+	} `json:"meta"`
+	Ents     []Ent `json:"ents"`
+	Tiles    Tiles `json:"tiles"`
 	filePath string
 }
 

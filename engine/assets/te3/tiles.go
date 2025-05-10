@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
+	"math"
+	"unsafe"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -97,6 +99,53 @@ func (tiles *Tiles) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return nil
+}
+
+func (tiles *Tiles) MarshalJSON() ([]byte, error) {
+	props := make(map[string]any)
+	props["width"] = tiles.Width
+	props["height"] = tiles.Height
+	props["length"] = tiles.Length
+	props["textures"] = tiles.Textures
+	props["shapes"] = tiles.Shapes
+
+	var err error
+	tileData := make([]byte, 0, len(tiles.Data)*int(unsafe.Sizeof(tiles.Data[0])))
+	var runLength ShapeID
+	for i, tile := range tiles.Data {
+		if tile.ShapeID < 0 && i < len(tiles.Data)-1 && runLength < math.MaxInt16 {
+			// Blank tiles (except for the last tile in the grid are represented as runs)
+			runLength++
+		} else {
+			if runLength > 0 {
+				if i == len(tiles.Data)-1 {
+					// Accounts for the final tile being reached during a run of empty tiles
+					runLength++
+				}
+
+				// Insert a special value signifying the number of empty tiles preceding this one.
+				tileData, err = binary.Append(tileData, binary.NativeEndian, -runLength)
+				if err != nil {
+					return nil, err
+				}
+				if tile.ShapeID < 0 {
+					runLength = 1
+				}
+			}
+			if tile.ShapeID >= 0 {
+				runLength = 0
+				for _, item := range []any{tile.ShapeID, tile.TextureIDs[0], tile.TextureIDs[1], tile.Yaw, tile.Pitch} {
+					tileData, err = binary.Append(tileData, binary.NativeEndian, item)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+	}
+
+	props["data"] = base64.StdEncoding.EncodeToString(tileData)
+	return json.Marshal(props)
 }
 
 // Returns the integer grid position (x, y, z) from the given flat index into the Data array
