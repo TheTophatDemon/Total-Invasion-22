@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"image"
 	"math"
 	"os"
 	"slices"
@@ -13,17 +14,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 )
 
-// Converts Total Invasion II texture name to Total Invasion 22 file path.
-func translateTextureName(ti2Name string) string {
-	var folderName string
-	if strings.Contains(ti2Name, "space") {
-		folderName = "space/"
-	} else if strings.Contains(ti2Name, "prismir") {
-		folderName = "prismir/"
-	}
-
-	// Cut out metadata suffixes
-	suffixSlice := ti2Name[:]
+func removeTextureTags(textureName string) string {
+	suffixSlice := textureName[:]
 findSuffix:
 	for len(suffixSlice) > 1 {
 		underSc := strings.IndexRune(suffixSlice[1:], '_')
@@ -38,11 +30,41 @@ findSuffix:
 		}
 		suffixSlice = suffixSlice[underSc:]
 	}
-	ti2Name = strings.TrimSuffix(ti2Name, suffixSlice)
+	return strings.TrimSuffix(textureName, suffixSlice)
+}
 
-	//TODO: direct texture name replacements
+// Converts Total Invasion II texture name to Total Invasion 22 file path.
+func translateTextureName(category, ti2Name string) string {
+	var folderName string
+	if strings.Contains(ti2Name, "space") {
+		folderName = "space/"
+	} else if strings.Contains(ti2Name, "prismir") {
+		folderName = "prismir/"
+	}
 
-	return fmt.Sprintf("assets/textures/tiles/%v%v.png", folderName, ti2Name)
+	ti2Name = removeTextureTags(ti2Name)
+
+	// Direct texture name replacements
+	if strings.HasPrefix(ti2Name, "charredgrass") {
+		ti2Name = "charred_grass"
+	} else {
+		replacements := map[string]string{
+			"grass_arrow0":    "grass",
+			"grass_arrow1":    "grass",
+			"balloonstand":    "balloon_stand",
+			"cartonofeggs":    "egg_carton",
+			"dopefish":        "dopefish_statue",
+			"chickencannon":   "chicken_cannon",
+			"grenadelauncher": "grenade_launcher",
+			"plasmavials":     "plasma_vials",
+			"exitsign":        "exit_sign",
+		}
+		if newName, ok := replacements[ti2Name]; ok {
+			ti2Name = newName
+		}
+	}
+
+	return fmt.Sprintf("assets/textures/%v/%v%v.png", category, folderName, ti2Name)
 }
 
 func main() {
@@ -123,7 +145,7 @@ func main() {
 		minZ = min(z, minZ)
 		maxZ = max(z, maxZ)
 
-		textureIndex := addTexture(translateTextureName(tokens[3]))
+		textureIndex := addTexture(translateTextureName("tiles", tokens[3]))
 
 		flag, err := strconv.ParseInt(tokens[4], 10, 64)
 		if err != nil {
@@ -201,7 +223,7 @@ func main() {
 		minZ = min(z, minZ)
 		maxZ = max(z, maxZ)
 
-		textureIndex := addTexture(translateTextureName(tokens[5]))
+		textureIndex := addTexture(translateTextureName("tiles", tokens[5]))
 
 		ceilingFlag, err := strconv.ParseInt(tokens[4], 10, 64)
 		if err != nil {
@@ -217,6 +239,13 @@ func main() {
 		})
 	}
 
+	tiScanner.Scan() // THINGS
+	tiScanner.Scan() // Ent count
+	entCount, err := strconv.ParseInt(tiScanner.Text(), 10, 64)
+	if err != nil {
+		panic(err)
+	}
+
 	// Calculate grid bounds
 	gridWidth := int(maxX - minX + 1)
 	gridLength := int(maxZ - minZ + 1)
@@ -226,8 +255,142 @@ func main() {
 		grid[(pair.coords[0]-int(minX))+((pair.coords[2]-int(minZ))*gridWidth)+(pair.coords[1]*gridLayerSize)] = pair.Tile
 	}
 
+	entsToAdd := make([]te3.Ent, 0, entCount)
+	for range entCount {
+		tiScanner.Scan()
+		tokens := strings.Split(tiScanner.Text(), ",")
+
+		x, err := strconv.ParseInt(tokens[0], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		x = (x / 16) - minX
+
+		z, err := strconv.ParseInt(tokens[1], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		z = (z / 16) - minZ
+
+		if x < 0 || z < 0 || x >= int64(gridWidth) || z >= int64(gridLength) {
+			fmt.Printf("Ent found out of bounds: [%v, %v]\n", x, z)
+			continue
+		}
+
+		angleIndex, err := strconv.ParseInt(tokens[4], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+
+		ent := te3.Ent{
+			Radius: 0.7,
+			Angles: [3]float32{
+				0.0, 270.0 - float32(angleIndex*45), 0.0,
+			},
+			Color:      [3]uint8{255, 255, 255},
+			Position:   [3]float32{float32(x)*2.0 + 1.0, 3.0, float32(z)*2.0 + 1.0},
+			Display:    te3.ENT_DISPLAY_SPHERE,
+			Properties: map[string]string{},
+		}
+
+		entType, err := strconv.ParseInt(tokens[2], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+
+		shouldBeSprite := false
+		strippedTexName := removeTextureTags(tokens[3])
+
+		switch entType {
+		case 0: // Player
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/segan.png"
+			ent.Properties["type"] = "player"
+		case 1: // Prop
+			ent.Properties["type"] = "prop"
+			ent.Properties["prop"] = strippedTexName
+			shouldBeSprite = true
+		case 2, 3: // Item or weapon
+			ent.Properties["type"] = "item"
+			ent.Properties["item"] = strippedTexName
+			shouldBeSprite = true
+		case 4: // Wraith
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "wraith"
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/wraith.png"
+		case 5: // Fire wraith
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "fire wraith"
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/fire_wraith.png"
+		case 6, 14: // Dummkopf
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "dummkopf"
+			ent.Properties["name"] = "dummkopf"
+		case 7: // Mother wraith / Caco wraith
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "mother wraith"
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/mother_wraith.png"
+		case 8: // Prisrak
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "prisrak"
+			ent.Properties["name"] = "prisrak"
+		case 9: // Providence
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "providence"
+			ent.Properties["name"] = "providence"
+		case 10: // Fundie
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "fundie"
+			ent.Properties["name"] = "fundie"
+		case 11: // Banshee
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "banshee"
+			ent.Properties["name"] = "banshee"
+		case 12: // Mutant wraith
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "mutant wraith"
+			ent.Properties["name"] = "mutant wraith"
+		case 13: // Mecha
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "mecha wraith"
+			ent.Properties["name"] = "mecha wraith"
+		case 15: // Tophat demon
+			ent.Properties["type"] = "enemy"
+			ent.Properties["enemy"] = "tophat demon"
+			ent.Properties["name"] = "tophat demon"
+		default:
+			// Discard unused entity types
+			continue
+		}
+
+		if shouldBeSprite {
+			texPath := translateTextureName("sprites", strippedTexName)
+			if imgFile, err := os.Open(texPath); err == nil {
+				defer imgFile.Close()
+
+				ent.Display = te3.ENT_DISPLAY_SPRITE
+
+				// Scale according to image dimensions
+				img, _, err := image.Decode(imgFile)
+				if err != nil {
+					panic(err)
+				}
+				ent.Radius = float32(img.Bounds().Dy()) / 64.0
+
+				ent.Texture = texPath
+			} else {
+				ent.Properties["name"] = strippedTexName
+			}
+		}
+
+		entsToAdd = append(entsToAdd, ent)
+	}
+
 	te3Map := te3.TE3File{
-		Ents: []te3.Ent{},
+		Ents: entsToAdd,
 		Tiles: te3.Tiles{
 			Textures: textureList,
 			Shapes:   modelList,

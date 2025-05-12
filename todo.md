@@ -1,9 +1,9 @@
 # TODO
 - Script for converting TI2 levels
-  - Load entities and dynamic tiles
-  - Finish textures for E1M2
-    - charred grass
-    - grass arrows (make a floor decal shape instead)
+  - Load dynamic tiles
+  - Fix bug where TE3 scrambles texture IDs after saving
+- E1M2 grass arrows (make a floor decal shape instead)
+- Make it so fire cannot be walked through, but projectiles can still go through
 - Level intro
 - Weapon wheel / menu
 - Feedback when you try to select a weapon you don't have.
@@ -16,3 +16,4 @@
 - Episode 4: Titan Loose Ends
   - Electric sand
   - Wraiths on motorcycles??
+  - Armor that makes game run in slow motion when you are firing your weapon

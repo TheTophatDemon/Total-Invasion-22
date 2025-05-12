@@ -17,13 +17,14 @@ const (
 )
 
 type Ent struct {
-	Angles         [3]float32
-	Color          [3]uint8
-	Position       [3]float32
-	Radius         float32
-	Texture, Model string
-	Display        EntDisplay
-	Properties     map[string]string
+	Angles     [3]float32        `json:"angles"`
+	Color      [3]uint8          `json:"color"`
+	Position   [3]float32        `json:"position"`
+	Radius     float32           `json:"radius"`
+	Texture    string            `json:"texture"`
+	Model      string            `json:"model"`
+	Display    EntDisplay        `json:"display"`
+	Properties map[string]string `json:"properties"`
 }
 
 type PropNotFoundError string
