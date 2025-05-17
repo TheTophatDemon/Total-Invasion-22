@@ -19,10 +19,12 @@ type TE3File struct {
 // Loads a Total Editor 3 map file into a data structure
 func LoadTE3File(assetPath string) (*TE3File, error) {
 	te3, err := assets.LoadAndUnmarshalJSON[TE3File](assetPath)
-	te3.filePath = assetPath
-	if err == nil {
-		log.Println("Loaded TE3 file", assetPath)
+	if err != nil {
+		//TODO: Handle this error gracefully by returning to the title screen.
+		return nil, err
 	}
+	te3.filePath = assetPath
+	log.Println("Loaded TE3 file", assetPath)
 	return te3, err
 }
 

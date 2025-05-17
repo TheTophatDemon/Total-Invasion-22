@@ -1,10 +1,9 @@
 # TODO
-- Script for converting TI2 levels
-  - Load dynamic tiles
-  - Fix bug where TE3 scrambles texture IDs after saving
 - E1M2 grass arrows (make a floor decal shape instead)
+- E1M2 fix switch texture
 - Make it so fire cannot be walked through, but projectiles can still go through
 - Level intro
+- Dummkopf enemy
 - Weapon wheel / menu
 - Feedback when you try to select a weapon you don't have.
 - Re-record enemy voices

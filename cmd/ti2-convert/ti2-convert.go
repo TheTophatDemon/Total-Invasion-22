@@ -110,7 +110,8 @@ func main() {
 		return textureIndex
 	}
 
-	tilesToAdd := make([]tileToAdd, 0, 256)
+	tilesToAdd := make([]tileToAdd, 0, 1024)
+	entsToAdd := make([]te3.Ent, 0, 256)
 
 	tiScanner := bufio.NewScanner(tiFile)
 	tiScanner.Scan() // TILES
@@ -182,7 +183,102 @@ func main() {
 		}
 
 		if flag > 0 && flag != 6 && flag != 7 {
-			//TODO: Add tile entities
+			// Add dynamic tile entities
+			ent := te3.Ent{
+				Display: te3.ENT_DISPLAY_MODEL,
+				Radius:  1.0,
+				Model:   modelList[modelIndex],
+				Texture: textureList[textureIndex],
+				Angles:  [3]float32{0.0, float32(yaw * 90), 0.0},
+				Color:   [3]uint8{255, 255, 255},
+				Position: [3]float32{
+					float32(x)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+					te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+					float32(z)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+				},
+				Properties: map[string]string{},
+			}
+
+			switch flag {
+			case 1, 2, 5, 8, 9, 10: // Moving door like objects
+				ent.Properties["type"] = "door"
+				if link > 0 {
+					ent.Properties["link"] = strconv.FormatInt(link, 10)
+				}
+				switch flag {
+				case 1, 8, 2, 9: // Doors
+					if strings.Contains(tokens[3], "spacedoor") {
+						// Space doors move up instead of to the side
+						ent.Properties["direction"] = "up"
+					} else {
+						ent.Properties["direction"] = "right"
+					}
+
+					if flag == 8 || flag == 9 {
+						// Assign keys to locked doors
+						switch link {
+						case 0:
+							ent.Properties["key"] = "blue"
+						case 1:
+							ent.Properties["key"] = "brown"
+						case 2:
+							ent.Properties["key"] = "yellow"
+						case 3:
+							ent.Properties["key"] = "gray"
+						}
+						delete(ent.Properties, "link")
+					}
+				case 5: // Push walls
+					ent.Properties["direction"] = "backward"
+					ent.Properties["distance"] = "4.0"
+					ent.Properties["wait"] = "inf"
+					ent.Properties["activateSound"] = "secretwall.wav"
+					delete(ent.Properties, "link")
+				case 10: // Disappearing walls
+					ent.Properties["direction"] = "down"
+					ent.Properties["distance"] = "4.0"
+					ent.Properties["activateSound"] = ""
+					ent.Properties["blockUse"] = "true"
+					ent.Properties["wait"] = "inf"
+				}
+			case 3: // Switch
+				ent.Properties["type"] = "switch"
+				ent.Properties["link"] = strconv.FormatInt(link, 10)
+			case 4, 11, 12, 13: // Invisible trigger volumes
+				ent.Properties["type"] = "trigger"
+				ent.Properties["link"] = strconv.FormatInt(link, 10)
+				switch flag {
+				case 4: // Teleporter
+					ent.Properties["action"] = "teleport"
+				case 11: // Trigger for doors / secrets
+					if link == 255 {
+						ent.Properties["action"] = "secret"
+						delete(ent.Properties, "link")
+					} else {
+						ent.Properties["action"] = "activate"
+					}
+				case 12: // Level exit
+					ent.Properties["action"] = "end level"
+					ent.Properties["level"] = "TODO!"
+					delete(ent.Properties, "link")
+				case 13: // Conveyor belt
+					ent.Properties["action"] = "push"
+					var dir string
+					switch link {
+					case 0:
+						dir = "forward"
+					case 1:
+						dir = "right"
+					case 2:
+						dir = "backward"
+					case 3:
+						dir = "left"
+					}
+					ent.Properties["direction"] = dir
+				}
+			}
+
+			entsToAdd = append(entsToAdd, ent)
 		} else {
 			tilesToAdd = append(tilesToAdd, tileToAdd{
 				Tile: te3.Tile{
@@ -255,7 +351,12 @@ func main() {
 		grid[(pair.coords[0]-int(minX))+((pair.coords[2]-int(minZ))*gridWidth)+(pair.coords[1]*gridLayerSize)] = pair.Tile
 	}
 
-	entsToAdd := make([]te3.Ent, 0, entCount)
+	// Correct positions for tile entities
+	for i := range entsToAdd {
+		entsToAdd[i].Position[0] -= float32(minX) * te3.GRID_SPACING
+		entsToAdd[i].Position[2] -= float32(minZ) * te3.GRID_SPACING
+	}
+
 	for range entCount {
 		tiScanner.Scan()
 		tokens := strings.Split(tiScanner.Text(), ",")
@@ -287,8 +388,12 @@ func main() {
 			Angles: [3]float32{
 				0.0, 270.0 - float32(angleIndex*45), 0.0,
 			},
-			Color:      [3]uint8{255, 255, 255},
-			Position:   [3]float32{float32(x)*2.0 + 1.0, 3.0, float32(z)*2.0 + 1.0},
+			Color: [3]uint8{255, 255, 255},
+			Position: [3]float32{
+				float32(x)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+				te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+				float32(z)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+			},
 			Display:    te3.ENT_DISPLAY_SPHERE,
 			Properties: map[string]string{},
 		}
