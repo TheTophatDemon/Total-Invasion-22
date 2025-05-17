@@ -1,6 +1,4 @@
 # TODO
-- E1M2 grass arrows (make a floor decal shape instead)
-- E1M2 fix switch texture
 - Make it so fire cannot be walked through, but projectiles can still go through
 - Level intro
 - Dummkopf enemy

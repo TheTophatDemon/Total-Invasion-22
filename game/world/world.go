@@ -211,13 +211,13 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		if ent.Properties["name"] == "level properties" {
 			if songPath, hasSong := ent.Properties["song"]; hasSong {
 				// Play the song
-				tdaudio.QueueSong(songPath, true, 0)
+				tdaudio.QueueSong("assets/music/"+songPath+".ogg", true, 0)
 			}
 
 			if skyPath, hasSky := ent.Properties["sky"]; hasSky {
 				// Create sky model
 				skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
-				skyTex := cache.GetTexture(skyPath)
+				skyTex := cache.GetTexture("assets/textures/skies/" + skyPath + ".png")
 				if meshErr != nil {
 					log.Printf("Error loading sky: %v\n", meshErr)
 				} else {
@@ -377,6 +377,8 @@ func (world *World) InWinState() bool {
 func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.nextLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
+	camera, _ := scene.Get[*Camera](world.CurrentCamera.Handle)
+	camera.waitTime = 0.0
 	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
 	world.Hud.LevelEndTime = time.Now()
 	world.Hud.InitVictory()

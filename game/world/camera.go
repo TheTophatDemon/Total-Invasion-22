@@ -34,13 +34,17 @@ func SpawnCameraFromTE3(world *World, ent te3.Ent) (id scene.Id[*Camera], camera
 		}
 		camera.linkNumber = int(linkNo)
 	}
-	if waitStr, ok := ent.Properties["wait"]; ok && waitStr != "inf" && waitStr != "infinity" && waitStr != "-1" {
-		var waitTime float64
-		waitTime, err = strconv.ParseFloat(waitStr, 32)
-		if err != nil {
-			return
+	if waitStr, ok := ent.Properties["wait"]; ok {
+		if waitStr != "inf" && waitStr != "infinity" && waitStr != "-1" {
+			var waitTime float64
+			waitTime, err = strconv.ParseFloat(waitStr, 32)
+			if err != nil {
+				return
+			}
+			camera.waitTime = float32(waitTime)
 		}
-		camera.waitTime = float32(waitTime)
+	} else {
+		camera.waitTime = 2.0
 	}
 	return
 }

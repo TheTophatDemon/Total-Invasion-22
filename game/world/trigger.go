@@ -82,7 +82,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TRIGGER_ACTION_END_LEVEL:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = exitLevelAction
-		tr.nextLevel = ent.Properties["level"]
+		tr.nextLevel = "assets/maps/" + ent.Properties["level"] + ".te3"
 	case TRIGGER_ACTION_SECRET:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction

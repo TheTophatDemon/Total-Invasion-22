@@ -49,8 +49,8 @@ func translateTextureName(category, ti2Name string) string {
 		ti2Name = "charred_grass"
 	} else {
 		replacements := map[string]string{
-			"grass_arrow0":    "grass",
-			"grass_arrow1":    "grass",
+			"grass_arrow0":    "grass_arrow",
+			"grass_arrow1":    "grass_arrow",
 			"balloonstand":    "balloon_stand",
 			"cartonofeggs":    "egg_carton",
 			"dopefish":        "dopefish_statue",
