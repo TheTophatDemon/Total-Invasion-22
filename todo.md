@@ -1,12 +1,11 @@
 # TODO
-- Make it so fire cannot be walked through, but projectiles can still go through
 - Level intro
 - Dummkopf enemy
+- Armor
 - Weapon wheel / menu
 - Feedback when you try to select a weapon you don't have.
 - Re-record enemy voices
 - Loading screen?
-- Armor
 
 ## Ideas
 

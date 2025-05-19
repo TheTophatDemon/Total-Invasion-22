@@ -116,12 +116,11 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		prop.messageKey = ent.Properties["messageKey"]
 	case "fire":
 		prop.propType = PROP_TYPE_FIRE
-		prop.body.Layer = COL_LAYER_NONE
+		prop.body.Layer = COL_LAYER_INVISIBLE
 		colr = color.Color{R: 1.0, G: 1.0, B: 1.0, A: 0.5}
 		additive = true
 		prop.body.Transform.SetScale(1.0, 1.25, 1.0)
 		prop.body.Transform.Translate(0.0, 0.25, 0.0)
-		SpawnKillzone(world, prop.body.Transform.Position(), 0.5, 25.0)
 	}
 
 	prop.SpriteRender = comps.NewSpriteRenderWithColor(sprite, colr)

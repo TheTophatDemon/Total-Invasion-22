@@ -86,7 +86,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
 	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
 	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
-	world.Triggers = scene.NewStorageWithFuncs(256, (*Trigger).Update, (*Trigger).Render)
+	world.Triggers = scene.NewStorageWithFuncs(512, (*Trigger).Update, (*Trigger).Render)
 	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
 	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
@@ -114,6 +114,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
 			}
 			if tex.HasFlag(TEX_FLAG_KILLZONE) {
+				//TODO: This may not work well
 				SpawnKillzone(world, pos, box.Size().Len()/2.0, 9999.0)
 			}
 		}

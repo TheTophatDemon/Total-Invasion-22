@@ -12,7 +12,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/hud"
@@ -25,10 +24,6 @@ const (
 
 const (
 	OVERHEAL_RESTORE_RATE = 1.0
-)
-
-const (
-	SFX_BURN = "assets/sounds/burn.wav"
 )
 
 type Player struct {
@@ -47,8 +42,6 @@ type Player struct {
 	godMode                bool    // If true, the player does not take damage.
 	ammo                   game.Ammo
 	keys                   game.KeyType
-
-	burnSound tdaudio.VoiceId
 }
 
 var _ HasActor = (*Player)(nil)
@@ -308,10 +301,6 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 
 	if player.actor.Health > 0 {
 		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
-
-		if _, isTrigger := sourceEntity.(*Trigger); isTrigger && !player.burnSound.IsPlaying() {
-			player.burnSound = cache.GetSfx(SFX_BURN).Play()
-		}
 
 		if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
 			// Change the hurt face with respect to the direction the damage is coming from

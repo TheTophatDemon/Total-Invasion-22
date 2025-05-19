@@ -380,7 +380,7 @@ func (enemy *Enemy) chase(
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
-			COL_LAYER_MAP,
+			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
 			WRAITH_MELEE_RANGE,
 			enemy,
 		)
@@ -423,7 +423,7 @@ func (enemy *Enemy) stalk(
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			enemy.actor.FacingVec(),
-			COL_LAYER_MAP|COL_LAYER_ACTORS,
+			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
 			WRAITH_MELEE_RANGE,
 			enemy,
 		)
