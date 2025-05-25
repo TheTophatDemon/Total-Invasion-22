@@ -54,9 +54,8 @@ var ammoTypeIconNames = [game.AMMO_TYPE_COUNT]string{
 func (hud *Hud) InitPlayerStats() {
 	// Left HUD panel
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
-	_, leftPanel, _ := hud.UI.Boxes.New()
 	panelHeight := float32(leftPanelTex.Height()) * SpriteScale()
-	*leftPanel = ui.NewBoxFull(
+	_, leftPanel, _ := hud.UI.Boxes.New(ui.NewBoxFull(
 		math2.Rect{
 			X: 0.0, Y: settings.UIHeight() - panelHeight,
 			Width:  float32(leftPanelTex.Width()) * SpriteScale(),
@@ -64,8 +63,8 @@ func (hud *Hud) InitPlayerStats() {
 		},
 		leftPanelTex,
 		color.White,
-	)
-	leftPanel.SetDepth(5.0)
+	))
+	leftPanel.Depth = 5.0
 
 	fitToSlice := func(parent math2.Rect, slice textures.Slice) math2.Rect {
 		return math2.Rect{
@@ -77,14 +76,18 @@ func (hud *Hud) InitPlayerStats() {
 	}
 
 	hudIconsTexture := cache.GetTexture(TEX_HUD_ICONS)
+	heartSlice := leftPanelTex.FindSlice("healthIcon")
 
 	// Heart icon
 	var heart *ui.Box
-	hud.heartIcon, heart, _ = hud.UI.Boxes.New()
-	heartSlice := leftPanelTex.FindSlice("healthIcon")
-	heart.SetTexture(hudIconsTexture).
-		SetDest(fitToSlice(leftPanel.Dest(), heartSlice)).
-		SetDepth(6.0)
+	hud.heartIcon, heart, _ = hud.UI.Boxes.New(ui.Box{
+		Color:   color.White,
+		Texture: hudIconsTexture,
+		Transform: ui.Transform{
+			Dest:  fitToSlice(leftPanel.Dest, heartSlice),
+			Depth: 6.0,
+		},
+	})
 	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
 		heart.AnimPlayer.ChangeAnimation(heartAnim)
 		heart.AnimPlayer.PlayFromStart()
@@ -93,12 +96,16 @@ func (hud *Hud) InitPlayerStats() {
 	// Face
 	hud.faceState = FaceStateIdle
 	faceTex := cache.GetTexture(TEX_SEGAN_FACE)
-	var face *ui.Box
-	hud.face, face, _ = hud.UI.Boxes.New()
 	faceSlice := leftPanelTex.FindSlice("face")
-	face.SetTexture(faceTex).
-		SetDest(fitToSlice(leftPanel.Dest(), faceSlice)).
-		SetDepth(6.0)
+	var face *ui.Box
+	hud.face, face, _ = hud.UI.Boxes.New(ui.Box{
+		Color:   color.White,
+		Texture: faceTex,
+		Transform: ui.Transform{
+			Dest:  fitToSlice(leftPanel.Dest, faceSlice),
+			Depth: 6.0,
+		},
+	})
 	if faceAnim, ok := faceTex.GetAnimation(FaceStateIdle.anim); ok {
 		face.AnimPlayer.PlayNewAnim(faceAnim)
 	}
@@ -107,20 +114,24 @@ func (hud *Hud) InitPlayerStats() {
 	var healthStat *ui.Text
 	hud.healthStat, healthStat, _ = hud.UI.Texts.New()
 	healthStatSlice := leftPanelTex.FindSlice("healthStat")
-	healthStat.
-		SetFont(COUNTER_FONT_PATH).
-		SetText("000").
-		SetDest(fitToSlice(leftPanel.Dest(), healthStatSlice)).
-		SetDepth(6.0).
-		SetScale(SpriteScale()).
-		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Red)
+
+	counterFont, _ := cache.GetFont(COUNTER_FONT_PATH)
+	healthStat.Settings = ui.TextSettings{
+		Font:      counterFont,
+		Text:      "000",
+		Alignment: ui.TEXT_ALIGN_CENTER,
+	}
+	healthStat.Transform = ui.Transform{
+		Dest:  fitToSlice(leftPanel.Dest, healthStatSlice),
+		Depth: 6.0,
+		Scale: SpriteScale(),
+	}
+	healthStat.Color = color.Red
 
 	// Right HUD panel
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
-	_, rightPanel, _ := hud.UI.Boxes.New()
 	rightPanelWidth := rightPanelTex.Rect().Width * SpriteScale()
-	*rightPanel = ui.NewBoxFull(
+	_, rightPanel, _ := hud.UI.Boxes.New(ui.NewBoxFull(
 		math2.Rect{
 			X:      settings.UIWidth() - rightPanelWidth,
 			Y:      settings.UIHeight() - panelHeight,
@@ -129,50 +140,61 @@ func (hud *Hud) InitPlayerStats() {
 		},
 		rightPanelTex,
 		color.White,
-	)
-	rightPanel.SetDepth(5.0)
+	))
+	rightPanel.Depth = 5.0
 
-	// Ammo icon
-	var ammoIcon *ui.Box
-	hud.ammoIcon, ammoIcon, _ = hud.UI.Boxes.New()
 	ammoIconSlice := rightPanelTex.FindSlice("ammoIcon")
-	ammoIcon.SetTexture(hudIconsTexture).
-		SetDest(fitToSlice(rightPanel.Dest(), ammoIconSlice)).
-		SetDepth(6.0)
-	ammoIcon.Hidden = true
+	// Ammo icon
+	hud.ammoIcon, _, _ = hud.UI.Boxes.New(ui.Box{
+		Color:   color.White,
+		Texture: hudIconsTexture,
+		Transform: ui.Transform{
+			Dest:  fitToSlice(rightPanel.Dest, ammoIconSlice),
+			Depth: 6.0,
+		},
+		Hidden: true,
+	})
 
 	// Ammo counter
 	var ammoStat *ui.Text
 	hud.ammoStat, ammoStat, _ = hud.UI.Texts.New()
 	ammoStatSlice := rightPanelTex.FindSlice("ammoStat")
-	ammoStat.SetFont(COUNTER_FONT_PATH).
-		SetText("000").
-		SetDest(fitToSlice(rightPanel.Dest(), ammoStatSlice)).
-		SetDepth(6.0).
-		SetScale(SpriteScale()).
-		SetAlignment(ui.TEXT_ALIGN_CENTER).
-		SetColor(color.Blue)
+	ammoStat.Settings = ui.TextSettings{
+		Font:      counterFont,
+		Text:      "000",
+		Alignment: ui.TEXT_ALIGN_CENTER,
+	}
+	ammoStat.Transform = ui.Transform{
+		Dest:  fitToSlice(rightPanel.Dest, ammoStatSlice),
+		Depth: 6.0,
+		Scale: SpriteScale(),
+	}
+	ammoStat.Color = color.Blue
 
 	// Key icons
 	for i, key := range [...]game.KeyType{game.KEY_TYPE_BLUE, game.KEY_TYPE_BROWN, game.KEY_TYPE_YELLOW, game.KEY_TYPE_GRAY} {
 		var keyIcon *ui.Box
-		hud.keyIcons[i], keyIcon, _ = hud.UI.Boxes.New()
 		keyName := game.KeycardNames[key] + "Key"
 		slice := rightPanelTex.FindSlice(keyName)
-		keyIcon.SetDest(fitToSlice(rightPanel.Dest(), slice)).
-			SetTexture(cache.GetTexture("assets/textures/ui/hud_keycards.png")).
-			SetDepth(6.0)
+		hud.keyIcons[i], keyIcon, _ = hud.UI.Boxes.New(ui.Box{
+			Color:   color.White,
+			Texture: cache.GetTexture("assets/textures/ui/hud_keycards.png"),
+			Transform: ui.Transform{
+				Dest:  fitToSlice(rightPanel.Dest, slice),
+				Depth: 6.0,
+			},
+			Hidden: true,
+		})
 		switch key {
 		case game.KEY_TYPE_BLUE:
-			keyIcon.SetSrc(math2.Rect{X: 0, Y: 0, Width: 8, Height: 8})
+			keyIcon.Src = math2.Rect{X: 0, Y: 0, Width: 8, Height: 8}
 		case game.KEY_TYPE_BROWN:
-			keyIcon.SetSrc(math2.Rect{X: 8, Y: 0, Width: 8, Height: 8})
+			keyIcon.Src = math2.Rect{X: 8, Y: 0, Width: 8, Height: 8}
 		case game.KEY_TYPE_YELLOW:
-			keyIcon.SetSrc(math2.Rect{X: 0, Y: 8, Width: 8, Height: 8})
+			keyIcon.Src = math2.Rect{X: 0, Y: 8, Width: 8, Height: 8}
 		case game.KEY_TYPE_GRAY:
-			keyIcon.SetSrc(math2.Rect{X: 8, Y: 8, Width: 8, Height: 8})
+			keyIcon.Src = math2.Rect{X: 8, Y: 8, Width: 8, Height: 8}
 		}
-		keyIcon.Hidden = true
 	}
 }
 
@@ -214,10 +236,14 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 	if icon, ok := hud.ammoIcon.Get(); ok {
 		if weapon := hud.SelectedWeapon(); weapon != nil {
 			iconsTex := cache.GetTexture(TEX_HUD_ICONS)
-			if anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[weapon.AmmoType()]); ok && !icon.AnimPlayer.IsPlayingAnim(anim) {
-				icon.AnimPlayer.PlayNewAnim(anim)
+			if anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[weapon.AmmoType()]); ok {
+				if !icon.AnimPlayer.IsPlayingAnim(anim) {
+					icon.AnimPlayer.PlayNewAnim(anim)
+				}
+				icon.Hidden = false
+			} else {
+				icon.Hidden = true
 			}
-			icon.Hidden = false
 		} else {
 			icon.Hidden = true
 		}

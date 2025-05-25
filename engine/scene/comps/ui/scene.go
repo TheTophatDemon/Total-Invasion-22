@@ -14,12 +14,17 @@ type (
 	Scene struct {
 		Boxes          scene.Storage[Box]
 		Texts          scene.Storage[Text]
-		sortedElements []scene.Handle
+		sortedElements []sortedElement
 	}
 
-	Element interface {
-		Depth() float32
-		Render(*render.Context)
+	Transform struct {
+		Dest                math2.Rect
+		Depth, Shear, Scale float32
+	}
+
+	sortedElement struct {
+		scene.Handle
+		depth float32
 	}
 )
 
@@ -27,7 +32,7 @@ func NewUIScene(maxBoxes, maxTexts uint) *Scene {
 	return &Scene{
 		Boxes:          scene.NewStorageWithFuncs(maxBoxes, (*Box).Update, nil),
 		Texts:          scene.NewStorage[Text](maxTexts),
-		sortedElements: make([]scene.Handle, 0, maxBoxes+maxTexts),
+		sortedElements: make([]sortedElement, 0, maxBoxes+maxTexts),
 	}
 }
 
@@ -40,24 +45,22 @@ func (scn *Scene) Update(deltaTime float32) {
 
 	boxIter := scn.Boxes.Iter()
 	for box, boxHandle := boxIter.Next(); box != nil; box, boxHandle = boxIter.Next() {
-		scn.sortedElements = append(scn.sortedElements, boxHandle)
+		scn.sortedElements = append(scn.sortedElements, sortedElement{Handle: boxHandle, depth: box.Depth})
 	}
 
 	textIter := scn.Texts.Iter()
 	for text, textHandle := textIter.Next(); text != nil; text, textHandle = textIter.Next() {
-		scn.sortedElements = append(scn.sortedElements, textHandle)
+		scn.sortedElements = append(scn.sortedElements, sortedElement{Handle: textHandle, depth: text.Depth})
 	}
 
-	slices.SortFunc(scn.sortedElements, func(a, b scene.Handle) int {
-		elemA, okA := scene.Get[Element](a)
-		if !okA {
+	slices.SortFunc(scn.sortedElements, func(a, b sortedElement) int {
+		if !a.Exists() {
 			return -1
 		}
-		elemB, okB := scene.Get[Element](b)
-		if !okB {
+		if !b.Exists() {
 			return 1
 		}
-		return int(math2.Signum(elemA.Depth() - elemB.Depth()))
+		return int(math2.Signum(a.depth - b.depth))
 	})
 }
 
@@ -66,12 +69,15 @@ func (scn *Scene) Render(context *render.Context) {
 	gl.CullFace(gl.FRONT)
 	gl.Disable(gl.DEPTH_TEST)
 
-	for _, handle := range scn.sortedElements {
-		elem, ok := scene.Get[Element](handle)
+	type renderable interface {
+		Render(*render.Context)
+	}
+	for _, elem := range scn.sortedElements {
+		item, ok := scene.Get[renderable](elem.Handle)
 		if !ok {
 			continue
 		}
-		elem.Render(context)
+		item.Render(context)
 	}
 
 	gl.Enable(gl.DEPTH_TEST)

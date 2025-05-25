@@ -1,5 +1,7 @@
 # TODO
 - Level intro
+- Floating corpses over lava
+- Make half-block for lava pools
 - Dummkopf enemy
 - Armor
 - Weapon wheel / menu

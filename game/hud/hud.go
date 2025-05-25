@@ -82,61 +82,57 @@ func (hud *Hud) Init() {
 
 	var fpsText *ui.Text
 	hud.FPSCounter, fpsText, _ = hud.UI.Texts.New()
-	fpsText.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText("FPS: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}).
-		SetScale(1.0).
-		SetColor(color.White)
+	fpsText.Dest = math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}
 
 	var spriteCounter *ui.Text
 	hud.SpriteCounter, spriteCounter, _ = hud.UI.Texts.New()
-	spriteCounter.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText("Sprites drawn: 0\nWalls drawn: 0\nParticles drawn: 0").
-		SetDest(math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0}).
-		SetScale(1.0).
-		SetColor(color.Blue)
+	spriteCounter.Dest = math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0}
+	spriteCounter.Color = color.Blue
 
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
 
-	_, messageBackground, _ := hud.UI.Boxes.New()
-	messageBackground.
-		SetDest(math2.Rect{
-			X:      float32(leftPanelTex.Width()) * SpriteScale(),
-			Y:      settings.UIHeight() - 32.0,
-			Width:  settings.UIWidth() - float32(leftPanelTex.Width()+rightPanelTex.Width())*SpriteScale(),
-			Height: 32.0,
-		}).
-		SetDepth(2.0).
-		SetColor(color.Black)
+	_, messageBackground, _ := hud.UI.Boxes.New(ui.Box{
+		Color: color.Black,
+		Src: math2.Rect{
+			Width: 1.0, Height: 1.0,
+		},
+		Transform: ui.Transform{
+			Dest: math2.Rect{
+				X:      float32(leftPanelTex.Width()) * SpriteScale(),
+				Y:      settings.UIHeight() - 32.0,
+				Width:  settings.UIWidth() - float32(leftPanelTex.Width()+rightPanelTex.Width())*SpriteScale(),
+				Height: 32.0,
+			},
+			Depth: 2.0,
+		},
+	})
 
 	var message *ui.Text
 	hud.messageText, message, _ = hud.UI.Texts.New()
-	message.
-		SetFont(DEFAULT_FONT_PATH).
-		SetDest(math2.Rect{
-			X:      messageBackground.Dest().X + 8.0,
-			Y:      messageBackground.Dest().Y + 1.0,
-			Width:  messageBackground.Dest().Width - 16.0,
-			Height: messageBackground.Dest().Height - 2.0,
-		}).
-		SetAlignment(ui.TEXT_ALIGN_LEFT).
-		SetColor(color.Red).
-		SetDepth(3.0).
-		SetWrapWords(false)
+	message.Transform = ui.Transform{
+		Dest: math2.Rect{
+			X:      messageBackground.Dest.X + 8.0,
+			Y:      messageBackground.Dest.Y + 1.0,
+			Width:  messageBackground.Dest.Width - 16.0,
+			Height: messageBackground.Dest.Height - 2.0,
+		},
+		Depth: 3.0,
+		Scale: 1.0,
+	}
+	message.Settings.WrapWords = false
 
-	var flashBox *ui.Box
-	hud.flashRect, flashBox, _ = hud.UI.Boxes.New()
-	flashBox.
-		SetDest(math2.Rect{
-			Width:  settings.UIWidth(),
-			Height: settings.UIHeight(),
-		}).
-		SetDepth(9.0).
-		SetColor(color.Blue.WithAlpha(0.5))
-
+	hud.flashRect, _, _ = hud.UI.Boxes.New(ui.Box{
+		Transform: ui.Transform{
+			Dest: math2.Rect{
+				Width:  settings.UIWidth(),
+				Height: settings.UIHeight(),
+			},
+			Depth: 9.0,
+			Scale: 1.0,
+		},
+		Color: color.Blue.WithAlpha(0.5),
+	})
 	hud.flashSpeed = 0.5
 
 	hud.weapons = [WEAPON_ORDER_COUNT]Weapon{
@@ -161,34 +157,84 @@ func (hud *Hud) InitVictory() {
 	hud.UI.Texts.Clear()
 
 	_, completeTxt, _ := hud.UI.Texts.New()
-	completeTxt.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText(settings.Localize("levelComplete")).
-		SetDest(math2.Rect{
+	completeTxt.Transform = ui.Transform{
+		Dest: math2.Rect{
 			X:      settings.UIWidth()/4.0 - 32.0,
 			Y:      24.0,
 			Width:  settings.UIWidth() / 2.0,
 			Height: 64.0,
-		}).
-		SetScale(3.0).
-		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+		},
+		Scale: 3.0,
+	}
+	completeTxt.Settings = ui.TextSettings{
+		Text:         settings.Localize("levelComplete"),
+		ShadowColor:  settings.Current.TextShadowColor,
+		ShadowOffset: mgl32.Vec2{2.0, 2.0},
+		Font:         cache.DefaultFont,
+	}
 
 	hud.KillsCounted = 0
 	hud.SecretsCounted = 0
 
 	var levelStats *ui.Text
 	hud.levelStats, levelStats, _ = hud.UI.Texts.New()
-	levelStats.
-		SetFont(DEFAULT_FONT_PATH).
-		SetText("").
-		SetDest(math2.Rect{
+	levelStats.Transform = ui.Transform{
+		Dest: math2.Rect{
 			X:      64.0,
 			Y:      108.0,
 			Width:  256.0,
 			Height: 256.0,
-		}).
-		SetScale(2.0).
-		SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+		},
+		Scale: 2.0,
+	}
+	levelStats.SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+}
+
+func (hud *Hud) InitIntro(levelTitle, mapNumber string) {
+	if len(levelTitle) == 0 {
+		return
+	}
+
+	hud.UI.Boxes.New(ui.Box{
+		Color: color.Blue,
+		Transform: ui.Transform{
+			Dest:  math2.Rect{X: 0.0, Y: 64.0, Width: settings.UIWidth(), Height: 96.0},
+			Depth: 9.0,
+		},
+	})
+
+	_, titleTxt, _ := hud.UI.Texts.New()
+	titleTxt.Settings = ui.TextSettings{
+		Text:      levelTitle,
+		Alignment: ui.TEXT_ALIGN_CENTER,
+		Font:      cache.DefaultFont,
+	}
+	titleTxt.Transform = ui.Transform{
+		Dest: math2.Rect{
+			Y:      80.0,
+			Width:  settings.UIWidth(),
+			Height: 64.0,
+		},
+		Scale: 3.0,
+		Depth: 9.1,
+	}
+
+	_, episodeBg, _ := hud.UI.Boxes.New(ui.Box{
+		Color: color.Blue,
+		Transform: ui.Transform{
+			Dest:  math2.Rect{X: -48.0, Y: settings.UIHeight() - 224.0, Width: 352.0, Height: 96.0},
+			Depth: 9.0,
+			Shear: 1.0,
+		},
+	})
+
+	_, episodeTxt, _ := hud.UI.Texts.New()
+	episodeTxt.SetText(mapNumber)
+	episodeTxt.Transform = ui.Transform{
+		Dest:  math2.Rect{X: 32.0, Y: episodeBg.DestPosition()[1] + 8.0, Width: 256.0, Height: episodeBg.Dest.Height},
+		Scale: 3.0,
+		Depth: 9.1,
+	}
 }
 
 func (hud *Hud) Update(deltaTime float32) {
@@ -211,7 +257,7 @@ func (hud *Hud) Update(deltaTime float32) {
 					message.SetText(msgText[byteCount:])
 				} else {
 					hud.messagePriority = 0
-					message.SetColor(color.Transparent)
+					message.Color = color.Transparent
 					message.SetText("")
 				}
 			}
@@ -261,13 +307,18 @@ func (hud *Hud) Update(deltaTime float32) {
 					var txt *ui.Text
 					var err error
 					if hud.continueText, txt, err = hud.UI.Texts.New(); err == nil {
-						txt.SetFont(DEFAULT_FONT_PATH).
-							SetText(settings.Localize("fireContinue")).
-							SetDest(math2.RectFromRadius(settings.UIWidth()/2.0, 7.0*settings.UIHeight()/8.0, 256.0, 48.0)).
-							SetAlignment(ui.TEXT_ALIGN_CENTER).
-							SetScale(2.0).
-							SetColor(color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}).
-							SetShadow(settings.Current.TextShadowColor, mgl32.Vec2{2.0, 2.0})
+						txt.Transform = ui.Transform{
+							Dest:  math2.RectFromRadius(settings.UIWidth()/2.0, 7.0*settings.UIHeight()/8.0, 256.0, 48.0),
+							Scale: 2.0,
+						}
+						txt.Settings = ui.TextSettings{
+							Text:         settings.Localize("fireContinue"),
+							Alignment:    ui.TEXT_ALIGN_CENTER,
+							ShadowColor:  settings.Current.TextShadowColor,
+							ShadowOffset: mgl32.Vec2{2.0, 2.0},
+							Font:         cache.DefaultFont,
+						}
+						txt.Color = color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}
 					}
 				}
 			default:
@@ -314,7 +365,8 @@ func (hud *Hud) ShowMessage(text string, duration float32, priority int, colr co
 		hud.messageTimer = duration
 		hud.messagePriority = priority
 		if message, ok := hud.messageText.Get(); ok {
-			message.SetText(text).SetColor(colr)
+			message.SetText(text)
+			message.Color = colr
 		}
 	}
 }

@@ -73,7 +73,9 @@ func (st *Storage[T]) Has(h Handle) bool {
 }
 
 // Creates a new entity, returning its Id and a pointer to it. The last result is false if the storage is full.
-func (st *Storage[T]) New() (Id[*T], *T, error) {
+// The newValue is an optional parameter that can be used to initialize the item. If more than 1 parameter is supplied,
+// the extra parameters are ignored.
+func (st *Storage[T]) New(newValue ...T) (Id[*T], *T, error) {
 	for i, active := range st.active {
 		if !active {
 			if st.owners[i].generation == 0 {
@@ -90,7 +92,9 @@ func (st *Storage[T]) New() (Id[*T], *T, error) {
 				storage:    st,
 			}
 
-			if hasDefault, ok := any(&st.data[i]).(engine.HasDefault); ok {
+			if len(newValue) >= 1 {
+				st.data[i] = newValue[0]
+			} else if hasDefault, ok := any(&st.data[i]).(engine.HasDefault); ok {
 				hasDefault.InitDefault()
 			} else {
 				var empty T

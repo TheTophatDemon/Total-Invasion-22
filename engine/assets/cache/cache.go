@@ -31,6 +31,9 @@ var loadedMeshes cache[*geom.Mesh]
 // Cache of bitmap fonts, indexed by .fnt file path
 var loadedFonts cache[*fonts.Font]
 
+// The font that all new text objects will be initialized with.
+var DefaultFont *fonts.Font
+
 // Cache of sound effects, indexed by .wav file path
 var loadedSfx cache[tdaudio.SoundId]
 

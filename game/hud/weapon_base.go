@@ -73,21 +73,23 @@ func (wb *weaponBase) Select() {
 		spriteBox *ui.Box
 		err       error
 	)
-	wb.sprite, spriteBox, err = wb.hud.UI.Boxes.New()
+	wb.sprite, spriteBox, err = wb.hud.UI.Boxes.New(ui.Box{
+		Texture: wb.spriteTexture,
+		Color:   color.White,
+		Src:     math2.Rect{Width: 1.0, Height: 1.0},
+		Transform: ui.Transform{
+			Dest: math2.Rect{
+				X:      wb.spriteStartPos.X(),
+				Y:      wb.spriteStartPos.Y(),
+				Width:  wb.spriteSize.X(),
+				Height: wb.spriteSize.Y(),
+			},
+		},
+	})
 	if err != nil {
 		failure.LogErrWithLocation("%v", err)
 		return
 	}
-	spriteBox.
-		SetDest(math2.Rect{
-			X:      wb.spriteStartPos.X(),
-			Y:      wb.spriteStartPos.Y(),
-			Width:  wb.spriteSize.X(),
-			Height: wb.spriteSize.Y(),
-		}).
-		SetTexture(wb.spriteTexture).
-		SetColor(color.White).
-		SetDepth(0.0)
 	spriteBox.AnimPlayer.ChangeAnimation(wb.defaultAnimation)
 	spriteBox.AnimPlayer.PlayFromStart()
 }
@@ -124,18 +126,18 @@ func (wb *weaponBase) Update(deltaTime float32, swayAmount float32, ammo *game.A
 				target = target.Add(wb.spriteEndPos)
 			}
 			diff := mgl32.Vec2{
-				target.X() - sprite.Dest().X,
-				target.Y() - sprite.Dest().Y,
+				target.X() - sprite.Dest.X,
+				target.Y() - sprite.Dest.Y,
 			}
 			dist := diff.Len()
 			moveAmt := deltaTime * TRANSITION_MOVE_SPEED
 			if dist < moveAmt {
-				sprite.SetDest(math2.Rect{
+				sprite.Dest = math2.Rect{
 					X:      target.X(),
 					Y:      target.Y(),
 					Width:  wb.spriteSize.X(),
 					Height: wb.spriteSize.Y(),
-				})
+				}
 				wb.state = (wb.state + 1) % WEAPON_STATE_COUNT
 			} else {
 				sprite.SetDestPosition(sprite.DestPosition().Add(diff.Mul(moveAmt / dist)))

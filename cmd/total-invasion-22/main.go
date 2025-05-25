@@ -46,6 +46,7 @@ func (app *App) LoadGame(mapPath string) {
 	log.Println("Loading game at map ", mapPath)
 
 	cache.Reset()
+	cache.DefaultFont, _ = cache.GetFont(world.DEFAULT_FONT_PATH)
 
 	world, err := world.NewWorld(app, mapPath)
 	if err != nil {

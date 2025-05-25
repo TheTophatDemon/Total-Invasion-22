@@ -2,6 +2,8 @@ package world
 
 import (
 	"log"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -254,6 +256,16 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
 		}
+	}
+
+	if levelFileName := path.Base(mapPath); len(levelFileName) >= 4 &&
+		levelFileName[0] == 'e' &&
+		levelFileName[1] >= '0' && levelFileName[1] <= '9' &&
+		levelFileName[2] == 'm' &&
+		levelFileName[3] >= '0' && levelFileName[3] <= '9' {
+
+		// Level files starting with e#m# activate the level intro.
+		world.Hud.InitIntro(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
 	}
 
 	world.Hud.LevelStartTime = time.Now()

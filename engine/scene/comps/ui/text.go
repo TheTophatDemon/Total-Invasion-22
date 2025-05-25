@@ -15,7 +15,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
-	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -30,24 +29,26 @@ const (
 	TEXT_ALIGN_RIGHT
 )
 
+// Holds text properties that will cause the underlying mesh to regenerate.
+type TextSettings struct {
+	Text         string
+	Alignment    TextAlign
+	ShadowColor  color.Color // Color of the drop shadow under the text. Set to transparent to disable.
+	ShadowOffset mgl32.Vec2
+	WrapWords    bool // Whether text wrapping around the boundary is done by word instead of by character
+	Font         *fonts.Font
+}
+
 type Text struct {
-	Hidden         bool
-	alignment      TextAlign
-	color          color.Color
-	text           string
-	shadowEnabled  bool
-	shadowColor    color.Color
-	shadowOffset   mgl32.Vec2
-	textDirty      bool
-	mesh           *geom.Mesh
-	texture        *textures.Texture
-	font           *fonts.Font
-	dest           math2.Rect
-	scale, depth   float32
-	transform      mgl32.Mat4
-	transformDirty bool
-	lineCount      int
-	wrapWords      bool // Whether text wrapping around the boundary is done by word instead of by character
+	Transform
+	Hidden       bool
+	Color        color.Color
+	Settings     TextSettings
+	oldSettings  TextSettings
+	oldTransform Transform
+	mesh         *geom.Mesh
+	matrix       mgl32.Mat4
+	lineCount    int
 }
 
 var _ engine.HasDefault = (*Text)(nil)
@@ -55,80 +56,35 @@ var _ engine.HasDefault = (*Text)(nil)
 func (txt *Text) InitDefault() {
 	var zero Text
 	*txt = zero
-	txt.color = color.White
-	txt.scale = 1.0
-	txt.wrapWords = true
-}
-
-func (txt *Text) SetAlignment(align TextAlign) *Text {
-	if txt.alignment != align {
-		txt.alignment = align
-		txt.textDirty = true
-	}
-	return txt
-}
-
-func (txt *Text) GetAlignment() TextAlign {
-	return txt.alignment
-}
-
-func (txt *Text) SetColor(col color.Color) *Text {
-	txt.color = col
-	return txt
-}
-
-func (txt *Text) Color() color.Color {
-	return txt.color
+	txt.Color = color.White
+	txt.Scale = 1.0
+	txt.Settings.WrapWords = true
+	txt.Settings.Font = cache.DefaultFont
 }
 
 func (txt *Text) SetText(newText string) *Text {
-	if newText != txt.text {
-		txt.text = newText
-		txt.textDirty = true
-	}
+	txt.Settings.Text = newText
 	return txt
 }
 
 func (txt *Text) Text() string {
-	return txt.text
+	return txt.Settings.Text
 }
 
-func (txt *Text) WrapWords() bool {
-	return txt.wrapWords
-}
-
-func (txt *Text) SetWrapWords(newValue bool) {
-	txt.wrapWords = newValue
-	txt.textDirty = true
+func (txt *Text) ShadowEnabled() bool {
+	return txt.Settings.ShadowColor != color.Transparent
 }
 
 func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) *Text {
-	txt.textDirty = true
-	txt.shadowEnabled = true
-	txt.shadowColor = color
-	txt.shadowOffset = offset
-	return txt
-}
-
-func (txt *Text) DisableShadow() {
-	txt.shadowEnabled = false
-	txt.textDirty = true
-}
-
-func (txt *Text) Depth() float32 {
-	return txt.depth
-}
-
-func (txt *Text) SetDepth(value float32) *Text {
-	txt.depth = value
-	txt.transformDirty = true
+	txt.Settings.ShadowColor = color
+	txt.Settings.ShadowOffset = offset
 	return txt
 }
 
 // Returns the number of lines needed to fit the text into the destination box horizontally.
 // Can be used to detect text overflow.
 func (txt *Text) LineCount() int {
-	_, _ = txt.Mesh() // Calculates box positions to update line count
+	txt.Mesh() // Calculates box positions to update line count
 	return txt.lineCount
 }
 
@@ -139,11 +95,11 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 	cursorX, cursorY := originX, originY
 	var prevRune rune = scanner.EOF
 
-	boxes := make([]math2.Rect, 0, len(txt.text))
-	chars := make([]bmfont.Char, 0, len(txt.text))
+	boxes := make([]math2.Rect, 0, len(txt.Text()))
+	chars := make([]bmfont.Char, 0, cap(boxes))
 
 	var scan scanner.Scanner
-	scan.Init(strings.NewReader(txt.text))
+	scan.Init(strings.NewReader(txt.Text()))
 	// Don't skip spaces or newlines
 	scan.Whitespace ^= (1 << '\n') | (1 << ' ')
 	scan.Mode = scanner.ScanIdents
@@ -153,14 +109,14 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 	newLine := func() {
 		// Set cursor to next line position
 		cursorX = originX
-		cursorY += float32(txt.font.Common.LineHeight)
+		cursorY += float32(txt.Settings.Font.Common.LineHeight)
 
-		if txt.alignment != TEXT_ALIGN_LEFT && len(boxes) > 0 {
+		if txt.Settings.Alignment != TEXT_ALIGN_LEFT && len(boxes) > 0 {
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
-			shiftAmount := ((txt.dest.Width / txt.scale) - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
-			if txt.alignment == TEXT_ALIGN_CENTER {
+			shiftAmount := ((txt.Dest.Width / txt.Scale) - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
+			if txt.Settings.Alignment == TEXT_ALIGN_CENTER {
 				shiftAmount *= 0.5
 			}
 
@@ -191,7 +147,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 		for i, runeWidth := 0, 0; i < len(word); i += runeWidth {
 			var rn rune
 			rn, runeWidth = utf8.DecodeRuneInString(word[i:])
-			char, ok := txt.font.Chars[rn]
+			char, ok := txt.Settings.Font.Chars[rn]
 			if !ok {
 				// Add blank space for unknown character
 				cursorX += 16
@@ -201,7 +157,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			// Find character position
 			charRect := math2.Rect{
 				X:      originX + cursorX + float32(char.XOffset),
-				Y:      originY + cursorY - float32(txt.font.Common.Base+char.YOffset),
+				Y:      originY + cursorY - float32(txt.Settings.Font.Common.Base+char.YOffset),
 				Width:  float32(char.Size().X),
 				Height: float32(char.Size().Y),
 			}
@@ -210,18 +166,18 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			}
 
 			// Stop drawing when out of bounds
-			if charRect.Y+charRect.Height >= txt.dest.Height {
+			if charRect.Y+charRect.Height >= txt.Dest.Height {
 				break
 			}
 
-			if i == len(word)-runeWidth || !txt.wrapWords {
+			if i == len(word)-runeWidth || !txt.Settings.WrapWords {
 				// On the last character in the word, determine if the word should go on a new line
-				overflowsBounds := (charRect.X+charRect.Width >= txt.dest.Width)
+				overflowsBounds := (charRect.X+charRect.Width >= txt.Dest.Width)
 				firstWordOnLine := (firstBox.X == originX)
 
 				if overflowsBounds && !firstWordOnLine {
 					// Remove the previous letters in this word
-					if txt.wrapWords {
+					if txt.Settings.WrapWords {
 						boxes = boxes[:len(boxes)-runeIndex]
 						chars = chars[:len(chars)-runeIndex]
 						numCharsInLine -= runeIndex
@@ -246,7 +202,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			// Add kerning
 			if prevRune != scanner.EOF {
 				pair := bmfont.CharPair{First: prevRune, Second: rn}
-				kerning, ok := txt.font.Kerning[pair]
+				kerning, ok := txt.Settings.Font.Kerning[pair]
 				if ok {
 					cursorX += float32(kerning.Amount)
 				}
@@ -265,12 +221,12 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 func (txt *Text) Mesh() (*geom.Mesh, error) {
-	if txt.font == nil {
+	if txt.Settings.Font == nil {
 		return nil, fmt.Errorf("font not assigned")
 	}
 
-	if txt.textDirty {
-		txt.textDirty = false
+	if txt.oldSettings != txt.Settings {
+		txt.oldSettings = txt.Settings
 		if txt.mesh != nil {
 			txt.mesh.Free()
 		}
@@ -281,8 +237,8 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 		}
 
 		// Regenerate text mesh
-		numVertsGuess := len(txt.text) * 4
-		if txt.shadowEnabled {
+		numVertsGuess := len(txt.Text()) * 4
+		if txt.ShadowEnabled() {
 			numVertsGuess *= 2
 		}
 		verts := geom.Vertices{
@@ -291,8 +247,8 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 			Color:    make([]mgl32.Vec4, 0, numVertsGuess),
 		}
 
-		numIndsGuess := len(txt.text) * 2
-		if txt.shadowEnabled {
+		numIndsGuess := len(txt.Text()) * 2
+		if txt.ShadowEnabled() {
 			numIndsGuess *= 2
 		}
 		inds := make([]uint32, 0, numIndsGuess)
@@ -309,7 +265,7 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 				mgl32.Vec3{charRect.X + charRect.Width, charRect.Y, 0.0},
 			)
 
-			pageW, pageH := float32(txt.font.Common.ScaleW), float32(txt.font.Common.ScaleH)
+			pageW, pageH := float32(txt.Settings.Font.Common.ScaleW), float32(txt.Settings.Font.Common.ScaleH)
 
 			srcRect := math2.Rect{
 				X:      float32(chars[b].X+chars[b].Width) / pageW,
@@ -332,12 +288,12 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 				mgl32.Vec4{1.0, 1.0, 1.0, 1.0},
 			)
 
-			if txt.shadowEnabled {
+			if txt.ShadowEnabled() {
 				// Duplicate the vertices at an offset for shadows
 				for range 4 {
-					verts.Pos = append(verts.Pos, verts.Pos[len(verts.Pos)-4].Add(txt.shadowOffset.Vec3(-0.01)))
+					verts.Pos = append(verts.Pos, verts.Pos[len(verts.Pos)-4].Add(txt.Settings.ShadowOffset.Vec3(-0.01)))
 					verts.TexCoord = append(verts.TexCoord, verts.TexCoord[len(verts.TexCoord)-4])
-					verts.Color = append(verts.Color, txt.shadowColor.Vector())
+					verts.Color = append(verts.Color, txt.Settings.ShadowColor.Vector())
 				}
 				inds = append(inds, indexBase+4, indexBase+6, indexBase+5, indexBase+6, indexBase+7, indexBase+5)
 			}
@@ -350,64 +306,31 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 	return txt.mesh, nil
 }
 
-func (txt *Text) SetFont(fontAssetPath string) *Text {
-	txt.font, _ = cache.GetFont(fontAssetPath)
-	txt.texture = cache.GetTexture(txt.font.TexturePath())
-	return txt
-}
-
-func (txt *Text) SetDest(dest math2.Rect) *Text {
-	txt.dest = dest
-	txt.transformDirty = true
-	return txt
-}
-
-func (txt *Text) Dest() math2.Rect {
-	return txt.dest
-}
-
-func (txt *Text) SetScale(scale float32) *Text {
-	txt.scale = scale
-	txt.transformDirty = true
-	return txt
-}
-
-func (txt *Text) Scale() float32 {
-	return txt.scale
-}
-
-func (txt *Text) Transform() mgl32.Mat4 {
-	if txt.transformDirty {
-		txt.transformDirty = false
-		txt.transform = mgl32.Translate3D(txt.dest.X, txt.dest.Y, txt.depth).Mul4(mgl32.Scale3D(txt.Scale(), txt.Scale(), 1.0))
+func (txt *Text) Matrix() mgl32.Mat4 {
+	if txt.Transform != txt.oldTransform {
+		txt.oldTransform = txt.Transform
+		txt.matrix = mgl32.Translate3D(txt.Dest.X, txt.Dest.Y, txt.Depth).Mul4(mgl32.Scale3D(txt.Scale, txt.Scale, 1.0))
 	}
-	return txt.transform
+	return txt.matrix
 }
 
 func (txt *Text) Render(context *render.Context) {
-	if len(txt.text) == 0 || txt.Hidden {
+	if len(txt.Text()) == 0 || txt.Hidden || txt.Settings.Font == nil {
 		return
 	}
 
-	failure.CheckOpenGLError()
 	cache.QuadMesh.Bind()
 	shaders.UIShader.Use()
 	// Set color
-	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, txt.Color().Vector())
-	failure.CheckOpenGLError()
+	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, txt.Color.Vector())
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
-	failure.CheckOpenGLError()
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
-	failure.CheckOpenGLError()
 
 	// Set texture
-	txt.texture.Bind()
-	failure.CheckOpenGLError()
+	cache.GetTexture(txt.Settings.Font.TexturePath()).Bind()
 	_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 1.0, 1.0, 1.0})
-	failure.CheckOpenGLError()
 	// Set transform
-	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Transform())
-	failure.CheckOpenGLError()
+	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Matrix())
 	// Draw
 	if mesh, err := txt.Mesh(); err == nil && mesh != nil {
 		mesh.Bind()

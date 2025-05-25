@@ -13,26 +13,15 @@ import (
 )
 
 type Box struct {
-	Color       color.Color
-	Texture     *textures.Texture
-	AnimPlayer  comps.AnimationPlayer
-	FlippedHorz bool
-	Hidden      bool
-
-	src, dest      math2.Rect
-	depth          float32
-	transformDirty bool
-	transform      mgl32.Mat4
-}
-
-func NewBox(src, dest math2.Rect, texture *textures.Texture, color color.Color) Box {
-	return Box{
-		Color:          color,
-		Texture:        texture,
-		src:            src,
-		dest:           dest,
-		transformDirty: true,
-	}
+	Transform
+	Src          math2.Rect
+	Color        color.Color
+	Texture      *textures.Texture
+	AnimPlayer   comps.AnimationPlayer
+	FlippedHorz  bool
+	Hidden       bool
+	oldTransform Transform
+	matrix       mgl32.Mat4
 }
 
 func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) Box {
@@ -46,12 +35,12 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 		}
 	}
 	return Box{
-		Color:          color,
-		Texture:        texture,
-		src:            src,
-		dest:           dest,
-		depth:          0.0,
-		transformDirty: true,
+		Color:   color,
+		Texture: texture,
+		Src:     src,
+		Transform: Transform{
+			Dest: dest,
+		},
 	}
 }
 
@@ -61,88 +50,40 @@ func (box *Box) InitDefault() {
 	box.Texture = nil
 	box.AnimPlayer = comps.AnimationPlayer{}
 	box.FlippedHorz = false
-	box.src = math2.Rect{X: 0.0, Y: 0.0, Width: 1.0, Height: 1.0}
-	box.dest = math2.Rect{}
-	box.transformDirty = false
-	box.transform = mgl32.Ident4()
+	box.Src = math2.Rect{X: 0.0, Y: 0.0, Width: 1.0, Height: 1.0}
+	box.matrix = mgl32.Ident4()
 }
 
 func (box *Box) Update(deltaTime float32) {
 	box.AnimPlayer.Update(deltaTime)
 	if frame := box.AnimPlayer.Frame(); frame.Duration > 0.0 {
-		box.src = frame.Rect
+		box.Src = frame.Rect
 	}
-}
-
-func (box *Box) Dest() math2.Rect {
-	return box.dest
-}
-
-func (box *Box) SetDest(dest math2.Rect) *Box {
-	box.dest = dest
-	box.transformDirty = true
-	return box
-}
-
-func (box *Box) Depth() float32 {
-	return box.depth
-}
-
-func (box *Box) SetDepth(value float32) *Box {
-	box.depth = value
-	box.transformDirty = true
-	return box
 }
 
 func (box *Box) SetDestPosition(position mgl32.Vec2) *Box {
-	box.dest = math2.Rect{
+	box.Dest = math2.Rect{
 		X:      position.X(),
 		Y:      position.Y(),
-		Width:  box.dest.Width,
-		Height: box.dest.Height,
+		Width:  box.Dest.Width,
+		Height: box.Dest.Height,
 	}
-	box.transformDirty = true
 	return box
 }
 
 func (box *Box) DestPosition() mgl32.Vec2 {
-	return mgl32.Vec2{box.dest.X, box.dest.Y}
+	return mgl32.Vec2{box.Dest.X, box.Dest.Y}
 }
 
-func (box *Box) Src() math2.Rect {
-	return box.src
-}
-
-func (box *Box) SetSrc(src math2.Rect) *Box {
-	box.src = src
-	box.transformDirty = true
-	return box
-}
-
-func (box *Box) SetColor(clr color.Color) *Box {
-	box.Color = clr
-	return box
-}
-
-func (box *Box) SetTexture(t *textures.Texture) *Box {
-	box.Texture = t
-	return box
-}
-
-func (box *Box) SetFlipHorz(f bool) *Box {
-	box.FlippedHorz = f
-	return box
-}
-
-func (box *Box) Transform() mgl32.Mat4 {
-	if box.transformDirty {
-		box.transformDirty = false
-		bx, by := box.dest.Center()
-		scx := box.dest.Width / 2.0
-		scy := box.dest.Height / 2.0
-		box.transform = mgl32.Translate3D(bx, by, box.depth).Mul4(mgl32.Scale3D(scx, scy, 1.0))
+func (box *Box) Matrix() mgl32.Mat4 {
+	if box.Transform != box.oldTransform {
+		box.oldTransform = box.Transform
+		bx, by := box.Dest.Center()
+		scx := box.Dest.Width / 2.0
+		scy := box.Dest.Height / 2.0
+		box.matrix = mgl32.Translate3D(bx, by, box.Depth).Mul4(mgl32.ShearY3D(box.Shear, 0.0)).Mul4(mgl32.Scale3D(scx, scy, 1.0))
 	}
-	return box.transform
+	return box.matrix
 }
 
 func (box *Box) Render(context *render.Context) {
@@ -165,10 +106,10 @@ func (box *Box) Render(context *render.Context) {
 		box.Texture.Bind()
 		texW, texH := float32(box.Texture.Width()), float32(box.Texture.Height())
 		srcVec := mgl32.Vec4{
-			box.src.X / texW,
-			1.0 - (box.src.Y / texH),
-			box.src.Width / texW,
-			box.src.Height / texH,
+			box.Src.X / texW,
+			1.0 - (box.Src.Y / texH),
+			box.Src.Width / texW,
+			box.Src.Height / texH,
 		}
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, srcVec)
 	} else {
@@ -178,7 +119,7 @@ func (box *Box) Render(context *render.Context) {
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, box.FlippedHorz)
 
 	// Set uniforms
-	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Transform())
+	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Matrix())
 	cache.QuadMesh.DrawAll()
 	failure.CheckOpenGLError()
 }
