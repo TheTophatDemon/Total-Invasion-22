@@ -2,6 +2,8 @@ package hud
 
 import (
 	"fmt"
+	"math"
+	"reflect"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -13,6 +15,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -26,6 +29,7 @@ const (
 	DEFAULT_FONT_PATH    = "assets/textures/ui/font.fnt"
 	COUNTER_FONT_PATH    = "assets/textures/ui/hud_counter_font.fnt"
 	SFX_STATS_DING       = "assets/sounds/ui/stats_ding.wav"
+	LEVEL_INTRO_TIME     = 3.0 // Time after which the level intro ends.
 )
 
 type CountState uint8
@@ -75,6 +79,12 @@ type Hud struct {
 	selectedWeapon, nextWeapon WeaponIndex
 
 	flickerTime float32
+	intro       struct {
+		Timer                            float32
+		Sweep1, Sweep2, Banner1, Banner2 scene.Id[*ui.Box]
+		Background, Star, Sickle, Eyes   scene.Id[*ui.Box]
+		Title, MapNumber                 scene.Id[*ui.Text]
+	}
 }
 
 func (hud *Hud) Init() {
@@ -131,9 +141,8 @@ func (hud *Hud) Init() {
 			Depth: 9.0,
 			Scale: 1.0,
 		},
-		Color: color.Blue.WithAlpha(0.5),
+		Color: color.Transparent,
 	})
-	hud.flashSpeed = 0.5
 
 	hud.weapons = [WEAPON_ORDER_COUNT]Weapon{
 		WEAPON_ORDER_SICKLE:  &hud.sickle,
@@ -191,11 +200,36 @@ func (hud *Hud) InitVictory() {
 }
 
 func (hud *Hud) InitIntro(levelTitle, mapNumber string) {
-	if len(levelTitle) == 0 {
+	if len(levelTitle) == 0 || len(mapNumber) == 0 {
+		hud.intro.Timer = math2.Inf32()
 		return
 	}
 
-	hud.UI.Boxes.New(ui.Box{
+	hud.intro.Background, _, _ = hud.UI.Boxes.New(ui.Box{
+		Color: color.Black,
+		Transform: ui.Transform{
+			Dest:  math2.Rect{Width: settings.UIWidth(), Height: settings.UIHeight()},
+			Depth: 8.9,
+		},
+	})
+
+	starMesh, _ := cache.GetMesh("assets/models/star_transition.obj")
+	hud.intro.Star, _, _ = hud.UI.Boxes.New(ui.Box{
+		Transform: ui.Transform{
+			Dest: math2.Rect{
+				Y:      -settings.UIHeight() * 0.25,
+				Width:  settings.UIWidth(),
+				Height: settings.UIHeight() * 1.5,
+			},
+			Depth: 8.9,
+			Scale: 0.5,
+		},
+		Color:  color.Black,
+		Mesh:   starMesh,
+		Hidden: true,
+	})
+
+	hud.intro.Banner1, _, _ = hud.UI.Boxes.New(ui.Box{
 		Color: color.Blue,
 		Transform: ui.Transform{
 			Dest:  math2.Rect{X: 0.0, Y: 64.0, Width: settings.UIWidth(), Height: 96.0},
@@ -203,7 +237,8 @@ func (hud *Hud) InitIntro(levelTitle, mapNumber string) {
 		},
 	})
 
-	_, titleTxt, _ := hud.UI.Texts.New()
+	var titleTxt *ui.Text
+	hud.intro.Title, titleTxt, _ = hud.UI.Texts.New()
 	titleTxt.Settings = ui.TextSettings{
 		Text:      levelTitle,
 		Alignment: ui.TEXT_ALIGN_CENTER,
@@ -219,7 +254,21 @@ func (hud *Hud) InitIntro(levelTitle, mapNumber string) {
 		Depth: 9.1,
 	}
 
-	_, episodeBg, _ := hud.UI.Boxes.New(ui.Box{
+	var sweep1 *ui.Box
+	hud.intro.Sweep1, sweep1, _ = hud.UI.Boxes.New()
+	sweep1.Transform = ui.Transform{
+		Dest: math2.Rect{
+			X:      0.0,
+			Y:      63.0,
+			Width:  settings.UIWidth(),
+			Height: 98.0,
+		},
+		Depth: 9.2,
+	}
+	sweep1.Color = color.Black
+
+	var banner2 *ui.Box
+	hud.intro.Banner2, banner2, _ = hud.UI.Boxes.New(ui.Box{
 		Color: color.Blue,
 		Transform: ui.Transform{
 			Dest:  math2.Rect{X: -48.0, Y: settings.UIHeight() - 224.0, Width: 352.0, Height: 96.0},
@@ -228,12 +277,53 @@ func (hud *Hud) InitIntro(levelTitle, mapNumber string) {
 		},
 	})
 
-	_, episodeTxt, _ := hud.UI.Texts.New()
+	var episodeTxt *ui.Text
+	hud.intro.MapNumber, episodeTxt, _ = hud.UI.Texts.New()
 	episodeTxt.SetText(mapNumber)
 	episodeTxt.Transform = ui.Transform{
-		Dest:  math2.Rect{X: 32.0, Y: episodeBg.DestPosition()[1] + 8.0, Width: 256.0, Height: episodeBg.Dest.Height},
+		Dest:  math2.Rect{X: 32.0, Y: banner2.DestPosition()[1] + 8.0, Width: 256.0, Height: banner2.Dest.Height},
 		Scale: 3.0,
 		Depth: 9.1,
+	}
+
+	var sweep2 *ui.Box
+	hud.intro.Sweep2, sweep2, _ = hud.UI.Boxes.New()
+	sweep2.Transform = ui.Transform{
+		Dest: math2.Rect{
+			X:      0.0,
+			Y:      banner2.Dest.Y - 1.0,
+			Width:  banner2.Dest.Width + 1.0,
+			Height: banner2.Dest.Height + 2.0,
+		},
+		Depth: 9.2,
+	}
+	sweep2.Color = color.Black
+
+	sickleTex := cache.GetTexture("assets/textures/ui/intro_sickle.png")
+	var sickle *ui.Box
+	hud.intro.Sickle, sickle, _ = hud.UI.Boxes.New(ui.NewBoxFull(math2.Rect{
+		X:      settings.UIWidth() + 8.0,
+		Y:      sweep1.Dest.Y - float32(sickleTex.Height())/2.0,
+		Width:  float32(sickleTex.Width()) * SpriteScale(),
+		Height: float32(sickleTex.Height()) * SpriteScale(),
+	}, sickleTex, color.White))
+	sickle.Depth = 9.3
+
+	var eyes *ui.Box
+	hud.intro.Eyes, eyes, _ = hud.UI.Boxes.New()
+	eyesTex := cache.GetTexture("assets/textures/ui/intro_eyes.png")
+	eyes.AnimPlayer = comps.NewAnimationPlayer(eyesTex.GetDefaultAnimation(), true)
+	eyes.Texture = eyesTex
+	eyesWidth := eyes.AnimPlayer.Frame().Rect.Width * SpriteScale()
+	eyesHeight := eyes.AnimPlayer.Frame().Rect.Height * SpriteScale()
+	eyes.Transform = ui.Transform{
+		Dest: math2.Rect{
+			X:      settings.UIWidth()/2.0 - eyesWidth/2.0,
+			Y:      settings.UIHeight()/2.0 - eyesHeight/2.0,
+			Width:  eyesWidth,
+			Height: eyesHeight,
+		},
+		Depth: 9.3,
 	}
 }
 
@@ -272,6 +362,67 @@ func (hud *Hud) Update(deltaTime float32) {
 	// Update FPS counter
 	if fpsText, ok := hud.FPSCounter.Get(); ok {
 		fpsText.SetText(fmt.Sprintf("FPS: %v", engine.FPS()))
+	}
+
+	// Update level intro
+	if hud.intro.Timer < LEVEL_INTRO_TIME {
+		hud.intro.Timer += deltaTime
+
+		sickle, _ := scene.Get[*ui.Box](hud.intro.Sickle.Handle)
+		sickleSpeed := deltaTime * settings.UIWidth() * 3.0
+		sickle.Rotation += deltaTime * math.Pi * 16.0
+		switch {
+		case hud.intro.Timer < 0.5:
+			// Wait
+		case hud.intro.Timer < 1.0:
+			if sickle.Dest.X < -float32(sickle.Texture.Width())*SpriteScale() {
+				sweep2, _ := scene.Get[*ui.Box](hud.intro.Sweep2.Handle)
+				sickle.Dest.Y = sweep2.Dest.Y - float32(sickle.Texture.Height()/2)*SpriteScale()
+			} else {
+				sickle.Dest.X -= sickleSpeed
+			}
+		case hud.intro.Timer < 3.5:
+			sickle.Dest.X += sickleSpeed
+		}
+
+		switch {
+		case hud.intro.Timer < 0.5:
+			// Wait
+		case hud.intro.Timer < 1.0:
+			sweep1, _ := scene.Get[*ui.Box](hud.intro.Sweep1.Handle)
+			delta := deltaTime * settings.UIWidth() * 3.0
+			sweep1.Dest.Width -= delta
+		case hud.intro.Timer < 2.0:
+			sweep2, _ := scene.Get[*ui.Box](hud.intro.Sweep2.Handle)
+			delta := deltaTime * 2048.0
+			sweep2.Dest.Width = max(0, sweep2.Dest.Width-delta)
+			sweep2.Dest.X += delta
+		case hud.intro.Timer < 2.5:
+			bg, _ := scene.Get[*ui.Box](hud.intro.Background.Handle)
+			bg.Hidden = true
+			star, _ := scene.Get[*ui.Box](hud.intro.Star.Handle)
+			star.Hidden = false
+			star.Scale += deltaTime * 200.0
+		case hud.intro.Timer < 3.5:
+			titleBh, _ := scene.Get[*ui.Box](hud.intro.Banner1.Handle)
+			delta := deltaTime * settings.UIWidth() * 2.0
+			titleBh.Dest.X += delta
+			titleTxt, _ := scene.Get[*ui.Text](hud.intro.Title.Handle)
+			titleTxt.Dest.X += delta
+			episodeBanner, _ := scene.Get[*ui.Box](hud.intro.Banner2.Handle)
+			episodeBanner.Dest.X -= delta
+			episodeTxt, _ := scene.Get[*ui.Text](hud.intro.MapNumber.Handle)
+			episodeTxt.Dest.X -= delta
+		case hud.intro.Timer >= LEVEL_INTRO_TIME:
+			// Remove all elements in the intro struct by calling the Remove method.
+			introStruct := reflect.ValueOf(hud.intro)
+			for f := range introStruct.NumField() {
+				field := introStruct.Field(f)
+				if method := field.MethodByName("Remove"); method != (reflect.Value{}) {
+					method.Call(nil)
+				}
+			}
+		}
 	}
 
 	// Update victory stats
@@ -347,6 +498,10 @@ func (hud *Hud) UpdateDebugCounters(renderContext *render.Context, avgCollisionT
 				renderContext.DrawnParticlesCount,
 				avgCollisionTime))
 	}
+}
+
+func (hud *Hud) IntroTimeLeft() float32 {
+	return LEVEL_INTRO_TIME - hud.intro.Timer
 }
 
 func (hud *Hud) Render() {

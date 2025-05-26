@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -14,10 +15,12 @@ import (
 
 type Box struct {
 	Transform
-	Src          math2.Rect
-	Color        color.Color
-	Texture      *textures.Texture
-	AnimPlayer   comps.AnimationPlayer
+	Src        math2.Rect
+	Color      color.Color
+	Texture    *textures.Texture
+	AnimPlayer comps.AnimationPlayer
+	Mesh       *geom.Mesh // The mesh to use. If nil, will use the default quad mesh.
+
 	FlippedHorz  bool
 	Hidden       bool
 	oldTransform Transform
@@ -81,7 +84,17 @@ func (box *Box) Matrix() mgl32.Mat4 {
 		bx, by := box.Dest.Center()
 		scx := box.Dest.Width / 2.0
 		scy := box.Dest.Height / 2.0
-		box.matrix = mgl32.Translate3D(bx, by, box.Depth).Mul4(mgl32.ShearY3D(box.Shear, 0.0)).Mul4(mgl32.Scale3D(scx, scy, 1.0))
+		centerScale := box.Scale
+		if centerScale == 0.0 {
+			// 0 means that a scale was not supplied, so use 1 as default.
+			// If the box needs to be completely hidden, use the Hidden property instead of scaling to 0.
+			centerScale = 1.0
+		}
+		box.matrix = mgl32.Translate3D(bx, by, box.Depth). // Move to final position
+									Mul4(mgl32.ShearY3D(box.Shear, 0.0)).               // Apply shear
+									Mul4(mgl32.Scale3D(scx, scy, 1.0)).                 // Scale by box dimensions according to top left
+									Mul4(mgl32.Scale3D(centerScale, centerScale, 0.0)). // Overall scale
+									Mul4(mgl32.Rotate3DZ(box.Rotation).Mat4())
 	}
 	return box.matrix
 }
@@ -91,7 +104,11 @@ func (box *Box) Render(context *render.Context) {
 		return
 	}
 	failure.CheckOpenGLError()
-	cache.QuadMesh.Bind()
+	mesh := box.Mesh
+	if box.Mesh == nil {
+		mesh = cache.QuadMesh
+	}
+	mesh.Bind()
 	shaders.UIShader.Use()
 
 	_ = context.SetUniforms(shaders.UIShader)
@@ -120,6 +137,6 @@ func (box *Box) Render(context *render.Context) {
 
 	// Set uniforms
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, box.Matrix())
-	cache.QuadMesh.DrawAll()
+	mesh.DrawAll()
 	failure.CheckOpenGLError()
 }

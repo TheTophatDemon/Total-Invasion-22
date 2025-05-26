@@ -266,6 +266,8 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 
 		// Level files starting with e#m# activate the level intro.
 		world.Hud.InitIntro(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
+	} else {
+		world.Hud.InitIntro("", "")
 	}
 
 	world.Hud.LevelStartTime = time.Now()
@@ -362,12 +364,14 @@ func (world *World) Render() {
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
 
-	// Render sky
-	world.skyRender.Render(&renderContext)
+	if world.Hud.IntroTimeLeft() < 2.0 {
+		// Render sky
+		world.skyRender.Render(&renderContext)
 
-	// Render 3D game elements
-	scene.RenderStores(world, &renderContext)
-	renderContext.RenderTranslucentObjects()
+		// Render 3D game elements
+		scene.RenderStores(world, &renderContext)
+		renderContext.RenderTranslucentObjects()
+	}
 
 	world.Hud.UpdateDebugCounters(&renderContext, world.avgCollisionTime)
 	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {

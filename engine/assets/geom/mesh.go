@@ -220,6 +220,9 @@ func (m *Mesh) TransformedAABB(transform mgl32.Mat4) math2.Box {
 }
 
 func (m *Mesh) Bind() {
+	if m == nil {
+		return
+	}
 	if !m.uploaded {
 		m.Upload()
 	}
@@ -265,6 +268,9 @@ func (m *Mesh) Upload() {
 }
 
 func (m *Mesh) DrawAll() {
+	if m == nil {
+		return
+	}
 	gl.DrawElementsWithOffset(m.primitiveType, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
 }
 

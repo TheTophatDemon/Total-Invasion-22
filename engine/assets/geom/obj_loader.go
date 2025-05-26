@@ -37,7 +37,7 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 		Pos:      make([]mgl32.Vec3, 0),
 		TexCoord: make([]mgl32.Vec2, 0),
 		Normal:   make([]mgl32.Vec3, 0),
-		Color:    nil,
+		Color:    make([]mgl32.Vec4, 0),
 	}
 	inds := make([]uint32, 0)
 
@@ -152,6 +152,9 @@ func LoadOBJMesh(path string) (*Mesh, error) {
 						verts.Normal = append(verts.Normal,
 							mgl32.Vec3(obj.norm[idx[2]-1]))
 					}
+
+					// Assign white as default vertex color.
+					verts.Color = append(verts.Color, mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 				}
 			}
 			obj.materials[materialName].faces = append(obj.materials[materialName].faces, face)

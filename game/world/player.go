@@ -96,15 +96,21 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 
 	// Initialize weapons
 	player.ammo[game.AMMO_TYPE_NONE] = 0
-	player.ammo[game.AMMO_TYPE_SICKLE] = 1
 	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_SICKLE)
 	player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
+
+	// Spawn intro sickle
+	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
+	firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -4.0}, player.Body().Transform.Matrix())
+	SpawnIntroSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
 
 	return
 }
 
 func (player *Player) Update(deltaTime float32) {
-	if player.world.InWinState() {
+	if player.world.Hud.IntroTimeLeft() > 0.5 {
+		// Wait
+	} else if player.world.InWinState() {
 		// Win logic
 		if !player.AnimPlayer.IsPlaying() {
 			player.AnimPlayer.Play()

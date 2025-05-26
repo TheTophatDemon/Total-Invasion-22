@@ -18,8 +18,10 @@ type (
 	}
 
 	Transform struct {
-		Dest                math2.Rect
-		Depth, Shear, Scale float32
+		Dest         math2.Rect
+		Depth, Shear float32
+		Scale        float32 // A multiplier for the item's size around its center. If it is 0, then a default value of 1 will be used.
+		Rotation     float32 // Rotation angle in radians
 	}
 
 	sortedElement struct {

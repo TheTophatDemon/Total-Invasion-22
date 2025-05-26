@@ -32,11 +32,16 @@ func (sickle *Sickle) Init(hud *Hud) {
 	}
 
 	var ok bool
+	sickle.throwAnim, ok = sickle.spriteTexture.GetAnimation("throw")
+	if !ok {
+		log.Println("sickle throw anim not found")
+	}
+	sickle.defaultAnimation = sickle.throwAnim
+
 	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
 	if !ok {
 		log.Println("sickle idle anim not found")
 	}
-	sickle.defaultAnimation = sickle.idleAnim
 
 	sickle.spriteSize = mgl32.Vec2{
 		sickle.idleAnim.Frames[0].Rect.Width * SpriteScale(),
@@ -47,11 +52,6 @@ func (sickle *Sickle) Init(hud *Hud) {
 		settings.UIHeight() - sickle.spriteSize.Y(),
 	}
 	sickle.spriteStartPos = sickle.spriteEndPos.Add(mgl32.Vec2{0.0, sickle.spriteSize.Y()})
-
-	sickle.throwAnim, ok = sickle.spriteTexture.GetAnimation("throw")
-	if !ok {
-		log.Println("sickle throw anim not found")
-	}
 
 	sickle.catchAnim, ok = sickle.spriteTexture.GetAnimation("catch")
 	if !ok {
