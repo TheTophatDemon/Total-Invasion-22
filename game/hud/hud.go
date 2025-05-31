@@ -17,6 +17,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -84,6 +85,7 @@ type Hud struct {
 		Sweep1, Sweep2, Banner1, Banner2 scene.Id[*ui.Box]
 		Background, Star, Sickle, Eyes   scene.Id[*ui.Box]
 		Title, MapNumber                 scene.Id[*ui.Text]
+		Voice                            tdaudio.VoiceId
 	}
 }
 
@@ -374,7 +376,11 @@ func (hud *Hud) Update(deltaTime float32) {
 		switch {
 		case hud.intro.Timer < 0.5:
 			// Wait
+			if !hud.intro.Voice.IsValid() {
+				hud.intro.Voice = cache.GetSfx("assets/sounds/ui/intro_whoosh1.wav").Play()
+			}
 		case hud.intro.Timer < 1.0:
+			hud.intro.Voice = tdaudio.VoiceId{}
 			if sickle.Dest.X < -float32(sickle.Texture.Width())*SpriteScale() {
 				sweep2, _ := scene.Get[*ui.Box](hud.intro.Sweep2.Handle)
 				sickle.Dest.Y = sweep2.Dest.Y - float32(sickle.Texture.Height()/2)*SpriteScale()
@@ -382,6 +388,9 @@ func (hud *Hud) Update(deltaTime float32) {
 				sickle.Dest.X -= sickleSpeed
 			}
 		case hud.intro.Timer < 3.5:
+			if !hud.intro.Voice.IsValid() {
+				hud.intro.Voice = cache.GetSfx("assets/sounds/ui/intro_whoosh2.wav").Play()
+			}
 			sickle.Dest.X += sickleSpeed
 		}
 

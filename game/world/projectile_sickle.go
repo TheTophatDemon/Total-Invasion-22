@@ -60,7 +60,7 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 func SpawnIntroSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = SpawnSickle(world, position, rotation, owner)
 	proj.moveFunc = proj.introSickleMove
-	proj.forwardSpeed = 1.0
+	proj.forwardSpeed = -1.0
 	return
 }
 
@@ -82,20 +82,16 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) introSickleMove(deltaTime float32) {
-	if proj.world.Hud.IntroTimeLeft() < 1.0 {
-		proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*50.0)
-		if owner, ok := scene.Get[HasActor](proj.owner); ok {
-			if proj.forwardSpeed < 0.0 {
-				ownerPos := owner.Body().Transform.Position()
-				projPos := proj.body.Transform.Position()
-				proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
-			}
+	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*50.0)
+	if owner, ok := scene.Get[HasActor](proj.owner); ok {
+		if proj.forwardSpeed < 0.0 {
+			ownerPos := owner.Body().Transform.Position()
+			projPos := proj.body.Transform.Position()
+			proj.body.Transform.SetRotation(0.0, math2.Atan2(projPos.Z()-ownerPos.Z(), ownerPos.X()-projPos.X())+math2.HALF_PI, 0.0)
 		}
-
-		proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
-	} else {
-		proj.body.Velocity = mgl32.Vec3{}
 	}
+
+	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {

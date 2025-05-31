@@ -36,7 +36,6 @@ func (sickle *Sickle) Init(hud *Hud) {
 	if !ok {
 		log.Println("sickle throw anim not found")
 	}
-	sickle.defaultAnimation = sickle.throwAnim
 
 	sickle.idleAnim, ok = sickle.spriteTexture.GetAnimation("idle")
 	if !ok {
@@ -57,6 +56,14 @@ func (sickle *Sickle) Init(hud *Hud) {
 	if !ok {
 		log.Println("sickle catch anim not found")
 	}
+	// We want to start with the throw animation for the level intro and then use the catch animation later.
+	sickle.defaultAnimation = sickle.throwAnim
+}
+
+func (sickle *Sickle) Select() {
+	sickle.weaponBase.Select()
+	// Reset the animation that plays on selection after the level intro.
+	sickle.defaultAnimation = sickle.catchAnim
 }
 
 func (sickle *Sickle) Order() WeaponIndex {

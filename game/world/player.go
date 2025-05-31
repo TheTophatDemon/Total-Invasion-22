@@ -101,7 +101,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 
 	// Spawn intro sickle
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
-	firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -4.0}, player.Body().Transform.Matrix())
+	firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -80.0}, player.Body().Transform.Matrix())
 	SpawnIntroSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
 
 	return
