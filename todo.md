@@ -4,6 +4,7 @@
 - Dummkopf enemy
 - Armor
 - Weapon wheel / menu
+- Make message bar flash to better draw player's attention
 - Feedback when you try to select a weapon you don't have.
 - Re-record enemy voices
 - Loading screen?
