@@ -477,6 +477,7 @@ func (hud *Hud) Update(deltaTime float32) {
 							ShadowColor:  settings.Current.TextShadowColor,
 							ShadowOffset: mgl32.Vec2{2.0, 2.0},
 							Font:         cache.DefaultFont,
+							WrapWords:    true,
 						}
 						txt.Color = color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}
 					}

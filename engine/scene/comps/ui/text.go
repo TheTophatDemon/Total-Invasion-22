@@ -121,7 +121,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			}
 
 			// Shift all characters in the line to the right depending on text alignment
-			for i := 0; i < numCharsInLine; i += 1 {
+			for i := range numCharsInLine {
 				boxes[len(boxes)-1-i].X += shiftAmount
 			}
 		}
@@ -171,7 +171,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			}
 
 			if i == len(word)-runeWidth || !txt.Settings.WrapWords {
-				// On the last character in the word, determine if the word should go on a new line
+				// Determine if the word should go on a new line
 				overflowsBounds := (charRect.X+charRect.Width >= txt.Dest.Width)
 				firstWordOnLine := (firstBox.X == originX)
 
@@ -182,9 +182,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 						chars = chars[:len(chars)-runeIndex]
 						numCharsInLine -= runeIndex
 					} else {
-						boxes = boxes[:len(boxes)-1]
-						chars = chars[:len(chars)-1]
-						numCharsInLine -= 1
+						word = word[i:]
 					}
 					txt.lineCount += 1
 					newLine()
