@@ -1,5 +1,6 @@
 # TODO
 - Fix corpses sometimes floating over lava
+- Fix word wrapping in text...again
 - Make elevated tile shape for lava pools
 - Dummkopf enemy
 - Armor

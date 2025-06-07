@@ -16,6 +16,16 @@ var (
 	Transparent = Color{}
 )
 
+// Makes a color using byte values from 0-255.
+func FromBytes(r, g, b, a byte) Color {
+	return Color{
+		R: float32(r) / 255.0,
+		G: float32(g) / 255.0,
+		B: float32(b) / 255.0,
+		A: float32(a) / 255.0,
+	}
+}
+
 func (c Color) Fade(amount float32) Color {
 	return Color{
 		R: c.R, G: c.G, B: c.B,

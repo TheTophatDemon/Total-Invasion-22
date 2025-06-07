@@ -56,7 +56,7 @@ type Enemy struct {
 
 type enemyState struct {
 	anim                   textures.Animation
-	stopAnim               bool
+	stopAnim               bool // Set to true to leave the animation on its first frame without playing it.
 	enterSound, leaveSound tdaudio.SoundId
 	updateFunc             func(enemy *Enemy, deltaTime float32)
 	enterFunc              func(enemy *Enemy, oldState *enemyState)
@@ -73,6 +73,7 @@ var enemyTypeConfigFuncs = [game.ENEMY_TYPE_COUNT]func(enemy *Enemy) enemyConfig
 	game.ENEMY_TYPE_WRAITH:        configureWraith,
 	game.ENEMY_TYPE_FIRE_WRAITH:   configureFireWraith,
 	game.ENEMY_TYPE_MOTHER_WRAITH: configureMotherWraith,
+	game.ENEMY_TYPE_DUMMKOPF:      configureDummkopf,
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -85,6 +86,8 @@ func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, err
 		variant = game.ENEMY_TYPE_FIRE_WRAITH
 	case "mother wraith":
 		variant = game.ENEMY_TYPE_MOTHER_WRAITH
+	case "dummkopf":
+		variant = game.ENEMY_TYPE_DUMMKOPF
 	default:
 		variant = game.ENEMY_TYPE_WRAITH
 	}
