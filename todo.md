@@ -1,6 +1,10 @@
 # TODO
 - Dummkopf enemy
-  - Attack state
+  - Fix bugged animation after done firing
+  - Remove knockback from projectile towards player
+  - Add sound effect
+  - Make new graphic for plasma balls?
+  - Drop plasma ammo on death sometimes.
 - Armor
 - Weapon wheel / menu
 - Make message bar flash to better draw player's attention

@@ -31,7 +31,7 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 		cache.GetSfx(SFX_GRENADE).Play()
 	case hud.WEAPON_ORDER_PARUSU:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.25, -0.5}, player.Body().Transform.Matrix())
-		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle, false)
 		cache.GetSfx(SFX_PARUSU_SHOOT).Play()
 	case hud.WEAPON_ORDER_AIRHORN:
 		if justPressed {

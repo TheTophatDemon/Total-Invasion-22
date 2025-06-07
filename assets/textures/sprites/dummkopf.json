@@ -42,7 +42,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;back;5",
@@ -51,7 +51,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;back;6",
@@ -141,7 +141,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;side;5",
@@ -150,7 +150,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;side;6",
@@ -240,7 +240,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;front;5",
@@ -249,7 +249,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 100
    },
    {
     "filename": "dummkopf_atlas.png;front;6",
@@ -305,9 +305,9 @@
   "size": { "w": 391, "h": 326 },
   "scale": "1",
   "frameTags": [
+   { "name": "unwake", "from": 0, "to": 2, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" },
    { "name": "idle", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
    { "name": "wake", "from": 1, "to": 2, "direction": "forward", "repeat": "1", "color": "#000000ff" },
-   { "name": "unwake", "from": 1, "to": 2, "direction": "reverse", "color": "#fe5b59ff" },
    { "name": "attack end", "from": 3, "to": 4, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" },
    { "name": "attack start", "from": 3, "to": 4, "direction": "forward", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:1" },
    { "name": "attack", "from": 4, "to": 5, "direction": "forward", "color": "#000000ff", "data": "triggerFrame:1" },
