@@ -1,7 +1,6 @@
 # TODO
-- Fix corpses sometimes floating over lava
-- Make elevated tile shape for lava pools
 - Dummkopf enemy
+  - Attack state
 - Armor
 - Weapon wheel / menu
 - Make message bar flash to better draw player's attention

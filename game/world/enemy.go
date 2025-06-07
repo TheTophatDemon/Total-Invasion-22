@@ -320,7 +320,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 	} else if newState == &enemy.dieState {
 		enemy.world.Hud.EnemiesKilled++
 		enemy.actor.body.Layer = COL_LAYER_NONE
-		enemy.actor.body.Filter = COL_LAYER_MAP
+		enemy.actor.body.Filter = COL_LAYER_MAP | COL_LAYER_INVISIBLE
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 	}
 
