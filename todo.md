@@ -1,6 +1,5 @@
 # TODO
 - Dummkopf enemy
-  - Fix bugged animation after done firing
   - Remove knockback from projectile towards player
   - Add sound effect
   - Make new graphic for plasma balls?

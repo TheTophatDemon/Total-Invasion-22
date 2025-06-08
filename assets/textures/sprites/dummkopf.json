@@ -308,7 +308,7 @@
    { "name": "unwake", "from": 0, "to": 2, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" },
    { "name": "idle", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
    { "name": "wake", "from": 1, "to": 2, "direction": "forward", "repeat": "1", "color": "#000000ff" },
-   { "name": "attack end", "from": 3, "to": 4, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" },
+   { "name": "attack end", "from": 2, "to": 4, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" },
    { "name": "attack start", "from": 3, "to": 4, "direction": "forward", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:1" },
    { "name": "attack", "from": 4, "to": 5, "direction": "forward", "color": "#000000ff", "data": "triggerFrame:1" },
    { "name": "hurt", "from": 6, "to": 6, "direction": "forward", "color": "#000000ff" },

@@ -9,7 +9,6 @@ import (
 func configureDummkopf(enemy *Enemy) (params enemyConfig) {
 	params.texture = cache.GetTexture("assets/textures/sprites/dummkopf.png")
 	idleAnim, _ := params.texture.GetAnimation("idle;front")
-	wakeAnim, _ := params.texture.GetAnimation("wake;front")
 	unwakeAnim, _ := params.texture.GetAnimation("unwake;front")
 	attackStartAnim, _ := params.texture.GetAnimation("attack start;front")
 	stunAnim, _ := params.texture.GetAnimation("hurt;front")
@@ -22,7 +21,6 @@ func configureDummkopf(enemy *Enemy) (params enemyConfig) {
 		leaveSound: cache.GetSfx("assets/sounds/enemy/dummkopf/dummkopf_greeting.wav"),
 	}
 	enemy.chaseState = enemyState{
-		anim:       wakeAnim,
 		enterFunc:  dummkopfEnterChase,
 		updateFunc: dummkopfUpdateChase,
 	}
@@ -47,13 +45,19 @@ func configureDummkopf(enemy *Enemy) (params enemyConfig) {
 	}
 
 	enemy.actor.MaxHealth = 250.0
-	enemy.StunChance = 0.1
+	enemy.StunChance = 0.25
 
 	return
 }
 
 func dummkopfEnterChase(enemy *Enemy, oldState *enemyState) {
-	enemy.attackTimer = 0.5
+	if oldState == &enemy.attackState {
+		enemy.attackTimer = 1.0
+	} else {
+		enemy.attackTimer = 0.5
+		wakeAnim, _ := enemy.SpriteRender.Texture().GetAnimation("wake;front")
+		enemy.AnimPlayer.PlayNewAnim(wakeAnim)
+	}
 	enemy.faceTarget()
 }
 

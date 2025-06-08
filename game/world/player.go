@@ -210,6 +210,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.inputStrafe = 0.0
 	}
 
+	// Cheat codes
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
 		var message string = settings.Localize("noclipActivate")
 		if player.Body().Layer != COL_LAYER_NONE {
@@ -252,6 +253,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.Health = 0
 	}
 
+	if input.IsActionJustPressed(settings.ACTION_CAST_BLESSING) {
+		SpawnBlessing(player.world, player.actor.Position(), mgl32.Vec3{0.0, player.actor.YawAngle, 0.0}, player.id.Handle)
+	}
+
+	// Use key
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := player.Body().Transform.Forward()
@@ -263,6 +269,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 	}
 
+	// Weapon selection
 	if input.IsActionJustPressed(settings.ACTION_SICKLE) {
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 	} else if input.IsActionJustPressed(settings.ACTION_CHICKEN) {
@@ -275,12 +282,6 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_AIRHORN)
 	}
 
-	if input.IsActionPressed(settings.ACTION_SLOW) {
-		player.actor.MaxSpeed = player.WalkSpeed
-	} else {
-		player.actor.MaxSpeed = player.RunSpeed
-	}
-
 	if weap := player.world.Hud.SelectedWeapon(); weap != nil && input.IsActionPressed(settings.ACTION_FIRE) {
 		var cast collision.RaycastResult
 		if weap.IsShooter() {
@@ -291,6 +292,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
 			player.AttackWithWeapon(input.IsActionJustPressed(settings.ACTION_FIRE))
 		}
+	}
+
+	// Sprinting
+	if input.IsActionPressed(settings.ACTION_SLOW) {
+		player.actor.MaxSpeed = player.WalkSpeed
+	} else {
+		player.actor.MaxSpeed = player.RunSpeed
 	}
 
 	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)

@@ -99,11 +99,12 @@ func main() {
 	// Double grenade
 	// Sign of madness
 	input.BindActionKey(settings.ACTION_AIRHORN, glfw.Key7)
-	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})
-	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})
-	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})
-	input.BindActionCharSequence(settings.ACTION_DIE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE})
-	input.BindActionCharSequence(settings.ACTION_KILL_ENEMIES, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE})
+	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
+	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
+	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
+	input.BindActionCharSequence(settings.ACTION_DIE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
+	input.BindActionCharSequence(settings.ACTION_KILL_ENEMIES, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE})                         //TDNUKE
+	input.BindActionCharSequence(settings.ACTION_CAST_BLESSING, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})  //TDWOLOLO
 
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {

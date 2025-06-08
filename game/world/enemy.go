@@ -295,6 +295,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		enemy.world.Hud.EnemiesKilled--
 		enemy.actor.body.Layer = ENEMY_COL_LAYERS
 		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS
+		enemy.bloodOffset = mgl32.Vec3{}
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
 		enemy.voice.Stop()

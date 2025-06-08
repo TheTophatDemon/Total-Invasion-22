@@ -41,6 +41,7 @@ const (
 	ACTION_MARYSUE
 	ACTION_DIE
 	ACTION_KILL_ENEMIES
+	ACTION_CAST_BLESSING
 	ACTION_COUNT
 )
 
@@ -60,8 +61,6 @@ var actionNames = [ACTION_COUNT]string{
 	ACTION_PARUSU:     "Select Parusu",
 	ACTION_AIRHORN:    "Select Airhorn",
 	ACTION_USE:        "Use",
-	ACTION_NOCLIP:     "Noclip",
-	ACTION_GODMODE:    "God Mode",
 }
 
 type Data struct {
