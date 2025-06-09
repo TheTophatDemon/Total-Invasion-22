@@ -27,9 +27,11 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
 		proj.body.Shape = collision.NewSphere(0.35)
+		proj.knockbackForce = 5.0
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
 		proj.body.Shape = collision.NewSphere(0.25)
+		proj.knockbackForce = 10.0
 	}
 
 	tex := cache.GetTexture("assets/textures/sprites/plasma_ball.png")
@@ -39,7 +41,6 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.forwardSpeed = 120.0
 	proj.StunChance = 0.1
 	proj.Damage = 5
-	proj.knockbackForce = 10.0
 
 	proj.moveFunc = proj.moveForward
 	proj.body.OnIntersect = proj.dieOnHit

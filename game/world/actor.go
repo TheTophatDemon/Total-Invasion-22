@@ -6,6 +6,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
+const KNOCKBACK_FRICTION = 40.0
+
 type Actor struct {
 	MaxSpeed, AccelRate, Friction   float32
 	GravityAccel                    float32
@@ -62,7 +64,7 @@ func (actor *Actor) Update(deltaTime float32) {
 	if !actor.knockbackForce.ApproxEqual(mgl32.Vec3{}) {
 		// Apply friction to knockback
 		if knockbackSpeed := actor.knockbackForce.Len(); knockbackSpeed > mgl32.Epsilon {
-			frictionVec := actor.knockbackForce.Mul(-min(knockbackSpeed, actor.Friction*deltaTime) / knockbackSpeed)
+			frictionVec := actor.knockbackForce.Mul(-min(knockbackSpeed, KNOCKBACK_FRICTION*deltaTime) / knockbackSpeed)
 			actor.knockbackForce = actor.knockbackForce.Add(frictionVec)
 		} else {
 			actor.knockbackForce = mgl32.Vec3{}

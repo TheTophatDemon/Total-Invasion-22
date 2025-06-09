@@ -45,6 +45,8 @@ type Enemy struct {
 	attackState, dieState, reviveState             enemyState
 	state, previousState                           *enemyState
 	voice                                          tdaudio.VoiceId
+	spawnAmmo                                      game.AmmoType // Ammo type that will drop when enemy is killed
+	spawnAmmoChance                                float32       // Probability from 0 to 1
 
 	// Player or target tracking variables
 	targetHandle                scene.Handle
@@ -323,6 +325,10 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		enemy.actor.body.Layer = COL_LAYER_NONE
 		enemy.actor.body.Filter = COL_LAYER_MAP | COL_LAYER_INVISIBLE
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
+
+		if enemy.spawnAmmo != game.AMMO_TYPE_NONE && rand.Float32() < enemy.spawnAmmoChance {
+			SpawnAmmo(enemy.world, enemy.actor.Position(), enemy.spawnAmmo)
+		}
 	}
 
 	enemy.stateTimer = 0.0

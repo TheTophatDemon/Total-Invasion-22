@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 func configureDummkopf(enemy *Enemy) (params enemyConfig) {
@@ -46,6 +47,8 @@ func configureDummkopf(enemy *Enemy) (params enemyConfig) {
 
 	enemy.actor.MaxHealth = 250.0
 	enemy.StunChance = 0.25
+	enemy.spawnAmmo = game.AMMO_TYPE_PLASMA
+	enemy.spawnAmmoChance = 0.5
 
 	return
 }

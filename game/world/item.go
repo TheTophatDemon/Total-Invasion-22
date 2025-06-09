@@ -117,6 +117,18 @@ func SpawnMedkit(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *I
 	return
 }
 
+func SpawnAmmo(world *World, position mgl32.Vec3, ammoType game.AmmoType) (scene.Id[*Item], *Item, error) {
+	switch ammoType {
+	case game.AMMO_TYPE_EGG:
+		return SpawnEggCarton(world, position)
+	case game.AMMO_TYPE_GRENADE:
+		return SpawnGrenades(world, position)
+	case game.AMMO_TYPE_PLASMA:
+		return SpawnPlasmaVials(world, position)
+	}
+	return scene.Id[*Item]{}, nil, nil
+}
+
 func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
 	item.ammoType = game.AMMO_TYPE_EGG

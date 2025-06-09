@@ -1,15 +1,16 @@
 # TODO
 - Dummkopf enemy
-  - Remove knockback from projectile towards player
   - Add sound effect
   - Make new graphic for plasma balls?
-  - Drop plasma ammo on death sometimes.
 - Armor
 - Weapon wheel / menu
 - Make message bar flash to better draw player's attention
 - Feedback when you try to select a weapon you don't have.
 - Re-record enemy voices
 - Loading screen?
+- Title screen
+- Settings menu
+- Save states
 
 ## Ideas
 
