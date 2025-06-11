@@ -1,7 +1,4 @@
 # TODO
-- Dummkopf enemy
-  - Add sound effect
-  - Make new graphic for plasma balls?
 - Armor
 - Weapon wheel / menu
 - Make message bar flash to better draw player's attention

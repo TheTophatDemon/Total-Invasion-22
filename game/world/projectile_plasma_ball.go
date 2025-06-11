@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -23,18 +24,20 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 		Filter: COL_LAYER_NONE,
 		LockY:  true,
 	}
+	var tex *textures.Texture
 	if bigShot {
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
 		proj.body.Shape = collision.NewSphere(0.35)
 		proj.knockbackForce = 5.0
+		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
 		proj.body.Shape = collision.NewSphere(0.25)
 		proj.knockbackForce = 10.0
+		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
 	}
 
-	tex := cache.GetTexture("assets/textures/sprites/plasma_ball.png")
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
 	proj.dieAnim, _ = tex.GetAnimation("die")

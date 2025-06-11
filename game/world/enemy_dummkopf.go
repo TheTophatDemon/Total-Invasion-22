@@ -96,6 +96,8 @@ func dummkopfUpdateAttack(enemy *Enemy, deltaTime float32) {
 		if enemy.attackTimer < 0.0 {
 			enemy.attackTimer = 0.15
 			enemy.faceTarget()
+			enemy.voice = cache.GetSfx("assets/sounds/enemy/dummkopf/dummkopf_spit.wav").
+				PlayAttenuatedV(enemy.actor.Position())
 			SpawnPlasmaBall(enemy.world,
 				enemy.actor.Position().Add(mgl32.Vec3{0.0, 0.25, 0.0}),
 				mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0},
