@@ -72,6 +72,7 @@ type World struct {
 	nextLevel        string          // Path to the next level. Set once the player reaches an exit.
 	bspTree          tree.BspTree    // The BSP tree built in the previous frame.
 	avgCollisionTime int64           // Average number of milliseconds spent per frame solving collisions.
+	tickCount        int64
 	skyRender        comps.SkyRender
 }
 
@@ -281,6 +282,8 @@ func (world *World) ChangeMap(mapPath string) {
 }
 
 func (world *World) Update(deltaTime float32) {
+	defer func() { world.tickCount++ }()
+
 	world.removalQueue = world.removalQueue[0:0]
 
 	if input.IsActionJustPressed(settings.ACTION_KILL_ENEMIES) {
@@ -317,21 +320,15 @@ func (world *World) Update(deltaTime float32) {
 	it := world.IterBodies()
 	world.bspTree = tree.BuildBspTree(&it, world.GameMap)
 	it = world.IterBodies()
-	for {
-		bodyEnt, _ := it.Next()
-		if bodyEnt == nil {
-			break
-		}
-
+	for bodyEnt, _ := it.Next(); bodyEnt != nil; bodyEnt, _ = it.Next() {
 		collidableBodies := world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
-		collidableBodies[scene.NewHandle(0, 1, &world.GameMaps)] = struct{}{}
+		collidableBodies.Add(scene.NewHandle(0, 1, &world.GameMaps))
 		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)
 	}
 
 	duration := time.Now().Sub(startTime).Milliseconds()
 	if world.avgCollisionTime != 0 {
-		// This is not how you calculate a rolling average, but close enough...?
-		world.avgCollisionTime = (world.avgCollisionTime + duration) / 2
+		world.avgCollisionTime = (world.avgCollisionTime + duration) / world.tickCount
 	} else {
 		world.avgCollisionTime = duration
 	}

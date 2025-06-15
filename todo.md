@@ -1,5 +1,4 @@
 # TODO
-- Replace onIntersect callback with direct query in update methods?
 - Weapon wheel / menu
 - Message & chime for finding secrets
 - Make message bar flash to better draw player's attention

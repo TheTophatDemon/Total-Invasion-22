@@ -2,6 +2,7 @@ package tree
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -18,7 +19,7 @@ type BspTree struct {
 type bspNode struct {
 	splitAxis                   int
 	planeOffset                 float32
-	objects                     map[scene.Handle]struct{}
+	objects                     containers.Set[scene.Handle]
 	leftChildIdx, rightChildIdx int
 }
 
@@ -64,13 +65,13 @@ func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 
 func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 	// Collect iterator into set that we can sort independently
-	bodies := make(map[scene.Handle]struct{}, 0)
+	bodies := containers.NewSet[scene.Handle](0)
 	for {
 		ent, handle := bodiesIter.Next()
 		if ent == nil || ent == exception {
 			break
 		}
-		bodies[handle] = struct{}{}
+		bodies.Add(handle)
 	}
 
 	tree := BspTree{
@@ -90,7 +91,7 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 	return tree
 }
 
-func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies map[scene.Handle]struct{}) {
+func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[scene.Handle]) {
 	if len(bodies) <= BSP_MIN_OBJECTS || depth >= BSP_MAX_DEPTH {
 		// Create leaf node
 		node := bspNode{
@@ -119,8 +120,8 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies map[scene.Handle]
 		rightChildIdx: -1,
 	}
 
-	leftBodies := make(map[scene.Handle]struct{}, len(bodies))
-	rightBodies := make(map[scene.Handle]struct{}, len(bodies))
+	leftBodies := containers.NewSet[scene.Handle](len(bodies))
+	rightBodies := containers.NewSet[scene.Handle](len(bodies))
 	for handle := range bodies {
 		bodyHaver, ok := scene.Get[comps.HasBody](handle)
 		if !ok {
@@ -129,10 +130,10 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies map[scene.Handle]
 
 		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Transform.Position())
 		if touchesLeft {
-			leftBodies[handle] = struct{}{}
+			leftBodies.Add(handle)
 		}
 		if touchesRight {
-			rightBodies[handle] = struct{}{}
+			rightBodies.Add(handle)
 		}
 	}
 
@@ -158,24 +159,24 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies map[scene.Handle]
 
 // Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
-func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) map[scene.Handle]struct{} {
+func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
-func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) map[scene.Handle]struct{} {
+func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
 	if node.IsLeaf() {
 		return node.objects
 	}
-	res := make(map[scene.Handle]struct{}, 0)
+	res := containers.NewSet[scene.Handle](0)
 	touchesLeft, touchesRight := node.TouchesChild(shape, pos)
 	if node.rightChildIdx >= 0 && touchesRight {
 		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.rightChildIdx], pos, shape) {
-			res[handle] = struct{}{}
+			res.Add(handle)
 		}
 	}
 	if node.leftChildIdx >= 0 && touchesLeft {
 		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.leftChildIdx], pos, shape) {
-			res[handle] = struct{}{}
+			res.Add(handle)
 		}
 	}
 	return res

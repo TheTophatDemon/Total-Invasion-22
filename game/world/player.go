@@ -69,10 +69,11 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
-			Shape:  collision.NewSphere(0.7),
-			Layer:  player.initialCollisionLayers,
-			Filter: COL_FILTER_FOR_ACTORS,
-			LockY:  true,
+			Shape:       collision.NewSphere(0.7),
+			Layer:       player.initialCollisionLayers,
+			Filter:      COL_FILTER_FOR_ACTORS,
+			LockY:       true,
+			OnIntersect: player.onIntersect,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
 		AccelRate:    100.0,
@@ -319,6 +320,12 @@ func (player *Player) ProcessSignal(signal any) {
 	switch signal.(type) {
 	case game.TeleportationSignal:
 		player.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+	}
+}
+
+func (player *Player) onIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+	if item, isItem := otherEnt.(*Item); isItem {
+		item.OnUse(player)
 	}
 }
 

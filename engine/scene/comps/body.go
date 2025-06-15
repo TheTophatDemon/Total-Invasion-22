@@ -2,6 +2,7 @@ package comps
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 )
@@ -26,7 +27,7 @@ func (body *Body) Body() *Body {
 	return body
 }
 
-func (body *Body) MoveAndCollide(deltaTime float32, bodies map[scene.Handle]struct{}) {
+func (body *Body) MoveAndCollide(deltaTime float32, bodies containers.Set[scene.Handle]) {
 	before := body.Transform.Position()
 
 	movement := body.Velocity.Mul(deltaTime)

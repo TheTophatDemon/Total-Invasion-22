@@ -295,11 +295,10 @@ func spawnItemGeneric(world *World, position, rotation, scale mgl32.Vec3) (id sc
 
 	*item = Item{
 		body: comps.Body{
-			Transform:   comps.TransformFromTranslationAnglesScale(position, rotation, scale),
-			Shape:       collision.NewSphere(0.5),
-			Layer:       0,
-			Filter:      0,
-			OnIntersect: item.onIntersect,
+			Transform: comps.TransformFromTranslationAnglesScale(position, rotation, scale),
+			Shape:     collision.NewSphere(0.5),
+			Layer:     0,
+			Filter:    0,
 		},
 		flashColor:   color.White.WithAlpha(0.75),
 		pickupSound:  cache.GetSfx("assets/sounds/pickup.wav"),
@@ -387,13 +386,4 @@ func (item *Item) OnUse(player *Player) {
 	} else {
 		item.animPlayer.PlayNewAnim(item.collectAnim)
 	}
-}
-
-func (item *Item) onIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
-	player, isPlayer := otherEnt.(*Player)
-	if !otherEnt.Body().OnLayer(COL_LAYER_PLAYERS) || !isPlayer {
-		return
-	}
-
-	item.OnUse(player)
 }
