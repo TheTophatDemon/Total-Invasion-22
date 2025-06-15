@@ -55,14 +55,14 @@ type Hud struct {
 	countTimer                                 float32 // Seconds between counting the stats on the victory screen
 	countState                                 CountState
 
-	FPSCounter, SpriteCounter scene.Id[*ui.Text]
-	face                      scene.Id[*ui.Box]
-	faceState                 faceState
-	faceTimer                 float32
-	heartIcon, ammoIcon       scene.Id[*ui.Box]
-	keyIcons                  [4]scene.Id[*ui.Box]
-	healthStat, ammoStat      scene.Id[*ui.Text]
-	levelStats, continueText  scene.Id[*ui.Text]
+	FPSCounter, SpriteCounter       scene.Id[*ui.Text]
+	face                            scene.Id[*ui.Box]
+	faceState                       faceState
+	faceTimer                       float32
+	heartIcon, ammoIcon, armorIcon  scene.Id[*ui.Box]
+	keyIcons                        [4]scene.Id[*ui.Box]
+	healthStat, ammoStat, armorStat scene.Id[*ui.Text]
+	levelStats, continueText        scene.Id[*ui.Text]
 
 	messageText     scene.Id[*ui.Text]
 	messageTimer    float32
@@ -89,17 +89,19 @@ type Hud struct {
 	}
 }
 
-func (hud *Hud) Init() {
+func (hud *Hud) Init(debug bool) {
 	hud.UI = ui.NewUIScene(256, 64)
 
-	var fpsText *ui.Text
-	hud.FPSCounter, fpsText, _ = hud.UI.Texts.New()
-	fpsText.Dest = math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}
+	if debug {
+		var fpsText *ui.Text
+		hud.FPSCounter, fpsText, _ = hud.UI.Texts.New()
+		fpsText.Dest = math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0}
 
-	var spriteCounter *ui.Text
-	hud.SpriteCounter, spriteCounter, _ = hud.UI.Texts.New()
-	spriteCounter.Dest = math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0}
-	spriteCounter.Color = color.Blue
+		var spriteCounter *ui.Text
+		hud.SpriteCounter, spriteCounter, _ = hud.UI.Texts.New()
+		spriteCounter.Dest = math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0}
+		spriteCounter.Color = color.Blue
+	}
 
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")

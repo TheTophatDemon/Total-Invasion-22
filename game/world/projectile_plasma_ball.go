@@ -34,7 +34,7 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
 		proj.body.Shape = collision.NewSphere(0.25)
-		proj.knockbackForce = 10.0
+		proj.knockbackForce = 12.0
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
 	}
 

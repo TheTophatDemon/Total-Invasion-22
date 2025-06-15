@@ -21,6 +21,8 @@ type PlayerStats struct {
 	Health          int
 	Noclip, GodMode bool
 	Ammo            *game.Ammo
+	Armor           game.ArmorType
+	ArmorAmount     int
 	Keys            game.KeyType
 	MoveSpeed       float32
 }
@@ -171,6 +173,34 @@ func (hud *Hud) InitPlayerStats() {
 	}
 	ammoStat.Color = color.Blue
 
+	armorIconSlice := rightPanelTex.FindSlice("armorIcon")
+	// Armor icon
+	hud.armorIcon, _, _ = hud.UI.Boxes.New(ui.Box{
+		Color:   color.White,
+		Texture: hudIconsTexture,
+		Transform: ui.Transform{
+			Dest:  fitToSlice(rightPanel.Dest, armorIconSlice),
+			Depth: 6.0,
+		},
+		Hidden: true,
+	})
+
+	// Ammo counter
+	var armorStat *ui.Text
+	hud.armorStat, armorStat, _ = hud.UI.Texts.New()
+	armorStatSlice := rightPanelTex.FindSlice("armorStat")
+	armorStat.Settings = ui.TextSettings{
+		Font:      counterFont,
+		Text:      "000",
+		Alignment: ui.TEXT_ALIGN_CENTER,
+	}
+	armorStat.Transform = ui.Transform{
+		Dest:  fitToSlice(rightPanel.Dest, armorStatSlice),
+		Depth: 6.0,
+		Scale: SpriteScale(),
+	}
+	armorStat.Color = color.Green
+
 	// Key icons
 	for i, key := range [...]game.KeyType{game.KEY_TYPE_BLUE, game.KEY_TYPE_BROWN, game.KEY_TYPE_YELLOW, game.KEY_TYPE_GRAY} {
 		var keyIcon *ui.Box
@@ -233,9 +263,9 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 			txt.Hidden = true
 		}
 	}
+	iconsTex := cache.GetTexture(TEX_HUD_ICONS)
 	if icon, ok := hud.ammoIcon.Get(); ok {
 		if weapon := hud.SelectedWeapon(); weapon != nil {
-			iconsTex := cache.GetTexture(TEX_HUD_ICONS)
 			if anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[weapon.AmmoType()]); ok {
 				if !icon.AnimPlayer.IsPlayingAnim(anim) {
 					icon.AnimPlayer.PlayNewAnim(anim)
@@ -243,6 +273,27 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 				icon.Hidden = false
 			} else {
 				icon.Hidden = true
+			}
+		} else {
+			icon.Hidden = true
+		}
+	}
+
+	// Armor stat
+	if txt, ok := hud.armorStat.Get(); ok {
+		if stats.Armor != game.ARMOR_TYPE_NONE {
+			txt.SetText(fmt.Sprintf("%03d", stats.ArmorAmount))
+			txt.Hidden = false
+		} else {
+			txt.Hidden = true
+		}
+	}
+	if icon, ok := hud.armorIcon.Get(); ok {
+		anim, ok := iconsTex.GetAnimation(game.ArmorNames[stats.Armor] + "Armor")
+		if ok {
+			icon.Hidden = false
+			if !icon.AnimPlayer.IsPlayingAnim(anim) {
+				icon.AnimPlayer.PlayNewAnim(anim)
 			}
 		} else {
 			icon.Hidden = true

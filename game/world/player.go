@@ -42,6 +42,8 @@ type Player struct {
 	godMode                bool    // If true, the player does not take damage.
 	ammo                   game.Ammo
 	keys                   game.KeyType
+	armorType              game.ArmorType
+	armorAmount            float32
 }
 
 var _ HasActor = (*Player)(nil)
@@ -145,6 +147,8 @@ func (player *Player) Update(deltaTime float32) {
 	} else {
 		// Death logic
 		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
+		player.armorType = game.ARMOR_TYPE_NONE
+		player.armorAmount = 0.0
 		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
@@ -177,12 +181,14 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.Update(deltaTime)
 
 	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health:    int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
-		Noclip:    player.Body().Layer == COL_LAYER_NONE,
-		GodMode:   player.godMode,
-		Ammo:      &player.ammo,
-		Keys:      player.keys,
-		MoveSpeed: player.actor.body.Velocity.Len(),
+		Health:      int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
+		Noclip:      player.Body().Layer == COL_LAYER_NONE,
+		GodMode:     player.godMode,
+		Ammo:        &player.ammo,
+		Keys:        player.keys,
+		MoveSpeed:   player.actor.body.Velocity.Len(),
+		Armor:       player.armorType,
+		ArmorAmount: int(math2.Ceil(player.armorAmount)),
 	})
 }
 
@@ -289,8 +295,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
 		}
 
+		ammoBefore := player.ammo
 		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
 			player.AttackWithWeapon(input.IsActionJustPressed(settings.ACTION_FIRE))
+			weappy := player.world.Hud.SelectedWeapon()
+			if player.armorType == game.ARMOR_TYPE_BULLET && weappy != nil && weappy.Order() != hud.WEAPON_ORDER_SICKLE {
+				player.ammo = ammoBefore
+			}
 		}
 	}
 
@@ -315,6 +326,16 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 	if player.godMode {
 		return false
 	}
+
+	wasNonZero := player.armorAmount > 0
+	player.armorAmount = max(0, player.armorAmount-damage)
+	if player.armorAmount <= 0 && wasNonZero {
+		player.armorType = game.ARMOR_TYPE_NONE
+		cache.GetSfx("assets/sounds/armor_break.wav").Play()
+		player.world.Hud.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.White)
+	}
+	damage *= (1.0 - game.ArmorDefense[player.armorType])
+
 	player.actor.Health = max(0, player.actor.Health-damage)
 
 	if player.actor.Health > 0 {
@@ -353,5 +374,15 @@ func (player *Player) AddAmmo(ammoType game.AmmoType, amount int) bool {
 	}
 	newAmmo := player.ammo[ammoType] + amount
 	player.ammo[ammoType] = min(newAmmo, limit)
+	return true
+}
+
+// Adds armor to the player's stats, checking to not overfill limits. Returns false if player has max armor already.
+func (player *Player) AddArmor(armorType game.ArmorType, amount int) bool {
+	if armorType == player.armorType && player.armorAmount >= game.MAX_ARMOR {
+		return false
+	}
+	player.armorType = armorType
+	player.armorAmount = min(player.armorAmount+float32(amount), game.MAX_ARMOR)
 	return true
 }

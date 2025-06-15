@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
 	"runtime"
+	"slices"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 
@@ -48,12 +50,15 @@ func (app *App) LoadGame(mapPath string) {
 	cache.Reset()
 	cache.DefaultFont, _ = cache.GetFont(world.DEFAULT_FONT_PATH)
 
-	world, err := world.NewWorld(app, mapPath)
+	debugMode := slices.Contains(os.Args[1:], "debug")
+	world, err := world.NewWorld(app, mapPath, debugMode)
 	if err != nil {
 		panic(err)
 	}
 
-	input.TrapMouse()
+	if !debugMode {
+		input.TrapMouse()
+	}
 	app.world = world
 
 	runtime.GC()

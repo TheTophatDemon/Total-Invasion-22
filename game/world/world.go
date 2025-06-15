@@ -75,13 +75,13 @@ type World struct {
 	skyRender        comps.SkyRender
 }
 
-func NewWorld(app engine.Observer, mapPath string) (*World, error) {
+func NewWorld(app engine.Observer, mapPath string, debug bool) (*World, error) {
 	world := &World{
 		removalQueue: make([]scene.Handle, 0, 8),
 		app:          app,
 	}
 
-	world.Hud.Init()
+	world.Hud.Init(debug)
 
 	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
 	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
@@ -116,7 +116,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
 			}
 			if tex.HasFlag(TEX_FLAG_KILLZONE) {
-				//TODO: This may not work well
+				//TODO: Spawning an entity for every tile is really not efficient...
 				SpawnKillzone(world, pos, box.Size().Len()/2.0, 9999.0)
 			}
 		}
