@@ -275,15 +275,6 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 		item.collectAnim, _ = tex.GetAnimation("collect")
 	}
 
-	switch armorType {
-	case game.ARMOR_TYPE_BORING:
-		item.armorAmount = 100
-	case game.ARMOR_TYPE_BULLET:
-		item.armorAmount = 120
-	case game.ARMOR_TYPE_SUPER, game.ARMOR_TYPE_CHRONOS:
-		item.armorAmount = 200
-	}
-
 	return
 }
 

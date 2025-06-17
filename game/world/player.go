@@ -339,7 +339,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 	if player.armorAmount <= 0 && wasNonZero {
 		player.armorType = game.ARMOR_TYPE_NONE
 		cache.GetSfx("assets/sounds/armor_break.wav").Play()
-		player.world.Hud.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.White)
+		player.world.Hud.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.Red)
 	}
 	damage *= (1.0 - game.ArmorDefense[player.armorType])
 

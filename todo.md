@@ -1,6 +1,5 @@
 # TODO
 - Weapon wheel / menu
-- Message & chime for finding secrets
 - Make message bar flash to better draw player's attention
 - Feedback when you try to select a weapon you don't have.
 - Port E1M1

@@ -8,12 +8,14 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
@@ -248,6 +250,8 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
 	tr.world.Hud.SecretsFound++
+	tr.world.Hud.ShowMessage(settings.Localize("foundSecret"), 2.0, 50, color.Red)
+	cache.GetSfx("assets/sounds/secret_chime.wav").Play()
 	tr.world.QueueRemoval(tr.id.Handle)
 }
 
