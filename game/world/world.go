@@ -44,9 +44,9 @@ const (
 )
 
 const (
-	TEX_FLAG_INVISIBLE string = "invisible"
-	TEX_FLAG_KILLZONE         = "killzone"
-	TEX_FLAG_LIQUID           = "liquid"
+	TEX_FLAG_INVISIBLE = "invisible"
+	TEX_FLAG_KILLZONE  = "killzone"
+	TEX_FLAG_LIQUID    = "liquid"
 )
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
@@ -326,7 +326,7 @@ func (world *World) Update(deltaTime float32) {
 		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)
 	}
 
-	duration := time.Now().Sub(startTime).Milliseconds()
+	duration := time.Since(startTime).Milliseconds()
 	if world.avgCollisionTime != 0 {
 		world.avgCollisionTime = (world.avgCollisionTime + duration) / world.tickCount
 	} else {

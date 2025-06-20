@@ -97,6 +97,7 @@ func main() {
 	input.BindActionMouseMove(settings.ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, settings.Current.MouseSensitivity)
 	input.BindActionMouseMove(settings.ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, settings.Current.MouseSensitivity)
 	input.BindActionMouseButton(settings.ACTION_FIRE, glfw.MouseButton1)
+	input.BindActionKey(settings.ACTION_WEAPON_WHEEL, glfw.KeyQ)
 	input.BindActionKey(settings.ACTION_SICKLE, glfw.Key1)
 	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
 	input.BindActionKey(settings.ACTION_GRENADE, glfw.Key3)

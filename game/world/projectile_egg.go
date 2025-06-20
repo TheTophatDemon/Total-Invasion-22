@@ -72,7 +72,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
 	noBlockers := len(proj.world.BodiesInSphere(chickenSpot, 0.5, proj)) == 0
-	if rand.Float32() < CHICKEN_SPAWN_CHANCE && noBlockers && time.Now().Sub(timeSinceLastChicken).Seconds() > 10.0 {
+	if rand.Float32() < CHICKEN_SPAWN_CHANCE && noBlockers && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
 		SpawnChicken(proj.world, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		timeSinceLastChicken = time.Now()
 	}

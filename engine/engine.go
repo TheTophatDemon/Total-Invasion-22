@@ -124,6 +124,8 @@ func Run(app App) {
 		// Throttle the update rate if the game is running faster than max FPS
 		// Only necessary on Windows for some reason.
 		for {
+			//TODO: There's something wrong with this now????
+			// Try replacing the floats with an int64 unix timestamp to make sure there's no precision tomfoolery.
 			now = time.Now()
 			if frameTime := now.Sub(previousTime).Seconds(); frameTime >= updateRate {
 				break
