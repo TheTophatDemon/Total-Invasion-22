@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Action uint16
@@ -54,11 +55,20 @@ func TrapMouse() {
 }
 
 func UntrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 }
 
 func IsMouseTrapped() bool {
 	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
+}
+
+func MousePosition() mgl32.Vec2 {
+	x, y := glfw.GetCurrentContext().GetCursorPos()
+	return mgl32.Vec2{float32(x), float32(y)}
+}
+
+func SetMousePosition(x, y float32) {
+	glfw.GetCurrentContext().SetCursorPos(float64(x), float64(y))
 }
 
 func BindActionKey(action Action, key glfw.Key) {
@@ -81,6 +91,20 @@ func BindActionCharSequence(action Action, sequence []glfw.Key) {
 	bindingsWerePressed[action] = false
 }
 
+// Returns booleans indicating if the action was just pressed, just released, or is otherwise being held down.
+func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) {
+	bind, ok := bindings[action]
+	wasPressed, ok2 := bindingsWerePressed[action]
+	if !ok || !ok2 {
+		log.Printf(ERRT_NO_ACTION, action)
+		return
+	}
+	pressed = bind.IsPressed()
+	justPressed = pressed && !wasPressed
+	justReleased = !pressed && wasPressed
+	return
+}
+
 func IsActionPressed(action Action) bool {
 	bind, ok := bindings[action]
 	if !ok {
@@ -98,6 +122,16 @@ func IsActionJustPressed(action Action) bool {
 		return false
 	}
 	return bind.IsPressed() && !wasPressed
+}
+
+func IsActionJustReleased(action Action) bool {
+	bind, ok := bindings[action]
+	wasPressed, ok2 := bindingsWerePressed[action]
+	if !ok || !ok2 {
+		log.Printf(ERRT_NO_ACTION, action)
+		return false
+	}
+	return !bind.IsPressed() && wasPressed
 }
 
 func ActionAxis(action Action) float32 {

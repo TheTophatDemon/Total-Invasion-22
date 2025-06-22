@@ -60,6 +60,18 @@ type weaponBase struct {
 	ammoCost         int // Amount subtracted from ammo after firing
 }
 
+var weaponColors = [WEAPON_ORDER_COUNT]color.Color{
+	WEAPON_ORDER_SICKLE:        color.FromBytes(138, 138, 138, 255),
+	WEAPON_ORDER_CHICKEN:       color.FromBytes(0, 0, 255, 255),
+	WEAPON_ORDER_GRENADE:       color.FromBytes(0, 170, 0, 255),
+	WEAPON_ORDER_PARUSU:        color.FromBytes(0, 255, 130, 255),
+	WEAPON_ORDER_DBL_GRENADE:   color.FromBytes(255, 130, 0, 255),
+	WEAPON_ORDER_SIGN:          color.FromBytes(170, 0, 0, 255),
+	WEAPON_ORDER_AIRHORN:       color.FromBytes(255, 0, 0, 255),
+	WEAPON_ORDER_DEFENESTRATOR: color.FromBytes(53, 53, 53, 255),
+	WEAPON_ORDER_CLUCKSTER:     color.FromBytes(113, 0, 113, 255),
+}
+
 func (wb *weaponBase) Equip() {
 	wb.equipped = true
 }

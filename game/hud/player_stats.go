@@ -6,6 +6,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -249,6 +250,21 @@ func (hud *Hud) forcePlayerFace(newState faceState) {
 }
 
 func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
+	// Weapon wheel
+	if pressed, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); pressed {
+		//TODO: Prevent player from switching weapons with number keys
+		if justPressed {
+			hud.weaponWheel = NewWeaponWheel(hud.selectedWeapon)
+		}
+		hud.weaponWheel.Render(&hud.renderQueue)
+	} else if justReleased {
+		weap := hud.weapons[hud.weaponWheel.highlightedWeapon]
+		if weap != nil && weap.IsEquipped() {
+			hud.SelectWeapon(hud.weaponWheel.highlightedWeapon)
+		}
+		input.TrapMouse()
+	}
+
 	// Health stat
 	if txt, ok := hud.healthStat.Get(); ok {
 		txt.SetText(fmt.Sprintf("%03d", stats.Health))

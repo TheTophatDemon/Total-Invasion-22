@@ -28,7 +28,44 @@ type (
 		scene.Handle
 		depth float32
 	}
+
+	RenderQueue []Element
+
+	// Represents a UI element
+	Element interface {
+		DrawDepth() float32 // Used for sorting
+		Render(*render.Context)
+	}
 )
+
+func (renderQ *RenderQueue) Add(elems ...Element) {
+	for _, elem := range elems {
+		newQ := append(*renderQ, elem)
+		var displacedElem Element
+
+		for i := range newQ {
+			if newQ[i].DrawDepth() > elem.DrawDepth() || i == len(newQ)-1 {
+				if displacedElem == nil {
+					displacedElem = newQ[i]
+					newQ[i] = elem
+				} else {
+					temp := newQ[i]
+					newQ[i] = displacedElem
+					displacedElem = temp
+				}
+			}
+		}
+		*renderQ = newQ
+	}
+}
+
+func (renderQ *RenderQueue) Render(context *render.Context) {
+	for _, elem := range *renderQ {
+		elem.Render(context)
+	}
+	// Clear the queue for the next render
+	*renderQ = (*renderQ)[0:0]
+}
 
 func NewUIScene(maxBoxes, maxTexts uint) *Scene {
 	return &Scene{

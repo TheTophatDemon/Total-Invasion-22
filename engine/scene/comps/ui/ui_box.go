@@ -74,6 +74,10 @@ func (box *Box) SetDestPosition(position mgl32.Vec2) *Box {
 	return box
 }
 
+func (box *Box) DrawDepth() float32 {
+	return box.Depth
+}
+
 func (box *Box) DestPosition() mgl32.Vec2 {
 	return mgl32.Vec2{box.Dest.X, box.Dest.Y}
 }

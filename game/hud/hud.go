@@ -54,6 +54,8 @@ type Hud struct {
 	SecretsCounted, SecretsFound, SecretsTotal uint
 	countTimer                                 float32 // Seconds between counting the stats on the victory screen
 	countState                                 CountState
+	renderQueue                                ui.RenderQueue
+	weaponWheel                                WeaponWheel
 
 	FPSCounter, SpriteCounter       scene.Id[*ui.Text]
 	face                            scene.Id[*ui.Box]
@@ -520,11 +522,13 @@ func (hud *Hud) Render() {
 	// Setup 2D render context
 	renderContext := render.Context{
 		View:       mgl32.Ident4(),
-		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -10.0, 10.0),
+		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 	}
 
 	// Render 2D game elements
 	hud.UI.Render(&renderContext)
+
+	hud.renderQueue.Render(&renderContext)
 }
 
 func (hud *Hud) ShowMessage(text string, duration float32, priority int, colr color.Color) {

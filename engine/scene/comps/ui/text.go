@@ -230,7 +230,7 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 		}
 
 		boxes, chars := txt.generateBoxes()
-		if boxes == nil || len(boxes) == 0 || chars == nil || len(chars) == 0 {
+		if len(boxes) == 0 || len(chars) == 0 {
 			return nil, fmt.Errorf("generated empty mesh when rendering text")
 		}
 
