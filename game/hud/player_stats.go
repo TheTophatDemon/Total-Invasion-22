@@ -26,6 +26,7 @@ type PlayerStats struct {
 	ArmorAmount     int
 	Keys            game.KeyType
 	MoveSpeed       float32
+	WeaponWheelOpen bool // True if the player is in control and holding down the weapon wheel button.
 }
 
 type faceState struct {
@@ -251,13 +252,12 @@ func (hud *Hud) forcePlayerFace(newState faceState) {
 
 func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 	// Weapon wheel
-	if pressed, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); pressed {
-		//TODO: Prevent player from switching weapons with number keys
+	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); stats.WeaponWheelOpen {
 		if justPressed {
 			hud.weaponWheel = NewWeaponWheel(hud.selectedWeapon)
 		}
 		hud.weaponWheel.Render(&hud.renderQueue)
-	} else if justReleased {
+	} else if justReleased && stats.Health > 0 {
 		weap := hud.weapons[hud.weaponWheel.highlightedWeapon]
 		if weap != nil && weap.IsEquipped() {
 			hud.SelectWeapon(hud.weaponWheel.highlightedWeapon)

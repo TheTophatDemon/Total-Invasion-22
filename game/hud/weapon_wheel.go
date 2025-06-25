@@ -3,6 +3,7 @@ package hud
 import (
 	"math"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -14,8 +15,8 @@ import (
 const TEX_WEAPON_SLOT = "assets/textures/ui/weapon_slot.png"
 
 type WeaponWheel struct {
-	slots             [WEAPON_ORDER_COUNT]ui.Box
-	icons             [WEAPON_ORDER_COUNT]ui.Box
+	slots             [WEAPON_ORDER_DEFENESTRATOR]ui.Box
+	icons             [WEAPON_ORDER_DEFENESTRATOR]ui.Box
 	cursor, highlight ui.Box
 	highlightedWeapon WeaponIndex
 }
@@ -35,25 +36,19 @@ func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
 	slotHeight := slotTexture.Rect().Height * SpriteScale()
 	for i := range wheel.slots {
+		// All slots start in the center
+		wheel.slots[i] = ui.NewBoxFull(math2.Rect{
+			X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0),
+			Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0),
+			Width:  slotWidth,
+			Height: slotHeight,
+		}, slotTexture, weaponColors[i])
+
 		if i == int(WEAPON_ORDER_SICKLE) {
-			// Sickle goes in the center
-			wheel.slots[i] = ui.NewBoxFull(math2.Rect{
-				X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0),
-				Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0),
-				Width:  slotWidth,
-				Height: slotHeight,
-			}, slotTexture, weaponColors[i])
+			wheel.slots[i].Depth = 6.1 // Put sickle above other slots while they are expanding out
 		} else {
-			// Other weapons are in a circle surrounding the sickle
-			angle := (float32(i-1) / float32(WEAPON_ORDER_COUNT-1)) * math.Pi * 2.0
-			wheel.slots[i] = ui.NewBoxFull(math2.Rect{
-				X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0) + math2.Sin(angle)*slotWidth*1.5,
-				Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0) - math2.Cos(angle)*slotHeight*1.5,
-				Width:  slotWidth,
-				Height: slotHeight,
-			}, slotTexture, weaponColors[i])
+			wheel.slots[i].Depth = 6.0
 		}
-		wheel.slots[i].Depth = 6.0
 
 		if iconPath := weaponWheelIcons[i]; len(iconPath) > 0 {
 			iconTex := cache.GetTexture(iconPath)
@@ -67,11 +62,8 @@ func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
 			}, iconTex, color.White)
 			wheel.icons[i].Depth = 7.5
 		}
-
-		if i == int(currentWeapon) {
-			input.SetMousePosition(wheel.slots[i].Dest.Center())
-		}
 	}
+	input.SetMousePosition(wheel.slots[WEAPON_ORDER_SICKLE].Dest.Center())
 	cursorTex := cache.GetTexture("assets/textures/ui/hand_cursor.png")
 	wheel.cursor = ui.NewBoxFull(
 		math2.Rect{
@@ -96,18 +88,44 @@ func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
 func (wheel *WeaponWheel) Render(queue *ui.RenderQueue) {
 	mousePos := input.MousePosition()
 	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
-	majorRadiusSq := math2.Pow(slotTexture.Rect().Width*SpriteScale()/2.0, 2.0)
-	minorRadiusSq := math2.Pow(slotTexture.Rect().Height*SpriteScale()/2.0, 2.0)
+	slotWidth := slotTexture.Rect().Width * SpriteScale()
+	slotHeight := slotTexture.Rect().Height * SpriteScale()
+	majorRadiusSq := math2.Pow(slotWidth/2.0, 2.0)
+	minorRadiusSq := math2.Pow(slotHeight/2.0, 2.0)
 
 	for i := range wheel.slots {
-		// Test intersection with the ellipse
-		cx, cy := wheel.slots[i].Dest.Center()
-		if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
-			wheel.highlightedWeapon = WeaponIndex(i)
+		slot := &wheel.slots[i]
+		icon := &wheel.icons[i]
+
+		if input.IsActionPressed(settings.ACTION_WEAPON_WHEEL) {
+			angle := (float32(i-1) / float32(len(wheel.slots)-1)) * math.Pi * 2.0
+			targetPos := mgl32.Vec2{
+				(settings.UIWidth() / 2.0) - (slotWidth / 2.0) + math2.Sin(angle)*slotWidth*1.5,
+				(settings.UIHeight() / 2.0) - (slotHeight / 2.0) - math2.Cos(angle)*slotHeight*1.5,
+			}
+
+			if i != int(WEAPON_ORDER_SICKLE) {
+				// Move slot towards target position
+				dx := (targetPos[0] - slot.Dest.X) * 0.5
+				dy := (targetPos[1] - slot.Dest.Y) * 0.5
+				slot.Dest.X += dx
+				slot.Dest.Y += dy
+				icon.Dest.X += dx
+				icon.Dest.Y += dy
+			}
+
+			// Test intersection with the ellipse
+			cx, cy := slot.Dest.Center()
+			if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
+				wheel.highlightedWeapon = WeaponIndex(i)
+			}
+		} else {
+			slot.Color.Fade(0.1)
+			icon.Color.Fade(0.1)
 		}
 
-		queue.Add(&wheel.slots[i])
-		queue.Add(&wheel.icons[i])
+		queue.Add(slot)
+		queue.Add(icon)
 	}
 
 	if wheel.highlightedWeapon != WEAPON_ORDER_NONE {

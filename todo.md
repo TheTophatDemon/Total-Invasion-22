@@ -1,7 +1,8 @@
 # TODO
 - Weapon wheel / menu
-  - Stop player from turning or switching weapons while wheel is active
   - Make unquipped weapons have grayed out icons
+  - Add icons for unimplemented weapons
+  - Make fade out animation
   - Refactor UI to use immediate mode rendering
   - Split out HUD code into sections for level intro, victory screen, face state, etc.
   - Audio feedback

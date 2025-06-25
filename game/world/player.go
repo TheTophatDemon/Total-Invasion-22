@@ -44,6 +44,7 @@ type Player struct {
 	keys                   game.KeyType
 	armorType              game.ArmorType
 	armorAmount            float32
+	weaponWheelOpen        bool
 }
 
 var _ HasActor = (*Player)(nil)
@@ -115,6 +116,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 }
 
 func (player *Player) Update(deltaTime float32) {
+	player.weaponWheelOpen = false
 	if player.world.Hud.IntroTimeLeft() > 0.5 {
 		// Wait
 	} else if player.world.InWinState() {
@@ -182,14 +184,15 @@ func (player *Player) Update(deltaTime float32) {
 	player.actor.Update(deltaTime)
 
 	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health:      int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
-		Noclip:      player.Body().Layer == COL_LAYER_NONE,
-		GodMode:     player.godMode,
-		Ammo:        &player.ammo,
-		Keys:        player.keys,
-		MoveSpeed:   player.actor.body.Velocity.Len(),
-		Armor:       player.armorType,
-		ArmorAmount: int(math2.Ceil(player.armorAmount)),
+		Health:          int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
+		Noclip:          player.Body().Layer == COL_LAYER_NONE,
+		GodMode:         player.godMode,
+		Ammo:            &player.ammo,
+		Keys:            player.keys,
+		MoveSpeed:       player.actor.body.Velocity.Len(),
+		Armor:           player.armorType,
+		ArmorAmount:     int(math2.Ceil(player.armorAmount)),
+		WeaponWheelOpen: player.weaponWheelOpen,
 	})
 }
 
@@ -247,7 +250,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	if input.IsActionJustPressed(settings.ACTION_MARYSUE) {
 		player.world.Hud.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
-		for i := hud.WEAPON_ORDER_SICKLE; i < hud.WEAPON_ORDER_COUNT; i++ {
+		for i := range hud.WEAPON_ORDER_COUNT {
 			player.world.Hud.EquipWeapon(i)
 		}
 		for i := range player.ammo {
@@ -313,7 +316,10 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
+	player.weaponWheelOpen = input.IsActionPressed(settings.ACTION_WEAPON_WHEEL)
+	if !player.weaponWheelOpen {
+		player.actor.YawAngle -= input.ActionAxis(settings.ACTION_LOOK_HORZ)
+	}
 }
 
 func (player *Player) ProcessSignal(signal any) {

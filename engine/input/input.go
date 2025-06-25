@@ -68,7 +68,10 @@ func MousePosition() mgl32.Vec2 {
 }
 
 func SetMousePosition(x, y float32) {
-	glfw.GetCurrentContext().SetCursorPos(float64(x), float64(y))
+	mousePrevX = float64(x)
+	mousePrevY = float64(y)
+	mouseDeltaX, mouseDeltaY = 0, 0
+	glfw.GetCurrentContext().SetCursorPos(mousePrevX, mousePrevY)
 }
 
 func BindActionKey(action Action, key glfw.Key) {
