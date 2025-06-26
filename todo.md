@@ -1,11 +1,9 @@
 # TODO
 - Weapon wheel / menu
-  - Make unquipped weapons have grayed out icons
-  - Add icons for unimplemented weapons
   - Make fade out animation
+  - Audio feedback
   - Refactor UI to use immediate mode rendering
   - Split out HUD code into sections for level intro, victory screen, face state, etc.
-  - Audio feedback
 - Investigate system timer related slowdown
 - Preload all sound effects before start of level
 - Make message bar flash to better draw player's attention

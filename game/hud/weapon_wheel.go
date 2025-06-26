@@ -22,14 +22,16 @@ type WeaponWheel struct {
 }
 
 var weaponWheelIcons = [WEAPON_ORDER_COUNT]string{
-	WEAPON_ORDER_SICKLE:  "assets/textures/sprites/sickle.png",
-	WEAPON_ORDER_CHICKEN: "assets/textures/sprites/chicken_cannon.png",
-	WEAPON_ORDER_GRENADE: "assets/textures/sprites/grenade_launcher.png",
-	WEAPON_ORDER_PARUSU:  "assets/textures/sprites/parusu.png",
-	WEAPON_ORDER_AIRHORN: "assets/textures/sprites/airhorn.png",
+	WEAPON_ORDER_SICKLE:      "assets/textures/sprites/sickle.png",
+	WEAPON_ORDER_CHICKEN:     "assets/textures/sprites/chicken_cannon.png",
+	WEAPON_ORDER_GRENADE:     "assets/textures/sprites/grenade_launcher.png",
+	WEAPON_ORDER_PARUSU:      "assets/textures/sprites/parusu.png",
+	WEAPON_ORDER_DBL_GRENADE: "assets/textures/sprites/double_grenade_launcher.png",
+	WEAPON_ORDER_SIGN:        "assets/textures/sprites/sign_of_madness.png",
+	WEAPON_ORDER_AIRHORN:     "assets/textures/sprites/airhorn.png",
 }
 
-func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
+func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 	input.UntrapMouse()
 	var wheel WeaponWheel
 	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
@@ -52,8 +54,8 @@ func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
 
 		if iconPath := weaponWheelIcons[i]; len(iconPath) > 0 {
 			iconTex := cache.GetTexture(iconPath)
-			iconWidth := iconTex.Rect().Width * SpriteScale()
-			iconHeight := iconTex.Rect().Height * SpriteScale()
+			iconWidth := min(iconTex.Rect().Width*SpriteScale(), 40*SpriteScale())
+			iconHeight := min(iconTex.Rect().Height*SpriteScale(), 40*SpriteScale())
 			wheel.icons[i] = ui.NewBoxFull(math2.Rect{
 				X:      wheel.slots[i].DestPosition()[0] + (slotWidth-iconWidth)/2.0,
 				Y:      wheel.slots[i].DestPosition()[1] + (slotHeight-iconHeight)/2.0,
@@ -61,6 +63,11 @@ func NewWeaponWheel(currentWeapon WeaponIndex) WeaponWheel {
 				Height: iconHeight,
 			}, iconTex, color.White)
 			wheel.icons[i].Depth = 7.5
+
+			if weapons[i] == nil || !weapons[i].IsEquipped() {
+				// Intentionally overflow the color values to erase detail on the image.
+				wheel.icons[i].Color = color.Color{R: 100.0, G: 100.0, B: 100.0, A: 0.2}
+			}
 		}
 	}
 	input.SetMousePosition(wheel.slots[WEAPON_ORDER_SICKLE].Dest.Center())
@@ -119,9 +126,6 @@ func (wheel *WeaponWheel) Render(queue *ui.RenderQueue) {
 			if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
 				wheel.highlightedWeapon = WeaponIndex(i)
 			}
-		} else {
-			slot.Color.Fade(0.1)
-			icon.Color.Fade(0.1)
 		}
 
 		queue.Add(slot)

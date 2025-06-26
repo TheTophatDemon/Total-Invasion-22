@@ -254,7 +254,7 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 	// Weapon wheel
 	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); stats.WeaponWheelOpen {
 		if justPressed {
-			hud.weaponWheel = NewWeaponWheel(hud.selectedWeapon)
+			hud.weaponWheel = NewWeaponWheel(hud.weapons[:])
 		}
 		hud.weaponWheel.Render(&hud.renderQueue)
 	} else if justReleased && stats.Health > 0 {
