@@ -1,11 +1,11 @@
 # TODO
 - Weapon wheel / menu
-  - Make fade out animation
   - Audio feedback
   - Refactor UI to use immediate mode rendering
   - Split out HUD code into sections for level intro, victory screen, face state, etc.
 - Investigate system timer related slowdown
 - Preload all sound effects before start of level
+- Ensure weapons and armor are carried over into next level
 - Make message bar flash to better draw player's attention
 - Feedback when you try to select a weapon you don't have.
 - Port E1M1

@@ -13,6 +13,7 @@ import (
 )
 
 const TEX_WEAPON_SLOT = "assets/textures/ui/weapon_slot.png"
+const wheelIconTransparency = 0.2
 
 type WeaponWheel struct {
 	slots             [WEAPON_ORDER_DEFENESTRATOR]ui.Box
@@ -66,7 +67,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 
 			if weapons[i] == nil || !weapons[i].IsEquipped() {
 				// Intentionally overflow the color values to erase detail on the image.
-				wheel.icons[i].Color = color.Color{R: 100.0, G: 100.0, B: 100.0, A: 0.2}
+				wheel.icons[i].Color = color.Color{R: 100.0, G: 100.0, B: 100.0, A: wheelIconTransparency}
 			}
 		}
 	}
@@ -92,7 +93,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 	return wheel
 }
 
-func (wheel *WeaponWheel) Render(queue *ui.RenderQueue) {
+func (wheel *WeaponWheel) Render(queue *ui.RenderQueue, openness float32) {
 	mousePos := input.MousePosition()
 	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
@@ -104,39 +105,44 @@ func (wheel *WeaponWheel) Render(queue *ui.RenderQueue) {
 		slot := &wheel.slots[i]
 		icon := &wheel.icons[i]
 
-		if input.IsActionPressed(settings.ACTION_WEAPON_WHEEL) {
-			angle := (float32(i-1) / float32(len(wheel.slots)-1)) * math.Pi * 2.0
-			targetPos := mgl32.Vec2{
-				(settings.UIWidth() / 2.0) - (slotWidth / 2.0) + math2.Sin(angle)*slotWidth*1.5,
-				(settings.UIHeight() / 2.0) - (slotHeight / 2.0) - math2.Cos(angle)*slotHeight*1.5,
-			}
-
-			if i != int(WEAPON_ORDER_SICKLE) {
-				// Move slot towards target position
-				dx := (targetPos[0] - slot.Dest.X) * 0.5
-				dy := (targetPos[1] - slot.Dest.Y) * 0.5
-				slot.Dest.X += dx
-				slot.Dest.Y += dy
-				icon.Dest.X += dx
-				icon.Dest.Y += dy
-			}
-
-			// Test intersection with the ellipse
-			cx, cy := slot.Dest.Center()
-			if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
-				wheel.highlightedWeapon = WeaponIndex(i)
-			}
+		angle := (float32(i-1) / float32(len(wheel.slots)-1)) * math.Pi * 2.0
+		targetPos := mgl32.Vec2{
+			(settings.UIWidth() / 2.0) - (slotWidth / 2.0) + math2.Sin(angle)*slotWidth*1.5,
+			(settings.UIHeight() / 2.0) - (slotHeight / 2.0) - math2.Cos(angle)*slotHeight*1.5,
 		}
 
+		if i != int(WEAPON_ORDER_SICKLE) {
+			// Move slot towards target position
+			dx := (targetPos[0] - slot.Dest.X) * 0.5
+			dy := (targetPos[1] - slot.Dest.Y) * 0.5
+			slot.Dest.X += dx
+			slot.Dest.Y += dy
+			icon.Dest.X += dx
+			icon.Dest.Y += dy
+		}
+
+		// Test intersection with the ellipse
+		cx, cy := slot.Dest.Center()
+		if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
+			wheel.highlightedWeapon = WeaponIndex(i)
+		}
+
+		slot.Color.A = openness
+
 		queue.Add(slot)
-		queue.Add(icon)
+
+		if openness > 0.9 {
+			queue.Add(icon)
+		}
 	}
 
 	if wheel.highlightedWeapon != WEAPON_ORDER_NONE {
 		wheel.highlight.SetDestPosition(wheel.slots[int(wheel.highlightedWeapon)].DestPosition())
+		wheel.highlight.Color.A = openness
 		queue.Add(&wheel.highlight)
 	}
 
 	wheel.cursor.SetDestPosition(mousePos)
+	wheel.cursor.Color.A = openness
 	queue.Add(&wheel.cursor)
 }

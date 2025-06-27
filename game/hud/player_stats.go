@@ -19,14 +19,14 @@ const (
 )
 
 type PlayerStats struct {
-	Health          int
-	Noclip, GodMode bool
-	Ammo            *game.Ammo
-	Armor           game.ArmorType
-	ArmorAmount     int
-	Keys            game.KeyType
-	MoveSpeed       float32
-	WeaponWheelOpen bool // True if the player is in control and holding down the weapon wheel button.
+	Health              int
+	Noclip, GodMode     bool
+	Ammo                *game.Ammo
+	Armor               game.ArmorType
+	ArmorAmount         int
+	Keys                game.KeyType
+	MoveSpeed           float32
+	WeaponWheelOpenness float32 // Will be 1 when the weapon wheel is open and then gradually drop to 0 after the button is released.
 }
 
 type faceState struct {
@@ -252,17 +252,17 @@ func (hud *Hud) forcePlayerFace(newState faceState) {
 
 func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 	// Weapon wheel
-	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); stats.WeaponWheelOpen {
-		if justPressed {
-			hud.weaponWheel = NewWeaponWheel(hud.weapons[:])
-		}
-		hud.weaponWheel.Render(&hud.renderQueue)
+	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); justPressed {
+		hud.weaponWheel = NewWeaponWheel(hud.weapons[:])
 	} else if justReleased && stats.Health > 0 {
 		weap := hud.weapons[hud.weaponWheel.highlightedWeapon]
 		if weap != nil && weap.IsEquipped() {
 			hud.SelectWeapon(hud.weaponWheel.highlightedWeapon)
 		}
 		input.TrapMouse()
+	}
+	if stats.WeaponWheelOpenness > 0.0 {
+		hud.weaponWheel.Render(&hud.renderQueue, stats.WeaponWheelOpenness)
 	}
 
 	// Health stat
