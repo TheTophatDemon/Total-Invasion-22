@@ -104,7 +104,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 	player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 
-	if world.Hud.IntroTimeLeft() > 0.0 {
+	if world.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -80.0}, player.Body().Transform.Matrix())
 		SpawnIntroSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
@@ -117,7 +117,7 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 
 func (player *Player) Update(deltaTime float32) {
 	player.weaponWheelOpenness = max(0.0, player.weaponWheelOpenness-(deltaTime*10.0))
-	if player.world.Hud.IntroTimeLeft() > 0.5 {
+	if player.world.Hud.Intro.TimeLeft() > 0.5 {
 		// Wait
 	} else if player.world.InWinState() {
 		// Win logic

@@ -81,6 +81,10 @@ func (txt *Text) SetShadow(color color.Color, offset mgl32.Vec2) *Text {
 	return txt
 }
 
+func (txt *Text) DrawDepth() float32 {
+	return txt.Transform.Depth
+}
+
 // Returns the number of lines needed to fit the text into the destination box horizontally.
 // Can be used to detect text overflow.
 func (txt *Text) LineCount() int {

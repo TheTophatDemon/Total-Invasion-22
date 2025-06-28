@@ -212,9 +212,9 @@ func NewWorld(app engine.Observer, mapPath string, debug bool) (*World, error) {
 		levelFileName[3] >= '0' && levelFileName[3] <= '9' {
 
 		// Level files starting with e#m# activate the level intro.
-		world.Hud.InitIntro(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
+		world.Hud.Intro.Init(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
 	} else {
-		world.Hud.InitIntro("", "")
+		world.Hud.Intro.Init("", "")
 	}
 
 	// Spawn entities
@@ -361,7 +361,7 @@ func (world *World) Render() {
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
 
-	if world.Hud.IntroTimeLeft() < 2.0 {
+	if world.Hud.Intro.TimeLeft() < 2.0 {
 		// Render sky
 		world.skyRender.Render(&renderContext)
 

@@ -262,7 +262,7 @@ func (hud *Hud) UpdatePlayerStats(deltaTime float32, stats PlayerStats) {
 		input.TrapMouse()
 	}
 	if stats.WeaponWheelOpenness > 0.0 {
-		hud.weaponWheel.Render(&hud.renderQueue, stats.WeaponWheelOpenness)
+		hud.weaponWheel.Layout(&hud.renderQueue, stats.WeaponWheelOpenness)
 	}
 
 	// Health stat

@@ -1,8 +1,11 @@
 # TODO
 - Weapon wheel / menu
   - Audio feedback
-  - Refactor UI to use immediate mode rendering
-  - Split out HUD code into sections for level intro, victory screen, face state, etc.
+- Refactor HUD into separate sections using "immediate mode" rendering
+  - Victory screen
+  - Player stats / face state
+  - Message box
+  - Weapons
 - Investigate system timer related slowdown
 - Preload all sound effects before start of level
 - Ensure weapons and armor are carried over into next level

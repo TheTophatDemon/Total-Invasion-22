@@ -93,7 +93,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 	return wheel
 }
 
-func (wheel *WeaponWheel) Render(queue *ui.RenderQueue, openness float32) {
+func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 	mousePos := input.MousePosition()
 	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
