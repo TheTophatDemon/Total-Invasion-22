@@ -1,8 +1,8 @@
 # TODO
 - Weapon wheel / menu
   - Audio feedback
+  - Consider removing cursor in favor of less precise way of picking
 - Refactor HUD into separate sections using "immediate mode" rendering
-  - Victory screen
   - Player stats / face state
   - Message box
   - Weapons

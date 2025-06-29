@@ -317,7 +317,7 @@ func (txt *Text) Matrix() mgl32.Mat4 {
 }
 
 func (txt *Text) Render(context *render.Context) {
-	if len(txt.Text()) == 0 || txt.Hidden || txt.Settings.Font == nil {
+	if len(txt.Text()) == 0 || txt.Hidden {
 		return
 	}
 
@@ -329,6 +329,9 @@ func (txt *Text) Render(context *render.Context) {
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
 
 	// Set texture
+	if txt.Settings.Font == nil {
+		txt.Settings.Font = cache.DefaultFont
+	}
 	cache.GetTexture(txt.Settings.Font.TexturePath()).Bind()
 	_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{0.0, 1.0, 1.0, 1.0})
 	// Set transform

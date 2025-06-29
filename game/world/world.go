@@ -271,7 +271,6 @@ func NewWorld(app engine.Observer, mapPath string, debug bool) (*World, error) {
 		}
 	}
 
-	world.Hud.LevelStartTime = time.Now()
 	return world, nil
 }
 
@@ -394,8 +393,7 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	camera, _ := scene.Get[*Camera](world.CurrentCamera.Handle)
 	camera.waitTime = 0.0
 	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
-	world.Hud.LevelEndTime = time.Now()
-	world.Hud.InitVictory()
+	world.Hud.VictoryScreen.EndLevel()
 }
 
 func (world *World) ResetToPlayerCamera() {

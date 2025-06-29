@@ -110,7 +110,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 		return
 	}
 
-	world.Hud.EnemiesTotal++
+	world.Hud.VictoryScreen.EnemiesTotal++
 	enemy.world = world
 	enemy.variant = variant
 	enemy.state = &enemy.idleState
@@ -294,7 +294,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			}
 		}
 
-		enemy.world.Hud.EnemiesKilled--
+		enemy.world.Hud.VictoryScreen.EnemiesKilled--
 		enemy.actor.body.Layer = ENEMY_COL_LAYERS
 		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS
 		enemy.bloodOffset = mgl32.Vec3{}
@@ -321,7 +321,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 	if newState.enterFunc != nil {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
-		enemy.world.Hud.EnemiesKilled++
+		enemy.world.Hud.VictoryScreen.EnemiesKilled++
 		enemy.actor.body.Layer = COL_LAYER_NONE
 		enemy.actor.body.Filter = COL_LAYER_MAP | COL_LAYER_INVISIBLE
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()

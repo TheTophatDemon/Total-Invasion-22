@@ -88,7 +88,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TRIGGER_ACTION_SECRET:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
-		world.Hud.SecretsTotal++
+		world.Hud.VictoryScreen.SecretsTotal++
 	case TRIGGER_ACTION_ACTIVATE:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = activateAction
@@ -249,7 +249,7 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 }
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
-	tr.world.Hud.SecretsFound++
+	tr.world.Hud.VictoryScreen.SecretsFound++
 	tr.world.Hud.ShowMessage(settings.Localize("foundSecret"), 2.0, 50, color.Red)
 	cache.GetSfx("assets/sounds/secret_chime.wav").Play()
 	tr.world.QueueRemoval(tr.id.Handle)
