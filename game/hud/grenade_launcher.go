@@ -5,20 +5,17 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type GrenadeLauncher struct {
 	weaponBase
-	idleAnim, fireAnim textures.Animation
 }
 
-func (grenadeLauncher *GrenadeLauncher) Init(hud *Hud) {
+func (grenadeLauncher *GrenadeLauncher) Init() {
 	grenadeLauncher.weaponBase = weaponBase{
-		hud:           hud,
 		cooldown:      1.0,
 		spriteTexture: cache.GetTexture("assets/textures/ui/grenade_launcher_hud.png"),
 		swayExtents:   mgl32.Vec2{16.0, 8.0},
@@ -27,18 +24,15 @@ func (grenadeLauncher *GrenadeLauncher) Init(hud *Hud) {
 		ammoCost:      1,
 	}
 
-	var ok bool
-	if grenadeLauncher.idleAnim, ok = grenadeLauncher.spriteTexture.GetAnimation("idle"); !ok {
+	idleAnim, ok := grenadeLauncher.spriteTexture.GetAnimation("idle")
+	if !ok {
 		log.Println("grenade launcher idle anim not found")
 	}
-	if grenadeLauncher.fireAnim, ok = grenadeLauncher.spriteTexture.GetAnimation("fire"); !ok {
-		log.Println("grenade launcher fire anim not found")
-	}
-	grenadeLauncher.defaultAnimation = grenadeLauncher.idleAnim
+	grenadeLauncher.defaultAnimation = idleAnim
 
 	grenadeLauncher.spriteSize = mgl32.Vec2{
-		grenadeLauncher.idleAnim.Frames[0].Rect.Width * SpriteScale(),
-		grenadeLauncher.idleAnim.Frames[0].Rect.Height * SpriteScale(),
+		idleAnim.Frames[0].Rect.Width * SpriteScale(),
+		idleAnim.Frames[0].Rect.Height * SpriteScale(),
 	}
 	grenadeLauncher.spriteEndPos = mgl32.Vec2{
 		settings.UIWidth()/2 - grenadeLauncher.spriteSize.X()/2.0,
@@ -58,28 +52,33 @@ func (grenadeLauncher *GrenadeLauncher) NoiseLevel() float32 {
 func (grenadeLauncher *GrenadeLauncher) Update(deltaTime float32, swayAmount float32, ammo *game.Ammo) {
 	grenadeLauncher.weaponBase.Update(deltaTime, swayAmount, ammo)
 
-	var sprite *ui.Box
-	var ok bool
-	if sprite, ok = grenadeLauncher.sprite.Get(); !ok {
-		return
-	}
-
 	if grenadeLauncher.CanFire(ammo) || ammo[grenadeLauncher.AmmoType()] == 0 {
-		sprite.AnimPlayer.ChangeAnimation(grenadeLauncher.idleAnim)
+		grenadeLauncher.sprite.AnimPlayer.ChangeAnimation(grenadeLauncher.defaultAnimation)
 	}
-	sprite.AnimPlayer.Update(deltaTime)
 }
 
 func (grenadeLauncher *GrenadeLauncher) Fire(ammo *game.Ammo) {
 	grenadeLauncher.weaponBase.Fire(ammo)
-	if spriteBox, ok := grenadeLauncher.sprite.Get(); ok {
-		if spriteBox.AnimPlayer.CurrentAnimation().Name != grenadeLauncher.fireAnim.Name {
-			spriteBox.AnimPlayer.ChangeAnimation(grenadeLauncher.fireAnim)
-			spriteBox.AnimPlayer.PlayFromStart()
-		}
+	animPlayer := &grenadeLauncher.sprite.AnimPlayer
+	fireAnim, ok := grenadeLauncher.spriteTexture.GetAnimation("fire")
+	if !ok {
+		log.Println("grenade launcher fire anim not found")
+		return
+	}
+	if animPlayer.CurrentAnimation().Name != fireAnim.Name {
+		animPlayer.ChangeAnimation(fireAnim)
+		animPlayer.PlayFromStart()
 	}
 }
 
 func (grenadeLauncher *GrenadeLauncher) IsShooter() bool {
 	return true
+}
+
+func (grenadeLauncher *GrenadeLauncher) WheelColor() color.Color {
+	return color.FromBytes(0, 170, 0, 255)
+}
+
+func (grenadeLauncher *GrenadeLauncher) WheelIconPath() string {
+	return "assets/textures/sprites/grenade_launcher.png"
 }

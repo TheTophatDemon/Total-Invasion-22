@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -83,4 +84,12 @@ func (parusu *Parusu) Fire(ammo *game.Ammo) {
 
 func (parusu *Parusu) IsShooter() bool {
 	return true
+}
+
+func (parusu *Parusu) WheelColor() color.Color {
+	return color.FromBytes(0, 255, 130, 255)
+}
+
+func (parusu *Parusu) WheelIconPath() string {
+	return "assets/textures/sprites/parusu.png"
 }

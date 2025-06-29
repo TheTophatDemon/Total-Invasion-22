@@ -6,7 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -23,9 +23,8 @@ type Airhorn struct {
 	honker             tdaudio.VoiceId
 }
 
-func (airhorn *Airhorn) Init(hud *Hud) {
+func (airhorn *Airhorn) Init() {
 	airhorn.weaponBase = weaponBase{
-		hud:           hud,
 		cooldown:      0.0,
 		spriteTexture: cache.GetTexture("assets/textures/ui/airhorn_hud.png"),
 		swayExtents:   mgl32.Vec2{32.0, 16.0},
@@ -63,31 +62,22 @@ func (airhorn *Airhorn) Order() WeaponIndex {
 func (airhorn *Airhorn) Update(deltaTime float32, swayAmount float32, ammo *game.Ammo) {
 	airhorn.weaponBase.Update(deltaTime, swayAmount, ammo)
 
-	var sprite *ui.Box
-	var ok bool
-	if sprite, ok = airhorn.sprite.Get(); !ok {
-		return
-	}
-
 	if !airhorn.heldDown {
-		sprite.AnimPlayer.PlayNewAnim(airhorn.idleAnim)
+		airhorn.sprite.AnimPlayer.PlayNewAnim(airhorn.idleAnim)
 		if airhorn.honker.IsPlaying() && airhorn.honker.GetTime() < 800 {
 			airhorn.honker.Seek(800)
 		}
 	}
 
-	sprite.AnimPlayer.Update(deltaTime)
 	airhorn.heldDown = false
 }
 
 func (airhorn *Airhorn) Fire(ammo *game.Ammo) {
 	airhorn.weaponBase.Fire(ammo)
 	airhorn.heldDown = true
-	if box, ok := airhorn.sprite.Get(); ok {
-		if !box.AnimPlayer.IsPlayingAnim(airhorn.honkAnim) {
-			box.AnimPlayer.PlayNewAnim(airhorn.honkAnim)
-			airhorn.honker = cache.GetSfx(SFX_AIRHORN).Play()
-		}
+	if !airhorn.sprite.AnimPlayer.IsPlayingAnim(airhorn.honkAnim) {
+		airhorn.sprite.AnimPlayer.PlayNewAnim(airhorn.honkAnim)
+		airhorn.honker = cache.GetSfx(SFX_AIRHORN).Play()
 	}
 }
 
@@ -97,4 +87,12 @@ func (airhorn *Airhorn) NoiseLevel() float32 {
 
 func (airhorn *Airhorn) IsShooter() bool {
 	return false
+}
+
+func (airhorn *Airhorn) WheelColor() color.Color {
+	return color.FromBytes(255, 0, 0, 255)
+}
+
+func (airhorn *Airhorn) WheelIconPath() string {
+	return "assets/textures/sprites/airhorn.png"
 }

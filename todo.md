@@ -6,9 +6,10 @@
   - Player stats / face state
   - Message box
   - Weapons
+- Ensure weapons and armor are carried over into next level
 - Investigate system timer related slowdown
 - Preload all sound effects before start of level
-- Ensure weapons and armor are carried over into next level
+- Consider parallelizing map loads
 - Make message bar flash to better draw player's attention
 - Feedback when you try to select a weapon you don't have.
 - Port E1M1

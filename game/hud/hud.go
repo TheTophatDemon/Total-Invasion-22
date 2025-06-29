@@ -13,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/hud/weapons"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -45,13 +46,8 @@ type Hud struct {
 	flashRect  scene.Id[*ui.Box]
 	flashSpeed float32
 
-	sickle                     Sickle
-	chickenGun                 ChickenCannon
-	grenadeLauncher            GrenadeLauncher
-	parusu                     Parusu
-	airhorn                    Airhorn
-	weapons                    [WEAPON_ORDER_COUNT]Weapon
-	selectedWeapon, nextWeapon WeaponIndex
+	weapons                    [weapons.WeaponCount]weapons.Weapon
+	selectedWeapon, nextWeapon weapons.WeaponKind
 
 	Intro         LevelIntro
 	VictoryScreen VictoryScreen

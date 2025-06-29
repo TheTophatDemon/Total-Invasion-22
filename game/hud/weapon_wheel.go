@@ -12,7 +12,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-const TEX_WEAPON_SLOT = "assets/textures/ui/weapon_slot.png"
+const texWeaponSlot = "assets/textures/ui/weapon_slot.png"
 const wheelIconTransparency = 0.2
 
 type WeaponWheel struct {
@@ -22,30 +22,25 @@ type WeaponWheel struct {
 	highlightedWeapon WeaponIndex
 }
 
-var weaponWheelIcons = [WEAPON_ORDER_COUNT]string{
-	WEAPON_ORDER_SICKLE:      "assets/textures/sprites/sickle.png",
-	WEAPON_ORDER_CHICKEN:     "assets/textures/sprites/chicken_cannon.png",
-	WEAPON_ORDER_GRENADE:     "assets/textures/sprites/grenade_launcher.png",
-	WEAPON_ORDER_PARUSU:      "assets/textures/sprites/parusu.png",
-	WEAPON_ORDER_DBL_GRENADE: "assets/textures/sprites/double_grenade_launcher.png",
-	WEAPON_ORDER_SIGN:        "assets/textures/sprites/sign_of_madness.png",
-	WEAPON_ORDER_AIRHORN:     "assets/textures/sprites/airhorn.png",
-}
-
 func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 	input.UntrapMouse()
 	var wheel WeaponWheel
-	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
+	slotTexture := cache.GetTexture(texWeaponSlot)
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
 	slotHeight := slotTexture.Rect().Height * SpriteScale()
 	for i := range wheel.slots {
+		weapon := weapons[i]
+		if weapon == nil {
+			continue
+		}
+
 		// All slots start in the center
 		wheel.slots[i] = ui.NewBoxFull(math2.Rect{
 			X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0),
 			Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0),
 			Width:  slotWidth,
 			Height: slotHeight,
-		}, slotTexture, weaponColors[i])
+		}, slotTexture, weapon.WheelColor())
 
 		if i == int(WEAPON_ORDER_SICKLE) {
 			wheel.slots[i].Depth = 6.1 // Put sickle above other slots while they are expanding out
@@ -53,7 +48,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 			wheel.slots[i].Depth = 6.0
 		}
 
-		if iconPath := weaponWheelIcons[i]; len(iconPath) > 0 {
+		if iconPath := weapon.WheelIconPath(); len(iconPath) > 0 {
 			iconTex := cache.GetTexture(iconPath)
 			iconWidth := min(iconTex.Rect().Width*SpriteScale(), 40*SpriteScale())
 			iconHeight := min(iconTex.Rect().Height*SpriteScale(), 40*SpriteScale())
@@ -65,7 +60,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 			}, iconTex, color.White)
 			wheel.icons[i].Depth = 7.5
 
-			if weapons[i] == nil || !weapons[i].IsEquipped() {
+			if !weapons[i].IsEquipped() {
 				// Intentionally overflow the color values to erase detail on the image.
 				wheel.icons[i].Color = color.Color{R: 100.0, G: 100.0, B: 100.0, A: wheelIconTransparency}
 			}
@@ -95,7 +90,7 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 
 func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 	mousePos := input.MousePosition()
-	slotTexture := cache.GetTexture(TEX_WEAPON_SLOT)
+	slotTexture := cache.GetTexture(texWeaponSlot)
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
 	slotHeight := slotTexture.Rect().Height * SpriteScale()
 	majorRadiusSq := math2.Pow(slotWidth/2.0, 2.0)
