@@ -68,9 +68,13 @@ func (hud *Hud) Update(deltaTime float32) {
 	if !hud.Intro.Done() {
 		hud.Intro.Layout(&hud.renderQueue, deltaTime)
 	}
-	hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
-	hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
-	hud.VictoryScreen.Layout(&hud.renderQueue, deltaTime)
+	if hud.VictoryScreen.levelEndTime.IsZero() {
+		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
+		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
+	} else {
+		// Only show after level ends.
+		hud.VictoryScreen.Layout(&hud.renderQueue, deltaTime)
+	}
 }
 
 func (hud *Hud) Render() {

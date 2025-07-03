@@ -21,19 +21,19 @@ func (weapons *Weapons) init() {
 		weapons: [WeaponCount]Weapon{
 			// Sickle
 			WeaponSickle: {
-				name:         settings.Localize("sickle"),
-				kind:         WeaponSickle,
-				cooldown:     0.25,
-				texturePath:  "assets/textures/ui/sickle_hud.png",
-				swayExtents:  mgl32.Vec2{32.0, 16.0},
-				swaySpeed:    mgl32.Vec2{0.75, 1.5},
-				ammoType:     game.AMMO_TYPE_SICKLE,
-				ammoCost:     1,
-				spriteOffset: mgl32.Vec2{settings.UIWidth() / 4.0, 0.0},
+				name:            settings.Localize("sickle"),
+				kind:            WeaponSickle,
+				cooldown:        0.25,
+				texturePath:     "assets/textures/ui/sickle_hud.png",
+				initialAnimName: fireAnimName,
+				swayExtents:     mgl32.Vec2{32.0, 16.0},
+				swaySpeed:       mgl32.Vec2{0.75, 1.5},
+				ammoType:        game.AMMO_TYPE_SICKLE,
+				ammoCost:        1,
+				spriteOffset:    mgl32.Vec2{settings.UIWidth() / 4.0, 0.0},
 				updateFunc: func(sickle *Weapon, deltaTime float32, ammo game.Ammo) {
-					throwAnim, _ := sickle.sprite.Texture.GetAnimation(fireAnimName)
 					animPlayer := &sickle.sprite.AnimPlayer
-					if sickle.canFire(ammo) && animPlayer.CurrentAnimation().Name == throwAnim.Name {
+					if sickle.canFire(ammo) && animPlayer.CurrentAnimation().Name == fireAnimName {
 						catchAnim, _ := sickle.sprite.Texture.GetAnimation("catch")
 						animPlayer.ChangeAnimation(catchAnim)
 						animPlayer.PlayFromStart()
@@ -150,17 +150,16 @@ func (weapons *Weapons) init() {
 	for i := range weapons.weapons {
 		weapons.weapons[i].init()
 	}
-	weapons.weaponWheel = newWeaponWheel(weapons.weapons[:])
 }
 
 func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats PlayerStats) {
 	// Update weapon wheel
 	wheel := &weapons.weaponWheel
 	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); justPressed {
-		*wheel = newWeaponWheel(weapons.weapons[:])
+		*wheel = newWeaponWheel(weapons.weapons[WeaponSickle:])
 	} else if justReleased && stats.Health > 0 {
 		weap := weapons.Get(wheel.highlightedWeapon)
-		if weap != nil && weap.equipped {
+		if weap != nil && weap.Equipped {
 			weapons.Select(wheel.highlightedWeapon)
 		}
 		input.TrapMouse()
@@ -210,19 +209,11 @@ func (weapons *Weapons) AttemptFire(ammo *game.Ammo) bool {
 
 func (weapons *Weapons) Select(order WeaponKind) {
 	wantWeapon := weapons.Get(order)
-	if wantWeapon == nil || order == weapons.selectedWeapon || (order >= WeaponSickle && !wantWeapon.equipped) {
+	if order == weapons.selectedWeapon || (order >= WeaponSickle && !wantWeapon.Equipped) {
 		return
 	}
 	if weapons.selectedWeapon >= WeaponSickle {
 		weapons.Selected().onDeselect()
 	}
 	weapons.nextWeapon = order
-}
-
-func (weapons *Weapons) Equip(order WeaponKind) {
-	weapon := weapons.Get(order)
-	if weapon == nil {
-		return
-	}
-	weapon.equipped = true
 }

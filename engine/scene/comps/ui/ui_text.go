@@ -41,7 +41,6 @@ type TextSettings struct {
 
 type Text struct {
 	Transform
-	Hidden       bool
 	Color        color.Color
 	Settings     TextSettings
 	oldSettings  TextSettings
@@ -119,6 +118,9 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
+			if txt.Scale == 0.0 {
+				txt.Scale = 1.0
+			}
 			shiftAmount := ((txt.Dest.Width / txt.Scale) - (lastBox.X + lastBox.Width - originX)) // Amount of remaining space within the text's bounds
 			if txt.Settings.Alignment == TEXT_ALIGN_CENTER {
 				shiftAmount *= 0.5
@@ -224,7 +226,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 func (txt *Text) Mesh() (*geom.Mesh, error) {
 	if txt.Settings.Font == nil {
-		return nil, fmt.Errorf("font not assigned")
+		txt.Settings.Font = cache.DefaultFont
 	}
 
 	if txt.oldSettings != txt.Settings {
@@ -309,6 +311,10 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 }
 
 func (txt *Text) Matrix() mgl32.Mat4 {
+	if txt.Scale == 0.0 {
+		// Set default scale if unset
+		txt.Scale = 1.0
+	}
 	if txt.Transform != txt.oldTransform {
 		txt.oldTransform = txt.Transform
 		txt.matrix = mgl32.Translate3D(txt.Dest.X, txt.Dest.Y, txt.Depth).Mul4(mgl32.Scale3D(txt.Scale, txt.Scale, 1.0))
@@ -317,19 +323,24 @@ func (txt *Text) Matrix() mgl32.Mat4 {
 }
 
 func (txt *Text) Render(context *render.Context) {
-	if len(txt.Text()) == 0 || txt.Hidden {
+	if len(txt.Text()) == 0 {
 		return
 	}
 
 	cache.QuadMesh.Bind()
 	shaders.UIShader.Use()
 	// Set color
+	if txt.Color == color.Transparent {
+		// Default for unset color
+		txt.Color = color.White
+	}
 	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, txt.Color.Vector())
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
 
 	// Set texture
 	if txt.Settings.Font == nil {
+		// Default for unset font
 		txt.Settings.Font = cache.DefaultFont
 	}
 	cache.GetTexture(txt.Settings.Font.TexturePath()).Bind()

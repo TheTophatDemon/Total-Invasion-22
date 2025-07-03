@@ -55,9 +55,7 @@ func (app *App) LoadGame(mapPath string) {
 		panic(err)
 	}
 
-	if !engine.InDebugMode() {
-		input.TrapMouse()
-	}
+	input.TrapMouse()
 	app.world = world
 
 	runtime.GC()

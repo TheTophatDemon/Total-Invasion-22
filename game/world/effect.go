@@ -9,7 +9,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
-	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 type Effect struct {
@@ -63,7 +62,7 @@ func SpawnSingleExplosion(world *World, transform comps.Transform) (id scene.Id[
 	const DAMAGE_RADIUS = 3.5
 	const MAX_ENEMY_DAMAGE = 175.0
 	const MIN_ENEMY_DAMAGE = 50.0
-	id, fx, err = SpawnEffect(world, transform, 1.0, effects.Explosion(1, 1.0, 1.5))
+	id, fx, err = SpawnEffect(world, transform, 1.0, ExplosionEffect(1, 1.0, 1.5))
 	if err != nil {
 		return
 	}

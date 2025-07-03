@@ -6,7 +6,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 256, "h": 128 },
     "sourceSize": { "w": 256, "h": 128 },
-    "duration": 100
+    "duration": 50
    },
    {
     "filename": "grenade_launcher_hud.png;1",
@@ -15,7 +15,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 256, "h": 128 },
     "sourceSize": { "w": 256, "h": 128 },
-    "duration": 100
+    "duration": 50
    },
    {
     "filename": "grenade_launcher_hud.png;2",
@@ -24,7 +24,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 256, "h": 128 },
     "sourceSize": { "w": 256, "h": 128 },
-    "duration": 100
+    "duration": 50
    },
    {
     "filename": "grenade_launcher_hud.png;3",
@@ -33,7 +33,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 256, "h": 128 },
     "sourceSize": { "w": 256, "h": 128 },
-    "duration": 100
+    "duration": 50
    },
    {
     "filename": "grenade_launcher_hud.png;4",
@@ -42,7 +42,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 256, "h": 128 },
     "sourceSize": { "w": 256, "h": 128 },
-    "duration": 300
+    "duration": 150
    }
  ],
  "meta": {

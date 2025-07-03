@@ -98,12 +98,11 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 	winAnim, _ := tex.GetAnimation("victory")
 	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
-	// Initialize weapons
-	player.ammo[game.AMMO_TYPE_NONE] = 0
-	player.world.Hud.Weapons.Equip(hud.WeaponSickle)
-	player.world.Hud.Weapons.Select(hud.WeaponSickle)
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
+	player.world.Hud.Weapons.Get(hud.WeaponSickle).Equipped = true
+	player.world.Hud.Weapons.Select(hud.WeaponSickle)
 
+	// Initialize weapons
 	if world.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -80.0}, player.Body().Transform.Matrix())
@@ -255,8 +254,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	if input.IsActionJustPressed(settings.ACTION_MARYSUE) {
 		hudPtr.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
-		for i := range hud.WeaponCount {
-			hudPtr.Weapons.Equip(i)
+		for i := range hud.WeaponCount - 1 {
+			hudPtr.Weapons.Get(i + 1).Equipped = true
 		}
 		for i := range player.ammo {
 			player.ammo[i] = game.AmmoLimits[i]

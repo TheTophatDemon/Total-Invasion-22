@@ -20,7 +20,6 @@ func (stats *DebugStats) init() {
 			Dest: math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0},
 		},
 	}
-	stats.fpsCounter.InitDefault()
 
 	stats.drawCounters = ui.Text{
 		Transform: ui.Transform{
@@ -28,7 +27,6 @@ func (stats *DebugStats) init() {
 		},
 		Color: color.Blue,
 	}
-	stats.drawCounters.InitDefault()
 }
 
 func (stats *DebugStats) Layout(queue *ui.RenderQueue) {

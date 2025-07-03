@@ -336,8 +336,11 @@ func (item *Item) OnUse(player *Player) {
 	}
 
 	if item.giveWeapon != hud.WeaponNone {
-		item.world.Hud.Weapons.Equip(item.giveWeapon)
-		item.world.Hud.Weapons.Select(item.giveWeapon)
+		weapon := item.world.Hud.Weapons.Get(item.giveWeapon)
+		if weapon != nil {
+			weapon.Equipped = true
+			item.world.Hud.Weapons.Select(item.giveWeapon)
+		}
 	}
 
 	wasted := false

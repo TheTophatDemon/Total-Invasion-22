@@ -51,11 +51,6 @@ func (screen *VictoryScreen) EndLevel() {
 }
 
 func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	if screen.levelEndTime.IsZero() {
-		// Only show after level ends.
-		return
-	}
-
 	// Level complete text
 	queue.Add(&ui.Text{
 		Color: color.White,

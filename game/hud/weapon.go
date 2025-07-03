@@ -16,7 +16,7 @@ import (
 type WeaponKind int8
 
 const (
-	WeaponNone WeaponKind = iota - 1
+	WeaponNone WeaponKind = iota
 	WeaponSickle
 	WeaponChicken
 	WeaponGrenade
@@ -45,28 +45,29 @@ const (
 )
 
 type Weapon struct {
-	kind          WeaponKind
-	name          string
-	texturePath   string
-	sprite        ui.Box
-	equipped      bool
-	cooldown      float32
-	cooldownTimer float32
-	sway          float32     // Value tracking the timeline of the sway animation.
-	swayExtents   mgl32.Vec2  // Defines a rectangle on screen within which the weapon will sway
-	swaySpeed     mgl32.Vec2  // Defines the speed at which the weapon will sway in each axis
-	spriteOffset  mgl32.Vec2  // Offset from the bottom center of the screen where the sprite will rest
-	state         weaponState // Describes the state of transitional animations.
-	ammoType      game.AmmoType
-	ammoCost      int         // Amount subtracted from ammo after firing
-	wheelColor    color.Color // Color of weapon wheel frame
-	wheelIconPath string      // Path to icon texture displayed in weapon wheel slot
-	noiseLevel    float32
-	isShooter     bool
-	fireSoundPath string
-	voice         tdaudio.VoiceId
-	heldDown      bool // True while the fire button is being held
-	updateFunc    func(w *Weapon, deltaTime float32, ammo game.Ammo)
+	Equipped        bool
+	kind            WeaponKind
+	name            string
+	texturePath     string
+	initialAnimName string // Name of the animation played after the weapon is initialized. If unset, will be "idle"
+	sprite          ui.Box
+	cooldown        float32
+	cooldownTimer   float32
+	sway            float32     // Value tracking the timeline of the sway animation.
+	swayExtents     mgl32.Vec2  // Defines a rectangle on screen within which the weapon will sway
+	swaySpeed       mgl32.Vec2  // Defines the speed at which the weapon will sway in each axis
+	spriteOffset    mgl32.Vec2  // Offset from the bottom center of the screen where the sprite will rest
+	state           weaponState // Describes the state of transitional animations.
+	ammoType        game.AmmoType
+	ammoCost        int         // Amount subtracted from ammo after firing
+	wheelColor      color.Color // Color of weapon wheel frame
+	wheelIconPath   string      // Path to icon texture displayed in weapon wheel slot
+	noiseLevel      float32
+	isShooter       bool
+	fireSoundPath   string
+	voice           tdaudio.VoiceId
+	heldDown        bool // True while the fire button is being held
+	updateFunc      func(w *Weapon, deltaTime float32, ammo game.Ammo)
 }
 
 func (weap *Weapon) Kind() WeaponKind {
@@ -86,7 +87,10 @@ func (weap *Weapon) init() {
 		return
 	}
 	texture := cache.GetTexture(weap.texturePath)
-	idleAnim, ok := texture.GetAnimation(idleAnimName)
+	if len(weap.initialAnimName) == 0 {
+		weap.initialAnimName = idleAnimName
+	}
+	initAnim, ok := texture.GetAnimation(weap.initialAnimName)
 	if !ok {
 		log.Printf("weapon %v missing idle animation\n", weap.name)
 	}
@@ -97,8 +101,8 @@ func (weap *Weapon) init() {
 		Src:     math2.Rect{Width: 1.0, Height: 1.0},
 	}
 	spriteSize := mgl32.Vec2{
-		idleAnim.Frames[0].Rect.Width * settings.SpriteScale(),
-		idleAnim.Frames[0].Rect.Height * settings.SpriteScale(),
+		initAnim.Frames[0].Rect.Width * settings.SpriteScale(),
+		initAnim.Frames[0].Rect.Height * settings.SpriteScale(),
 	}
 	weap.sprite.Transform = ui.Transform{
 		Dest: math2.Rect{
@@ -106,7 +110,7 @@ func (weap *Weapon) init() {
 		},
 	}
 	weap.sprite.SetDestPosition(weap.startPos())
-	weap.sprite.AnimPlayer.PlayNewAnim(idleAnim)
+	weap.sprite.AnimPlayer.PlayNewAnim(initAnim)
 }
 
 // The position that the weapon sprite will head towards after being selected
@@ -129,9 +133,10 @@ func (weap *Weapon) onSelect() {
 	weap.sway = 0.0
 	weap.state = weaponStateIntro
 
-	idleAnim, _ := weap.sprite.Texture.GetAnimation(idleAnimName)
-	weap.sprite.AnimPlayer.ChangeAnimation(idleAnim)
-	weap.sprite.AnimPlayer.PlayFromStart()
+	if weap.sprite.AnimPlayer.CurrentAnimation().Name != weap.initialAnimName {
+		idleAnim, _ := weap.sprite.Texture.GetAnimation(idleAnimName)
+		weap.sprite.AnimPlayer.PlayNewAnim(idleAnim)
+	}
 }
 
 func (weap *Weapon) onDeselect() {

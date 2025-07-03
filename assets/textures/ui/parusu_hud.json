@@ -6,7 +6,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 160, "h": 128 },
     "sourceSize": { "w": 160, "h": 128 },
-    "duration": 150
+    "duration": 75
    },
    {
     "filename": "parusu_hud.png;1",
@@ -15,7 +15,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 160, "h": 128 },
     "sourceSize": { "w": 160, "h": 128 },
-    "duration": 150
+    "duration": 75
    },
    {
     "filename": "parusu_hud.png;2",
@@ -24,7 +24,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 160, "h": 128 },
     "sourceSize": { "w": 160, "h": 128 },
-    "duration": 50
+    "duration": 25
    },
    {
     "filename": "parusu_hud.png;3",
@@ -33,7 +33,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 160, "h": 128 },
     "sourceSize": { "w": 160, "h": 128 },
-    "duration": 50
+    "duration": 25
    }
  ],
  "meta": {

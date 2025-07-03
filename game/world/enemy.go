@@ -16,7 +16,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
-	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
@@ -140,7 +139,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 
 	params := enemyTypeConfigFuncs[variant](enemy)
 
-	enemy.bloodParticles = effects.Blood(15, params.bloodColor, 0.5)
+	enemy.bloodParticles = BloodEffect(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
 	enemy.actor.Health, enemy.actor.TargetHealth = enemy.actor.MaxHealth, enemy.actor.MaxHealth
@@ -393,7 +392,7 @@ func (enemy *Enemy) chase(
 			enemy.actor.Position(),
 			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
 			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
-			WRAITH_MELEE_RANGE,
+			wraithMeleeRange,
 			enemy,
 		)
 		if hit.Hit {
@@ -436,7 +435,7 @@ func (enemy *Enemy) stalk(
 			enemy.actor.Position(),
 			enemy.actor.FacingVec(),
 			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
-			WRAITH_MELEE_RANGE,
+			wraithMeleeRange,
 			enemy,
 		)
 		if hit.Hit {

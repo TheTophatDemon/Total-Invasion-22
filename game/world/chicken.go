@@ -13,7 +13,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
-	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
@@ -52,7 +51,7 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 	chk.world = world
 	chk.id = id
 
-	chk.bloodParticles = effects.Blood(5, color.Red, 0.3)
+	chk.bloodParticles = BloodEffect(5, color.Red, 0.3)
 	chk.bloodParticles.Init()
 
 	tex := cache.GetTexture("assets/textures/sprites/chicken.png")

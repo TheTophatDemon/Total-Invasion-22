@@ -14,8 +14,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
-	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 /**============================================
@@ -110,6 +110,10 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 			proj.id.Remove()
 			if player, isPlayer := owner.(*Player); isPlayer {
 				player.AddAmmo(game.AMMO_TYPE_SICKLE, 1)
+				if sickleWeapon := proj.world.Hud.Weapons.Get(hud.WeaponSickle); sickleWeapon != nil {
+					sickleWeapon.Equipped = true
+					proj.world.Hud.Weapons.Select(hud.WeaponSickle)
+				}
 			}
 		}
 	} else if otherBody.OnLayer(COL_LAYER_MAP) {
@@ -183,7 +187,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 	SpawnEffect(proj.world,
 		comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
 		1.0,
-		effects.EggShards(proj.body.Shape.(collision.Sphere).Radius()))
+		EggShardsEffect(proj.body.Shape.(collision.Sphere).Radius()))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
 	noBlockers := len(proj.world.BodiesInSphere(chickenSpot, 0.5, proj)) == 0

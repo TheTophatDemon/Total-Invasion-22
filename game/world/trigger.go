@@ -16,7 +16,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
-	"tophatdemon.com/total-invasion-ii/game/world/effects"
 )
 
 const (
@@ -71,7 +70,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TRIGGER_ACTION_TELEPORT:
 		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
-		tr.particles = effects.Teleport(0.5)
+		tr.particles = TeleportEffect(0.5)
 		tr.particles.Init()
 	case TRIGGER_ACTION_DAMAGE:
 		tr.filter = liveActorsOnlyFilter
