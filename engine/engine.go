@@ -24,6 +24,7 @@ type App interface {
 
 var fps int
 var updateRate float64 = 1.0 / 60.0
+var debugMode bool
 var window *glfw.Window
 
 func FPS() int {
@@ -34,11 +35,17 @@ func SetUpdateRate(fps int) {
 	updateRate = 1.0 / float64(fps)
 }
 
-func Init(screenWidth, screenHeight int, windowTitle string) error {
+func InDebugMode() bool {
+	return debugMode
+}
+
+func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) error {
 	err := glfw.Init()
 	if err != nil {
 		return err
 	}
+
+	debugMode = enableDebug
 
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)

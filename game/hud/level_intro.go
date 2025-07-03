@@ -135,10 +135,9 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 	intro.sickle = ui.NewBoxFull(math2.Rect{
 		X:      settings.UIWidth() + 8.0,
 		Y:      intro.sweepTop.Dest.Y - float32(sickleTex.Height())/2.0,
-		Width:  float32(sickleTex.Width()) * SpriteScale(),
-		Height: float32(sickleTex.Height()) * SpriteScale(),
-	}, sickleTex, color.White)
-	intro.sickle.Depth = 9.3
+		Width:  float32(sickleTex.Width()) * settings.SpriteScale(),
+		Height: float32(sickleTex.Height()) * settings.SpriteScale(),
+	}, sickleTex, color.White, 9.3)
 
 	eyesTex := cache.GetTexture("assets/textures/ui/intro_eyes.png")
 	intro.eyes = ui.Box{
@@ -146,8 +145,8 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		AnimPlayer: comps.NewAnimationPlayer(eyesTex.GetDefaultAnimation(), true),
 		Texture:    eyesTex,
 	}
-	eyesWidth := intro.eyes.AnimPlayer.Frame().Rect.Width * SpriteScale()
-	eyesHeight := intro.eyes.AnimPlayer.Frame().Rect.Height * SpriteScale()
+	eyesWidth := intro.eyes.AnimPlayer.Frame().Rect.Width * settings.SpriteScale()
+	eyesHeight := intro.eyes.AnimPlayer.Frame().Rect.Height * settings.SpriteScale()
 	intro.eyes.Transform = ui.Transform{
 		Dest: math2.Rect{
 			X:      settings.UIWidth()/2.0 - eyesWidth/2.0,
@@ -185,8 +184,8 @@ func (intro *LevelIntro) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	case intro.timer < 1.0:
 		intro.voice = tdaudio.VoiceId{}
-		if intro.sickle.Dest.X < -float32(intro.sickle.Texture.Width())*SpriteScale() {
-			intro.sickle.Dest.Y = intro.sweepBottom.Dest.Y - float32(intro.sickle.Texture.Height()/2)*SpriteScale()
+		if intro.sickle.Dest.X < -float32(intro.sickle.Texture.Width())*settings.SpriteScale() {
+			intro.sickle.Dest.Y = intro.sweepBottom.Dest.Y - float32(intro.sickle.Texture.Height()/2)*settings.SpriteScale()
 		} else {
 			intro.sickle.Dest.X -= sickleSpeed
 		}

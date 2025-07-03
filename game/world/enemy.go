@@ -183,7 +183,9 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			enemy.dirToTarget = vecToTarget.Normalize()
 		}
 
-		inHearingRange := targetActor.Actor().noisyTimer > 0 && enemy.world.Hud.SelectedWeapon() != nil && enemy.distToTarget < enemy.world.Hud.SelectedWeapon().NoiseLevel()
+		playerWeapon := enemy.world.Hud.Weapons.Selected()
+		inHearingRange := targetActor.Actor().noisyTimer > 0 &&
+			playerWeapon != nil && enemy.distToTarget < playerWeapon.NoiseLevel()
 		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < ENEMY_FOV_RADS/2.0
 		if enemy.distToTarget < ENEMY_WAKE_PROXIMITY {
 			enemy.canSeeTarget = true

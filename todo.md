@@ -1,11 +1,13 @@
 # TODO
+- Fixes to make after refactor
+  - Weapon animations are sluggish
+  - Sickle is visible in hands before catching it in intro
+  - Debug stats are not appearing
 - Weapon wheel / menu
   - Audio feedback
   - Consider removing cursor in favor of less precise way of picking
-- Refactor HUD into separate sections using "immediate mode" rendering
-  - Player stats / face state
-  - Message box
-  - Weapons
+- Consolidate enemy code files
+- Consolidate effect code files
 - Ensure weapons and armor are carried over into next level
 - Investigate system timer related slowdown
 - Preload all sound effects before start of level

@@ -100,8 +100,8 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 
 	// Initialize weapons
 	player.ammo[game.AMMO_TYPE_NONE] = 0
-	player.world.Hud.EquipWeapon(hud.WEAPON_ORDER_SICKLE)
-	player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
+	player.world.Hud.Weapons.Equip(hud.WeaponSickle)
+	player.world.Hud.Weapons.Select(hud.WeaponSickle)
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 
 	if world.Hud.Intro.TimeLeft() > 0.0 {
@@ -116,8 +116,10 @@ func SpawnPlayer(world *World, position, angles mgl32.Vec3, camera scene.Id[*Cam
 }
 
 func (player *Player) Update(deltaTime float32) {
+	hudPtr := &player.world.Hud
+
 	player.weaponWheelOpenness = max(0.0, player.weaponWheelOpenness-(deltaTime*10.0))
-	if player.world.Hud.Intro.TimeLeft() > 0.5 {
+	if hudPtr.Intro.TimeLeft() > 0.5 {
 		// Wait
 	} else if player.world.InWinState() {
 		// Win logic
@@ -125,7 +127,7 @@ func (player *Player) Update(deltaTime float32) {
 			player.AnimPlayer.Play()
 		}
 		player.AnimPlayer.Update(deltaTime)
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
+		hudPtr.Weapons.Select(hud.WeaponNone)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
@@ -149,10 +151,10 @@ func (player *Player) Update(deltaTime float32) {
 		}
 	} else {
 		// Death logic
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_NONE)
+		hudPtr.Weapons.Select(hud.WeaponNone)
 		player.armorType = game.ARMOR_TYPE_NONE
 		player.armorAmount = 0.0
-		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+		hudPtr.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		if camera, ok := player.Camera.Get(); ok {
@@ -183,8 +185,9 @@ func (player *Player) Update(deltaTime float32) {
 	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 	player.actor.Update(deltaTime)
 
-	player.world.Hud.UpdatePlayerStats(deltaTime, hud.PlayerStats{
-		Health:              int(math2.Ceil(player.actor.Health)), // Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
+	hudPtr.PlayerStats = hud.PlayerStats{
+		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
+		Health:              int(math2.Ceil(player.actor.Health)),
 		Noclip:              player.Body().Layer == COL_LAYER_NONE,
 		GodMode:             player.godMode,
 		Ammo:                &player.ammo,
@@ -193,7 +196,7 @@ func (player *Player) Update(deltaTime float32) {
 		Armor:               player.armorType,
 		ArmorAmount:         int(math2.Ceil(player.armorAmount)),
 		WeaponWheelOpenness: player.weaponWheelOpenness,
-	})
+	}
 }
 
 func (player *Player) Render(context *render.Context) {
@@ -203,6 +206,8 @@ func (player *Player) Render(context *render.Context) {
 }
 
 func (player *Player) takeUserInput(deltaTime float32) {
+	hudPtr := &player.world.Hud
+
 	_ = deltaTime
 	if input.IsActionPressed(settings.ACTION_FORWARD) {
 		player.actor.inputForward = 1.0
@@ -231,7 +236,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			player.Body().Filter = COL_FILTER_FOR_ACTORS
 			message = settings.Localize("noclipDeactivate")
 		}
-		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
+		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_GODMODE) {
@@ -245,13 +250,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		} else {
 			message = settings.Localize("godModeDeactivate")
 		}
-		player.world.Hud.ShowMessage(message, 4.0, 100, color.Red)
+		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ACTION_MARYSUE) {
-		player.world.Hud.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
-		for i := range hud.WEAPON_ORDER_COUNT {
-			player.world.Hud.EquipWeapon(i)
+		hudPtr.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
+		for i := range hud.WeaponCount {
+			hudPtr.Weapons.Equip(i)
 		}
 		for i := range player.ammo {
 			player.ammo[i] = game.AmmoLimits[i]
@@ -281,18 +286,18 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	// Weapon selection
 	if input.IsActionJustPressed(settings.ACTION_SICKLE) {
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_SICKLE)
+		hudPtr.Weapons.Select(hud.WeaponSickle)
 	} else if input.IsActionJustPressed(settings.ACTION_CHICKEN) {
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_CHICKEN)
+		hudPtr.Weapons.Select(hud.WeaponChicken)
 	} else if input.IsActionJustPressed(settings.ACTION_GRENADE) {
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_GRENADE)
+		hudPtr.Weapons.Select(hud.WeaponGrenade)
 	} else if input.IsActionJustPressed(settings.ACTION_PARUSU) {
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_PARUSU)
+		hudPtr.Weapons.Select(hud.WeaponParusu)
 	} else if input.IsActionJustPressed(settings.ACTION_AIRHORN) {
-		player.world.Hud.SelectWeapon(hud.WEAPON_ORDER_AIRHORN)
+		hudPtr.Weapons.Select(hud.WeaponAirhorn)
 	}
 
-	if weap := player.world.Hud.SelectedWeapon(); weap != nil && input.IsActionPressed(settings.ACTION_FIRE) {
+	if weap := hudPtr.Weapons.Selected(); weap != nil && input.IsActionPressed(settings.ACTION_FIRE) {
 		var cast collision.RaycastResult
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
@@ -300,10 +305,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 
 		ammoBefore := player.ammo
-		if !cast.Hit && player.world.Hud.AttemptFireWeapon(&player.ammo) {
+		if !cast.Hit && hudPtr.Weapons.AttemptFire(&player.ammo) {
 			player.AttackWithWeapon(input.IsActionJustPressed(settings.ACTION_FIRE))
-			weappy := player.world.Hud.SelectedWeapon()
-			if player.armorType == game.ARMOR_TYPE_BULLET && weappy != nil && weappy.Order() != hud.WEAPON_ORDER_SICKLE {
+			if player.armorType == game.ARMOR_TYPE_BULLET && weap.Kind() != hud.WeaponSickle {
 				player.ammo = ammoBefore
 			}
 		}
@@ -342,19 +346,21 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 		return false
 	}
 
+	hudPtr := &player.world.Hud
+
 	wasNonZero := player.armorAmount > 0
 	player.armorAmount = max(0, player.armorAmount-damage)
 	if player.armorAmount <= 0 && wasNonZero {
 		player.armorType = game.ARMOR_TYPE_NONE
 		cache.GetSfx("assets/sounds/armor_break.wav").Play()
-		player.world.Hud.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.Red)
+		hudPtr.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.Red)
 	}
 	damage *= (1.0 - game.ArmorDefense[player.armorType])
 
 	player.actor.Health = max(0, player.actor.Health-damage)
 
 	if player.actor.Health > 0 {
-		player.world.Hud.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+		hudPtr.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
 
 		if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
 			// Change the hurt face with respect to the direction the damage is coming from
@@ -366,16 +372,16 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 			halfFov := mgl32.DegToRad(settings.Current.Fov / 2.0)
 			if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
 				// Source is in front or back
-				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
+				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtFront)
 			} else if forward.Cross(dmgDir).Y() > 0.0 {
 				// Source is to the left
-				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtLeft)
+				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtLeft)
 			} else {
 				// Source is to the right
-				player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtRight)
+				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtRight)
 			}
 		} else {
-			player.world.Hud.SuggestPlayerFace(hud.FaceStateHurtFront)
+			hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtFront)
 		}
 	}
 	return true
@@ -400,4 +406,47 @@ func (player *Player) AddArmor(armorType game.ArmorType, amount int) bool {
 	player.armorType = armorType
 	player.armorAmount = min(player.armorAmount+float32(amount), game.MAX_ARMOR)
 	return true
+}
+
+func (player *Player) AttackWithWeapon(justPressed bool) {
+	weapon := player.world.Hud.Weapons.Selected()
+	if weapon == nil {
+		return
+	}
+	switch weapon.Kind() {
+	case hud.WeaponSickle:
+		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, player.Body().Transform.Matrix())
+		SpawnSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+	case hud.WeaponChicken:
+		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, player.Body().Transform.Matrix())
+		SpawnEgg(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
+	case hud.WeaponGrenade:
+		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.15, -1.25}, player.Body().Transform.Matrix())
+		SpawnGrenade(player.world, firePos, player.Body().Transform.Forward())
+		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
+	case hud.WeaponParusu:
+		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.25, -0.5}, player.Body().Transform.Matrix())
+		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle, false)
+		cache.GetSfx("assets/sounds/weapon/parusu.wav").Play()
+	case hud.WeaponAirhorn:
+		if justPressed {
+			enemyIter := player.world.Enemies.Iter()
+			for {
+				enemy, _ := enemyIter.Next()
+				if enemy == nil {
+					break
+				}
+				if enemy.actor.Health > 0 && enemy.state != &enemy.stunState {
+					diff := enemy.actor.Position().Sub(player.actor.Position())
+					dist := diff.Len()
+					if dist > 0.0 && dist < 3.0 && diff.Mul(1.0/dist).Dot(player.actor.FacingVec()) > 0.9 {
+						enemy.OnDamage(player, 1.0)
+						enemy.changeState(&enemy.stunState)
+					}
+				}
+			}
+		}
+	}
+	player.actor.noisyTimer = 0.5
 }

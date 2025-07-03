@@ -16,23 +16,20 @@ const texWeaponSlot = "assets/textures/ui/weapon_slot.png"
 const wheelIconTransparency = 0.2
 
 type WeaponWheel struct {
-	slots             [WEAPON_ORDER_DEFENESTRATOR]ui.Box
-	icons             [WEAPON_ORDER_DEFENESTRATOR]ui.Box
+	slots             [WeaponDefenestrator]ui.Box
+	icons             [WeaponDefenestrator]ui.Box
 	cursor, highlight ui.Box
-	highlightedWeapon WeaponIndex
+	highlightedWeapon WeaponKind
 }
 
-func NewWeaponWheel(weapons []Weapon) WeaponWheel {
+func newWeaponWheel(weapons []Weapon) WeaponWheel {
 	input.UntrapMouse()
 	var wheel WeaponWheel
 	slotTexture := cache.GetTexture(texWeaponSlot)
-	slotWidth := slotTexture.Rect().Width * SpriteScale()
-	slotHeight := slotTexture.Rect().Height * SpriteScale()
+	slotWidth := slotTexture.Rect().Width * settings.SpriteScale()
+	slotHeight := slotTexture.Rect().Height * settings.SpriteScale()
 	for i := range wheel.slots {
 		weapon := weapons[i]
-		if weapon == nil {
-			continue
-		}
 
 		// All slots start in the center
 		wheel.slots[i] = ui.NewBoxFull(math2.Rect{
@@ -40,50 +37,47 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 			Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0),
 			Width:  slotWidth,
 			Height: slotHeight,
-		}, slotTexture, weapon.WheelColor())
+		}, slotTexture, weapon.wheelColor, 6.0)
 
-		if i == int(WEAPON_ORDER_SICKLE) {
+		if i == int(WeaponSickle) {
 			wheel.slots[i].Depth = 6.1 // Put sickle above other slots while they are expanding out
-		} else {
-			wheel.slots[i].Depth = 6.0
 		}
 
-		if iconPath := weapon.WheelIconPath(); len(iconPath) > 0 {
+		if iconPath := weapon.wheelIconPath; len(iconPath) > 0 {
 			iconTex := cache.GetTexture(iconPath)
-			iconWidth := min(iconTex.Rect().Width*SpriteScale(), 40*SpriteScale())
-			iconHeight := min(iconTex.Rect().Height*SpriteScale(), 40*SpriteScale())
+			iconWidth := min(iconTex.Rect().Width*settings.SpriteScale(), 40*settings.SpriteScale())
+			iconHeight := min(iconTex.Rect().Height*settings.SpriteScale(), 40*settings.SpriteScale())
 			wheel.icons[i] = ui.NewBoxFull(math2.Rect{
 				X:      wheel.slots[i].DestPosition()[0] + (slotWidth-iconWidth)/2.0,
 				Y:      wheel.slots[i].DestPosition()[1] + (slotHeight-iconHeight)/2.0,
 				Width:  iconWidth,
 				Height: iconHeight,
-			}, iconTex, color.White)
-			wheel.icons[i].Depth = 7.5
+			}, iconTex, color.White, 7.5)
 
-			if !weapons[i].IsEquipped() {
+			if !weapons[i].equipped {
 				// Intentionally overflow the color values to erase detail on the image.
 				wheel.icons[i].Color = color.Color{R: 100.0, G: 100.0, B: 100.0, A: wheelIconTransparency}
 			}
 		}
 	}
-	input.SetMousePosition(wheel.slots[WEAPON_ORDER_SICKLE].Dest.Center())
+	input.SetMousePosition(wheel.slots[WeaponSickle].Dest.Center())
 	cursorTex := cache.GetTexture("assets/textures/ui/hand_cursor.png")
 	wheel.cursor = ui.NewBoxFull(
 		math2.Rect{
-			Width:  cursorTex.Rect().Width * SpriteScale(),
-			Height: cursorTex.Rect().Height * SpriteScale(),
+			Width:  cursorTex.Rect().Width * settings.SpriteScale(),
+			Height: cursorTex.Rect().Height * settings.SpriteScale(),
 		},
 		cursorTex,
-		color.White)
-	wheel.cursor.Depth = 8.0
+		color.White,
+		8.0,
+	)
 
 	wheel.highlight = ui.NewBoxFull(math2.Rect{
 		X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0),
 		Y:      (settings.UIHeight() / 2.0) - (slotHeight / 2.0),
 		Width:  slotWidth,
 		Height: slotHeight,
-	}, slotTexture, color.White)
-	wheel.highlight.Depth = 7.0
+	}, slotTexture, color.White, 7.0)
 
 	return wheel
 }
@@ -91,8 +85,8 @@ func NewWeaponWheel(weapons []Weapon) WeaponWheel {
 func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 	mousePos := input.MousePosition()
 	slotTexture := cache.GetTexture(texWeaponSlot)
-	slotWidth := slotTexture.Rect().Width * SpriteScale()
-	slotHeight := slotTexture.Rect().Height * SpriteScale()
+	slotWidth := slotTexture.Rect().Width * settings.SpriteScale()
+	slotHeight := slotTexture.Rect().Height * settings.SpriteScale()
 	majorRadiusSq := math2.Pow(slotWidth/2.0, 2.0)
 	minorRadiusSq := math2.Pow(slotHeight/2.0, 2.0)
 
@@ -106,7 +100,7 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 			(settings.UIHeight() / 2.0) - (slotHeight / 2.0) - math2.Cos(angle)*slotHeight*1.5,
 		}
 
-		if i != int(WEAPON_ORDER_SICKLE) {
+		if i != int(WeaponSickle) {
 			// Move slot towards target position
 			dx := (targetPos[0] - slot.Dest.X) * 0.5
 			dy := (targetPos[1] - slot.Dest.Y) * 0.5
@@ -119,7 +113,7 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 		// Test intersection with the ellipse
 		cx, cy := slot.Dest.Center()
 		if (math2.Pow(mousePos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(mousePos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 {
-			wheel.highlightedWeapon = WeaponIndex(i)
+			wheel.highlightedWeapon = WeaponKind(i)
 		}
 
 		slot.Color.A = openness
@@ -131,7 +125,7 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 		}
 	}
 
-	if wheel.highlightedWeapon != WEAPON_ORDER_NONE {
+	if wheel.highlightedWeapon != WeaponNone {
 		wheel.highlight.SetDestPosition(wheel.slots[int(wheel.highlightedWeapon)].DestPosition())
 		wheel.highlight.Color.A = openness
 		queue.Add(&wheel.highlight)

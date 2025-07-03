@@ -50,13 +50,12 @@ func (app *App) LoadGame(mapPath string) {
 	cache.Reset()
 	cache.DefaultFont, _ = cache.GetFont(world.DEFAULT_FONT_PATH)
 
-	debugMode := slices.Contains(os.Args[1:], "debug")
-	world, err := world.NewWorld(app, mapPath, debugMode)
+	world, err := world.NewWorld(app, mapPath)
 	if err != nil {
 		panic(err)
 	}
 
-	if !debugMode {
+	if !engine.InDebugMode() {
 		input.TrapMouse()
 	}
 	app.world = world
@@ -78,7 +77,12 @@ func main() {
 
 	settings.LoadOrInit()
 
-	err = engine.Init(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight), "Total Invasion 22")
+	err = engine.Init(
+		int(settings.Current.WindowWidth),
+		int(settings.Current.WindowHeight),
+		"Total Invasion 22",
+		slices.Contains(os.Args[1:], "debug"),
+	)
 	defer engine.DeInit()
 	if err != nil {
 		panic(err)

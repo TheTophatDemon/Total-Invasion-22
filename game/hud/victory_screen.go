@@ -27,7 +27,7 @@ type VictoryScreen struct {
 	flickerTime                             float32  // Timer for flickering text
 }
 
-func (screen *VictoryScreen) Init() {
+func (screen *VictoryScreen) init() {
 	*screen = VictoryScreen{
 		levelStartTime: time.Now(),
 		currentCounter: &screen.timeCounter,
@@ -102,7 +102,7 @@ func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		screen.countTimer = 0.0
 		if screen.currentCounter != nil {
 			if screen.currentCounter.max > 0 {
-				cache.GetSfx(SFX_STATS_DING).Play()
+				cache.GetSfx("assets/sounds/ui/stats_ding.wav").Play()
 			}
 			screen.currentCounter.count += screen.currentCounter.step
 			if screen.currentCounter.count >= screen.currentCounter.max {

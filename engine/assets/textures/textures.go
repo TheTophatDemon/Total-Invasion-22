@@ -141,7 +141,7 @@ func (tex *Texture) FindLayerToDisplay(cameraAngle int, lang string) (Layer, boo
 }
 
 func (tex *Texture) IsAtlas() bool {
-	return tex.animations != nil && len(tex.animations) > 0
+	return len(tex.animations) > 0
 }
 
 func (tex *Texture) Bind() {

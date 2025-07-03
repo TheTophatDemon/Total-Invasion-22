@@ -22,12 +22,11 @@ type Box struct {
 	Mesh       *geom.Mesh // The mesh to use. If nil, will use the default quad mesh.
 
 	FlippedHorz  bool
-	Hidden       bool
 	oldTransform Transform
 	matrix       mgl32.Mat4
 }
 
-func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) Box {
+func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color, depth float32) Box {
 	src := math2.Rect{}
 	if texture != nil {
 		src = math2.Rect{
@@ -42,7 +41,8 @@ func NewBoxFull(dest math2.Rect, texture *textures.Texture, color color.Color) B
 		Texture: texture,
 		Src:     src,
 		Transform: Transform{
-			Dest: dest,
+			Dest:  dest,
+			Depth: depth,
 		},
 	}
 }
@@ -104,9 +104,6 @@ func (box *Box) Matrix() mgl32.Mat4 {
 }
 
 func (box *Box) Render(context *render.Context) {
-	if box.Hidden {
-		return
-	}
 	failure.CheckOpenGLError()
 	mesh := box.Mesh
 	if box.Mesh == nil {

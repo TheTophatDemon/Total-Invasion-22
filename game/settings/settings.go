@@ -172,6 +172,11 @@ func UIScale() float32 {
 	return float32(Current.WindowHeight) / 480
 }
 
+// Returns the size the sprites on the HUD should be scaled to.
+func SpriteScale() float32 {
+	return UIScale() * 2.0
+}
+
 func UIWidth() float32 {
 	return float32(Current.WindowWidth)
 }

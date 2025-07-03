@@ -30,7 +30,7 @@ type Item struct {
 	pickupSound tdaudio.SoundId
 	healAmount  float32
 	giveAmmo    [game.AMMO_TYPE_COUNT]int // Amount of ammo to give for each type
-	giveWeapon  hud.WeaponIndex
+	giveWeapon  hud.WeaponKind
 	dontWaste   bool // If true, the item will not be collected if the player has the maximum of its resource
 	giveKey     game.KeyType
 	giveArmor   game.ArmorType
@@ -184,7 +184,7 @@ func SpawnPlasmaVials(world *World, position mgl32.Vec3) (id scene.Id[*Item], it
 func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
 	item.giveAmmo[game.AMMO_TYPE_EGG] = 24
-	item.giveWeapon = hud.WEAPON_ORDER_CHICKEN
+	item.giveWeapon = hud.WeaponChicken
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("chickenCannonGet")
 	item.messageTime = 1.5
@@ -195,7 +195,7 @@ func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], 
 func SpawnGrenadeLauncher(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.25, 0.5})
 	item.giveAmmo[game.AMMO_TYPE_GRENADE] = 5
-	item.giveWeapon = hud.WEAPON_ORDER_GRENADE
+	item.giveWeapon = hud.WeaponGrenade
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("grenadeLauncherGet")
 	item.messageTime = 1.5
@@ -206,7 +206,7 @@ func SpawnGrenadeLauncher(world *World, position mgl32.Vec3) (id scene.Id[*Item]
 func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
 	item.giveAmmo[game.AMMO_TYPE_PLASMA] = 100
-	item.giveWeapon = hud.WEAPON_ORDER_PARUSU
+	item.giveWeapon = hud.WeaponParusu
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("parusuGet")
 	item.messageTime = 1.5
@@ -216,7 +216,7 @@ func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *I
 
 func SpawnAirhorn(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveWeapon = hud.WEAPON_ORDER_AIRHORN
+	item.giveWeapon = hud.WeaponAirhorn
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("airhornGet")
 	item.messageTime = 1.5
@@ -265,7 +265,6 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 		messageColor: color.Red,
 		spriteRender: comps.NewSpriteRender(tex),
 		giveArmor:    armorType,
-		giveWeapon:   hud.WEAPON_ORDER_NONE,
 		dontWaste:    true,
 	}
 
@@ -296,7 +295,6 @@ func spawnItemGeneric(world *World, position, rotation, scale mgl32.Vec3) (id sc
 		world:        world,
 		id:           id,
 		fallSpeed:    2.0,
-		giveWeapon:   hud.WEAPON_ORDER_NONE,
 		messageColor: color.Red,
 	}
 
@@ -337,9 +335,9 @@ func (item *Item) OnUse(player *Player) {
 		return
 	}
 
-	if item.giveWeapon != hud.WEAPON_ORDER_NONE {
-		item.world.Hud.EquipWeapon(item.giveWeapon)
-		item.world.Hud.SelectWeapon(item.giveWeapon)
+	if item.giveWeapon != hud.WeaponNone {
+		item.world.Hud.Weapons.Equip(item.giveWeapon)
+		item.world.Hud.Weapons.Select(item.giveWeapon)
 	}
 
 	wasted := false
