@@ -40,17 +40,17 @@ func (app *App) ProcessSignal(signal any) {
 		if app.world != nil {
 			app.world.TearDown()
 		}
-		app.LoadGame(msg.NextMapPath)
+		app.LoadGame(msg.NextMapPath, msg)
 	}
 }
 
-func (app *App) LoadGame(mapPath string) {
+func (app *App) LoadGame(mapPath string, sig game.MapChangeSignal) {
 	log.Println("Loading game at map ", mapPath)
 
 	cache.Reset()
 	cache.DefaultFont, _ = cache.GetFont(world.DEFAULT_FONT_PATH)
 
-	world, err := world.NewWorld(app, mapPath)
+	world, err := world.NewWorld(app, mapPath, sig)
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,9 @@ func main() {
 	}
 
 	app := &App{}
-	app.LoadGame(mapName)
+	app.LoadGame(mapName, game.MapChangeSignal{
+		NextMapPath: mapName,
+	})
 	engine.Run(app)
 
 	// memProf, err := os.Create("memory_profile.pprof")

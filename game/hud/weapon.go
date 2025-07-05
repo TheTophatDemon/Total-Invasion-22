@@ -13,22 +13,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type WeaponKind int8
-
-const (
-	WeaponNone WeaponKind = iota
-	WeaponSickle
-	WeaponChicken
-	WeaponGrenade
-	WeaponParusu
-	WeaponDblGrenade
-	WeaponSign
-	WeaponAirhorn
-	WeaponDefenestrator
-	WeaponCluckster
-	WeaponCount
-)
-
 type weaponState uint8
 
 const (
@@ -46,7 +30,7 @@ const (
 
 type Weapon struct {
 	Equipped        bool
-	kind            WeaponKind
+	kind            game.WeaponType
 	name            string
 	texturePath     string
 	initialAnimName string // Name of the animation played after the weapon is initialized. If unset, will be "idle"
@@ -70,7 +54,7 @@ type Weapon struct {
 	updateFunc      func(w *Weapon, deltaTime float32, ammo game.Ammo)
 }
 
-func (weap *Weapon) Kind() WeaponKind {
+func (weap *Weapon) Kind() game.WeaponType {
 	return weap.kind
 }
 

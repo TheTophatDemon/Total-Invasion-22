@@ -51,12 +51,12 @@ var (
 	FaceStateGod       = faceState{anim: "god", priority: 15}
 )
 
-var ammoTypeIconNames = [game.AMMO_TYPE_COUNT]string{
-	game.AMMO_TYPE_NONE:    "",
-	game.AMMO_TYPE_SICKLE:  "sickle",
-	game.AMMO_TYPE_EGG:     "egg",
-	game.AMMO_TYPE_GRENADE: "grenade",
-	game.AMMO_TYPE_PLASMA:  "plasma",
+var ammoTypeIconNames = [game.AmmoTypeCount]string{
+	game.AmmoTypeNone:    "",
+	game.AmmoTypeSickle:  "sickle",
+	game.AmmoTypeEgg:     "egg",
+	game.AmmoTypeGrenade: "grenade",
+	game.AmmoTypePlasma:  "plasma",
 }
 
 func (status *statusBar) ShowMessage(text string, duration float32, priority int, colr color.Color) {
@@ -226,8 +226,8 @@ func (status *statusBar) init() {
 	}
 
 	// Key icons
-	for i, key := range [...]game.KeyType{game.KEY_TYPE_BLUE, game.KEY_TYPE_BROWN, game.KEY_TYPE_YELLOW, game.KEY_TYPE_GRAY} {
-		keyName := game.KeycardNames[key] + "Key"
+	for i, key := range [...]game.Keys{game.KeysBlue, game.KeysBrown, game.KeysYellow, game.KeysGray} {
+		keyName := key.Name() + "Key"
 		slice := rightPanelTex.FindSlice(keyName)
 		status.keyIcons[i] = ui.Box{
 			Color:   color.White,
@@ -238,13 +238,13 @@ func (status *statusBar) init() {
 			},
 		}
 		switch key {
-		case game.KEY_TYPE_BLUE:
+		case game.KeysBlue:
 			status.keyIcons[i].Src = math2.Rect{X: 0, Y: 0, Width: 8, Height: 8}
-		case game.KEY_TYPE_BROWN:
+		case game.KeysBrown:
 			status.keyIcons[i].Src = math2.Rect{X: 8, Y: 0, Width: 8, Height: 8}
-		case game.KEY_TYPE_YELLOW:
+		case game.KeysYellow:
 			status.keyIcons[i].Src = math2.Rect{X: 0, Y: 8, Width: 8, Height: 8}
-		case game.KEY_TYPE_GRAY:
+		case game.KeysGray:
 			status.keyIcons[i].Src = math2.Rect{X: 8, Y: 8, Width: 8, Height: 8}
 		}
 	}
@@ -324,14 +324,14 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	}
 
 	// Armor stat
-	if stats.Armor != game.ARMOR_TYPE_NONE {
+	if stats.Armor != game.ArmorTypeNone {
 		status.armorStat.SetText(fmt.Sprintf("%03d", stats.ArmorAmount))
 		queue.Add(&status.armorStat)
 	}
 
 	// Armor icon
 	status.armorIcon.Update(deltaTime)
-	anim, ok := iconsTex.GetAnimation(game.ArmorNames[stats.Armor] + "Armor")
+	anim, ok := iconsTex.GetAnimation(stats.Armor.Name() + "Armor")
 	if ok {
 		if !status.armorIcon.AnimPlayer.IsPlayingAnim(anim) {
 			status.armorIcon.AnimPlayer.PlayNewAnim(anim)

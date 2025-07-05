@@ -77,7 +77,7 @@ type World struct {
 	skyRender        comps.SkyRender
 }
 
-func NewWorld(app engine.Observer, mapPath string) (*World, error) {
+func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSignal) (*World, error) {
 	world := &World{
 		removalQueue: make([]scene.Handle, 0, 8),
 		app:          app,
@@ -265,7 +265,7 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 			if err != nil {
 				log.Printf("error spawning player camera: %v\n", err)
 			}
-			world.CurrentPlayer, _, err = SpawnPlayer(world, ent.Position, ent.Angles, world.CurrentCamera)
+			world.CurrentPlayer, _, err = SpawnPlayer(world, ent.Position, ent.Angles, world.CurrentCamera, changeInfo)
 		}
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
@@ -273,12 +273,6 @@ func NewWorld(app engine.Observer, mapPath string) (*World, error) {
 	}
 
 	return world, nil
-}
-
-func (world *World) ChangeMap(mapPath string) {
-	world.app.ProcessSignal(game.MapChangeSignal{
-		NextMapPath: mapPath,
-	})
 }
 
 func (world *World) Update(deltaTime float32) {

@@ -70,11 +70,11 @@ type enemyConfig struct {
 	defaultAnim textures.Animation
 }
 
-var enemyTypeConfigFuncs = [game.ENEMY_TYPE_COUNT]func(enemy *Enemy) enemyConfig{
-	game.ENEMY_TYPE_WRAITH:        configureWraith,
-	game.ENEMY_TYPE_FIRE_WRAITH:   configureFireWraith,
-	game.ENEMY_TYPE_MOTHER_WRAITH: configureMotherWraith,
-	game.ENEMY_TYPE_DUMMKOPF:      configureDummkopf,
+var enemyTypeConfigFuncs = [game.EnemyTypeCount]func(enemy *Enemy) enemyConfig{
+	game.EnemyTypeWraith:       configureWraith,
+	game.EnemyTypeFireWraith:   configureFireWraith,
+	game.EnemyTypeMotherWraith: configureMotherWraith,
+	game.EnemyTypeDummkopf:     configureDummkopf,
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -84,13 +84,13 @@ func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, err
 	var variant game.EnemyType
 	switch ent.Properties["enemy"] {
 	case "fire wraith":
-		variant = game.ENEMY_TYPE_FIRE_WRAITH
+		variant = game.EnemyTypeFireWraith
 	case "mother wraith":
-		variant = game.ENEMY_TYPE_MOTHER_WRAITH
+		variant = game.EnemyTypeMotherWraith
 	case "dummkopf":
-		variant = game.ENEMY_TYPE_DUMMKOPF
+		variant = game.EnemyTypeDummkopf
 	default:
-		variant = game.ENEMY_TYPE_WRAITH
+		variant = game.EnemyTypeWraith
 	}
 	return SpawnEnemy(world, ent.Position, ent.AnglesInRadians(), variant)
 }
@@ -327,7 +327,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		enemy.actor.body.Filter = COL_LAYER_MAP | COL_LAYER_INVISIBLE
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
-		if enemy.spawnAmmo != game.AMMO_TYPE_NONE && rand.Float32() < enemy.spawnAmmoChance {
+		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
 			SpawnAmmo(enemy.world, enemy.actor.Position(), enemy.spawnAmmo)
 		}
 	}

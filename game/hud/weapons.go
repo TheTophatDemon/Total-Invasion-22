@@ -11,24 +11,24 @@ import (
 )
 
 type Weapons struct {
-	weapons                    [WeaponCount]Weapon
+	weapons                    [game.WeaponCount]Weapon
 	weaponWheel                WeaponWheel
-	selectedWeapon, nextWeapon WeaponKind
+	selectedWeapon, nextWeapon game.WeaponType
 }
 
 func (weapons *Weapons) init() {
 	*weapons = Weapons{
-		weapons: [WeaponCount]Weapon{
+		weapons: [game.WeaponCount]Weapon{
 			// Sickle
-			WeaponSickle: {
+			game.WeaponSickle: {
 				name:            settings.Localize("sickle"),
-				kind:            WeaponSickle,
+				kind:            game.WeaponSickle,
 				cooldown:        0.25,
 				texturePath:     "assets/textures/ui/sickle_hud.png",
 				initialAnimName: fireAnimName,
 				swayExtents:     mgl32.Vec2{32.0, 16.0},
 				swaySpeed:       mgl32.Vec2{0.75, 1.5},
-				ammoType:        game.AMMO_TYPE_SICKLE,
+				ammoType:        game.AmmoTypeSickle,
 				ammoCost:        1,
 				spriteOffset:    mgl32.Vec2{settings.UIWidth() / 4.0, 0.0},
 				updateFunc: func(sickle *Weapon, deltaTime float32, ammo game.Ammo) {
@@ -46,14 +46,14 @@ func (weapons *Weapons) init() {
 				isShooter:     true,
 			},
 			// Chicken Cannon
-			WeaponChicken: {
+			game.WeaponChicken: {
 				name:          settings.Localize("chickenCannon"),
-				kind:          WeaponChicken,
+				kind:          game.WeaponChicken,
 				cooldown:      0.15,
 				texturePath:   "assets/textures/ui/chicken_cannon_hud.png",
 				swayExtents:   mgl32.Vec2{16.0, 8.0},
 				swaySpeed:     mgl32.Vec2{0.5, 1.0},
-				ammoType:      game.AMMO_TYPE_EGG,
+				ammoType:      game.AmmoTypeEgg,
 				ammoCost:      1,
 				wheelColor:    color.FromBytes(0, 0, 255, 255),
 				wheelIconPath: "assets/textures/sprites/chicken_cannon.png",
@@ -61,14 +61,14 @@ func (weapons *Weapons) init() {
 				isShooter:     true,
 			},
 			// Grenade launcher
-			WeaponGrenade: {
+			game.WeaponGrenade: {
 				name:          settings.Localize("grenadeLauncher"),
-				kind:          WeaponGrenade,
+				kind:          game.WeaponGrenade,
 				cooldown:      1.0,
 				texturePath:   "assets/textures/ui/grenade_launcher_hud.png",
 				swayExtents:   mgl32.Vec2{16.0, 8.0},
 				swaySpeed:     mgl32.Vec2{0.75, 1.25},
-				ammoType:      game.AMMO_TYPE_GRENADE,
+				ammoType:      game.AmmoTypeGrenade,
 				ammoCost:      1,
 				wheelColor:    color.FromBytes(0, 170, 0, 255),
 				wheelIconPath: "assets/textures/sprites/grenade_launcher.png",
@@ -76,14 +76,14 @@ func (weapons *Weapons) init() {
 				isShooter:     true,
 			},
 			// Parusu
-			WeaponParusu: {
+			game.WeaponParusu: {
 				name:          settings.Localize("parusu"),
-				kind:          WeaponParusu,
+				kind:          game.WeaponParusu,
 				cooldown:      0.075,
 				texturePath:   "assets/textures/ui/parusu_hud.png",
 				swayExtents:   mgl32.Vec2{16.0, 8.0},
 				swaySpeed:     mgl32.Vec2{0.5, 1.0},
-				ammoType:      game.AMMO_TYPE_PLASMA,
+				ammoType:      game.AmmoTypePlasma,
 				ammoCost:      1,
 				wheelColor:    color.FromBytes(0, 255, 130, 255),
 				wheelIconPath: "assets/textures/sprites/parusu.png",
@@ -98,28 +98,28 @@ func (weapons *Weapons) init() {
 				},
 			},
 			// Double grenade launcher (NOT IMPLEMENTED)
-			WeaponDblGrenade: {
+			game.WeaponDblGrenade: {
 				name:          settings.Localize("doubleGrenadeLauncher"),
-				kind:          WeaponDblGrenade,
+				kind:          game.WeaponDblGrenade,
 				wheelColor:    color.FromBytes(255, 130, 0, 255),
 				wheelIconPath: "assets/textures/sprites/double_grenade_launcher.png",
 			},
 			// Sign of Madness (NOT IMPLEMENTED)
-			WeaponSign: {
+			game.WeaponSign: {
 				name:          settings.Localize("signOfMadness"),
-				kind:          WeaponSign,
+				kind:          game.WeaponSign,
 				wheelColor:    color.FromBytes(170, 0, 0, 255),
 				wheelIconPath: "assets/textures/sprites/sign_of_madness.png",
 			},
 			// Airhorn
-			WeaponAirhorn: {
+			game.WeaponAirhorn: {
 				name:          settings.Localize("airhorn"),
-				kind:          WeaponAirhorn,
+				kind:          game.WeaponAirhorn,
 				cooldown:      0.0,
 				texturePath:   "assets/textures/ui/airhorn_hud.png",
 				swayExtents:   mgl32.Vec2{32.0, 16.0},
 				swaySpeed:     mgl32.Vec2{0.75, 1.5},
-				ammoType:      game.AMMO_TYPE_NONE,
+				ammoType:      game.AmmoTypeNone,
 				spriteOffset:  mgl32.Vec2{settings.UIWidth() / 6.0, 0.0},
 				noiseLevel:    100.0,
 				wheelColor:    color.FromBytes(255, 0, 0, 255),
@@ -136,17 +136,17 @@ func (weapons *Weapons) init() {
 				},
 			},
 			// Defenestrator (NOT IMPLEMENTED)
-			WeaponDefenestrator: {
+			game.WeaponDefenestrator: {
 				name:       settings.Localize("defenestrator"),
-				kind:       WeaponDefenestrator,
-				ammoType:   game.AMMO_TYPE_PLASMA,
+				kind:       game.WeaponDefenestrator,
+				ammoType:   game.AmmoTypePlasma,
 				wheelColor: color.FromBytes(32, 32, 32, 255),
 			},
 			// Cluckster Bomb (NOT IMPLEMENTED)
-			WeaponCluckster: {
+			game.WeaponCluckster: {
 				name:       settings.Localize("clucksterBomb"),
-				kind:       WeaponCluckster,
-				ammoType:   game.AMMO_TYPE_EGG,
+				kind:       game.WeaponCluckster,
+				ammoType:   game.AmmoTypeEgg,
 				wheelColor: color.FromBytes(25, 40, 120, 255),
 			},
 		},
@@ -175,7 +175,7 @@ func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats P
 	// Transition selected weapon
 	if weapon := weapons.Selected(); weapon == nil || !weapon.isSelected() {
 		weapons.selectedWeapon = weapons.nextWeapon
-		if weapons.selectedWeapon >= WeaponSickle {
+		if weapons.selectedWeapon >= game.WeaponSickle {
 			weapon = weapons.Selected()
 			weapon.onSelect()
 		}
@@ -184,15 +184,15 @@ func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats P
 	// Update weapons
 	for i := range weapons.weapons {
 		wep := &weapons.weapons[i]
-		wep.update(deltaTime, stats.MoveSpeed, *stats.Ammo)
-		if WeaponKind(i) == weapons.selectedWeapon {
+		wep.update(deltaTime, stats.MoveSpeed, stats.Ammo)
+		if game.WeaponType(i) == weapons.selectedWeapon {
 			queue.Add(&wep.sprite)
 		}
 	}
 }
 
-func (weapons *Weapons) Get(index WeaponKind) *Weapon {
-	if index == WeaponNone || index >= WeaponCount {
+func (weapons *Weapons) Get(index game.WeaponType) *Weapon {
+	if index == game.WeaponNone || index >= game.WeaponCount {
 		return nil
 	}
 	return &weapons.weapons[index]
@@ -211,13 +211,22 @@ func (weapons *Weapons) AttemptFire(ammo *game.Ammo) bool {
 	return false
 }
 
-func (weapons *Weapons) Select(order WeaponKind) {
+func (weapons *Weapons) Select(order game.WeaponType) {
 	wantWeapon := weapons.Get(order)
-	if order == weapons.selectedWeapon || (order >= WeaponSickle && !wantWeapon.Equipped) {
+	if order == weapons.selectedWeapon || (order >= game.WeaponSickle && !wantWeapon.Equipped) {
 		return
 	}
-	if weapons.selectedWeapon >= WeaponSickle {
+	if weapons.selectedWeapon >= game.WeaponSickle {
 		weapons.Selected().onDeselect()
 	}
 	weapons.nextWeapon = order
+}
+
+func (weapons *Weapons) ListEquipped() (result [game.WeaponCount]bool) {
+	for i := range game.WeaponCount {
+		if weap := weapons.Get(i); weap != nil && weap.Equipped {
+			result[i] = true
+		}
+	}
+	return
 }

@@ -338,7 +338,7 @@ func configureDummkopf(enemy *Enemy) (params enemyConfig) {
 
 	enemy.actor.MaxHealth = 250.0
 	enemy.StunChance = 0.25
-	enemy.spawnAmmo = game.AMMO_TYPE_PLASMA
+	enemy.spawnAmmo = game.AmmoTypePlasma
 	enemy.spawnAmmoChance = 0.5
 
 	return

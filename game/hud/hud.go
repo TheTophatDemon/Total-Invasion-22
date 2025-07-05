@@ -11,13 +11,14 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+// Holds player information transferred between the HUD and the game worlds.
 type PlayerStats struct {
 	Health              int
 	Noclip, GodMode     bool
-	Ammo                *game.Ammo
+	Ammo                game.Ammo
 	Armor               game.ArmorType
 	ArmorAmount         int
-	Keys                game.KeyType
+	Keys                game.Keys
 	MoveSpeed           float32
 	WeaponWheelOpenness float32 // Will be 1 when the weapon wheel is open and then gradually drop to 0 after the button is released.
 }

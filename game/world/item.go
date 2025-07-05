@@ -16,7 +16,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -29,10 +28,10 @@ type Item struct {
 	flashColor  color.Color
 	pickupSound tdaudio.SoundId
 	healAmount  float32
-	giveAmmo    [game.AMMO_TYPE_COUNT]int // Amount of ammo to give for each type
-	giveWeapon  hud.WeaponKind
+	giveAmmo    [game.AmmoTypeCount]int // Amount of ammo to give for each type
+	giveWeapon  game.WeaponType
 	dontWaste   bool // If true, the item will not be collected if the player has the maximum of its resource
-	giveKey     game.KeyType
+	giveKey     game.Keys
 	giveArmor   game.ArmorType
 	armorAmount int
 
@@ -79,29 +78,29 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 	case "airhorn":
 		id, item, err = SpawnAirhorn(world, ent.Position)
 	case "bluecard":
-		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BLUE)
+		id, item, err = SpawnKeycard(world, ent.Position, game.KeysBlue)
 		return
 	case "graycard":
-		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_GRAY)
+		id, item, err = SpawnKeycard(world, ent.Position, game.KeysGray)
 		return
 	case "yellowcard":
-		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_YELLOW)
+		id, item, err = SpawnKeycard(world, ent.Position, game.KeysYellow)
 		return
 	case "browncard":
-		id, item, err = SpawnKeycard(world, ent.Position, game.KEY_TYPE_BROWN)
+		id, item, err = SpawnKeycard(world, ent.Position, game.KeysBrown)
 		return
 	case "boringarmor", "boring armor", "boring_armor":
-		id, item, err = SpawnArmorStand(world, ent.Position, game.ARMOR_TYPE_BORING)
+		id, item, err = SpawnArmorStand(world, ent.Position, game.ArmorTypeBoring)
 		item.armorAmount = 100
 		item.flashColor = color.FromBytes(170, 85, 0, 180)
 		return
 	case "bulletarmor", "bullet armor", "bullet_armor":
-		id, item, err = SpawnArmorStand(world, ent.Position, game.ARMOR_TYPE_BULLET)
+		id, item, err = SpawnArmorStand(world, ent.Position, game.ArmorTypeBullet)
 		item.armorAmount = 120
-		item.giveAmmo = [game.AMMO_TYPE_COUNT]int{
-			game.AMMO_TYPE_EGG:     12,
-			game.AMMO_TYPE_GRENADE: 5,
-			game.AMMO_TYPE_PLASMA:  30,
+		item.giveAmmo = [game.AmmoTypeCount]int{
+			game.AmmoTypeEgg:     12,
+			game.AmmoTypeGrenade: 5,
+			game.AmmoTypePlasma:  30,
 		}
 		item.flashColor = color.FromBytes(0, 113, 0, 180)
 		return
@@ -139,11 +138,11 @@ func SpawnMedkit(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *I
 
 func SpawnAmmo(world *World, position mgl32.Vec3, ammoType game.AmmoType) (scene.Id[*Item], *Item, error) {
 	switch ammoType {
-	case game.AMMO_TYPE_EGG:
+	case game.AmmoTypeEgg:
 		return SpawnEggCarton(world, position)
-	case game.AMMO_TYPE_GRENADE:
+	case game.AmmoTypeGrenade:
 		return SpawnGrenades(world, position)
-	case game.AMMO_TYPE_PLASMA:
+	case game.AmmoTypePlasma:
 		return SpawnPlasmaVials(world, position)
 	}
 	return scene.Id[*Item]{}, nil, nil
@@ -151,7 +150,7 @@ func SpawnAmmo(world *World, position mgl32.Vec3, ammoType game.AmmoType) (scene
 
 func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_EGG] = 6
+	item.giveAmmo[game.AmmoTypeEgg] = 6
 	item.dontWaste = true
 	item.message = settings.Localize("eggCartonGet")
 	item.messageTime = 1.0
@@ -161,7 +160,7 @@ func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item
 
 func SpawnGrenades(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_GRENADE] = 3
+	item.giveAmmo[game.AmmoTypeGrenade] = 3
 	item.dontWaste = true
 	item.message = settings.Localize("grenadesGet")
 	item.messageTime = 1.0
@@ -171,7 +170,7 @@ func SpawnGrenades(world *World, position mgl32.Vec3) (id scene.Id[*Item], item 
 
 func SpawnPlasmaVials(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.375, 0.25, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_PLASMA] = 50
+	item.giveAmmo[game.AmmoTypePlasma] = 50
 	item.dontWaste = true
 	item.message = settings.Localize("plasmaVialsGet")
 	item.messageTime = 1.0
@@ -183,8 +182,8 @@ func SpawnPlasmaVials(world *World, position mgl32.Vec3) (id scene.Id[*Item], it
 
 func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_EGG] = 24
-	item.giveWeapon = hud.WeaponChicken
+	item.giveAmmo[game.AmmoTypeEgg] = 24
+	item.giveWeapon = game.WeaponChicken
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("chickenCannonGet")
 	item.messageTime = 1.5
@@ -194,8 +193,8 @@ func SpawnChickenCannon(world *World, position mgl32.Vec3) (id scene.Id[*Item], 
 
 func SpawnGrenadeLauncher(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.25, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_GRENADE] = 5
-	item.giveWeapon = hud.WeaponGrenade
+	item.giveAmmo[game.AmmoTypeGrenade] = 5
+	item.giveWeapon = game.WeaponGrenade
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("grenadeLauncherGet")
 	item.messageTime = 1.5
@@ -205,8 +204,8 @@ func SpawnGrenadeLauncher(world *World, position mgl32.Vec3) (id scene.Id[*Item]
 
 func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.625, 0.25, 0.5})
-	item.giveAmmo[game.AMMO_TYPE_PLASMA] = 100
-	item.giveWeapon = hud.WeaponParusu
+	item.giveAmmo[game.AmmoTypePlasma] = 100
+	item.giveWeapon = game.WeaponParusu
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("parusuGet")
 	item.messageTime = 1.5
@@ -216,7 +215,7 @@ func SpawnParusu(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *I
 
 func SpawnAirhorn(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveWeapon = hud.WeaponAirhorn
+	item.giveWeapon = game.WeaponAirhorn
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.message = settings.Localize("airhornGet")
 	item.messageTime = 1.5
@@ -224,14 +223,14 @@ func SpawnAirhorn(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *
 	return
 }
 
-func SpawnKeycard(world *World, position mgl32.Vec3, keyType game.KeyType) (id scene.Id[*Item], item *Item, err error) {
+func SpawnKeycard(world *World, position mgl32.Vec3, keyType game.Keys) (id scene.Id[*Item], item *Item, err error) {
 	if keyType == 0 {
 		err = fmt.Errorf("no key type supplied")
 		return
 	}
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25})
-	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/" + game.KeycardNames[keyType] + "card.png"))
-	item.message = settings.Localize(game.KeycardNames[keyType] + "KeyGet")
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/" + keyType.Name() + "card.png"))
+	item.message = settings.Localize(keyType.Name() + "KeyGet")
 	item.messageTime = 1.5
 	item.giveKey = keyType
 	item.fallSpeed = 0.0
@@ -248,7 +247,7 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 		return
 	}
 	tex := cache.GetTexture("assets/textures/sprites/armor_stand.png")
-	anim, _ := tex.GetAnimation(game.ArmorNames[armorType] + "Armor")
+	anim, _ := tex.GetAnimation(armorType.Name() + "Armor")
 	*item = Item{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.4, 0.8, 0.8}),
@@ -260,7 +259,7 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 		world:        world,
 		id:           id,
 		fallSpeed:    2.0,
-		message:      settings.Localize(game.ArmorNames[armorType] + "ArmorGet"),
+		message:      settings.Localize(armorType.Name() + "ArmorGet"),
 		messageTime:  1.5,
 		messageColor: color.Red,
 		spriteRender: comps.NewSpriteRender(tex),
@@ -335,7 +334,7 @@ func (item *Item) OnUse(player *Player) {
 		return
 	}
 
-	if item.giveWeapon != hud.WeaponNone {
+	if item.giveWeapon != game.WeaponNone {
 		weapon := item.world.Hud.Weapons.Get(item.giveWeapon)
 		if weapon != nil {
 			weapon.Equipped = true
@@ -345,7 +344,7 @@ func (item *Item) OnUse(player *Player) {
 
 	wasted := false
 	for ammoType, ammoAmount := range item.giveAmmo {
-		if ammoType != int(game.AMMO_TYPE_NONE) && ammoAmount > 0 {
+		if ammoType != int(game.AmmoTypeNone) && ammoAmount > 0 {
 			succ := player.AddAmmo(game.AmmoType(ammoType), ammoAmount)
 			wasted = wasted && !succ
 		}
@@ -356,11 +355,11 @@ func (item *Item) OnUse(player *Player) {
 
 	player.actor.Health += item.healAmount
 
-	if item.giveKey != game.KEY_TYPE_INVALID {
+	if item.giveKey != game.KeysNone {
 		player.keys |= item.giveKey
 	}
 
-	if item.armorAmount != 0 && item.giveArmor != game.ARMOR_TYPE_NONE {
+	if item.armorAmount != 0 && item.giveArmor != game.ArmorTypeNone {
 		notWasted := player.AddArmor(item.giveArmor, item.armorAmount)
 		if item.dontWaste && !notWasted {
 			return

@@ -1,5 +1,4 @@
 # TODO
-- Ensure weapons and armor are carried over into next level
 - Bugs
   - Investigate system timer related slowdown
   - Fix bright pixels on edges of sprites viewed from far away
@@ -16,6 +15,7 @@
 - Chicken cannon secondary attack?
 - Loading screen
 - Title screen
+- Game Difficulty Settings
 - Dialog Cutscene
 - Settings menu
 

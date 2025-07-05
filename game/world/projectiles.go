@@ -14,7 +14,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -109,10 +108,10 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 			proj.voices[0].Stop()
 			proj.id.Remove()
 			if player, isPlayer := owner.(*Player); isPlayer {
-				player.AddAmmo(game.AMMO_TYPE_SICKLE, 1)
-				if sickleWeapon := proj.world.Hud.Weapons.Get(hud.WeaponSickle); sickleWeapon != nil {
+				player.AddAmmo(game.AmmoTypeSickle, 1)
+				if sickleWeapon := proj.world.Hud.Weapons.Get(game.WeaponSickle); sickleWeapon != nil {
 					sickleWeapon.Equipped = true
-					proj.world.Hud.Weapons.Select(hud.WeaponSickle)
+					proj.world.Hud.Weapons.Select(game.WeaponSickle)
 				}
 			}
 		}

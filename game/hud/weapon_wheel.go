@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -14,7 +15,7 @@ const texWeaponSlot = "assets/textures/ui/weapon_slot.png"
 const wheelIconTransparency = 0.2
 
 type weaponSlot struct {
-	kind      WeaponKind
+	kind      game.WeaponType
 	back      ui.Box
 	icon      ui.Box
 	targetPos mgl32.Vec2 // The position where each slot will move towards
@@ -23,7 +24,7 @@ type weaponSlot struct {
 type WeaponWheel struct {
 	slots             [3][3]weaponSlot
 	highlight         ui.Box
-	highlightedWeapon WeaponKind
+	highlightedWeapon game.WeaponType
 	selectPos         mgl32.Vec2 // Represents a virtual mouse position for selecting the weapon
 	bounds            math2.Rect // Rectangular region within which the wheel resides
 	cursor            ui.Box
@@ -43,20 +44,20 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 			Width:  (slotWidth * 3.0) + (slotMargin * 2.0),
 			Height: (slotHeight * 3.0) + (slotMargin * 2.0),
 		},
-		highlightedWeapon: WeaponSickle,
+		highlightedWeapon: game.WeaponSickle,
 	}
 
 	slotStart := wheel.selectPos.Sub(mgl32.Vec2{slotWidth / 2.0, slotHeight / 2.0})
 
-	for i, kind := range [...]WeaponKind{
-		WeaponCluckster, WeaponChicken, WeaponAirhorn,
-		WeaponSign, WeaponSickle, WeaponGrenade,
-		WeaponDefenestrator, WeaponParusu, WeaponDblGrenade,
+	for i, kind := range [...]game.WeaponType{
+		game.WeaponCluckster, game.WeaponChicken, game.WeaponAirhorn,
+		game.WeaponSign, game.WeaponSickle, game.WeaponGrenade,
+		game.WeaponDefenestrator, game.WeaponParusu, game.WeaponDblGrenade,
 	} {
 		weapon := weapons[kind]
 
 		depth := float32(6.0)
-		if kind == WeaponSickle {
+		if kind == game.WeaponSickle {
 			depth = 6.1 // Put sickle above other slots while they are expanding out
 		}
 
@@ -144,7 +145,7 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 		for y := range wheel.slots[x] {
 			slot := &wheel.slots[x][y]
 
-			if slot.kind != WeaponSickle {
+			if slot.kind != game.WeaponSickle {
 				// Move slot towards target position
 				dx := (slot.targetPos[0] - slot.back.Dest.X) * 0.5
 				dy := (slot.targetPos[1] - slot.back.Dest.Y) * 0.5

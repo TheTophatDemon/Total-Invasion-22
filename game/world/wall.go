@@ -51,7 +51,7 @@ type Wall struct {
 	world         *World
 	unopenable    bool
 	activateSound string
-	key           game.KeyType
+	key           game.Keys
 	linkNumber    int
 	switchState   SwitchState
 	blockUse      bool
@@ -340,9 +340,9 @@ func (wall *Wall) OnUse(player *Player) {
 		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Transform.Position())
 	case wall.unopenable:
 		wall.world.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
-	case wall.key != game.KEY_TYPE_INVALID && (player.keys&wall.key) != wall.key:
+	case wall.key != game.KeysNone && (player.keys&wall.key) != wall.key:
 		// Locked if keycard not retrieved
-		wall.world.Hud.ShowMessage(settings.Localize(game.KeycardNames[wall.key]+"KeyNeeded"), 2.0, 10, color.Red)
+		wall.world.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 2.0, 10, color.Red)
 		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Transform.Position())
 	case wall.linkNumber != 0:
 		// Door is opened by some other mechanism
