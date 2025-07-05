@@ -137,13 +137,17 @@ func (weapons *Weapons) init() {
 			},
 			// Defenestrator (NOT IMPLEMENTED)
 			WeaponDefenestrator: {
-				name: settings.Localize("defenestrator"),
-				kind: WeaponDefenestrator,
+				name:       settings.Localize("defenestrator"),
+				kind:       WeaponDefenestrator,
+				ammoType:   game.AMMO_TYPE_PLASMA,
+				wheelColor: color.FromBytes(32, 32, 32, 255),
 			},
 			// Cluckster Bomb (NOT IMPLEMENTED)
 			WeaponCluckster: {
-				name: settings.Localize("clucksterBomb"),
-				kind: WeaponCluckster,
+				name:       settings.Localize("clucksterBomb"),
+				kind:       WeaponCluckster,
+				ammoType:   game.AMMO_TYPE_EGG,
+				wheelColor: color.FromBytes(25, 40, 120, 255),
 			},
 		},
 	}
@@ -156,7 +160,7 @@ func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats P
 	// Update weapon wheel
 	wheel := &weapons.weaponWheel
 	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); justPressed {
-		*wheel = newWeaponWheel(weapons.weapons[WeaponSickle:])
+		*wheel = newWeaponWheel(weapons.weapons[:])
 	} else if justReleased && stats.Health > 0 {
 		weap := weapons.Get(wheel.highlightedWeapon)
 		if weap != nil && weap.Equipped {
