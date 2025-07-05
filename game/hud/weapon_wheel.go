@@ -24,22 +24,29 @@ type WeaponWheel struct {
 	slots             [3][3]weaponSlot
 	highlight         ui.Box
 	highlightedWeapon WeaponKind
-	selectX, selectY  float32 // Represents which slot is selected on two axes [0.0-1.0]
+	selectPos         mgl32.Vec2 // Represents a virtual mouse position for selecting the weapon
+	bounds            math2.Rect // Rectangular region within which the wheel resides
+	cursor            ui.Box
 }
 
 func newWeaponWheel(weapons []Weapon) WeaponWheel {
-	const slotMargin = 8.0
-	wheel := WeaponWheel{
-		selectX: 1, selectY: 1,
-	}
-
+	const slotMargin = 16.0
 	slotTexture := cache.GetTexture(texWeaponSlot)
 	slotWidth := slotTexture.Rect().Width * settings.SpriteScale()
 	slotHeight := slotTexture.Rect().Height * settings.SpriteScale()
-	slotStart := mgl32.Vec2{
-		(settings.UIWidth() / 2.0) - (slotWidth / 2.0),
-		(settings.UIHeight() / 2.0) - (slotHeight / 2.0),
+
+	wheel := WeaponWheel{
+		selectPos: mgl32.Vec2{settings.UIWidth() / 2.0, settings.UIHeight() / 2.0},
+		bounds: math2.Rect{
+			X:      (settings.UIWidth() / 2.0) - slotMargin - (slotWidth * 1.5),
+			Y:      (settings.UIHeight() / 2.0) - slotMargin - (slotHeight * 1.5),
+			Width:  (slotWidth * 3.0) + (slotMargin * 2.0),
+			Height: (slotHeight * 3.0) + (slotMargin * 2.0),
+		},
+		highlightedWeapon: WeaponSickle,
 	}
+
+	slotStart := wheel.selectPos.Sub(mgl32.Vec2{slotWidth / 2.0, slotHeight / 2.0})
 
 	for i, kind := range [...]WeaponKind{
 		WeaponCluckster, WeaponChicken, WeaponAirhorn,
@@ -85,13 +92,24 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 			}, slotTexture, weapon.wheelColor, depth),
 			icon: icon,
 			targetPos: mgl32.Vec2{
-				(settings.UIWidth() / 2.0) - slotMargin - (slotWidth * 1.5) + float32(x)*(slotWidth+slotMargin),
-				(settings.UIHeight() / 2.0) - slotMargin - (slotHeight * 1.5) + float32(y)*(slotHeight+slotMargin),
+				wheel.bounds.X + float32(x)*(slotWidth+slotMargin),
+				wheel.bounds.Y + float32(y)*(slotHeight+slotMargin),
 			},
 		}
 
 		wheel.slots[x][y] = slot
 	}
+
+	cursorTex := cache.GetTexture("assets/textures/ui/hand_cursor.png")
+	wheel.cursor = ui.NewBoxFull(
+		math2.Rect{
+			Width:  cursorTex.Rect().Width * settings.SpriteScale(),
+			Height: cursorTex.Rect().Height * settings.SpriteScale(),
+		},
+		cursorTex,
+		color.White,
+		8.0,
+	)
 
 	wheel.highlight = ui.NewBoxFull(math2.Rect{
 		X:      (settings.UIWidth() / 2.0) - (slotWidth / 2.0),
@@ -104,16 +122,23 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 }
 
 func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
-	mouseDx := input.ActionAxis(settings.ACTION_LOOK_HORZ)
-	mouseDy := input.ActionAxis(settings.ACTION_LOOK_VERT)
+	wheel.selectPos = wheel.selectPos.Add(mgl32.Vec2{
+		input.ActionAxis(settings.ACTION_LOOK_HORZ) / settings.Current.MouseSensitivity,
+		input.ActionAxis(settings.ACTION_LOOK_VERT) / settings.Current.MouseSensitivity,
+	})
 
-	const deadZone = 0.03
-	if math2.Abs(mouseDx) > deadZone {
-		wheel.selectX = math2.Clamp(wheel.selectX+0.20*math2.Signum(mouseDx), 0, float32(len(wheel.slots)-1))
-	}
-	if math2.Abs(mouseDy) > deadZone {
-		wheel.selectY = math2.Clamp(wheel.selectY+0.25*math2.Signum(mouseDy), 0, float32(len(wheel.slots[0])-1))
-	}
+	wheel.selectPos[0] = math2.Clamp(wheel.selectPos[0], wheel.bounds.X, wheel.bounds.X+wheel.bounds.Width)
+	wheel.selectPos[1] = math2.Clamp(wheel.selectPos[1], wheel.bounds.Y, wheel.bounds.Y+wheel.bounds.Height)
+
+	wheel.cursor.SetDestPosition(wheel.selectPos)
+	wheel.cursor.Color.A = openness
+	queue.Add(&wheel.cursor)
+
+	slotTexture := cache.GetTexture(texWeaponSlot)
+	slotWidth := slotTexture.Rect().Width * settings.SpriteScale()
+	slotHeight := slotTexture.Rect().Height * settings.SpriteScale()
+	majorRadiusSq := math2.Pow(slotWidth/2.0, 2.0)
+	minorRadiusSq := math2.Pow(slotHeight/2.0, 2.0)
 
 	for x := range wheel.slots {
 		for y := range wheel.slots[x] {
@@ -129,8 +154,14 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 				slot.icon.Dest.Y += dy
 			}
 
-			if int(wheel.selectX) == x && int(wheel.selectY) == y {
+			// Test intersection with the ellipse
+			cx, cy := slot.back.Dest.Center()
+			if (math2.Pow(wheel.selectPos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(wheel.selectPos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 && wheel.highlightedWeapon != slot.kind {
 				wheel.highlightedWeapon = slot.kind
+				cache.GetSfx("assets/sounds/ui/weapon_select.wav").Play()
+			}
+
+			if wheel.highlightedWeapon == slot.kind {
 				wheel.highlight.SetDestPosition(slot.back.DestPosition())
 				wheel.highlight.Color.A = openness
 				queue.Add(&wheel.highlight)

@@ -1,7 +1,4 @@
 # TODO
-- Weapon wheel
-  - Adjust mouse control to feel more precise
-  - Audio feedback
 - Ensure weapons and armor are carried over into next level
 - Bugs
   - Investigate system timer related slowdown
