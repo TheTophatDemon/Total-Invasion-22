@@ -30,16 +30,16 @@ type Vertices struct {
 
 func (v *Vertices) Stride() int {
 	stride := 0
-	if v.Pos != nil && len(v.Pos) > 0 {
+	if len(v.Pos) > 0 {
 		stride += SIZEOF_POS
 	}
-	if v.TexCoord != nil && len(v.TexCoord) > 0 {
+	if len(v.TexCoord) > 0 {
 		stride += SIZEOF_TEXCOORD
 	}
-	if v.Normal != nil && len(v.Normal) > 0 {
+	if len(v.Normal) > 0 {
 		stride += SIZEOF_NORMAL
 	}
-	if v.Color != nil && len(v.Color) > 0 {
+	if len(v.Color) > 0 {
 		stride += SIZEOF_COLOR
 	}
 	return stride
@@ -69,22 +69,22 @@ func (verts *Vertices) Flatten() ([]float32, error) {
 func (verts *Vertices) BindAttributes() {
 	stride := int32(verts.Stride())
 	ofs := uintptr(0)
-	if verts.Pos != nil && len(verts.Pos) > 0 {
+	if len(verts.Pos) > 0 {
 		gl.EnableVertexAttribArray(ATTR_POS)
 		gl.VertexAttribPointerWithOffset(ATTR_POS, 3, gl.FLOAT, false, stride, ofs)
 		ofs += SIZEOF_POS
 	}
-	if verts.TexCoord != nil && len(verts.TexCoord) > 0 {
+	if len(verts.TexCoord) > 0 {
 		gl.EnableVertexAttribArray(ATTR_TEXCOORD)
 		gl.VertexAttribPointerWithOffset(ATTR_TEXCOORD, 2, gl.FLOAT, false, stride, ofs)
 		ofs += SIZEOF_TEXCOORD
 	}
-	if verts.Normal != nil && len(verts.Normal) > 0 {
+	if len(verts.Normal) > 0 {
 		gl.EnableVertexAttribArray(ATTR_NORMAL)
 		gl.VertexAttribPointerWithOffset(ATTR_NORMAL, 3, gl.FLOAT, false, stride, ofs)
 		ofs += SIZEOF_NORMAL
 	}
-	if verts.Color != nil && len(verts.Color) > 0 {
+	if len(verts.Color) > 0 {
 		gl.EnableVertexAttribArray(ATTR_COLOR)
 		gl.VertexAttribPointerWithOffset(ATTR_COLOR, 4, gl.FLOAT, false, stride, ofs)
 		ofs += SIZEOF_COLOR

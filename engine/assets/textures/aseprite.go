@@ -179,7 +179,7 @@ func (ss *aseSpriteSheet) loadLayers() (map[string]Layer, error) {
 //
 // When there are layers, an animation is returned for each combination of tag and layer.
 func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
-	if ss.Meta.FrameTags == nil || len(ss.Meta.FrameTags) == 0 || len(ss.Frames) <= 1 {
+	if len(ss.Meta.FrameTags) == 0 || len(ss.Frames) <= 1 {
 		// There are no animations to load
 		return map[string]Animation{}, nil
 	}
@@ -230,7 +230,7 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 			}
 			anims[anim.Name] = anim
 		}
-		if ss.Meta.Layers == nil || len(ss.Meta.Layers) == 0 {
+		if len(ss.Meta.Layers) == 0 {
 			anim.Name = ss.Meta.FrameTags[t].Name
 			// When there are no layers, just load all of the frames in the tag as one animation
 			anim.Frames, err = ss.loadFrames(nil, &ss.Meta.FrameTags[t], reversed)

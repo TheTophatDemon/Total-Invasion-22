@@ -56,7 +56,7 @@ func SpawnCamera(world *World, transform comps.Transform) (id scene.Id[*Camera],
 	}
 
 	camera.Camera = comps.NewCamera(
-		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.1, 1000.0, transform,
+		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.3, 200.0, transform,
 	)
 
 	return

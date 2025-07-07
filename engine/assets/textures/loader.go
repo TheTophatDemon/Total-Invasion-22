@@ -109,7 +109,7 @@ func LoadTexture(assetPath string) (*Texture, error) {
 
 	// Apply filtering and mipmapping
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST)
+	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	if texture.HasFlag(FLAG_CLAMP_BORDER) {
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
@@ -117,7 +117,6 @@ func LoadTexture(assetPath string) (*Texture, error) {
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.REPEAT)
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_T, gl.REPEAT)
 	}
-	gl.GenerateMipmap(texture.Target())
 
 	log.Printf("Texture loaded at %v.\n", assetPath)
 
