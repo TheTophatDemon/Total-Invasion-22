@@ -22,17 +22,17 @@ type App interface {
 	Render()
 }
 
-var fps int
-var updateRate float64 = 1.0 / 60.0
+var measuredFps int
+var updateRate time.Duration = 16_666_667 // 60 FPS in nanoseconds
 var debugMode bool
 var window *glfw.Window
 
 func FPS() int {
-	return fps
+	return measuredFps
 }
 
 func SetUpdateRate(fps int) {
-	updateRate = 1.0 / float64(fps)
+	updateRate = time.Duration(float64(time.Second) / float64(fps))
 }
 
 func InDebugMode() bool {
@@ -74,7 +74,7 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 
 func Run(app App) {
 	previousTime := time.Now()
-	var accumulator float64
+	var accumulator time.Duration
 
 	// FPS counters
 	var fpsTimer float64
@@ -82,18 +82,18 @@ func Run(app App) {
 	for !window.ShouldClose() {
 		// Update
 		now := time.Now()
-		deltaTime := float64(now.Sub(previousTime).Seconds())
+		deltaTime := now.Sub(previousTime)
 
-		//Calc FPS
-		fpsTimer += deltaTime
+		// Calc FPS
+		fpsTimer += deltaTime.Seconds()
 		fpsTicks++
 		if fpsTimer > 1.0 {
 			fpsTimer = 0.0
-			fps = fpsTicks
+			measuredFps = fpsTicks
 			fpsTicks = 0
-			//fmt.Println("FPS:", fps)
 		}
 
+		// Prevents window moving events from causing the game to skip large portions of time.
 		if deltaTime > updateRate {
 			deltaTime = updateRate
 		}
@@ -103,7 +103,7 @@ func Run(app App) {
 		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
 		updateCount := 0
 		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
-			app.Update(float32(updateRate))
+			app.Update(float32(updateRate.Seconds()))
 			input.Update()
 			tdaudio.Update()
 			updateCount++
@@ -128,15 +128,9 @@ func Run(app App) {
 
 		glfw.PollEvents()
 
-		// Throttle the update rate if the game is running faster than max FPS
-		// Only necessary on Windows for some reason.
-		for {
-			//TODO: There's something wrong with this now????
-			// Try replacing the floats with an int64 unix timestamp to make sure there's no precision tomfoolery.
-			now = time.Now()
-			if frameTime := now.Sub(previousTime).Seconds(); frameTime >= updateRate {
-				break
-			}
+		for time.Since(previousTime) < updateRate {
+			// Throttle the update rate if the game is running faster than max FPS
+			// Only necessary on Windows for some reason.
 		}
 	}
 }

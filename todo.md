@@ -1,5 +1,4 @@
 # TODO
-- Investigate system timer related slowdown
 - Consider parallelizing map loads
 - Make message bar flash to better draw player's attention
 - Give blessing its own sound effect
@@ -14,6 +13,7 @@
 - Settings menu
 - Make enemies able to hear player behind walls as long as space is connected.
 - Chicken cannon secondary attack
+- Gamepad support (for Steam Deck)
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages
