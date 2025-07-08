@@ -252,7 +252,7 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.4, 0.8, 0.8}),
 			Shape:     collision.NewCylinder(0.6, 1.0),
-			Layer:     COL_LAYER_MAP,
+			Layer:     ColLayerMap,
 		},
 		animPlayer:   comps.NewAnimationPlayer(anim, false),
 		pickupSound:  cache.GetSfx("assets/sounds/armor.wav"),

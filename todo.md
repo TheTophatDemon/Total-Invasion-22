@@ -1,16 +1,16 @@
 # TODO
 - Bugs
   - Investigate system timer related slowdown
+  - Prevent switching to sickle after selecting other weapon while sickle is thrown.
 - Optimizations
-  - Preload all sound effects before start of level
   - Consider parallelizing map loads
-  - Invent new method to apply damage from lava that doesn't involve creating a billion entities
 - Polish
   - Make message bar flash to better draw player's attention
   - Give blessing its own sound effect
   - Feedback when you try to select a weapon you don't have.
   - Player hit noise
   - Re-record enemy voices
+- Make enemies able to hear player behind walls as long as space is connected.
 - Port E1M1
 - Chicken cannon secondary attack?
 - Loading screen

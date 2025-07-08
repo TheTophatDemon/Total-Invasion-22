@@ -65,8 +65,8 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 				mgl32.Vec3(position), mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5},
 			),
 			Shape:  collision.NewSphere(0.5),
-			Layer:  COL_LAYER_ACTORS | COL_LAYER_NPCS,
-			Filter: COL_LAYER_MAP | COL_LAYER_ACTORS,
+			Layer:  ColLayerActors | ColLayerNPCs,
+			Filter: ColLayerMap | ColLayerActors,
 			LockY:  false,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
@@ -116,7 +116,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 		chk.AnimPlayer.Play()
 
 		// Cast forward to see if there is a wall in front
-		hit, closestBody := chk.world.Raycast(chkPos, chkDir, COL_FILTER_FOR_ACTORS, 1.0, chk)
+		hit, closestBody := chk.world.Raycast(chkPos, chkDir, ColFilterForActors, 1.0, chk)
 		if hit.Hit && !closestBody.IsNil() {
 			// Turn around if we're about to hit a wall
 			chk.actor.YawAngle += math.Pi/2.0 + rand.Float32()*math.Pi/2.0
@@ -140,8 +140,8 @@ func (chk *Chicken) Update(deltaTime float32) {
 		}
 
 		if chk.actor.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
-			chk.actor.body.Layer = COL_LAYER_NONE
-			chk.actor.body.Filter = COL_LAYER_NONE
+			chk.actor.body.Layer = ColLayerNone
+			chk.actor.body.Filter = ColLayerNone
 		}
 	}
 }

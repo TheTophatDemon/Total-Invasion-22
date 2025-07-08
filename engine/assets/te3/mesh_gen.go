@@ -83,7 +83,9 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 	return false
 }
 
-func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
+// Creates a mesh from the tiles in the map. The result is not cached, so don't call this too often.
+// The excludeTags parameter is used to provide a list of texture flags that will not generate any geometry.
+func (te3 *TE3File) BuildMesh(excludeFlags []string) (*geom.Mesh, error) {
 	var err error
 
 	mapVerts := geom.Vertices{
@@ -98,12 +100,24 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 	for i, path := range te3.Tiles.Shapes {
 		shapeMeshes[i], err = cache.GetMesh(path)
 		if err != nil {
-			return nil, nil, fmt.Errorf("shape mesh at %s not found", path)
+			return nil, fmt.Errorf("shape mesh at %s not found", path)
 		}
 	}
 
 	// Groups tile data indices by their texture
 	groupTiles := make(map[TextureID][]int, len(te3.Tiles.Textures))
+
+	// Find visible textures
+textureLoop:
+	for id, texPath := range te3.Tiles.Textures {
+		tex := cache.GetTexture(texPath)
+		for _, flag := range excludeFlags {
+			if tex == nil || tex.HasFlag(flag) {
+				continue textureLoop
+			}
+		}
+		groupTiles[TextureID(id)] = make([]int, 0, 32)
+	}
 
 	// Preprocess tiles
 	for t, tile := range te3.Tiles.Data {
@@ -114,18 +128,14 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 
 		// Assign to group(s) based on texture
 		for _, texId := range tile.TextureIDs {
-			group, ok := groupTiles[texId]
-			if !ok {
-				group = make([]int, 0, 16)
+			if group, ok := groupTiles[texId]; ok {
+				groupTiles[texId] = append(group, t)
 			}
-			groupTiles[texId] = append(group, t)
 		}
 	}
 
 	meshGroups := make([]geom.Group, 0, len(groupTiles))
 	meshGroupNames := make([]string, 0, len(groupTiles))
-
-	triMap := make(TriMap, len(te3.Tiles.Data))
 
 	// Add vertex data from tiles to map mesh
 	for texID, tileIndices := range groupTiles {
@@ -137,9 +147,6 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 			gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(ti)
 
 			rotMatrix := tile.GetRotationMatrix()
-
-			// Create triangle map array for this tile
-			triMap[ti] = make([]int, 0, 8)
 
 			// Pick the material on the mesh used for this texture
 			var shapeGroup geom.Group
@@ -170,9 +177,6 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 				if te3.shouldCull(gridX, gridY, gridZ, triangle, shapeMeshes) {
 					continue
 				}
-
-				// Add to triangle map
-				triMap[ti] = append(triMap[ti], len(mapInds)/3)
 
 				// Add the triangle's indices to the map mesh
 				for i := range 3 {
@@ -205,5 +209,5 @@ func (te3 *TE3File) BuildMesh() (*geom.Mesh, TriMap, error) {
 		mesh.SetGroup(meshGroupNames[g], group)
 	}
 
-	return mesh, triMap, nil
+	return mesh, nil
 }

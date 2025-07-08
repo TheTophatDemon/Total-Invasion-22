@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -151,6 +152,17 @@ func GetSfx(assetPath string) tdaudio.SoundId {
 		log.Println(err)
 	}
 	return sfx
+}
+
+// Loads all sound effects in the given directory (and its subdirectories) and puts them in the cache.
+func PreloadSfx(directory string) {
+	files, err := assets.GetFileNamesFromDir(directory, ".wav")
+	if err != nil {
+		failure.LogErrWithLocation("%v", err)
+	}
+	for _, path := range files {
+		GetSfx(path)
+	}
 }
 
 // Retrieves a translation from the game assets, loading it if iit doesn't already exist.

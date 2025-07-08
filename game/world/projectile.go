@@ -60,11 +60,11 @@ func (proj *Projectile) Render(context *render.Context) {
 }
 
 func (proj *Projectile) shouldIntersect(otherEnt comps.HasBody) bool {
-	if !proj.body.OnLayer(COL_LAYER_PROJECTILES) {
+	if !proj.body.OnLayer(ColLayerProjectiles) {
 		return false
 	}
 	otherBody := otherEnt.Body()
-	if otherBody.Layer == COL_LAYER_NONE || otherBody.OnLayer(COL_LAYER_INVISIBLE|COL_LAYER_PROJECTILES) {
+	if otherBody.Layer == ColLayerNone || otherBody.OnLayer(ColLayerInvisible|ColLayerProjectiles) {
 		return false
 	}
 	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)

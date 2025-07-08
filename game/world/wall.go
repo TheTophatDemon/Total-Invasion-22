@@ -94,8 +94,8 @@ func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall
 	wall.body = comps.Body{
 		Transform: transform,
 		Shape:     collision.NewBox(bbox),
-		Layer:     COL_LAYER_MAP,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerMap,
+		Filter:    ColLayerNone,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
@@ -238,8 +238,8 @@ func SpawnInvisibleWall(
 	wall.body = comps.Body{
 		Transform: comps.TransformFromTranslation(position),
 		Shape:     shape,
-		Layer:     COL_LAYER_INVISIBLE,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerInvisible,
+		Filter:    ColLayerNone,
 	}
 
 	return

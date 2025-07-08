@@ -70,7 +70,7 @@ func SpawnPlayer(
 		return
 	}
 	player.id = id
-	player.initialCollisionLayers = COL_LAYER_ACTORS | COL_LAYER_PLAYERS
+	player.initialCollisionLayers = ColLayerActors | ColLayerPlayers
 	player.actor = Actor{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAngles(
@@ -78,7 +78,7 @@ func SpawnPlayer(
 			),
 			Shape:       collision.NewSphere(0.7),
 			Layer:       player.initialCollisionLayers,
-			Filter:      COL_FILTER_FOR_ACTORS,
+			Filter:      ColFilterForActors,
 			LockY:       true,
 			OnIntersect: player.onIntersect,
 		},
@@ -150,7 +150,7 @@ func (player *Player) Update(deltaTime float32) {
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ACTION_FIRE)) || player.transitionTimer > 35.0 {
 			player.world.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath:     player.world.nextLevel,
+				NextMapPath:     player.world.impendingLevel,
 				GiveAmmo:        player.ammo,
 				GiveArmor:       player.armorType,
 				ArmorAmount:     player.armorAmount,
@@ -211,7 +211,7 @@ func (player *Player) Update(deltaTime float32) {
 	hudPtr.PlayerStats = hud.PlayerStats{
 		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Health:              int(math2.Ceil(player.actor.Health)),
-		Noclip:              player.Body().Layer == COL_LAYER_NONE,
+		Noclip:              player.Body().Layer == ColLayerNone,
 		GodMode:             player.godMode,
 		Ammo:                player.ammo,
 		Keys:                player.keys,
@@ -251,12 +251,12 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ACTION_NOCLIP) {
 		var message string = settings.Localize("noclipActivate")
-		if player.Body().Layer != COL_LAYER_NONE {
-			player.Body().Layer = COL_LAYER_NONE
-			player.Body().Filter = COL_LAYER_NONE
+		if player.Body().Layer != ColLayerNone {
+			player.Body().Layer = ColLayerNone
+			player.Body().Filter = ColLayerNone
 		} else {
 			player.Body().Layer = player.initialCollisionLayers
-			player.Body().Filter = COL_FILTER_FOR_ACTORS
+			player.Body().Filter = ColFilterForActors
 			message = settings.Localize("noclipDeactivate")
 		}
 		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
@@ -299,7 +299,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	if input.IsActionJustPressed(settings.ACTION_USE) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := player.Body().Transform.Forward()
-		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, COL_FILTER_FOR_ACTORS, USE_DIST, player)
+		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, ColFilterForActors, USE_DIST, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -324,7 +324,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		var cast collision.RaycastResult
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
-			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), COL_LAYER_MAP, 1.5, player)
+			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), ColLayerMap, 1.5, player)
 		}
 
 		ammoBefore := player.ammo

@@ -99,8 +99,8 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	prop.body = comps.Body{
 		Transform: comps.TransformFromTE3Ent(ent, true, true),
 		Shape:     collision.NewCylinder(prop.radius, 2.0),
-		Layer:     COL_LAYER_MAP,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerMap,
+		Filter:    ColLayerNone,
 	}
 
 	colr := color.White
@@ -109,14 +109,14 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.propType = PROP_TYPE_GEOFFREY
-		prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
+		prop.body.Layer = ColLayerMap | ColLayerNPCs
 	case "eyeball":
 		prop.propType = PROP_TYPE_EYEBALL
-		prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
+		prop.body.Layer = ColLayerMap | ColLayerNPCs
 		prop.messageKey = ent.Properties["messageKey"]
 	case "fire":
 		prop.propType = PROP_TYPE_FIRE
-		prop.body.Layer = COL_LAYER_INVISIBLE
+		prop.body.Layer = ColLayerInvisible
 		colr = color.Color{R: 1.0, G: 1.0, B: 1.0, A: 0.5}
 		additive = true
 		prop.body.Transform.SetScale(1.0, 1.25, 1.0)
@@ -138,12 +138,12 @@ func (prop *Prop) Update(deltaTime float32) {
 	switch prop.propType {
 	case PROP_TYPE_GEOFFREY:
 		vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_VANISH)
-		if !prop.isSeen && len(prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.radius, prop)) == 0 {
+		if !prop.isSeen && !prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.radius, prop).Any() {
 			// Make Geoffrey re-appear when nobody is looking.
 			if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
 				idleAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_IDLE)
 				prop.AnimPlayer.PlayNewAnim(idleAnim)
-				prop.body.Layer = COL_LAYER_MAP | COL_LAYER_NPCS
+				prop.body.Layer = ColLayerMap | ColLayerNPCs
 			}
 		} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 			// Check for incoming projectiles and trigger the disappearing animation.
@@ -162,7 +162,7 @@ func (prop *Prop) Update(deltaTime float32) {
 			if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
 				toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
 				if camera.Forward().Dot(toCamera) < -0.95 {
-					res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, COL_LAYER_MAP|COL_LAYER_NPCS|COL_LAYER_PLAYERS, 15.0, prop)
+					res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 15.0, prop)
 					if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
 						prop.stareTimer += deltaTime
 						eyeContact = true

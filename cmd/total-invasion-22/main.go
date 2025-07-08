@@ -48,7 +48,7 @@ func (app *App) LoadGame(mapPath string, sig game.MapChangeSignal) {
 	log.Println("Loading game at map ", mapPath)
 
 	cache.Reset()
-	cache.DefaultFont, _ = cache.GetFont(world.DEFAULT_FONT_PATH)
+	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	world, err := world.NewWorld(app, mapPath, sig)
 	if err != nil {
@@ -86,8 +86,9 @@ func main() {
 		panic(err)
 	}
 
-	// Load error sound as first sound
-	tdaudio.LoadSound("assets/sounds/error.wav", 1, false, 1.0)
+	// The first sound loaded is used as the error sound
+	cache.GetSfx("assets/sounds/error.wav")
+	cache.PreloadSfx("assets/sounds")
 
 	input.BindActionKey(settings.ACTION_FORWARD, glfw.KeyW)
 	input.BindActionKey(settings.ACTION_BACK, glfw.KeyS)

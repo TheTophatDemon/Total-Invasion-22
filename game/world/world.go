@@ -1,6 +1,7 @@
 package world
 
 import (
+	"errors"
 	"log"
 	"math"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -26,28 +28,18 @@ import (
 )
 
 const (
-	MESSAGE_FADE_SPEED = 2.0
-	DEFAULT_FONT_PATH  = "assets/textures/ui/font.fnt"
+	ColLayerNone collision.Mask = 0
+	ColLayerMap  collision.Mask = 1 << (iota - 1)
+	ColLayerActors
+	ColLayerProjectiles
+	ColLayerInvisible // Includes invisible walls around holes and lava
+	ColLayerPlayers
+	ColLayerNPCs     // Includes enemies, chickens, and Geoffrey
+	ColLayerKillzone // Kills any actor that touches
 )
 
 const (
-	COL_LAYER_NONE collision.Mask = 0
-	COL_LAYER_MAP  collision.Mask = 1 << (iota - 1)
-	COL_LAYER_ACTORS
-	COL_LAYER_PROJECTILES
-	COL_LAYER_INVISIBLE // Includes invisible walls around holes and lava
-	COL_LAYER_PLAYERS
-	COL_LAYER_NPCS // Includes enemies, chickens, and Geoffrey
-)
-
-const (
-	COL_FILTER_FOR_ACTORS collision.Mask = COL_LAYER_MAP | COL_LAYER_ACTORS | COL_LAYER_INVISIBLE
-)
-
-const (
-	TEX_FLAG_INVISIBLE = "invisible"
-	TEX_FLAG_KILLZONE  = "killzone"
-	TEX_FLAG_LIQUID    = "liquid"
+	ColFilterForActors collision.Mask = ColLayerMap | ColLayerActors | ColLayerInvisible
 )
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
@@ -63,14 +55,14 @@ type World struct {
 	Items            scene.Storage[Item]
 	DebugShapes      scene.Storage[DebugShape]
 	Cameras          scene.Storage[Camera]
-	GameMaps         scene.Storage[comps.Map]
+	MapLayers        scene.Storage[comps.MapLayer]
 	Props            scene.Storage[Prop]
-	GameMap          *comps.Map
+	GameMap          *comps.MapLayer
 	CurrentPlayer    scene.Id[*Player]
 	CurrentCamera    scene.Id[*Camera]
 	removalQueue     []scene.Handle  // Holds entities to be removed at the end of the frame.
 	app              engine.Observer // Communicates with the main application
-	nextLevel        string          // Path to the next level. Set once the player reaches an exit.
+	impendingLevel   string          // Path to the next level. Set once the player reaches an exit.
 	bspTree          tree.BspTree    // The BSP tree built in the previous frame.
 	avgCollisionTime int64           // Average number of milliseconds spent per frame solving collisions.
 	tickCount        int64
@@ -96,42 +88,28 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 	world.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
-	world.GameMaps = scene.NewStorageWithFuncs(1, (*comps.Map).Update, (*comps.Map).Render)
+	world.MapLayers = scene.NewStorageWithFuncs(3, world.UpdateMapLayer, (*comps.MapLayer).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Pre process tiles before mesh is generated.
-	for texID, texPath := range te3File.Tiles.Textures {
-		tex := cache.GetTexture(texPath)
-		for id, tile := range te3File.Tiles.Data {
-			if tile.TextureIDs[0] != te3.TextureID(texID) {
-				continue
-			}
-			box := te3File.Tiles.BBoxOfTile(te3File.Tiles.UnflattenGridPos(id))
-			pos := box.Center()
-			// Remove invisible tiles and spawn entities in their place
-			if tex.HasFlag(TEX_FLAG_INVISIBLE) {
-				te3File.Tiles.EraseTile(id)
-				SpawnInvisibleWall(world, pos, collision.NewBox(box.Translate(pos.Mul(-1.0))))
-			}
-			if tex.HasFlag(TEX_FLAG_KILLZONE) {
-				//TODO: Spawning an entity for every tile is really not efficient...
-				SpawnKillzone(world, pos, box.Size().Len()/2.0, 9999.0)
-			}
-		}
+	_, world.GameMap, err = world.MapLayers.New()
+	_, invisLayer, err2 := world.MapLayers.New()
+	_, killLayer, err3 := world.MapLayers.New()
+	if err = errors.Join(err, err2, err3); err != nil {
+		return nil, err
 	}
 
-	_, world.GameMap, err = world.GameMaps.New()
+	const texFlagInvisible = "invisible"
+	*world.GameMap, err = comps.NewMainMapLayer(te3File, ColLayerMap, []string{texFlagInvisible})
 	if err != nil {
 		return nil, err
 	}
-	*world.GameMap, err = comps.NewMap(te3File, COL_LAYER_MAP)
-	if err != nil {
-		return nil, err
-	}
+
+	*invisLayer = comps.NewExtraMapLayer(te3File, ColLayerInvisible)
+	*killLayer = comps.NewExtraMapLayer(te3File, ColLayerKillzone)
 
 	type transformedShape struct {
 		shapeName  string
@@ -146,9 +124,15 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 			continue
 		}
 
-		if cache.GetTexture(te3File.Tiles.Textures[tile.TextureIDs[0]]).HasFlag(TEX_FLAG_LIQUID) {
+		primaryTexture := cache.GetTexture(te3File.Tiles.Textures[tile.TextureIDs[0]])
+
+		mapLayer := world.GameMap
+		if primaryTexture.HasFlag(texFlagInvisible) {
+			mapLayer = invisLayer
+		} else if primaryTexture.HasFlag("killzone") {
+			mapLayer = killLayer
+		} else if primaryTexture.HasFlag("liquid") {
 			// Remove collision from liquid tiles.
-			world.GameMap.GridShape.SetShapeAtFlatIndex(id, nil)
 			continue
 		}
 
@@ -156,7 +140,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		switch shapeName := te3File.Tiles.Shapes[tile.ShapeID]; shapeName {
 		case "assets/models/shapes/cylinder.obj":
 			// Cylinder
-			world.GameMap.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
+			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
 		case "assets/models/shapes/corner.obj",
 			"assets/models/shapes/right_tetrahedron.obj",
 			"assets/models/shapes/tetrahedron_transition.obj",
@@ -187,7 +171,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 				transformedShapesCache[cacheKey] = trianglesShape
 			}
 
-			world.GameMap.GridShape.SetShapeAtFlatIndex(id, trianglesShape)
+			mapLayer.GridShape.SetShapeAtFlatIndex(id, trianglesShape)
 		case "assets/models/shapes/bars.obj",
 			"assets/models/shapes/panel.obj":
 
@@ -199,10 +183,10 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 			case 1, 3:
 				panelShape = collision.NewBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
 			}
-			world.GameMap.GridShape.SetShapeAtFlatIndex(id, panelShape)
+			mapLayer.GridShape.SetShapeAtFlatIndex(id, panelShape)
 		default:
 			// Box
-			world.GameMap.GridShape.SetShapeAtFlatIndex(id, collision.NewBox(math2.BoxFromRadius(1.0)))
+			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewBox(math2.BoxFromRadius(1.0)))
 		}
 	}
 
@@ -236,7 +220,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 				skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
 				skyTex := cache.GetTexture("assets/textures/skies/" + skyPath + ".png")
 				if meshErr != nil {
-					log.Printf("Error loading sky: %v\n", meshErr)
+					failure.LogErrWithLocation("Error loading sky: %v\n", meshErr)
 				} else {
 					world.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
 				}
@@ -309,14 +293,25 @@ func (world *World) Update(deltaTime float32) {
 		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
 	}
 
-	startTime := time.Now()
 	// Update bodies and resolve collisions
+	startTime := time.Now()
+
+	// Create BSP tree
 	it := world.IterBodies()
-	world.bspTree = tree.BuildBspTree(&it, world.GameMap)
+	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{} // Skip over the map layers since they'll always be tested for collision
+	world.bspTree = tree.BuildBspTree(it.CollectSet())
+
 	it = world.IterBodies()
+	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{}
 	for bodyEnt, _ := it.Next(); bodyEnt != nil; bodyEnt, _ = it.Next() {
 		collidableBodies := world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
-		collidableBodies.Add(scene.NewHandle(0, 1, &world.GameMaps))
+
+		// Add map layers to ensure collision is always checked with them
+		mapLayerIter := world.MapLayers.Iter()
+		for _, layer := mapLayerIter.Next(); !layer.IsNil(); _, layer = mapLayerIter.Next() {
+			collidableBodies.Add(layer)
+		}
+
 		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)
 	}
 
@@ -330,6 +325,22 @@ func (world *World) Update(deltaTime float32) {
 	// Remove deleted entities
 	for _, handle := range world.removalQueue {
 		handle.Remove()
+	}
+}
+
+func (world *World) UpdateMapLayer(layer *comps.MapLayer, deltaTime float32) {
+	layer.Update(deltaTime)
+
+	// Damage any actors touching the killzone layer
+	if layer.Body().Layer == ColLayerKillzone {
+		actorsIter := world.IterActors()
+		for ent, _ := actorsIter.Next(); ent != nil; ent, _ = actorsIter.Next() {
+			actor := ent.Actor()
+			actorShape, ok := actor.body.Shape.(collision.MovingShape)
+			if ok && actorShape.Touches(actor.Position(), mgl32.Vec3{}, layer.GridShape) {
+				ent.OnDamage(layer, math2.Inf32())
+			}
+		}
 	}
 }
 
@@ -379,11 +390,11 @@ func (world *World) QueueRemoval(entHandle scene.Handle) {
 }
 
 func (world *World) InWinState() bool {
-	return len(world.nextLevel) != 0
+	return len(world.impendingLevel) != 0
 }
 
 func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
-	world.nextLevel = nextLevel
+	world.impendingLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
 	camera, _ := scene.Get[*Camera](world.CurrentCamera.Handle)
 	camera.waitTime = 0.0
@@ -404,6 +415,7 @@ func (world *World) IsOnPlayerCamera() bool {
 	return false
 }
 
+// TODO: Should integrate this into the code generation if new methods are needed.
 type ActorsInSphereIter struct {
 	ActorsIter
 	radius    float32
@@ -438,21 +450,42 @@ func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float3
 	}
 }
 
-// TODO: Replace with iterator.
-func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) []scene.Handle {
-	result := make([]scene.Handle, 0)
-	iter := world.IterBodies()
-	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
-		if bodyEnt == exception {
+type BodiesInSphereIter struct {
+	BodiesIter
+	radius    float32
+	spherePos mgl32.Vec3
+	exception comps.HasBody
+}
+
+func (iter *BodiesInSphereIter) Next() (comps.HasBody, scene.Handle) {
+	for {
+		bodyEnt, bodyId := iter.BodiesIter.Next()
+		if bodyEnt == nil {
+			break
+		}
+		if bodyEnt == iter.exception {
 			continue
 		}
 		body := bodyEnt.Body()
-
-		if collision.NewSphere(sphereRadius).Touches(spherePos, body.Transform.Position(), body.Shape) {
-			result = append(result, bodyId)
+		if collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+			return bodyEnt, bodyId
 		}
 	}
-	return result
+	return nil, scene.Handle{}
+}
+
+func (iter BodiesInSphereIter) Any() bool {
+	body, _ := iter.Next()
+	return body != nil
+}
+
+func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) BodiesInSphereIter {
+	return BodiesInSphereIter{
+		BodiesIter: world.IterBodies(),
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
 }
 
 func (world *World) AnyProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32) bool {

@@ -72,6 +72,10 @@ func (st *Storage[T]) Has(h Handle) bool {
 	return st.active[h.index] && st.owners[h.index] == h
 }
 
+func (st *Storage[T]) Capacity() int {
+	return len(st.data)
+}
+
 // Creates a new entity, returning its Id and a pointer to it. The last result is false if the storage is full.
 // The newValue is an optional parameter that can be used to initialize the item. If more than 1 parameter is supplied,
 // the extra parameters are ignored.

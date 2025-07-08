@@ -139,7 +139,7 @@ func fireWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
-			COL_LAYER_MAP|COL_LAYER_NPCS,
+			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
 			enemy,
 		)
@@ -239,7 +239,7 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 					hit, _ := enemy.world.Raycast(
 						enemy.actor.Position(),
 						diff.Mul(1.0/dist),
-						COL_LAYER_MAP,
+						ColLayerMap,
 						dist,
 						enemy,
 					)
@@ -265,7 +265,7 @@ func motherWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
-			COL_LAYER_MAP|COL_LAYER_NPCS,
+			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
 			enemy,
 		)
@@ -361,7 +361,7 @@ func dummkopfUpdateChase(enemy *Enemy, deltaTime float32) {
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
-			COL_LAYER_MAP|COL_LAYER_NPCS,
+			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
 			enemy,
 		)

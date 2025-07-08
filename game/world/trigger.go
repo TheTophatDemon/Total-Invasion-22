@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 
@@ -18,22 +17,14 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-const (
-	TRIGGER_TOUCH_MAX = 3
-	SFX_TELEPORT      = "assets/sounds/teleport.wav"
-)
+const triggerMaxContacts = 3
 
 const (
-	TRIGGER_ACTION_TELEPORT  = "teleport"
-	TRIGGER_ACTION_DAMAGE    = "damage"
-	TRIGGER_ACTION_END_LEVEL = "end level"
-	TRIGGER_ACTION_SECRET    = "secret"
-	TRIGGER_ACTION_ACTIVATE  = "activate"
-)
-
-const (
-	TRIGGER_ACTION      = "action"
-	TRIGGER_DAMAGE_RATE = "damagePerSecond"
+	TriggerActionTeleport = "teleport"
+	TriggerActionDamage   = "damage"
+	TriggerActionEndLevel = "end level"
+	TriggerActionSecret   = "secret"
+	TriggerActionActivate = "activate"
 )
 
 type Trigger struct {
@@ -47,7 +38,7 @@ type Trigger struct {
 	onExit          func(trigger *Trigger, entHandle scene.Handle)
 	world           *World
 	linkNumber      int
-	touching        [TRIGGER_TOUCH_MAX]scene.Handle
+	touching        [triggerMaxContacts]scene.Handle
 	damagePerSecond float32
 	nextLevel       string
 }
@@ -66,29 +57,29 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
 
-	switch ent.Properties[TRIGGER_ACTION] {
-	case TRIGGER_ACTION_TELEPORT:
+	switch ent.Properties["action"] {
+	case TriggerActionTeleport:
 		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
 		tr.particles = TeleportEffect(0.5)
 		tr.particles.Init()
-	case TRIGGER_ACTION_DAMAGE:
+	case TriggerActionDamage:
 		tr.filter = liveActorsOnlyFilter
 		tr.whileTouching = damageWhileTouching
-		damageRate, err := strconv.ParseFloat(ent.Properties[TRIGGER_DAMAGE_RATE], 32)
+		damageRate, err := strconv.ParseFloat(ent.Properties["damagePerSecond"], 32)
 		if err != nil || math.IsNaN(damageRate) {
 			damageRate = 0.0
 		}
 		tr.damagePerSecond = float32(damageRate)
-	case TRIGGER_ACTION_END_LEVEL:
+	case TriggerActionEndLevel:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = exitLevelAction
 		tr.nextLevel = "assets/maps/" + ent.Properties["level"] + ".te3"
-	case TRIGGER_ACTION_SECRET:
+	case TriggerActionSecret:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
 		world.Hud.VictoryScreen.SecretsTotal++
-	case TRIGGER_ACTION_ACTIVATE:
+	case TriggerActionActivate:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = activateAction
 	}
@@ -96,22 +87,11 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	return
 }
 
-func SpawnKillzone(world *World, position mgl32.Vec3, radius float32, damagePerSecond float32) (id scene.Id[*Trigger], tr *Trigger, err error) {
-	return SpawnTriggerFromTE3(world, te3.Ent{
-		Radius:   radius,
-		Position: position,
-		Properties: map[string]string{
-			TRIGGER_ACTION:      TRIGGER_ACTION_DAMAGE,
-			TRIGGER_DAMAGE_RATE: fmt.Sprintf("%f", damagePerSecond),
-		},
-	})
-}
-
 func (tr *Trigger) Update(deltaTime float32) {
 	// Call callbacks for new & already touching entities
 	touchingNow := tr.world.BodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
-	var stillTouching [TRIGGER_TOUCH_MAX]bool
-	for _, handle := range touchingNow {
+	var stillTouching [triggerMaxContacts]bool
+	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
 		bodyHaver, _ := scene.Get[comps.HasBody](handle)
 		if tr.filter == nil || tr.filter(bodyHaver) {
 			if added, index := tr.addToTouching(handle); added {
@@ -216,8 +196,9 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
-				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(actor.Position())
-				cache.GetSfx(SFX_TELEPORT).PlayAttenuatedV(tr.Transform.Position())
+				const sfxTeleport = "assets/sounds/teleport.wav"
+				cache.GetSfx(sfxTeleport).PlayAttenuatedV(actor.Position())
+				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Transform.Position())
 				tr.particles.EmissionTimer = 0.5
 				trOther.particles.EmissionTimer = 0.5
 

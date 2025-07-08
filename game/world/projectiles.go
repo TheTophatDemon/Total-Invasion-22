@@ -34,8 +34,8 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAngles(position, rotation),
 		Shape:     collision.NewSphere(0.5),
-		Layer:     COL_LAYER_PROJECTILES,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerProjectiles,
+		Filter:    ColLayerNone,
 		LockY:     true,
 	}
 
@@ -96,7 +96,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
-	if !proj.body.OnLayer(COL_LAYER_PROJECTILES) {
+	if !proj.body.OnLayer(ColLayerProjectiles) {
 		return
 	}
 
@@ -115,7 +115,7 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 				}
 			}
 		}
-	} else if otherBody.OnLayer(COL_LAYER_MAP) {
+	} else if otherBody.OnLayer(ColLayerMap) {
 		proj.forwardSpeed = -math2.Abs(proj.forwardSpeed) / 2.0
 		proj.voices[1] = cache.GetSfx("assets/sounds/weapon/sickle_clink.wav").
 			PlayAttenuatedV(result.Position)
@@ -150,8 +150,8 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
 		Shape:     collision.NewSphere(0.1),
-		Layer:     COL_LAYER_PROJECTILES,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerProjectiles,
+		Filter:    ColLayerNone,
 		LockY:     true,
 	}
 
@@ -189,7 +189,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 		EggShardsEffect(proj.body.Shape.(collision.Sphere).Radius()))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
-	noBlockers := len(proj.world.BodiesInSphere(chickenSpot, 0.5, proj)) == 0
+	noBlockers := !proj.world.BodiesInSphere(chickenSpot, 0.5, proj).Any()
 	if rand.Float32() < 0.3 && noBlockers && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
 		SpawnChicken(proj.world, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		timeSinceLastChicken = time.Now()
@@ -213,8 +213,8 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.375, 0.375, 0.375}),
 		Shape:     collision.NewSphere(0.25),
-		Layer:     COL_LAYER_PROJECTILES,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerProjectiles,
+		Filter:    ColLayerNone,
 		LockY:     true,
 	}
 
@@ -260,8 +260,8 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 		Transform:   comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25}),
 		Shape:       collision.NewContinuousSphere(0.25),
 		Velocity:    direction.Mul(20.0),
-		Layer:       COL_LAYER_PROJECTILES,
-		Filter:      COL_LAYER_MAP,
+		Layer:       ColLayerProjectiles,
+		Filter:      ColLayerMap,
 		LockY:       false,
 		OnIntersect: proj.grenadeHit,
 	}
@@ -281,8 +281,9 @@ func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, collision collision.R
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 		proj.explodeOnDie(deltaTime)
-		proj.world.QueueRemoval(proj.id.Handle)
-	} else if otherEnt.Body().OnLayer(COL_LAYER_MAP) {
+	} else if otherEnt.Body().OnLayer(ColLayerKillzone) {
+		proj.explodeOnDie(deltaTime)
+	} else if otherEnt.Body().OnLayer(ColLayerMap) {
 		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
 		speed := horzVelocity.Len() * 0.8
 		if collision.Normal.Y() > 0.1 && proj.fallSpeed < 0.0 {
@@ -324,8 +325,8 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.owner = owner
 
 	proj.body = comps.Body{
-		Layer:  COL_LAYER_PROJECTILES,
-		Filter: COL_LAYER_NONE,
+		Layer:  ColLayerProjectiles,
+		Filter: ColLayerNone,
 		LockY:  true,
 	}
 	var tex *textures.Texture
@@ -373,8 +374,8 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.5, 0.5, 0.5}),
 		Shape:     collision.NewSphere(0.5),
-		Layer:     COL_LAYER_PROJECTILES,
-		Filter:    COL_LAYER_NONE,
+		Layer:     ColLayerProjectiles,
+		Filter:    ColLayerNone,
 		LockY:     true,
 	}
 
@@ -410,7 +411,7 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 			dist := diff.Len()
 			if dist < 2.0 {
 				// Ensure we are not reviving an enemy from behind a wall.
-				rayHit, _ := proj.world.Raycast(proj.body.Transform.Position(), diff.Mul(1.0/dist), COL_LAYER_MAP, dist, nil)
+				rayHit, _ := proj.world.Raycast(proj.body.Transform.Position(), diff.Mul(1.0/dist), ColLayerMap, dist, nil)
 				if !rayHit.Hit {
 					enemy.changeState(&enemy.reviveState)
 				}

@@ -19,10 +19,7 @@ import (
 )
 
 const (
-	ENEMY_FOV_RADS         = math.Pi
-	ENEMY_WAKE_PROXIMITY   = 1.7
-	ENEMY_COL_LAYERS       = COL_LAYER_ACTORS | COL_LAYER_NPCS
-	ENEMY_NOTICE_PROXIMITY = 25.0
+	ENEMY_COL_LAYERS = ColLayerActors | ColLayerNPCs
 )
 
 type Enemy struct {
@@ -122,7 +119,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 			),
 			Shape:  collision.NewSphere(0.7),
 			Layer:  ENEMY_COL_LAYERS,
-			Filter: COL_FILTER_FOR_ACTORS,
+			Filter: ColFilterForActors,
 			LockY:  true,
 		},
 		YawAngle:  angles[1],
@@ -185,12 +182,16 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		playerWeapon := enemy.world.Hud.Weapons.Selected()
 		inHearingRange := targetActor.Actor().noisyTimer > 0 &&
 			playerWeapon != nil && enemy.distToTarget < playerWeapon.NoiseLevel()
-		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < ENEMY_FOV_RADS/2.0
-		if enemy.distToTarget < ENEMY_WAKE_PROXIMITY {
+
+		const enemyFovRads = math.Pi
+		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < enemyFovRads/2.0
+		const wakeProximity = 1.7
+		const noticeProximity = 25.0
+		if enemy.distToTarget < wakeProximity {
 			enemy.canSeeTarget = true
 		} else if inHearingRange || inFieldOfView {
-			res, _ := enemy.world.Raycast(enemyPos, enemy.dirToTarget, COL_LAYER_MAP, enemy.distToTarget, nil)
-			if !res.Hit && enemy.distToTarget < ENEMY_NOTICE_PROXIMITY {
+			res, _ := enemy.world.Raycast(enemyPos, enemy.dirToTarget, ColLayerMap, enemy.distToTarget, nil)
+			if !res.Hit && enemy.distToTarget < noticeProximity {
 				enemy.canSeeTarget = true
 				enemy.canHearTarget = true
 			}
@@ -297,7 +298,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 
 		enemy.world.Hud.VictoryScreen.EnemiesKilled--
 		enemy.actor.body.Layer = ENEMY_COL_LAYERS
-		enemy.actor.body.Filter = COL_FILTER_FOR_ACTORS
+		enemy.actor.body.Filter = ColFilterForActors
 		enemy.bloodOffset = mgl32.Vec3{}
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
@@ -323,8 +324,8 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
 		enemy.world.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.Layer = COL_LAYER_NONE
-		enemy.actor.body.Filter = COL_LAYER_MAP | COL_LAYER_INVISIBLE
+		enemy.actor.body.Layer = ColLayerNone
+		enemy.actor.body.Filter = ColLayerMap | ColLayerInvisible
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
@@ -391,7 +392,7 @@ func (enemy *Enemy) chase(
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
-			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
+			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
 			enemy,
 		)
@@ -434,7 +435,7 @@ func (enemy *Enemy) stalk(
 		hit, _ := enemy.world.Raycast(
 			enemy.actor.Position(),
 			enemy.actor.FacingVec(),
-			COL_LAYER_MAP|COL_LAYER_ACTORS|COL_LAYER_INVISIBLE,
+			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
 			enemy,
 		)

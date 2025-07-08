@@ -69,31 +69,30 @@ func SpawnSingleExplosion(world *World, transform comps.Transform) (id scene.Id[
 	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(transform.Position())
 
 	// Apply splash damage to surrounding entities
-	for _, handle := range world.BodiesInSphere(transform.Position(), DAMAGE_RADIUS, nil) {
-		if bodyHaver, ok := scene.Get[comps.HasBody](handle); ok {
-			if damageable, ok := bodyHaver.(Damageable); ok {
-				vecToTarget := bodyHaver.Body().Transform.Position().Sub(transform.Position())
-				distanceToExplosion := vecToTarget.Len()
-				if distanceToExplosion > 0 {
-					cast, _ := world.Raycast(transform.Position(), vecToTarget.Mul(1.0/distanceToExplosion),
-						COL_LAYER_MAP, distanceToExplosion, nil)
-					// Do not apply damage to entities when there is a wall between them and the explosion.
-					if cast.Hit {
-						continue
-					}
+	bodyIter := world.BodiesInSphere(transform.Position(), DAMAGE_RADIUS, nil)
+	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
+		if damageable, ok := bodyHaver.(Damageable); ok {
+			vecToTarget := bodyHaver.Body().Transform.Position().Sub(transform.Position())
+			distanceToExplosion := vecToTarget.Len()
+			if distanceToExplosion > 0 {
+				cast, _ := world.Raycast(transform.Position(), vecToTarget.Mul(1.0/distanceToExplosion),
+					ColLayerMap, distanceToExplosion, nil)
+				// Do not apply damage to entities when there is a wall between them and the explosion.
+				if cast.Hit {
+					continue
 				}
-				if sphere, isSphere := bodyHaver.Body().Shape.(collision.Sphere); isSphere {
-					distanceToExplosion -= sphere.Radius()
-				}
-				var damage float32
-				if _, isPlayer := damageable.(*Player); isPlayer {
-					difficulty := settings.CurrDifficulty()
-					damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/DAMAGE_RADIUS)
-				} else {
-					damage = math2.Lerp(MAX_ENEMY_DAMAGE, MIN_ENEMY_DAMAGE, distanceToExplosion/DAMAGE_RADIUS)
-				}
-				damageable.OnDamage(fx, damage)
 			}
+			if sphere, isSphere := bodyHaver.Body().Shape.(collision.Sphere); isSphere {
+				distanceToExplosion -= sphere.Radius()
+			}
+			var damage float32
+			if _, isPlayer := damageable.(*Player); isPlayer {
+				difficulty := settings.CurrDifficulty()
+				damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/DAMAGE_RADIUS)
+			} else {
+				damage = math2.Lerp(MAX_ENEMY_DAMAGE, MIN_ENEMY_DAMAGE, distanceToExplosion/DAMAGE_RADIUS)
+			}
+			damageable.OnDamage(fx, damage)
 		}
 	}
 	return

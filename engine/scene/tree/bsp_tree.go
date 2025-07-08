@@ -8,9 +8,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
-const BSP_MAX_DEPTH = 10
-const BSP_MIN_OBJECTS = 2
-
 // A BSP tree that splits objects into sections on the X and Z axes to speed up collision detection.
 type BspTree struct {
 	nodes []bspNode
@@ -63,17 +60,7 @@ func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 	return
 }
 
-func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
-	// Collect iterator into set that we can sort independently
-	bodies := containers.NewSet[scene.Handle](0)
-	for {
-		ent, handle := bodiesIter.Next()
-		if ent == nil || ent == exception {
-			break
-		}
-		bodies.Add(handle)
-	}
-
+func BuildBspTree(bodies containers.Set[scene.Handle]) BspTree {
 	tree := BspTree{
 		nodes: make([]bspNode, 0, len(bodies)),
 	}
@@ -92,7 +79,9 @@ func BuildBspTree(bodiesIter comps.BodyIter, exception comps.HasBody) BspTree {
 }
 
 func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[scene.Handle]) {
-	if len(bodies) <= BSP_MIN_OBJECTS || depth >= BSP_MAX_DEPTH {
+	const maxDepth = 10
+	const minObjects = 2
+	if len(bodies) <= minObjects || depth >= maxDepth {
 		// Create leaf node
 		node := bspNode{
 			leftChildIdx:  -1,
