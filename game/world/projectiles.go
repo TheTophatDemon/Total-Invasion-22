@@ -111,7 +111,6 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 				player.AddAmmo(game.AmmoTypeSickle, 1)
 				if sickleWeapon := proj.world.Hud.Weapons.Get(game.WeaponSickle); sickleWeapon != nil {
 					sickleWeapon.Equipped = true
-					proj.world.Hud.Weapons.Select(game.WeaponSickle)
 				}
 			}
 		}
