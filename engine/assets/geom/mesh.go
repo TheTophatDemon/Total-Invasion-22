@@ -40,9 +40,16 @@ func CreateMesh(verts Vertices, inds []uint32) *Mesh {
 	mesh := &Mesh{
 		verts:         verts,
 		inds:          inds,
-		tris:          nil,
+		tris:          make([]math2.Triangle, len(inds)/3),
 		groups:        make(map[string]Group, 0),
 		primitiveType: gl.TRIANGLES,
+	}
+	for t := range mesh.tris {
+		mesh.tris[t] = math2.Triangle{
+			mesh.verts.Pos[mesh.inds[t*3+0]],
+			mesh.verts.Pos[mesh.inds[t*3+1]],
+			mesh.verts.Pos[mesh.inds[t*3+2]],
+		}
 	}
 	return mesh
 }
@@ -143,18 +150,6 @@ func (m *Mesh) Inds() []uint32 {
 
 // Iterates over the triangles in the mesh (triangles are lazily evaluated)
 func (mesh *Mesh) IterTriangles() MeshTriangleIter {
-	if mesh.tris == nil && mesh.primitiveType == gl.TRIANGLES {
-		// Determine the triangles from the indices & vertex positions.
-		mesh.tris = make([]math2.Triangle, len(mesh.inds)/3)
-		for t := range mesh.tris {
-			mesh.tris[t] = math2.Triangle{
-				mesh.verts.Pos[mesh.inds[t*3+0]],
-				mesh.verts.Pos[mesh.inds[t*3+1]],
-				mesh.verts.Pos[mesh.inds[t*3+2]],
-			}
-		}
-	}
-
 	return MeshTriangleIter{
 		mesh:          mesh,
 		triangleIndex: 0,

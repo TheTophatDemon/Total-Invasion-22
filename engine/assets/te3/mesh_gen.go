@@ -18,9 +18,6 @@ var (
 	normalDown  = mgl32.Vec3{0.0, -1.0, 0.0}
 )
 
-// Associates a tile index from a .te3 file with a set of triangle indices from the generated model.
-type TriMap [][]int
-
 // Transforms the triangle from a tile's shape mesh into the space of a tile.
 func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, rotation mgl32.Mat4) math2.Triangle {
 	outTriangle := math2.Triangle{}
@@ -35,7 +32,7 @@ func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, r
 }
 
 // Returns true if the triangle happens to match with one from a neighboring tile.
-func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, shapeMeshes []*geom.Mesh) bool {
+func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, tileTriangles [][]math2.Triangle) bool {
 	plane := triangle.Plane()
 
 	// Determine the grid position of the tile neighboring this face.
@@ -58,17 +55,15 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 
 	if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
 		// Check the faces of the neighboring tile
-		nborTile := te3.Tiles.Data[te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)]
+		nborIdx := te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)
+		nborTile := te3.Tiles.Data[nborIdx]
 		if nborTile.ShapeID < 0 {
 			return false
 		}
-		nborRotation := nborTile.GetRotationMatrix()
-		nborMesh := shapeMeshes[nborTile.ShapeID]
-		for iter := nborMesh.IterTriangles(); iter.HasNext(); {
-			nborTri := iter.Next()
-			nborTriangle := transformedTileTriangle(nborX, nborY, nborZ, nborTri, nborRotation)
+		for _, nborTriangle := range tileTriangles[nborIdx] {
 			nborPlane := nborTriangle.Plane()
 
+			//TODO: Could also cull if neighbor has a square face.
 			// The triangle is culled if the neighbor has a triangle facing the opposite direction sharing all three points.
 			if mgl32.FloatEqual(mgl32.Abs(plane.Dist), mgl32.Abs(nborPlane.Dist)) &&
 				mgl32.FloatEqual(nborPlane.Normal.Dot(plane.Normal), -1.0) &&
@@ -87,6 +82,16 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 // The excludeTags parameter is used to provide a list of texture flags that will not generate any geometry.
 func (te3 *TE3File) BuildMesh(excludeFlags []string) (*geom.Mesh, error) {
 	var err error
+
+	// cpuProfile, err := os.Create("buildMesh.pprof")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer cpuProfile.Close()
+	// if err := pprof.StartCPUProfile(cpuProfile); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer pprof.StopCPUProfile()
 
 	mapVerts := geom.Vertices{
 		Pos:      make([]mgl32.Vec3, 0, len(te3.Tiles.Data)*24),
@@ -119,11 +124,22 @@ textureLoop:
 		groupTiles[TextureID(id)] = make([]int, 0, 32)
 	}
 
+	// Caches the transformed triangles belonging to each tile.
+	tileTriangles := make([][]math2.Triangle, len(te3.Tiles.Data))
+
 	// Preprocess tiles
 	for t, tile := range te3.Tiles.Data {
 		// Only visible tiles are processed here
 		if tile.ShapeID < 0 {
 			continue
+		}
+
+		// Determine triangle orientations
+		rotMatrix := tile.GetRotationMatrix()
+		gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(t)
+		shapeTriIter := shapeMeshes[tile.ShapeID].IterTriangles()
+		for shapeTriIter.HasNext() {
+			tileTriangles[t] = append(tileTriangles[t], transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix))
 		}
 
 		// Assign to group(s) based on texture
@@ -164,17 +180,12 @@ textureLoop:
 				shapeInds = shapeInds[shapeGroup.Offset:][:shapeGroup.Length]
 			}
 
-			shapeTriIter := shapeMesh.IterTriangles()
-			for range shapeGroup.Offset / 3 {
-				shapeTriIter.Next()
-			}
-
 			for tri := range len(shapeInds) / 3 {
 				// Get triangle coordinates
-				triangle := transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix)
+				triangle := tileTriangles[ti][(shapeGroup.Offset/3)+tri]
 
 				// Skip if culling tile
-				if te3.shouldCull(gridX, gridY, gridZ, triangle, shapeMeshes) {
+				if te3.shouldCull(gridX, gridY, gridZ, triangle, tileTriangles) {
 					continue
 				}
 
