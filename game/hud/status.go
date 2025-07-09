@@ -31,6 +31,7 @@ type statusBar struct {
 	messageBackground               ui.Box
 	messageTimer                    float32
 	messagePriority                 int
+	messageFlash                    float32 // Tracks the color change in the message bar after a message is shown
 }
 
 type faceState struct {
@@ -65,6 +66,7 @@ func (status *statusBar) ShowMessage(text string, duration float32, priority int
 		status.messagePriority = priority
 		status.messageText.SetText(text)
 		status.messageText.Color = colr
+		status.messageFlash = 0.5
 	}
 }
 
@@ -382,6 +384,14 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 			}
 		}
 	}
+	status.messageFlash = max(0.0, status.messageFlash-deltaTime)
+	status.messageBackground.Color = color.Color{
+		R: (1.0 - status.messageText.Color.R) * status.messageFlash,
+		G: (1.0 - status.messageText.Color.G) * status.messageFlash,
+		B: (1.0 - status.messageText.Color.B) * status.messageFlash,
+		A: 1.0,
+	}
+
 	queue.Add(&status.messageText)
 	queue.Add(&status.messageBackground)
 }
