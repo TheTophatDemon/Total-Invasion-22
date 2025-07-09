@@ -28,7 +28,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	metadata, err := assets.LoadAndUnmarshalJSON[sfxMetadata](metaPath)
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
-		log.Printf("Could not parse metadata for %s; %s\n", soundPath, err)
+		return tdaudio.SoundId{}, fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
 	}
 
 	polyphony := uint8(4)

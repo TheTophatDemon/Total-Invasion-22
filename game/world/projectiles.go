@@ -185,7 +185,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 	SpawnEffect(proj.world,
 		comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
 		1.0,
-		EggShardsEffect(proj.body.Shape.(collision.Sphere).Radius()))
+		EggParticles(proj.body.Shape.(collision.Sphere).Radius()))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
 	noBlockers := !proj.world.BodiesInSphere(chickenSpot, 0.5, proj).Any()
@@ -382,8 +382,7 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
 	proj.forwardSpeed = 20.0
-	//TODO: Add unique sound effect
-	proj.voices[0] = cache.GetSfx("assets/sounds/fireball.wav").PlayAttenuatedV(position)
+	proj.voices[0] = cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position)
 	proj.StunChance = 0.0
 	proj.Damage = 15
 

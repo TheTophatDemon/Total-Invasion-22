@@ -2,7 +2,6 @@ package cache
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets"
@@ -117,7 +116,7 @@ func (c *cache[T]) take(assetPath string, resource T) {
 func GetTexture(assetPath string) *textures.Texture {
 	texture, err := loadedTextures.get(assetPath)
 	if err != nil {
-		log.Println(err)
+		failure.LogErrWithLocation("%v", err)
 		return textures.ErrorTexture()
 	}
 	return texture
@@ -131,7 +130,7 @@ func TakeMesh(assetPath string, mesh *geom.Mesh) {
 func GetMesh(assetPath string) (*geom.Mesh, error) {
 	mesh, err := loadedMeshes.get(assetPath)
 	if err != nil {
-		log.Println(err)
+		failure.LogErrWithLocation("%v", err)
 	}
 	return mesh, err
 }
@@ -140,7 +139,7 @@ func GetMesh(assetPath string) (*geom.Mesh, error) {
 func GetFont(assetPath string) (*fonts.Font, error) {
 	fnt, err := loadedFonts.get(assetPath)
 	if err != nil {
-		log.Println(err)
+		failure.LogErrWithLocation("%v", err)
 	}
 	return fnt, err
 }
@@ -149,7 +148,7 @@ func GetFont(assetPath string) (*fonts.Font, error) {
 func GetSfx(assetPath string) tdaudio.SoundId {
 	sfx, err := loadedSfx.get(assetPath)
 	if err != nil {
-		log.Println(err)
+		failure.LogErrWithLocation("%v", err)
 	}
 	return sfx
 }

@@ -1,9 +1,8 @@
 # TODO
-- Give blessing its own sound effect
 - Feedback when you try to select a weapon you don't have.
 - Player hit noise
 - Re-record enemy voices
-- Port E1M1
+- Port E1M1, E1M4
 - Loading screen
 - Title screen
 - Game Difficulty Settings

@@ -61,7 +61,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TriggerActionTeleport:
 		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
-		tr.particles = TeleportEffect(0.5)
+		tr.particles = TeleportParticles(0.5)
 		tr.particles.Init()
 	case TriggerActionDamage:
 		tr.filter = liveActorsOnlyFilter

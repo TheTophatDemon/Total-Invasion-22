@@ -51,7 +51,7 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 	chk.world = world
 	chk.id = id
 
-	chk.bloodParticles = BloodEffect(5, color.Red, 0.3)
+	chk.bloodParticles = BloodParticles(5, color.Red, 0.3)
 	chk.bloodParticles.Init()
 
 	tex := cache.GetTexture("assets/textures/sprites/chicken.png")
