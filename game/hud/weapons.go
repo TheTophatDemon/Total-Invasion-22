@@ -11,17 +11,19 @@ import (
 )
 
 type Weapons struct {
+	hud                        *Hud
 	weapons                    [game.WeaponCount]Weapon
 	weaponWheel                WeaponWheel
 	selectedWeapon, nextWeapon game.WeaponType
 }
 
-func (weapons *Weapons) init() {
+func (weapons *Weapons) init(hud *Hud) {
 	*weapons = Weapons{
+		hud: hud,
 		weapons: [game.WeaponCount]Weapon{
 			// Sickle
 			game.WeaponSickle: {
-				name:            settings.Localize("sickle"),
+				name:            "sickle",
 				kind:            game.WeaponSickle,
 				cooldown:        0.25,
 				texturePath:     "assets/textures/ui/sickle_hud.png",
@@ -47,7 +49,7 @@ func (weapons *Weapons) init() {
 			},
 			// Chicken Cannon
 			game.WeaponChicken: {
-				name:          settings.Localize("chickenCannon"),
+				name:          "chickenCannon",
 				kind:          game.WeaponChicken,
 				cooldown:      0.15,
 				texturePath:   "assets/textures/ui/chicken_cannon_hud.png",
@@ -62,7 +64,7 @@ func (weapons *Weapons) init() {
 			},
 			// Grenade launcher
 			game.WeaponGrenade: {
-				name:          settings.Localize("grenadeLauncher"),
+				name:          "grenadeLauncher",
 				kind:          game.WeaponGrenade,
 				cooldown:      1.0,
 				texturePath:   "assets/textures/ui/grenade_launcher_hud.png",
@@ -77,7 +79,7 @@ func (weapons *Weapons) init() {
 			},
 			// Parusu
 			game.WeaponParusu: {
-				name:          settings.Localize("parusu"),
+				name:          "parusu",
 				kind:          game.WeaponParusu,
 				cooldown:      0.075,
 				texturePath:   "assets/textures/ui/parusu_hud.png",
@@ -99,21 +101,21 @@ func (weapons *Weapons) init() {
 			},
 			// Double grenade launcher (NOT IMPLEMENTED)
 			game.WeaponDblGrenade: {
-				name:          settings.Localize("doubleGrenadeLauncher"),
+				name:          "doubleGrenadeLauncher",
 				kind:          game.WeaponDblGrenade,
 				wheelColor:    color.FromBytes(255, 130, 0, 255),
 				wheelIconPath: "assets/textures/sprites/double_grenade_launcher.png",
 			},
 			// Sign of Madness (NOT IMPLEMENTED)
 			game.WeaponSign: {
-				name:          settings.Localize("signOfMadness"),
+				name:          "signOfMadness",
 				kind:          game.WeaponSign,
 				wheelColor:    color.FromBytes(170, 0, 0, 255),
 				wheelIconPath: "assets/textures/sprites/sign_of_madness.png",
 			},
 			// Airhorn
 			game.WeaponAirhorn: {
-				name:          settings.Localize("airhorn"),
+				name:          "airhorn",
 				kind:          game.WeaponAirhorn,
 				cooldown:      0.0,
 				texturePath:   "assets/textures/ui/airhorn_hud.png",
@@ -137,14 +139,14 @@ func (weapons *Weapons) init() {
 			},
 			// Defenestrator (NOT IMPLEMENTED)
 			game.WeaponDefenestrator: {
-				name:       settings.Localize("defenestrator"),
+				name:       "defenestrator",
 				kind:       game.WeaponDefenestrator,
 				ammoType:   game.AmmoTypePlasma,
 				wheelColor: color.FromBytes(32, 32, 32, 255),
 			},
 			// Cluckster Bomb (NOT IMPLEMENTED)
 			game.WeaponCluckster: {
-				name:       settings.Localize("clucksterBomb"),
+				name:       "clucksterBomb",
 				kind:       game.WeaponCluckster,
 				ammoType:   game.AmmoTypeEgg,
 				wheelColor: color.FromBytes(25, 40, 120, 255),
@@ -159,15 +161,12 @@ func (weapons *Weapons) init() {
 func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats PlayerStats) {
 	// Update weapon wheel
 	wheel := &weapons.weaponWheel
-	if _, justPressed, justReleased := input.ActionPressStates(settings.ACTION_WEAPON_WHEEL); justPressed {
+	if _, justPressed, justReleased := input.ActionPressStates(settings.ActionWeaponWheel); justPressed {
 		*wheel = newWeaponWheel(weapons.weapons[:])
-	} else if justReleased && stats.Health > 0 {
-		weap := weapons.Get(wheel.highlightedWeapon)
-		if weap != nil && weap.Equipped {
-			weapons.Select(wheel.highlightedWeapon)
-		}
-		input.TrapMouse()
+	} else if justReleased && stats.Health > 0 && weapons.Get(wheel.highlightedWeapon) != nil {
+		weapons.Select(wheel.highlightedWeapon)
 	}
+
 	if stats.WeaponWheelOpenness > 0.0 {
 		wheel.Layout(queue, stats.WeaponWheelOpenness)
 	}
@@ -213,7 +212,11 @@ func (weapons *Weapons) AttemptFire(ammo *game.Ammo) bool {
 
 func (weapons *Weapons) Select(order game.WeaponType) {
 	wantWeapon := weapons.Get(order)
-	if order == weapons.selectedWeapon || (order >= game.WeaponSickle && !wantWeapon.Equipped) {
+	if order == weapons.selectedWeapon {
+		return
+	}
+	if order >= game.WeaponSickle && !wantWeapon.Equipped {
+		weapons.hud.ShowMessage(settings.Localize(wantWeapon.name+"NotFound"), 1.5, 2, color.Red)
 		return
 	}
 	if weapons.selectedWeapon >= game.WeaponSickle {

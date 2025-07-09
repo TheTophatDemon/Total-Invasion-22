@@ -124,8 +124,8 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 
 func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 	wheel.selectPos = wheel.selectPos.Add(mgl32.Vec2{
-		input.ActionAxis(settings.ACTION_LOOK_HORZ) / settings.Current.MouseSensitivity,
-		input.ActionAxis(settings.ACTION_LOOK_VERT) / settings.Current.MouseSensitivity,
+		input.ActionAxis(settings.ActionLookHorz) / settings.Current.MouseSensitivity,
+		input.ActionAxis(settings.ActionLookVert) / settings.Current.MouseSensitivity,
 	})
 
 	wheel.selectPos[0] = math2.Clamp(wheel.selectPos[0], wheel.bounds.X, wheel.bounds.X+wheel.bounds.Width)
@@ -157,7 +157,8 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 
 			// Test intersection with the ellipse
 			cx, cy := slot.back.Dest.Center()
-			if (math2.Pow(wheel.selectPos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(wheel.selectPos[1]-cy, 2.0)/minorRadiusSq) <= 1.0 && wheel.highlightedWeapon != slot.kind {
+			intersects := (math2.Pow(wheel.selectPos[0]-cx, 2.0)/majorRadiusSq)+(math2.Pow(wheel.selectPos[1]-cy, 2.0)/minorRadiusSq) <= 1.0
+			if intersects && wheel.highlightedWeapon != slot.kind {
 				wheel.highlightedWeapon = slot.kind
 				cache.GetSfx("assets/sounds/ui/weapon_select.wav").Play()
 			}

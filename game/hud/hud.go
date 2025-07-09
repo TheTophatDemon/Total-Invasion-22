@@ -53,7 +53,7 @@ func (hud *Hud) Init() {
 	if engine.InDebugMode() {
 		hud.Debug.init()
 	}
-	hud.Weapons.init()
+	hud.Weapons.init(hud)
 	hud.VictoryScreen.init()
 	hud.StatusBar.init()
 }

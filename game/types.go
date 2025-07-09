@@ -6,6 +6,8 @@ package game
 
 type WeaponType int8
 
+// Weapon type constants should be in the same order as their corresponding
+// input action constants.
 const (
 	WeaponNone WeaponType = iota
 	WeaponSickle

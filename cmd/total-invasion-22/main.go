@@ -90,30 +90,32 @@ func main() {
 	cache.GetSfx("assets/sounds/error.wav")
 	cache.PreloadSfx("assets/sounds")
 
-	input.BindActionKey(settings.ACTION_FORWARD, glfw.KeyW)
-	input.BindActionKey(settings.ACTION_BACK, glfw.KeyS)
-	input.BindActionKey(settings.ACTION_LEFT, glfw.KeyA)
-	input.BindActionKey(settings.ACTION_RIGHT, glfw.KeyD)
-	input.BindActionKey(settings.ACTION_SLOW, glfw.KeyLeftShift)
-	input.BindActionKey(settings.ACTION_TRAP_MOUSE, glfw.KeyEscape)
-	input.BindActionKey(settings.ACTION_USE, glfw.KeyE)
-	input.BindActionMouseMove(settings.ACTION_LOOK_HORZ, input.MOUSE_AXIS_X, settings.Current.MouseSensitivity)
-	input.BindActionMouseMove(settings.ACTION_LOOK_VERT, input.MOUSE_AXIS_Y, settings.Current.MouseSensitivity)
-	input.BindActionMouseButton(settings.ACTION_FIRE, glfw.MouseButton1)
-	input.BindActionKey(settings.ACTION_WEAPON_WHEEL, glfw.KeyQ)
-	input.BindActionKey(settings.ACTION_SICKLE, glfw.Key1)
-	input.BindActionKey(settings.ACTION_CHICKEN, glfw.Key2)
-	input.BindActionKey(settings.ACTION_GRENADE, glfw.Key3)
-	input.BindActionKey(settings.ACTION_PARUSU, glfw.Key4)
-	// Double grenade
-	// Sign of madness
-	input.BindActionKey(settings.ACTION_AIRHORN, glfw.Key7)
-	input.BindActionCharSequence(settings.ACTION_NOCLIP, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
-	input.BindActionCharSequence(settings.ACTION_GODMODE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
-	input.BindActionCharSequence(settings.ACTION_MARYSUE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
-	input.BindActionCharSequence(settings.ACTION_DIE, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
-	input.BindActionCharSequence(settings.ACTION_KILL_ENEMIES, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE})                         //TDNUKE
-	input.BindActionCharSequence(settings.ACTION_CAST_BLESSING, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})  //TDWOLOLO
+	input.BindActionKey(settings.ActionForward, glfw.KeyW)
+	input.BindActionKey(settings.ActionBack, glfw.KeyS)
+	input.BindActionKey(settings.ActionLeft, glfw.KeyA)
+	input.BindActionKey(settings.ActionRight, glfw.KeyD)
+	input.BindActionKey(settings.ActionSlow, glfw.KeyLeftShift)
+	input.BindActionKey(settings.ActionTrapMouse, glfw.KeyEscape)
+	input.BindActionKey(settings.ActionUse, glfw.KeyE)
+	input.BindActionMouseMove(settings.ActionLookHorz, input.MOUSE_AXIS_X, settings.Current.MouseSensitivity)
+	input.BindActionMouseMove(settings.ActionLookVert, input.MOUSE_AXIS_Y, settings.Current.MouseSensitivity)
+	input.BindActionMouseButton(settings.ActionFire, glfw.MouseButton1)
+	input.BindActionKey(settings.ActionWeaponWheel, glfw.KeyQ)
+	input.BindActionKey(settings.ActionSickle, glfw.Key1)
+	input.BindActionKey(settings.ActionChicken, glfw.Key2)
+	input.BindActionKey(settings.ActionGrenade, glfw.Key3)
+	input.BindActionKey(settings.ActionParusu, glfw.Key4)
+	input.BindActionKey(settings.ActionDblGrenade, glfw.Key5)
+	input.BindActionKey(settings.ActionSign, glfw.Key6)
+	input.BindActionKey(settings.ActionAirhorn, glfw.Key7)
+	input.BindActionKey(settings.ActionDefenestrator, glfw.Key8)
+	input.BindActionKey(settings.ActionCluckster, glfw.Key9)
+	input.BindActionCharSequence(settings.ActionNoclip, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
+	input.BindActionCharSequence(settings.ActionGodMode, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
+	input.BindActionCharSequence(settings.ActionMarySue, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
+	input.BindActionCharSequence(settings.ActionDie, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
+	input.BindActionCharSequence(settings.ActionKillEnemies, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE})                          //TDNUKE
+	input.BindActionCharSequence(settings.ActionCastBlessing, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})   //TDWOLOLO
 
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {

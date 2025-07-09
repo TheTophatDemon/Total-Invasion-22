@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 // Retrieves the asset's file from one of the available asset packs
@@ -47,7 +49,7 @@ func GetFileNamesFromDir(directory, withExtension string) ([]string, error) {
 	return result, allErrors
 }
 
-// Loads a JSON file from the given asset-path (relative to assets folder) and returns the json.Unmarshal result as type T.
+// Loads a JSON file from the given asset-path and returns the json.Unmarshal result as type T.
 func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
 	file, err := GetFile(assetPath)
 	if err != nil {
@@ -62,6 +64,25 @@ func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
 
 	t := new(T)
 	err = json.Unmarshal(fileBytes, t)
+
+	return t, err
+}
+
+// Loads a TOML file from the given asset-path and returns the toml.Decode result as type T.
+func LoadAndUnmarshalTOML[T any](assetPath string) (*T, error) {
+	file, err := GetFile(assetPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	t := new(T)
+	_, err = toml.Decode(string(fileBytes), &t)
 
 	return t, err
 }

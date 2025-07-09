@@ -264,7 +264,7 @@ func (world *World) Update(deltaTime float32) {
 
 	world.removalQueue = world.removalQueue[0:0]
 
-	if input.IsActionJustPressed(settings.ACTION_KILL_ENEMIES) {
+	if input.IsActionJustPressed(settings.ActionKillEnemies) {
 		iter := world.IterActors()
 		for actor, handle := iter.Next(); actor != nil; actor, handle = iter.Next() {
 			if !handle.Equals(world.CurrentPlayer.Handle) {
@@ -274,7 +274,7 @@ func (world *World) Update(deltaTime float32) {
 	}
 
 	// Free mouse
-	if input.IsActionJustPressed(settings.ACTION_TRAP_MOUSE) {
+	if input.IsActionJustPressed(settings.ActionTrapMouse) {
 		if input.IsMouseTrapped() {
 			input.UntrapMouse()
 		} else {

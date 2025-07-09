@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 )
 
 type Action uint16
@@ -18,7 +19,7 @@ const (
 )
 
 const (
-	ERRT_NO_ACTION string = "WARNING: Action %v not bound.\n"
+	txtNoAction string = "WARNING: Action %v not bound.\n"
 )
 
 var bindings map[Action]Binding
@@ -99,7 +100,7 @@ func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) 
 	bind, ok := bindings[action]
 	wasPressed, ok2 := bindingsWerePressed[action]
 	if !ok || !ok2 {
-		log.Printf(ERRT_NO_ACTION, action)
+		log.Printf(txtNoAction, action)
 		return
 	}
 	pressed = bind.IsPressed()
@@ -111,7 +112,7 @@ func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) 
 func IsActionPressed(action Action) bool {
 	bind, ok := bindings[action]
 	if !ok {
-		log.Printf(ERRT_NO_ACTION, action)
+		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
 	return bind.IsPressed()
@@ -121,7 +122,7 @@ func IsActionJustPressed(action Action) bool {
 	bind, ok := bindings[action]
 	wasPressed, ok2 := bindingsWerePressed[action]
 	if !ok || !ok2 {
-		log.Printf(ERRT_NO_ACTION, action)
+		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
 	return bind.IsPressed() && !wasPressed
@@ -131,7 +132,7 @@ func IsActionJustReleased(action Action) bool {
 	bind, ok := bindings[action]
 	wasPressed, ok2 := bindingsWerePressed[action]
 	if !ok || !ok2 {
-		log.Printf(ERRT_NO_ACTION, action)
+		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
 	return !bind.IsPressed() && wasPressed
@@ -140,7 +141,7 @@ func IsActionJustReleased(action Action) bool {
 func ActionAxis(action Action) float32 {
 	bind, ok := bindings[action]
 	if !ok {
-		log.Printf(ERRT_NO_ACTION, action)
+		failure.LogErrWithLocation(txtNoAction, action)
 		return 0.0
 	}
 	return bind.Axis()

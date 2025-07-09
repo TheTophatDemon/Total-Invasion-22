@@ -1,13 +1,13 @@
 # TODO
-- Feedback when you try to select a weapon you don't have.
-- Player hit noise
-- Re-record enemy voices
 - Port E1M1, E1M4
 - Loading screen
 - Title screen
+- Player hit noise
 - Game Difficulty Settings
 - Dialog Cutscene
 - Settings menu
+
+- Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)

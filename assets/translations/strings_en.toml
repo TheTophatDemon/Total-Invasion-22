@@ -1,0 +1,90 @@
+# Cheats
+noclipActivate = "Noclip activated"
+noclipDeactivate = "Noclip deactivated"
+godModeActivate = "God mode activated"
+godModeDeactivate = "God mode deactivated"
+
+# Doors
+doorStuck = "The door can't move..."
+doorSwitch = "This door opens elsewhere..."
+
+# Keys
+blueKeyNeeded = "I need a blue keycard..."
+blueKeyGet = "Got a blue keycard."
+
+brownKeyNeeded = "I need a brown keycard..."
+brownKeyGet = "Got a brown keycard."
+
+yellowKeyNeeded = "I need a yellow keycard..."
+yellowKeyGet = "Got a yellow keycard."
+
+grayKeyNeeded = "I need a gray keycard..."
+grayKeyGet = "Got a gray keycard."
+
+# Victory screen
+fireContinue = "Press the fire button to continue."
+statTime = "Time"
+statKills = "Kills"
+statSecrets = "Secrets"
+levelComplete = "Level Complete"
+
+# Weapons
+sickle = "Sickle"
+sickleNotFound = "I don't have a sickle."
+sickleGet = "Got another sickle...?"
+
+chickenCannon = "Chicken Cannon"
+chickenCannonNotFound = "I don't have a chicken cannon."
+chickenCannonGet = "Got a chicken cannon!"
+
+grenadeLauncher = "Grenade Launcher"
+grenadeLauncherNotFound = "I don't have a grenade launcher."
+grenadeLauncherGet = "Got a grenade launcher!"
+
+parusu = "Parusu"
+parusuNotFound = "I don't have a parusu."
+parusuGet = "Got a parusu!"
+
+doubleGrenadeLauncher = "Double Grenade Launcher"
+doubleGrenadeLauncherNotFound = "I don't have a double grenade launcher."
+doubleGrenadeLauncherGet = "Got a double grenade launcher!"
+
+signOfMadness = "Sign of Madness"
+signOfMadnessNotFound = "I don't have the Sign of Madness."
+signOfMadnessGet = "Got the Sign of Madness!"
+
+airhorn = "Airhorn"
+airhornNotFound = "I don't have an airhorn."
+airhornGet = "Time to get rekt!!"
+
+defenestrator = "Defenestrator"
+defenestratorNotFound = "I don't have the Defenestrator."
+defenestratorGet = "Got the Defenestrator!"
+
+clucksterBomb = "Cluckster Bomb"
+clucksterBombNotFound = "I don't have a cluckster bomb."
+clucksterBombGet = "Got a cluckster bomb!"
+
+# Items
+eggCartonGet = "Got a carton of eggs."
+grenadesGet = "Got some grenades."
+plasmaVialsGet = "Got some vials of plasma."
+
+# Armor
+boringArmorGet = "Equipped the Boring Armor."
+bulletArmorGet = "Equipped the Bullet Armor."
+superArmorGet = "Equipped the Super Armor."
+chronosArmorGet = "Equipped the Chronos Armor."
+armorBroken = "My armor has been broken!"
+
+# Etc
+foundSecret = "A secret has been found."
+geoffrey = "Who's this douchebag?"
+
+# Eyeball messages
+eyeballMessage1 = "When the moon hits your eye like a big pizza pie, that's amore."
+eyeballMessage2 = "'Eye' can't believe you've done this!"
+
+# Map titles
+e1m2Title = "FAIR OF DEATH"
+e1m3Title = "MALICIOUS IN TENTS"

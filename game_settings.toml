@@ -1,0 +1,12 @@
+windowWidth = 1280
+windowHeight = 720
+mouseSensitivity = 0.005
+textShadowColor = { R = 0, G = 0, B = 0, A = 0.5 }
+sfxVolume = 0.6
+musicVolume = 0.0
+locale = "en"
+fov = 70
+difficultyIndex = 2
+
+[debug]
+startMap = 'assets/maps/e1m3-malicious-intents.te3'

@@ -67,7 +67,7 @@ func SpawnIntroSickle(world *World, position, rotation mgl32.Vec3, owner scene.H
 
 func (proj *Projectile) sickleMove(deltaTime float32) {
 	var decelerationRate float32 = 50.0
-	if !input.IsActionPressed(settings.ACTION_FIRE) {
+	if !input.IsActionPressed(settings.ActionFire) {
 		decelerationRate = 100.0
 	}
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*decelerationRate)

@@ -1,0 +1,84 @@
+# Doors
+doorStuck = "Дверь не движется..."
+doorSwitch = "Дверь открывается не отсюда..."
+
+# Keys
+blueKeyNeeded = "Мне нужна синяя ключ-карта..."
+blueKeyGet = "Досталась синяя ключ-карта."
+
+brownKeyNeeded = "Мне нужна каштановая ключ-карта..."
+brownKeyGet = "Досталась каштановая ключ-карта."
+
+yellowKeyNeeded = "Мне нужна жёлтая ключ-карта..."
+yellowKeyGet = "Досталась жёлтая ключ-карта."
+
+grayKeyNeeded = "Мне нужна серая ключ-карта..."
+grayKeyGet = "Досталась серая ключ-карта."
+
+# Victory screen
+fireContinue = 'Нажмите кнопку "стрельба" чтобы продолжить.'
+statTime = "Время"
+statKills = "Убито"
+statSecrets = "Тайники"
+levelComplete = "Уровень Завершён"
+
+# Weapons
+sickle = "Серп"
+sickleNotFound = "У меня нет серпа."
+sickleGet = "Достался дополнительный серп...?"
+
+chickenCannon = "Куриная Пушка"
+chickenCannonNotFound = "У меня нет куриной пушки."
+chickenCannonGet = "Досталась куриная пушка!"
+
+grenadeLauncher = "Гранатомёт"
+grenadeLauncherNotFound = "У меня нет гранатомёта."
+grenadeLauncherGet = "Достался гранатомёт!"
+
+parusu = "Парусу"
+parusuNotFound = "У меня нет парусу."
+parusuGet = "Досталось парусу!"
+
+doubleGrenadeLauncher = "Двойной Гранатомёт"
+doubleGrenadeLauncherNotFound = "У меня нет двойного гранатомёта."
+doubleGrenadeLauncherGet = "Достался двойной гранатомёт."
+
+signOfMadness = "Знак Безумия"
+signOfMadnessNotFound = "У меня нет Знакя Безумия."
+signOfMadnessGet = "Достался Знак Безумия!"
+
+airhorn = "Тифон"
+airhornNotFound = "У меня нет тифона."
+airhornGet = "Будьте поломаны, фидеры!!"
+
+defenestrator = "Дефенестратор"
+defenestratorNotFound = "У меня нет дефенестратора."
+defenestratorGet = "Достался дефенестратор!"
+
+clucksterBomb = "Клохчущная Бомба"
+clucksterBombNotFound = "У меня нет клохчущной бомбы."
+clucksterBombGet = "Досталась клохчущная бомба!"
+
+# Items
+eggCartonGet = "Досталась грохотка."
+grenadesGet = "Достались немного гранат."
+plasmaVialsGet = "Достались пробирки плазмы."
+
+# Armor
+boringArmorGet = "Получена Скучная Броня."
+bulletArmorGet = "Получена Пулевая Броня."
+superArmorGet = "Получена Супер-Броня."
+chronosArmorGet = "Получена Броня Хронос."
+armorBroken = "Броня разбита."
+
+# Etc
+foundSecret = "Обнаружен тайник."
+geoffrey = "Кто же этот мудак?"
+
+# Eyeball messages
+eyeballMessage1 = "Когда луна белеет в глазах, как в больших пиццах, вот аморе."
+eyeballMessage2 = "Не бросай пыль в глазах."
+
+# Map titles
+e1m2Title = "СМЕРТЕЛЬНАЯ ЯРМАРКА"
+e1m3Title = "ПРЕСТУПНЫЕ ПАЛАТКИ"

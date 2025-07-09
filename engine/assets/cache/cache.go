@@ -71,7 +71,7 @@ func init() {
 	}
 	loadedTranslations = cache[*locales.Translation]{
 		storage:        make(map[string]*locales.Translation),
-		fileExtensions: []string{".json"},
+		fileExtensions: []string{".toml"},
 		loadFunc:       locales.LoadTranslation,
 		freeFunc:       nil,
 		resourceName:   "translation",

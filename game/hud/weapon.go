@@ -31,7 +31,7 @@ const (
 type Weapon struct {
 	Equipped        bool
 	kind            game.WeaponType
-	name            string
+	name            string // Weapon name, same as localization key.
 	texturePath     string
 	initialAnimName string // Name of the animation played after the weapon is initialized. If unset, will be "idle"
 	sprite          ui.Box

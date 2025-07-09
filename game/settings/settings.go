@@ -1,68 +1,59 @@
 package settings
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
 const (
-	SETTINGS_FILE_PATH = "game_settings.json"
+	LocaleEnglish = "en"
+	LocaleRussian = "ru"
 )
 
 const (
-	ACTION_FORWARD input.Action = iota
-	ACTION_BACK
-	ACTION_LEFT
-	ACTION_RIGHT
-	ACTION_SLOW
-	ACTION_LOOK_HORZ
-	ACTION_LOOK_VERT
-	ACTION_TRAP_MOUSE
-	ACTION_FIRE
-	ACTION_SICKLE
-	ACTION_CHICKEN
-	ACTION_GRENADE
-	ACTION_PARUSU
-	ACTION_AIRHORN
-	ACTION_USE
-	ACTION_WEAPON_WHEEL
-	ACTION_NOCLIP
-	ACTION_GODMODE
-	ACTION_MARYSUE
-	ACTION_DIE
-	ACTION_KILL_ENEMIES
-	ACTION_CAST_BLESSING
-	ACTION_COUNT
+	ActionForward input.Action = iota
+	ActionBack
+	ActionLeft
+	ActionRight
+	ActionSlow
+	ActionLookHorz
+	ActionLookVert
+	ActionTrapMouse
+	ActionFire
+
+	// Weapon selection actions should be in the same order as
+	// the WeaponType constants.
+	ActionSickle
+	ActionChicken
+	ActionGrenade
+	ActionParusu
+	ActionDblGrenade
+	ActionSign
+	ActionAirhorn
+	ActionDefenestrator
+	ActionCluckster
+
+	ActionUse
+	ActionWeaponWheel
+	ActionNoclip
+	ActionGodMode
+	ActionMarySue
+	ActionDie
+	ActionKillEnemies
+	ActionCastBlessing
+	ActionCount
 )
 
-var actionNames = [ACTION_COUNT]string{
-	ACTION_FORWARD:    "Move Forward",
-	ACTION_BACK:       "Move Back",
-	ACTION_LEFT:       "Strafe Left",
-	ACTION_RIGHT:      "Strafe Right",
-	ACTION_SLOW:       "Slow",
-	ACTION_LOOK_HORZ:  "Look Horizontally",
-	ACTION_LOOK_VERT:  "Look Vertically",
-	ACTION_TRAP_MOUSE: "Trap Mouse",
-	ACTION_FIRE:       "Fire",
-	ACTION_SICKLE:     "Select Sickle",
-	ACTION_CHICKEN:    "Select Chicken Cannon",
-	ACTION_GRENADE:    "Select Grenade Launcher",
-	ACTION_PARUSU:     "Select Parusu",
-	ACTION_AIRHORN:    "Select Airhorn",
-	ACTION_USE:        "Use",
-}
+const settingsFilePath = "game_settings.toml"
 
 type Data struct {
 	WindowWidth, WindowHeight uint16
@@ -77,10 +68,6 @@ type Data struct {
 	DifficultyIndex int
 }
 
-func (data *Data) WindowAspectRatio() float32 {
-	return float32(data.WindowWidth) / float32(data.WindowHeight)
-}
-
 var Default, Current Data
 
 func init() {
@@ -89,22 +76,19 @@ func init() {
 		MouseSensitivity: 0.005,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		SfxVolume:        1.0, MusicVolume: 1.0,
-		Locale:          locales.ENGLISH,
+		Locale:          LocaleEnglish,
 		Fov:             70.0,
 		DifficultyIndex: len(Difficulties) - 1,
 	}
 	Current = Default
 }
 
-func ActionName(action input.Action) string {
-	if action > ACTION_COUNT {
-		return ""
-	}
-	return actionNames[action]
+func (data *Data) WindowAspectRatio() float32 {
+	return float32(data.WindowWidth) / float32(data.WindowHeight)
 }
 
 func LoadOrInit() {
-	settingsFile, err := os.Open(SETTINGS_FILE_PATH)
+	settingsFile, err := os.Open(settingsFilePath)
 	if errors.Is(err, os.ErrNotExist) {
 		Save()
 	} else if err != nil {
@@ -119,7 +103,7 @@ func LoadOrInit() {
 			return
 		}
 
-		err = json.Unmarshal(fileBytes, &Current)
+		_, err = toml.Decode(string(fileBytes), &Current)
 		if err != nil {
 			failure.LogErrWithLocation("Could not unmarshal settings file; %v", err)
 			Current = Default
@@ -129,21 +113,19 @@ func LoadOrInit() {
 }
 
 func Save() {
-	settingsFile, err := os.Create(SETTINGS_FILE_PATH)
+	settingsFile, err := os.Create(settingsFilePath)
 	if err != nil {
 		failure.LogErrWithLocation("Could not open settings file for writing; %v", err)
 	}
 	defer settingsFile.Close()
 
-	settingsBytes, err := json.Marshal(Current)
+	settingsBytes, err := toml.Marshal(Current)
 	if err != nil {
 		failure.LogErrWithLocation("Could not marshal settings; %v", err)
 		return
 	}
 
-	var formattedBuffer bytes.Buffer
-	json.Indent(&formattedBuffer, settingsBytes, "", "\t")
-	_, err = formattedBuffer.WriteTo(settingsFile)
+	_, err = settingsFile.Write(settingsBytes)
 
 	if err != nil {
 		failure.LogErrWithLocation("Could not write settings to file; %v", err)
@@ -152,14 +134,14 @@ func Save() {
 }
 
 func Localize(key string) string {
-	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/%v.json", strings.ToLower(Current.Locale)))
+	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", strings.ToLower(Current.Locale)))
 	if err != nil {
 		return "ERROR"
 	}
 	localizedText, ok := (*trans)[key]
 	if !ok {
 		// Fall back to English
-		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/%v.json", locales.ENGLISH))
+		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", LocaleEnglish))
 		if err != nil {
 			return "ERROR"
 		}
