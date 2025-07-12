@@ -103,6 +103,10 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		Filter:    ColLayerNone,
 	}
 
+	if prop.radius == 0 {
+		prop.body.Layer = ColLayerNone
+	}
+
 	colr := color.White
 	additive := false
 

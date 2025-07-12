@@ -49,15 +49,21 @@ func translateTextureName(category, ti2Name string) string {
 		ti2Name = "charred_grass"
 	} else {
 		replacements := map[string]string{
-			"grass_arrow0":    "grass_arrow",
-			"grass_arrow1":    "grass_arrow",
-			"balloonstand":    "balloon_stand",
-			"cartonofeggs":    "egg_carton",
-			"dopefish":        "dopefish_statue",
-			"chickencannon":   "chicken_cannon",
-			"grenadelauncher": "grenade_launcher",
-			"plasmavials":     "plasma_vials",
-			"exitsign":        "exit_sign",
+			"grass_arrow0":         "grass_arrow",
+			"grass_arrow1":         "grass_arrow",
+			"balloonstand":         "balloon_stand",
+			"cartonofeggs":         "egg_carton",
+			"dopefish":             "dopefish_statue",
+			"chickencannon":        "chicken_cannon",
+			"grenadelauncher":      "grenade_launcher",
+			"plasmavials":          "plasma_vials",
+			"exitsign":             "exit_sign",
+			"boringarmor":          "boring_armor_stand",
+			"bulletarmor":          "bullet_armor_stand",
+			"joel":                 "family",
+			"invasionchair":        "chair",
+			"invasiontable":        "table",
+			"invasiontable_laptop": "table_laptop",
 		}
 		if newName, ok := replacements[ti2Name]; ok {
 			ti2Name = newName
@@ -192,9 +198,9 @@ func main() {
 				Angles:  [3]float32{0.0, float32(yaw * 90), 0.0},
 				Color:   [3]uint8{255, 255, 255},
 				Position: [3]float32{
-					float32(x)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
-					te3.GRID_SPACING + te3.HALF_GRID_SPACING,
-					float32(z)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+					float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
+					te3.GridSpacing + te3.HalfGridSpacing,
+					float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 				},
 				Properties: map[string]string{},
 			}
@@ -353,8 +359,8 @@ func main() {
 
 	// Correct positions for tile entities
 	for i := range entsToAdd {
-		entsToAdd[i].Position[0] -= float32(minX) * te3.GRID_SPACING
-		entsToAdd[i].Position[2] -= float32(minZ) * te3.GRID_SPACING
+		entsToAdd[i].Position[0] -= float32(minX) * te3.GridSpacing
+		entsToAdd[i].Position[2] -= float32(minZ) * te3.GridSpacing
 	}
 
 	for range entCount {
@@ -390,9 +396,9 @@ func main() {
 			},
 			Color: [3]uint8{255, 255, 255},
 			Position: [3]float32{
-				float32(x)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
-				te3.GRID_SPACING + te3.HALF_GRID_SPACING,
-				float32(z)*te3.GRID_SPACING + te3.HALF_GRID_SPACING,
+				float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
+				te3.GridSpacing + te3.HalfGridSpacing,
+				float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 			},
 			Display:    te3.ENT_DISPLAY_SPHERE,
 			Properties: map[string]string{},

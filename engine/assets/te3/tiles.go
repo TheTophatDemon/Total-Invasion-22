@@ -13,25 +13,29 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
-const GRID_SPACING = 2.0
-const HALF_GRID_SPACING = GRID_SPACING / 2.0
+const (
+	GridSpacing     = 2.0
+	HalfGridSpacing = GridSpacing / 2.0
+)
 
-type Tiles struct {
-	Data                  []Tile
-	Width, Height, Length int
-	Textures              []string
-	Shapes                []string
-}
+type (
+	Tile struct {
+		ShapeID    ShapeID
+		TextureIDs [2]TextureID
+		Yaw        uint8 // 0-3 for each 90 degree increment.
+		Pitch      uint8 // 0-3 for each 90 degree increment.
+	}
 
-type ShapeID int16
-type TextureID int16
+	Tiles struct {
+		Data                  []Tile
+		Width, Height, Length int
+		Textures              []string
+		Shapes                []string
+	}
 
-type Tile struct {
-	ShapeID    ShapeID
-	TextureIDs [2]TextureID
-	Yaw        uint8 // 0-3 for each 90 degree increment.
-	Pitch      uint8 // 0-3 for each 90 degree increment.
-}
+	ShapeID   int16
+	TextureID int16
+)
 
 // Returns the rotation matrix based off of the tile's yaw and pitch values.
 func (t *Tile) GetRotationMatrix() mgl32.Mat4 {
@@ -161,7 +165,7 @@ func (tiles *Tiles) FlattenGridPos(x, y, z int) int {
 func (tiles *Tiles) WorldToGridPos(worldPos mgl32.Vec3) (int, int, int) {
 	var out [3]int
 	for i := range out {
-		out[i] = int(worldPos[i] / GRID_SPACING)
+		out[i] = int(worldPos[i] / GridSpacing)
 	}
 	return out[0], out[1], out[2]
 }
@@ -170,20 +174,16 @@ func (tiles *Tiles) OutOfBounds(x, y, z int) bool {
 	return x < 0 || y < 0 || z < 0 || x >= tiles.Width || y >= tiles.Height || z >= tiles.Length
 }
 
-func (tiles *Tiles) GridSpacing() float32 {
-	return GRID_SPACING
-}
-
 func (tiles *Tiles) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 	out := mgl32.Vec3{
-		float32(i) * GRID_SPACING,
-		float32(j) * GRID_SPACING,
-		float32(k) * GRID_SPACING,
+		float32(i) * GridSpacing,
+		float32(j) * GridSpacing,
+		float32(k) * GridSpacing,
 	}
 	if center {
-		out[0] += GRID_SPACING / 2.0
-		out[1] += GRID_SPACING / 2.0
-		out[2] += GRID_SPACING / 2.0
+		out[0] += GridSpacing / 2.0
+		out[1] += GridSpacing / 2.0
+		out[2] += GridSpacing / 2.0
 	}
 	return out
 }
@@ -192,10 +192,6 @@ func (tiles *Tiles) BBoxOfTile(i, j, k int) math2.Box {
 	corner := tiles.GridToWorldPos(i, j, k, false)
 	return math2.Box{
 		Min: corner,
-		Max: corner.Add(mgl32.Vec3{tiles.GridSpacing(), tiles.GridSpacing(), tiles.GridSpacing()}),
+		Max: corner.Add(mgl32.Vec3{GridSpacing, GridSpacing, GridSpacing}),
 	}
-}
-
-func (tiles *Tiles) EraseTile(tileID int) {
-	tiles.Data[tileID] = Tile{ShapeID: -1}
 }

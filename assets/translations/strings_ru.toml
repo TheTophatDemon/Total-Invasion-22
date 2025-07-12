@@ -74,6 +74,7 @@ armorBroken = "Броня разбита."
 # Etc
 foundSecret = "Обнаружен тайник."
 geoffrey = "Кто же этот мудак?"
+familyTalk = "Они в безопасном месте..."
 
 # Eyeball messages
 eyeballMessage1 = "Когда луна белеет в глазах, как в больших пиццах, вот аморе."

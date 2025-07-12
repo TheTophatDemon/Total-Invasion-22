@@ -72,8 +72,8 @@ func (ent *Ent) AnglesInRadians() mgl32.Vec3 {
 
 func (ent *Ent) GridPosition() [3]int {
 	return [3]int{
-		int(ent.Position[0] / GRID_SPACING),
-		int(ent.Position[1] / GRID_SPACING),
-		int(ent.Position[2] / GRID_SPACING),
+		int(ent.Position[0] / GridSpacing),
+		int(ent.Position[1] / GridSpacing),
+		int(ent.Position[2] / GridSpacing),
 	}
 }

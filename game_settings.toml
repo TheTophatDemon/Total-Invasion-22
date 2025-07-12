@@ -9,4 +9,4 @@ fov = 70
 difficultyIndex = 2
 
 [debug]
-startMap = 'assets/maps/e1m3-malicious-intents.te3'
+startMap = 'assets/maps/e1m1-genocide-carnival.te3'

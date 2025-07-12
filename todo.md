@@ -1,19 +1,29 @@
 # TODO
 - Port E1M1, E1M4
+  - Need textures:
+    - Satanic fountain
+    - Guardrail
+  - Eyeball messages
+- Puns
+- Make mother wraith fire quicker after waking up
+- Make big shots do more damage.
 - Loading screen
 - Title screen
 - Player hit noise
 - Game Difficulty Settings
 - Dialog Cutscene
+- Demo end screen
 - Settings menu
 
+- Use texture config for additive rendering and convert to TOML
+- Modify map meshing to minimize polygons. BSP?
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
 
 ## Roadmap after Demo release
-- Change asset loading to use .zip packages
+- Change asset loading to use .zip packages?
 - Save states
 - Additional Enemies
   - Prisrak
@@ -36,3 +46,4 @@
   - Electric sand
   - Wraiths on motorcycles??
   - Armor that makes game run in slow motion when you are firing your weapon
+  - Use graphics based on old prototypes of Total Invasion

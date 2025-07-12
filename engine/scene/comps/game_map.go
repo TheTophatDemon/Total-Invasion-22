@@ -51,7 +51,7 @@ func NewMainMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, exclud
 
 // Creates a map layer that doesn't render geometry.
 func NewExtraMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask) MapLayer {
-	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3File.Tiles.GridSpacing())
+	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3.GridSpacing)
 
 	return MapLayer{
 		name: te3File.FilePath(),

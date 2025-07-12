@@ -3,11 +3,13 @@ package world
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -25,6 +27,7 @@ const (
 	TriggerActionEndLevel = "end level"
 	TriggerActionSecret   = "secret"
 	TriggerActionActivate = "activate"
+	TriggerActionMessage  = "message"
 )
 
 type Trigger struct {
@@ -40,7 +43,7 @@ type Trigger struct {
 	linkNumber      int
 	touching        [triggerMaxContacts]scene.Handle
 	damagePerSecond float32
-	nextLevel       string
+	entProperties   map[string]string // Properties on the te3 entity used to spawn this trigger.
 }
 
 var _ Linkable = (*Trigger)(nil)
@@ -56,6 +59,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	tr.Sphere = collision.NewSphere(ent.Radius)
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
+	tr.entProperties = ent.Properties
 
 	switch ent.Properties["action"] {
 	case TriggerActionTeleport:
@@ -74,7 +78,6 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TriggerActionEndLevel:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = exitLevelAction
-		tr.nextLevel = "assets/maps/" + ent.Properties["level"] + ".te3"
 	case TriggerActionSecret:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
@@ -82,6 +85,9 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TriggerActionActivate:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = activateAction
+	case TriggerActionMessage:
+		tr.filter = playerOnlyFilter
+		tr.onEnter = messageAction
 	}
 
 	return
@@ -225,7 +231,7 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 		cameraHandle = tr.world.CurrentCamera.Handle
 	}
 
-	tr.world.EnterWinState(tr.nextLevel, cameraHandle)
+	tr.world.EnterWinState("assets/maps/"+tr.entProperties["level"]+".te3", cameraHandle)
 }
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
@@ -237,6 +243,55 @@ func secretAreaAction(tr *Trigger, handle scene.Handle) {
 
 func activateAction(tr *Trigger, handle scene.Handle) {
 	tr.world.ActivateLinks(tr)
+}
+
+func messageAction(tr *Trigger, handle scene.Handle) {
+	timeStr := tr.entProperties["messageTime"]
+	time, err := strconv.ParseFloat(timeStr, 32)
+	if err != nil {
+		if len(timeStr) != 0 {
+			failure.LogErrWithLocation("invalid message time specified: %v", timeStr)
+		}
+		time = 1.0
+	}
+
+	priorityStr := tr.entProperties["messagePriority"]
+	priority, err := strconv.ParseInt(priorityStr, 10, 32)
+	if err != nil {
+		if len(priorityStr) != 0 {
+			failure.LogErrWithLocation("invalid message priority specified: %v", priorityStr)
+		}
+		priority = 10
+	}
+
+	colr := color.Color{A: 1.0}
+	colrStrs := strings.Split(tr.entProperties["messageColor"], ",")
+	if len(colrStrs) == 3 {
+		for i, str := range colrStrs {
+			val, err := strconv.ParseInt(str, 10, 32)
+			if err != nil {
+				colr = color.Color{}
+				break
+			}
+			floatVal := float32(val) / 255.0
+			switch i {
+			case 0:
+				colr.R = floatVal
+			case 1:
+				colr.G = floatVal
+			case 2:
+				colr.B = floatVal
+			}
+		}
+	}
+	if colr == (color.Color{}) {
+		if len(colrStrs) != 0 {
+			failure.LogErrWithLocation("invalid message color specified: %v", colrStrs)
+		}
+		colr = color.White
+	}
+
+	tr.world.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), float32(time), int(priority), colr)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

@@ -9,6 +9,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
+type cullInfo []math2.Triangle
+
 var (
 	normalEast  = mgl32.Vec3{1.0, 0.0, 0.0}
 	normalWest  = mgl32.Vec3{-1.0, 0.0, 0.0}
@@ -24,15 +26,15 @@ func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, r
 	for i := range len(triangle) {
 		// Rotate and translate the points of the triangle to the tile's final position
 		outTriangle[i] = mgl32.TransformCoordinate(triangle[i], rotation)
-		outTriangle[i][0] += float32(gridX)*GRID_SPACING + HALF_GRID_SPACING
-		outTriangle[i][1] += float32(gridY)*GRID_SPACING + HALF_GRID_SPACING
-		outTriangle[i][2] += float32(gridZ)*GRID_SPACING + HALF_GRID_SPACING
+		outTriangle[i][0] += float32(gridX)*GridSpacing + HalfGridSpacing
+		outTriangle[i][1] += float32(gridY)*GridSpacing + HalfGridSpacing
+		outTriangle[i][2] += float32(gridZ)*GridSpacing + HalfGridSpacing
 	}
 	return outTriangle
 }
 
 // Returns true if the triangle happens to match with one from a neighboring tile.
-func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, tileTriangles [][]math2.Triangle) bool {
+func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, tileCache []cullInfo) bool {
 	plane := triangle.Plane()
 
 	// Determine the grid position of the tile neighboring this face.
@@ -53,18 +55,19 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 		return false
 	}
 
-	if nborX >= 0 && nborY >= 0 && nborZ >= 0 && nborX < te3.Tiles.Width && nborY < te3.Tiles.Height && nborZ < te3.Tiles.Length {
+	if !te3.Tiles.OutOfBounds(nborX, nborY, nborZ) {
 		// Check the faces of the neighboring tile
 		nborIdx := te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)
 		nborTile := te3.Tiles.Data[nborIdx]
 		if nborTile.ShapeID < 0 {
 			return false
 		}
-		for _, nborTriangle := range tileTriangles[nborIdx] {
+
+		// Otherwise, look for a triangle on the neighbor on such a plane that shares all three points with this triangle.
+		for _, nborTriangle := range tileCache[nborIdx] {
 			nborPlane := nborTriangle.Plane()
 
-			//TODO: Could also cull if neighbor has a square face.
-			// The triangle is culled if the neighbor has a triangle facing the opposite direction sharing all three points.
+			//TODO: Might get more effective culling using a BSP based technique
 			if mgl32.FloatEqual(mgl32.Abs(plane.Dist), mgl32.Abs(nborPlane.Dist)) &&
 				mgl32.FloatEqual(nborPlane.Normal.Dot(plane.Normal), -1.0) &&
 				(triangle[0].ApproxEqual(nborTriangle[0]) || triangle[0].ApproxEqual(nborTriangle[1]) || triangle[0].ApproxEqual(nborTriangle[2])) &&
@@ -125,7 +128,7 @@ textureLoop:
 	}
 
 	// Caches the transformed triangles belonging to each tile.
-	tileTriangles := make([][]math2.Triangle, len(te3.Tiles.Data))
+	tileTriangles := make([]cullInfo, len(te3.Tiles.Data))
 
 	// Preprocess tiles
 	for t, tile := range te3.Tiles.Data {
@@ -134,18 +137,22 @@ textureLoop:
 			continue
 		}
 
-		// Determine triangle orientations
-		rotMatrix := tile.GetRotationMatrix()
-		gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(t)
-		shapeTriIter := shapeMeshes[tile.ShapeID].IterTriangles()
-		for shapeTriIter.HasNext() {
-			tileTriangles[t] = append(tileTriangles[t], transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix))
-		}
-
 		// Assign to group(s) based on texture
+		visible := false
 		for _, texId := range tile.TextureIDs {
 			if group, ok := groupTiles[texId]; ok {
 				groupTiles[texId] = append(group, t)
+				visible = true
+			}
+		}
+
+		if visible {
+			// Determine triangle orientations
+			rotMatrix := tile.GetRotationMatrix()
+			gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(t)
+			shapeTriIter := shapeMeshes[tile.ShapeID].IterTriangles()
+			for shapeTriIter.HasNext() {
+				tileTriangles[t] = append(tileTriangles[t], transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix))
 			}
 		}
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -48,12 +49,16 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 
 func LoadTexture(assetPath string) (*Texture, error) {
 
+	// if strings.HasSuffix(assetPath, "sofa.png") {
+	// 	fmt.Println("BEGIN")
+	// }
+
 	// Look for metadata file
 	metaPath := strings.TrimSuffix(assetPath, ".png") + ".json"
 	metadata, err := assets.LoadAndUnmarshalJSON[aseSpriteSheet](metaPath)
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
-		log.Printf("Could not parse metadata for %s; %s\n", assetPath, err)
+		failure.LogErrWithLocation("could not parse metadata for %s: %s", assetPath, err)
 	}
 
 	// Load atlas image file listed in the metadata, or else use the image itself.
@@ -76,10 +81,10 @@ func LoadTexture(assetPath string) (*Texture, error) {
 		texture.flags = metadata.loadFlags()
 
 		if texture.animations, err = metadata.loadAnimations(); err != nil {
-			log.Printf("Could not load animations for %s; %s\n", assetPath, err)
+			failure.LogErrWithLocation("could not load animations for %s: %s", assetPath, err)
 		}
 		if texture.layers, err = metadata.loadLayers(); err != nil {
-			log.Printf("Could not load layers for %s; %s\n", assetPath, err)
+			failure.LogErrWithLocation("could not load layers for %s: %s", assetPath, err)
 		}
 		if metadata.Meta.Slices != nil {
 			texture.slices = make(map[string]Slice)
