@@ -77,9 +77,18 @@ geoffrey = "Кто же этот мудак?"
 familyTalk = "Они в безопасном месте..."
 
 # Eyeball messages
+eyeballMessage0 = "Мне неочко сказать тебе, брысь!"
 eyeballMessage1 = "Когда луна белеет в глазах, как в больших пиццах, вот аморе."
 eyeballMessage2 = "Не бросай пыль в глазах."
+tutorialSickle = 'Нажмите кнопку {{ binding "fire" }} чтобы бросать сепр. Держите её чтобы серп летел дальше.'
+tutorialDoors = 'Нажмите кнопку {{ binding "use" }} чтобы включить двери и выключатели.'
+tutorialEyes = 'Уставьтесь в очи чтобы принять древное знание.'
+tutorialSecret = 'Мне кажется, что зта стена подозрительна...'
+tutorialHealth = 'Такие предметы, как это, лечат вас.'
+tutorialWeapon = 'Можно выбрать оружия такими кнопками, как {{ binding "sickle" }} и {{ binding "chicken" }}, или держанием {{ binding "weaponWheel" }}.'
+tutorialTeleporter = 'Прибор на земле телепортирует вас.'
 
 # Map titles
+e1m1Title = "КАРНАВАЛ ГЕНОЦИДА"
 e1m2Title = "СМЕРТЕЛЬНАЯ ЯРМАРКА"
 e1m3Title = "ПРЕСТУПНЫЕ ПАЛАТКИ"

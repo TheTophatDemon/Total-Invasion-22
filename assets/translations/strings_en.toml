@@ -83,9 +83,18 @@ geoffrey = "Who's this douchebag?"
 familyTalk = "They're in a safe place..."
 
 # Eyeball messages
+eyeballMessage0 = "'Eye' have nothing to say to you, scram!"
 eyeballMessage1 = "When the moon hits your eye like a big pizza pie, that's amore."
 eyeballMessage2 = "'Eye' can't believe you've done this!"
+tutorialSickle = 'Press {{ binding "fire" }} to throw the sickle. Hold the button to make it go further.'
+tutorialDoors = 'Press {{ binding "use" }} to activate doors and switches.'
+tutorialEyes = 'Stare into the eyes to receive ancient wisdom.'
+tutorialSecret = 'This wall seems suspicious...'
+tutorialHealth = 'Items like this will heal you.'
+tutorialWeapon = 'Weapons can be selected using keys like {{ binding "sickle" }} and {{ binding "chicken" }} or by holding {{ binding "weaponWheel" }}.'
+tutorialTeleporter = 'The device on the ground will teleport you.'
 
 # Map titles
+e1m1Title = "GENOCIDE CARNIVAL"
 e1m2Title = "FAIR OF DEATH"
 e1m3Title = "MALICIOUS IN TENTS"

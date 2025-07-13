@@ -50,6 +50,18 @@ type Player struct {
 var _ HasActor = (*Player)(nil)
 var _ comps.HasBody = (*Player)(nil)
 
+var actionToWeapon = map[input.Action]game.WeaponType{
+	settings.ActionSickle:        game.WeaponSickle,
+	settings.ActionChicken:       game.WeaponChicken,
+	settings.ActionGrenade:       game.WeaponGrenade,
+	settings.ActionParusu:        game.WeaponParusu,
+	settings.ActionDblGrenade:    game.WeaponDblGrenade,
+	settings.ActionSign:          game.WeaponSign,
+	settings.ActionAirhorn:       game.WeaponAirhorn,
+	settings.ActionDefenestrator: game.WeaponDefenestrator,
+	settings.ActionCluckster:     game.WeaponCluckster,
+}
+
 func (player *Player) Actor() *Actor {
 	return &player.actor
 }
@@ -308,9 +320,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Weapon selection
-	for a := settings.ActionSickle; a <= settings.ActionCluckster; a++ {
-		if input.IsActionJustPressed(a) {
-			hudPtr.Weapons.Select(game.WeaponSickle + game.WeaponType(a-settings.ActionSickle))
+	for action, weapon := range actionToWeapon {
+		if input.IsActionJustPressed(action) {
+			hudPtr.Weapons.Select(weapon)
 		}
 	}
 

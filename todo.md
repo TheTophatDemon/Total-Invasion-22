@@ -1,9 +1,13 @@
 # TODO
 - Port E1M1, E1M4
+  - E1M1 music
   - Need textures:
     - Satanic fountain
     - Guardrail
   - Eyeball messages
+    - E1M2
+    - E1M3
+- Add something to that room in E1M3
 - Puns
 - Make mother wraith fire quicker after waking up
 - Make big shots do more damage.
@@ -15,6 +19,7 @@
 - Demo end screen
 - Settings menu
 
+- Fix collision jittering (prioritize map collision resolutions over resolutions with other entities)
 - Use texture config for additive rendering and convert to TOML
 - Modify map meshing to minimize polygons. BSP?
 - Re-record enemy voices

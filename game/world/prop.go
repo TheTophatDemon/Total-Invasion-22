@@ -16,48 +16,31 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type PropType uint8
-
-const (
-	PROP_TYPE_GENERIC PropType = iota
-	PROP_TYPE_GEOFFREY
-	PROP_TYPE_FIRE
-	PROP_TYPE_EYEBALL
-)
-
-const (
-	PROJECTILE_SAFETY_RADIUS = 2.5
-	SFX_HONK                 = "assets/sounds/honk.wav"
-	GEOFFREY_ANIM_IDLE       = "idle"
-	GEOFFREY_ANIM_VANISH     = "vanish"
-)
+const projectileSafetyRadius = 2.5
 
 // A (generally) unmoving object in the game world used as decoration
 type Prop struct {
-	id           scene.Id[*Prop]
-	SpriteRender comps.SpriteRender
-	AnimPlayer   comps.AnimationPlayer
-	body         comps.Body
-	world        *World
-	propType     PropType
-	voice        tdaudio.VoiceId
-	isSeen       bool
-	radius       float32
-	stareTimer   float32
-	messageKey   string // Key into the localization table for messages displayed on the HUD when interacting with the object
+	id            scene.Id[*Prop]
+	SpriteRender  comps.SpriteRender
+	AnimPlayer    comps.AnimationPlayer
+	body          comps.Body
+	world         *World
+	voice         tdaudio.VoiceId
+	isSeen        bool
+	radius        float32
+	stareTimer    float32
+	entProperties map[string]string
+	updateFunc    func(deltaTime float32)
+	useFunc       func(player *Player)
 }
-
-var _ comps.HasBody = (*Prop)(nil)
-var _ Usable = (*Prop)(nil)
 
 func (prop *Prop) Body() *comps.Body {
 	return &prop.body
 }
 
 func (prop *Prop) OnUse(player *Player) {
-	switch prop.propType {
-	case PROP_TYPE_GEOFFREY:
-		prop.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+	if prop.useFunc != nil {
+		prop.useFunc(player)
 	}
 }
 
@@ -82,6 +65,7 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 
 	prop.id = id
 	prop.world = world
+	prop.entProperties = ent.Properties
 
 	sprite := cache.GetTexture(texturePath)
 
@@ -112,14 +96,13 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
-		prop.propType = PROP_TYPE_GEOFFREY
+		prop.updateFunc = prop.geoffreyUpdate
+		prop.useFunc = prop.geoffreyUse
 		prop.body.Layer = ColLayerMap | ColLayerNPCs
 	case "eyeball":
-		prop.propType = PROP_TYPE_EYEBALL
+		prop.updateFunc = prop.eyeballUpdate
 		prop.body.Layer = ColLayerMap | ColLayerNPCs
-		prop.messageKey = ent.Properties["messageKey"]
 	case "fire":
-		prop.propType = PROP_TYPE_FIRE
 		prop.body.Layer = ColLayerInvisible
 		colr = color.Color{R: 1.0, G: 1.0, B: 1.0, A: 0.5}
 		additive = true
@@ -139,53 +122,8 @@ func (prop *Prop) Update(deltaTime float32) {
 	particlesTransform.TranslateV(mgl32.Vec3{0.0, 0.0, 0.0})
 	prop.voice.SetPositionV(prop.Body().Transform.Position())
 
-	switch prop.propType {
-	case PROP_TYPE_GEOFFREY:
-		vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_VANISH)
-		if !prop.isSeen && !prop.world.BodiesInSphere(prop.body.Transform.Position(), prop.radius, prop).Any() {
-			// Make Geoffrey re-appear when nobody is looking.
-			if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
-				idleAnim, _ := prop.SpriteRender.Texture().GetAnimation(GEOFFREY_ANIM_IDLE)
-				prop.AnimPlayer.PlayNewAnim(idleAnim)
-				prop.body.Layer = ColLayerMap | ColLayerNPCs
-			}
-		} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
-			// Check for incoming projectiles and trigger the disappearing animation.
-			if prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), PROJECTILE_SAFETY_RADIUS) {
-				prop.AnimPlayer.PlayNewAnim(vanishAnim)
-				prop.body.Layer = 0
-				cache.GetSfx(SFX_HONK).PlayAttenuatedV(prop.body.Transform.Position())
-			}
-		}
-	case PROP_TYPE_EYEBALL:
-		idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
-		openAnim, _ := prop.SpriteRender.Texture().GetAnimation("open")
-		stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
-		eyeContact := false
-		if !prop.world.AnyProjectilesInSphere(prop.body.Transform.Position(), PROJECTILE_SAFETY_RADIUS) {
-			if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
-				toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
-				if camera.Forward().Dot(toCamera) < -0.95 {
-					res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 15.0, prop)
-					if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
-						prop.stareTimer += deltaTime
-						eyeContact = true
-						if prop.AnimPlayer.IsPlayingAnim(idleAnim) {
-							prop.AnimPlayer.PlayAnimSequence(openAnim, stareAnim)
-						}
-					}
-				}
-			}
-		}
-		if !eyeContact {
-			prop.stareTimer = 0.0
-			if prop.AnimPlayer.IsPlayingAnim(stareAnim) {
-				prop.AnimPlayer.PlayAnimSequence(openAnim, idleAnim)
-			}
-		} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
-			prop.world.Hud.ShowMessage(settings.Localize(prop.messageKey), 1.0, 50, color.Magenta)
-		}
-
+	if prop.updateFunc != nil {
+		prop.updateFunc(deltaTime)
 	}
 }
 
@@ -201,5 +139,69 @@ func (prop *Prop) Render(context *render.Context) {
 		context.EnqueueTranslucentRender(prop)
 	} else {
 		prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	}
+}
+
+/************
+ * GEOFFREY *
+ ************/
+
+func (prop *Prop) geoffreyUse(player *Player) {
+	prop.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+}
+
+func (prop *Prop) geoffreyUpdate(deltaTime float32) {
+	vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation("vanish")
+	bodiesIter := prop.world.IterBodiesInSphere(prop.body.Transform.Position(), prop.radius, prop)
+	if !prop.isSeen && !bodiesIter.HasNext() {
+		// Make Geoffrey re-appear when nobody is looking.
+		if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
+			idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
+			prop.AnimPlayer.PlayNewAnim(idleAnim)
+			prop.body.Layer = ColLayerMap | ColLayerNPCs
+		}
+	} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
+		// Check for incoming projectiles and trigger the disappearing animation.
+		projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+		if projsIter.HasNext() {
+			prop.AnimPlayer.PlayNewAnim(vanishAnim)
+			prop.body.Layer = 0
+			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Transform.Position())
+		}
+	}
+}
+
+/***********
+ * EYEBALL *
+ ***********/
+
+func (prop *Prop) eyeballUpdate(deltaTime float32) {
+	idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
+	openAnim, _ := prop.SpriteRender.Texture().GetAnimation("open")
+	stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
+	eyeContact := false
+	projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+	if !projsIter.HasNext() {
+		if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
+			toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
+			if camera.Forward().Dot(toCamera) < -0.95 {
+				res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 15.0, prop)
+				if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
+					prop.stareTimer += deltaTime
+					eyeContact = true
+					if prop.AnimPlayer.IsPlayingAnim(idleAnim) {
+						prop.AnimPlayer.PlayAnimSequence(openAnim, stareAnim)
+					}
+				}
+			}
+		}
+	}
+	if !eyeContact {
+		prop.stareTimer = 0.0
+		if prop.AnimPlayer.IsPlayingAnim(stareAnim) {
+			prop.AnimPlayer.PlayAnimSequence(openAnim, idleAnim)
+		}
+	} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
+		prop.world.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
 	}
 }

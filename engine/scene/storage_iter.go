@@ -31,6 +31,10 @@ func (iter *StorageIter[T]) HasNext() bool {
 	return iter.index < iter.storage.lastActive
 }
 
+func (iter *StorageIter[T]) Capacity() int {
+	return iter.storage.Capacity()
+}
+
 // Returns the iterator's state to the beginning of its storage so it can be iterated again.
 func (iter *StorageIter[T]) Reset() {
 	if iter == nil {

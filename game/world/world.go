@@ -299,7 +299,7 @@ func (world *World) Update(deltaTime float32) {
 	// Create BSP tree
 	it := world.IterBodies()
 	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{} // Skip over the map layers since they'll always be tested for collision
-	world.bspTree = tree.BuildBspTree(it.CollectSet())
+	world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
 
 	it = world.IterBodies()
 	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{}
@@ -411,90 +411,6 @@ func (world *World) ResetToPlayerCamera() {
 func (world *World) IsOnPlayerCamera() bool {
 	if player, isPlayer := world.CurrentPlayer.Get(); isPlayer {
 		return world.CurrentCamera.Handle.Equals(player.Camera.Handle)
-	}
-	return false
-}
-
-// TODO: Should integrate this into the code generation if new methods are needed.
-type ActorsInSphereIter struct {
-	ActorsIter
-	radius    float32
-	spherePos mgl32.Vec3
-	exception HasActor
-}
-
-func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
-	for {
-		actorEnt, actorId := iter.ActorsIter.Next()
-		if actorEnt == nil {
-			break
-		}
-		if actorEnt == iter.exception {
-			continue
-		}
-		body := actorEnt.Body()
-		actorRadius := body.Shape.(collision.Sphere).Radius()
-		if body.Transform.Position().Sub(iter.spherePos).Len() < iter.radius+actorRadius {
-			return actorEnt, actorId
-		}
-	}
-	return nil, scene.Handle{}
-}
-
-func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) ActorsInSphereIter {
-	return ActorsInSphereIter{
-		ActorsIter: world.IterActors(),
-		radius:     sphereRadius,
-		spherePos:  spherePos,
-		exception:  exception,
-	}
-}
-
-type BodiesInSphereIter struct {
-	BodiesIter
-	radius    float32
-	spherePos mgl32.Vec3
-	exception comps.HasBody
-}
-
-func (iter *BodiesInSphereIter) Next() (comps.HasBody, scene.Handle) {
-	for {
-		bodyEnt, bodyId := iter.BodiesIter.Next()
-		if bodyEnt == nil {
-			break
-		}
-		if bodyEnt == iter.exception {
-			continue
-		}
-		body := bodyEnt.Body()
-		if collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
-			return bodyEnt, bodyId
-		}
-	}
-	return nil, scene.Handle{}
-}
-
-func (iter BodiesInSphereIter) Any() bool {
-	body, _ := iter.Next()
-	return body != nil
-}
-
-func (world *World) BodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) BodiesInSphereIter {
-	return BodiesInSphereIter{
-		BodiesIter: world.IterBodies(),
-		radius:     sphereRadius,
-		spherePos:  spherePos,
-		exception:  exception,
-	}
-}
-
-func (world *World) AnyProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32) bool {
-	iter := world.Projectiles.Iter()
-	for proj, _ := iter.Next(); proj != nil; proj, _ = iter.Next() {
-		body := proj.Body()
-		if collision.NewSphere(sphereRadius).Touches(spherePos, body.Transform.Position(), body.Shape) {
-			return true
-		}
 	}
 	return false
 }

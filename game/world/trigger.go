@@ -95,7 +95,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 
 func (tr *Trigger) Update(deltaTime float32) {
 	// Call callbacks for new & already touching entities
-	touchingNow := tr.world.BodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
+	touchingNow := tr.world.IterBodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
 	var stillTouching [triggerMaxContacts]bool
 	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
 		bodyHaver, _ := scene.Get[comps.HasBody](handle)

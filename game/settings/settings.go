@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/BurntSushi/toml"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -20,37 +21,38 @@ const (
 )
 
 const (
-	ActionForward input.Action = iota
-	ActionBack
-	ActionLeft
-	ActionRight
-	ActionSlow
-	ActionLookHorz
-	ActionLookVert
-	ActionTrapMouse
-	ActionFire
+	ActionForward   input.Action = "moveForward"
+	ActionBack      input.Action = "moveBack"
+	ActionLeft      input.Action = "moveLeft"
+	ActionRight     input.Action = "moveRight"
+	ActionSlow      input.Action = "slowDown"
+	ActionLookHorz  input.Action = "lookHorz"
+	ActionLookVert  input.Action = "lookVert"
+	ActionTrapMouse input.Action = "trapMouse"
+	ActionFire      input.Action = "fire"
 
 	// Weapon selection actions should be in the same order as
 	// the WeaponType constants.
-	ActionSickle
-	ActionChicken
-	ActionGrenade
-	ActionParusu
-	ActionDblGrenade
-	ActionSign
-	ActionAirhorn
-	ActionDefenestrator
-	ActionCluckster
+	ActionSickle        input.Action = "sickle"
+	ActionChicken       input.Action = "chicken"
+	ActionGrenade       input.Action = "grenade"
+	ActionParusu        input.Action = "parusu"
+	ActionDblGrenade    input.Action = "dblGrenade"
+	ActionSign          input.Action = "sign"
+	ActionAirhorn       input.Action = "airhorn"
+	ActionDefenestrator input.Action = "defenestrator"
+	ActionCluckster     input.Action = "cluckster"
 
-	ActionUse
-	ActionWeaponWheel
-	ActionNoclip
-	ActionGodMode
-	ActionMarySue
-	ActionDie
-	ActionKillEnemies
-	ActionCastBlessing
-	ActionCount
+	ActionUse         input.Action = "use"
+	ActionWeaponWheel input.Action = "weaponWheel"
+
+	// Cheat codes
+	ActionNoclip       input.Action = "noclip"
+	ActionGodMode      input.Action = "godMode"
+	ActionMarySue      input.Action = "marySue"
+	ActionDie          input.Action = "die"
+	ActionKillEnemies  input.Action = "killEnemies"
+	ActionCastBlessing input.Action = "castBlessing"
 )
 
 const settingsFilePath = "game_settings.toml"
@@ -136,6 +138,7 @@ func Save() {
 func Localize(key string) string {
 	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", strings.ToLower(Current.Locale)))
 	if err != nil {
+		failure.LogErrWithLocation("failed to retrieve strings in %v for key %v: %v", Current.Locale, key, err)
 		return "ERROR"
 	}
 	localizedText, ok := (*trans)[key]
@@ -143,11 +146,38 @@ func Localize(key string) string {
 		// Fall back to English
 		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", LocaleEnglish))
 		if err != nil {
+			failure.LogErrWithLocation("failed to retrieve English fallback for localization key %v: %v", key, err)
 			return "ERROR"
 		}
 		localizedText = (*trans)[key]
 	}
-	return localizedText
+
+	// Parse as a text template in order to substitute control names and such.
+	templ, err := template.New(key).
+		Funcs(template.FuncMap{
+			"binding": func(actionName string) string {
+				binding, ok := input.ActionBinding(input.Action(actionName))
+				if !ok || binding == nil {
+					return "UNKNOWN"
+				}
+				return binding.Name()
+			},
+		}).
+		Parse(localizedText)
+
+	if err != nil {
+		failure.LogErrWithLocation("failed to parse template for key %v in lang %v: %v", key, Current.Locale, err)
+		return "ERROR"
+	}
+
+	var finalText strings.Builder
+	err = templ.Execute(&finalText, nil)
+	if err != nil {
+		failure.LogErrWithLocation("failed to execute template for key %v in lang %v: %v", key, Current.Locale, err)
+		return "ERROR"
+	}
+
+	return finalText.String()
 }
 
 func UIScale() float32 {

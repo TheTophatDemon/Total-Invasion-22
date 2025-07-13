@@ -9,13 +9,13 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 )
 
-type Action uint16
+type Action string
 type MouseAxis uint8
 
 const (
-	MOUSE_AXIS_X   MouseAxis = 0
-	MOUSE_AXIS_Y   MouseAxis = 1
-	MOUSE_DEADZONE           = 0.05
+	MouseAxisX    MouseAxis = 0
+	MouseAxisY    MouseAxis = 1
+	MouseDeadZone           = 0.05
 )
 
 const (
@@ -145,6 +145,11 @@ func ActionAxis(action Action) float32 {
 		return 0.0
 	}
 	return bind.Axis()
+}
+
+func ActionBinding(action Action) (Binding, bool) {
+	bind, ok := bindings[action]
+	return bind, ok
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

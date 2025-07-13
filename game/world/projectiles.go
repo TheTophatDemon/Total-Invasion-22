@@ -60,8 +60,10 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 
 func SpawnIntroSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = SpawnSickle(world, position, rotation, owner)
+	proj.body.Layer = ColLayerNone
 	proj.moveFunc = proj.introSickleMove
 	proj.forwardSpeed = -1.0
+
 	return
 }
 
@@ -96,12 +98,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
-	if !proj.body.OnLayer(ColLayerProjectiles) {
-		return
-	}
-
 	owner, hasOwner := scene.Get[HasActor](proj.owner)
-
 	otherBody := otherEnt.Body()
 	if proj.forwardSpeed <= -1.0 {
 		if hasOwner && otherBody == owner.Body() {
@@ -114,7 +111,13 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 				}
 			}
 		}
-	} else if otherBody.OnLayer(ColLayerMap) {
+	}
+
+	if !proj.body.OnLayer(ColLayerProjectiles) {
+		return
+	}
+
+	if proj.forwardSpeed > -1.0 && otherBody.OnLayer(ColLayerMap) {
 		proj.forwardSpeed = -math2.Abs(proj.forwardSpeed) / 2.0
 		proj.voices[1] = cache.GetSfx("assets/sounds/weapon/sickle_clink.wav").
 			PlayAttenuatedV(result.Position)
@@ -188,8 +191,8 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 		EggParticles(proj.body.Shape.(collision.Sphere).Radius()))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
-	noBlockers := !proj.world.BodiesInSphere(chickenSpot, 0.5, proj).Any()
-	if rand.Float32() < 0.3 && noBlockers && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
+	bodiesIter := proj.world.IterBodiesInSphere(chickenSpot, 0.5, proj)
+	if rand.Float32() < 0.3 && !bodiesIter.HasNext() && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
 		SpawnChicken(proj.world, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		timeSinceLastChicken = time.Now()
 	}

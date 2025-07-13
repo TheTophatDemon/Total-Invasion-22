@@ -23,9 +23,10 @@ package world
 import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/containers"
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
-{{ range .Iterators }}
+{{ range .InterfaceIterators }}
 
 {{- $iterName := (print .PluralName "Iter") -}}
 
@@ -55,28 +56,25 @@ func (iter *{{ $iterName }}) Next() ({{ .Interface }}, scene.Handle) {
 	return nil, scene.Handle{}
 }
 
-func (iter *{{ $iterName }}) Collect() []scene.Handle {
-	slice := make([]scene.Handle, 0, iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		slice = append(slice, handle)
+func (iter *{{ $iterName }}) HasNext() bool {
+	if iter == nil {
+		return false
 	}
-	return slice
+	for i := range {{ len .Stores }} {
+		switch i {
+			{{- range $idx, $store := .Stores }}
+			case {{ $idx }}:
+				if iter.iter{{ $store.Name }}.HasNext() {
+					return true
+				}
+			{{- end }}
+		}
+	}
+	return false
 }
 
-func (iter *{{ $iterName }}) CollectSet() containers.Set[scene.Handle] {
-	set := containers.NewSet[scene.Handle](iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		set.Add(handle)
-	}
-	return set
+func (iter *{{ $iterName }}) Capacity() int {
+	return iter.capacity
 }
 
 func (world *World) Iter{{ .PluralName }}() {{ $iterName }} {
@@ -92,6 +90,59 @@ func (world *World) Iter{{ .PluralName }}() {{ $iterName }} {
 		capacity: capacity,
 	}
 }
+{{ end }}
+
+/******************************
+ * SPHERE DETECTION ITERATORS *
+ ******************************/
+
+{{ range .SphereIterators }}
+ 
+{{- $sphereIterType := (print .PluralName "InSphereIter") -}}
+
+type {{ $sphereIterType }} struct {
+	innerIter {{ .IterType }}
+	radius    float32
+	spherePos mgl32.Vec3
+	exception {{ .EntType }}
+}
+
+func (iter *{{ $sphereIterType }}) Next() ({{ .EntType }}, scene.Handle) {
+	for {
+		ent, id := iter.innerIter.Next()
+		if ent == nil {
+			break
+		}
+		if ent == iter.exception {
+			continue
+		}
+		body := ent.Body()
+		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+			return ent, id
+		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (iter *{{ $sphereIterType }}) HasNext() bool {
+	cloneIter := *iter
+	ent, _ := cloneIter.Next()
+	return ent != nil
+}
+
+func (iter *{{ $sphereIterType }}) Capacity() int {
+	return iter.innerIter.Capacity()
+}
+
+func (world *World) {{ print "Iter" .PluralName "InSphere" }}(spherePos mgl32.Vec3, sphereRadius float32, exception {{ .EntType }}) {{ $sphereIterType }} {
+	return {{ $sphereIterType }}{
+		innerIter: world.{{ .IterConstructor }}(),
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
+}
+
 {{ end }}`
 
 type StorageInfo struct {
@@ -99,15 +150,23 @@ type StorageInfo struct {
 	ElemType string
 }
 
-type IterParams struct {
+type InterfaceIterParams struct {
 	Interface  string // Must be qualified with the package name
 	PluralName string
 	Stores     []StorageInfo
 }
 
-const WORLD_PKG = "world"
-const SCENE_PKG = "scene"
-const OUT_PATH = "./world_iterators.go" // This will be relative to the file in which the go:generate comment is.
+type SphereIterParams struct {
+	IterType, EntType string // Must be qualified with package name
+	PluralName        string
+	IterConstructor   string // Method on the world that creates the inner iterator.
+}
+
+const (
+	WORLD_PKG = "world"
+	SCENE_PKG = "scene"
+	OUT_PATH  = "./world_iterators.go" // This will be relative to the file in which the go:generate comment is.
+)
 
 var verboseFlag bool
 
@@ -118,12 +177,12 @@ func verbosePrintfln(format string, payload ...any) {
 	}
 }
 
-func genIterParamsFor[Interface any](pluralName string) (params IterParams) {
+func genIterParamsFor[Interface any](pluralName string) (params InterfaceIterParams) {
 	worldType := reflect.TypeFor[world.World]()
 	interfaceType := reflect.TypeFor[Interface]()
 	storageOpsType := reflect.TypeFor[scene.StorageOps]()
 
-	params = IterParams{
+	params = InterfaceIterParams{
 		PluralName: pluralName,
 		Stores:     make([]StorageInfo, 0, worldType.NumField()),
 		Interface:  qualifyTypeName(interfaceType),
@@ -189,25 +248,44 @@ func main() {
 	flag.BoolVar(&verboseFlag, "verbose", false, "Print debug information about which fields get included in iterators.")
 	flag.Parse()
 
-	iterators := []IterParams{
-		genIterParamsFor[comps.HasBody]("Bodies"),
-		genIterParamsFor[world.HasActor]("Actors"),
-		genIterParamsFor[world.Linkable]("Linkables"),
+	// Run the template on the collected data
+	tmpl := template.Must(template.New("WORLD ITERATOR").Parse(ITERATOR_FUNCTION_TEMPLATE))
+
+	tplParams := struct {
+		InterfaceIterators []InterfaceIterParams
+		SphereIterators    []SphereIterParams
+	}{
+		InterfaceIterators: []InterfaceIterParams{
+			genIterParamsFor[comps.HasBody]("Bodies"),
+			genIterParamsFor[world.HasActor]("Actors"),
+			genIterParamsFor[world.Linkable]("Linkables"),
+		},
+		SphereIterators: []SphereIterParams{
+			{
+				IterType:        "BodiesIter",
+				EntType:         "comps.HasBody",
+				PluralName:      "Bodies",
+				IterConstructor: "IterBodies",
+			},
+			{
+				IterType:        "ActorsIter",
+				EntType:         "HasActor",
+				PluralName:      "Actors",
+				IterConstructor: "IterActors",
+			},
+			{
+				IterType:        "scene.StorageIter[Projectile]",
+				EntType:         "*Projectile",
+				PluralName:      "Projectiles",
+				IterConstructor: "Projectiles.Iter",
+			},
+		},
 	}
 
 	// Create output file
 	outFile, err := os.Create(OUT_PATH)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	// Run the template on the collected data
-	tmpl := template.Must(template.New("WORLD ITERATOR").Parse(ITERATOR_FUNCTION_TEMPLATE))
-
-	tplParams := struct {
-		Iterators []IterParams
-	}{
-		Iterators: iterators,
 	}
 
 	err = tmpl.Execute(outFile, tplParams)

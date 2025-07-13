@@ -18,4 +18,11 @@ type (
 	HasHandle interface {
 		Handle() Handle
 	}
+
+	// Represents an iterator that produces entities and their storage handles.
+	SceneIter[T any] interface {
+		Next() (T, Handle)
+		HasNext() bool
+		Capacity() int
+	}
 )

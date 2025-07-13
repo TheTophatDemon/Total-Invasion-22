@@ -1,7 +1,9 @@
 package input
 
 import (
+	"fmt"
 	"math"
+	"strings"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -9,6 +11,7 @@ import (
 type Binding interface {
 	IsPressed() bool
 	Axis() float32
+	Name() string
 }
 
 type KeyBinding struct {
@@ -27,6 +30,10 @@ func (kb *KeyBinding) Axis() float32 {
 	}
 }
 
+func (kb *KeyBinding) Name() string {
+	return glfw.GetKeyName(kb.key, 0)
+}
+
 type MouseButtonBinding struct {
 	button glfw.MouseButton
 }
@@ -43,23 +50,47 @@ func (mbb *MouseButtonBinding) Axis() float32 {
 	}
 }
 
+func (mbb *MouseButtonBinding) Name() string {
+	switch mbb.button {
+	case glfw.MouseButtonLeft:
+		return "LMB"
+	case glfw.MouseButtonRight:
+		return "RMB"
+	case glfw.MouseButtonMiddle:
+		return "MMB"
+	case glfw.MouseButton1 - glfw.MouseButton8:
+		return fmt.Sprintf("MB%d", mbb.button)
+	}
+	return "UNKNOWN MOUSE BUTTON"
+}
+
 type MouseMovementBinding struct {
 	axis        MouseAxis
 	sensitivity float32
 }
 
 func (mmb *MouseMovementBinding) IsPressed() bool {
-	return (math.Abs(float64(mmb.Axis())) > MOUSE_DEADZONE)
+	return (math.Abs(float64(mmb.Axis())) > MouseDeadZone)
 }
 
 func (mmb *MouseMovementBinding) Axis() float32 {
 	switch mmb.axis {
-	case MOUSE_AXIS_X:
+	case MouseAxisX:
 		return float32(mouseDeltaX) * mmb.sensitivity
-	case MOUSE_AXIS_Y:
+	case MouseAxisY:
 		return float32(mouseDeltaY) * mmb.sensitivity
 	}
 	return 0.0
+}
+
+func (mmb *MouseMovementBinding) Name() string {
+	switch mmb.axis {
+	case MouseAxisX:
+		return "Mouse Horizontal"
+	case MouseAxisY:
+		return "Mouse Vertical"
+	}
+	return "UNKOWN MOUSE MOVEMENT"
 }
 
 type CharSequenceBinding struct {
@@ -84,4 +115,15 @@ func (csb *CharSequenceBinding) OnKeyPress(key glfw.Key) {
 	} else {
 		csb.progress = 0
 	}
+}
+
+func (csb *CharSequenceBinding) Name() string {
+	var sb strings.Builder
+	for k, key := range csb.sequence {
+		sb.WriteString(glfw.GetKeyName(key, 0))
+		if k < len(csb.sequence)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	return sb.String()
 }

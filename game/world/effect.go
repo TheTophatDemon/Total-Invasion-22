@@ -73,7 +73,7 @@ func SpawnSingleExplosion(world *World, transform comps.Transform) (id scene.Id[
 	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(transform.Position())
 
 	// Apply splash damage to surrounding entities
-	bodyIter := world.BodiesInSphere(transform.Position(), DAMAGE_RADIUS, nil)
+	bodyIter := world.IterBodiesInSphere(transform.Position(), DAMAGE_RADIUS, nil)
 	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
 		if damageable, ok := bodyHaver.(Damageable); ok {
 			vecToTarget := bodyHaver.Body().Transform.Position().Sub(transform.Position())

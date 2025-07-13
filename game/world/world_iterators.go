@@ -6,7 +6,8 @@ package world
 import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/containers"
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 )
 type BodiesIter struct {
 	iterPlayers scene.StorageIter[Player]
@@ -72,28 +73,51 @@ func (iter *BodiesIter) Next() (comps.HasBody, scene.Handle) {
 	return nil, scene.Handle{}
 }
 
-func (iter *BodiesIter) Collect() []scene.Handle {
-	slice := make([]scene.Handle, 0, iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		slice = append(slice, handle)
+func (iter *BodiesIter) HasNext() bool {
+	if iter == nil {
+		return false
 	}
-	return slice
+	for i := range 8 {
+		switch i {
+			case 0:
+				if iter.iterPlayers.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterEnemies.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterChickens.HasNext() {
+					return true
+				}
+			case 3:
+				if iter.iterWalls.HasNext() {
+					return true
+				}
+			case 4:
+				if iter.iterProjectiles.HasNext() {
+					return true
+				}
+			case 5:
+				if iter.iterItems.HasNext() {
+					return true
+				}
+			case 6:
+				if iter.iterMapLayers.HasNext() {
+					return true
+				}
+			case 7:
+				if iter.iterProps.HasNext() {
+					return true
+				}
+		}
+	}
+	return false
 }
 
-func (iter *BodiesIter) CollectSet() containers.Set[scene.Handle] {
-	set := containers.NewSet[scene.Handle](iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		set.Add(handle)
-	}
-	return set
+func (iter *BodiesIter) Capacity() int {
+	return iter.capacity
 }
 
 func (world *World) IterBodies() BodiesIter {
@@ -153,28 +177,31 @@ func (iter *ActorsIter) Next() (HasActor, scene.Handle) {
 	return nil, scene.Handle{}
 }
 
-func (iter *ActorsIter) Collect() []scene.Handle {
-	slice := make([]scene.Handle, 0, iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		slice = append(slice, handle)
+func (iter *ActorsIter) HasNext() bool {
+	if iter == nil {
+		return false
 	}
-	return slice
+	for i := range 3 {
+		switch i {
+			case 0:
+				if iter.iterPlayers.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterEnemies.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterChickens.HasNext() {
+					return true
+				}
+		}
+	}
+	return false
 }
 
-func (iter *ActorsIter) CollectSet() containers.Set[scene.Handle] {
-	set := containers.NewSet[scene.Handle](iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		set.Add(handle)
-	}
-	return set
+func (iter *ActorsIter) Capacity() int {
+	return iter.capacity
 }
 
 func (world *World) IterActors() ActorsIter {
@@ -224,28 +251,31 @@ func (iter *LinkablesIter) Next() (Linkable, scene.Handle) {
 	return nil, scene.Handle{}
 }
 
-func (iter *LinkablesIter) Collect() []scene.Handle {
-	slice := make([]scene.Handle, 0, iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		slice = append(slice, handle)
+func (iter *LinkablesIter) HasNext() bool {
+	if iter == nil {
+		return false
 	}
-	return slice
+	for i := range 3 {
+		switch i {
+			case 0:
+				if iter.iterWalls.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterTriggers.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterCameras.HasNext() {
+					return true
+				}
+		}
+	}
+	return false
 }
 
-func (iter *LinkablesIter) CollectSet() containers.Set[scene.Handle] {
-	set := containers.NewSet[scene.Handle](iter.capacity)
-	for {
-		_, handle := iter.Next()
-		if handle.IsNil() {
-			break
-		}
-		set.Add(handle)
-	}
-	return set
+func (iter *LinkablesIter) Capacity() int {
+	return iter.capacity
 }
 
 func (world *World) IterLinkables() LinkablesIter {
@@ -261,3 +291,138 @@ func (world *World) IterLinkables() LinkablesIter {
 		capacity: capacity,
 	}
 }
+
+
+/******************************
+ * SPHERE DETECTION ITERATORS *
+ ******************************/
+
+type BodiesInSphereIter struct {
+	innerIter BodiesIter
+	radius    float32
+	spherePos mgl32.Vec3
+	exception comps.HasBody
+}
+
+func (iter *BodiesInSphereIter) Next() (comps.HasBody, scene.Handle) {
+	for {
+		ent, id := iter.innerIter.Next()
+		if ent == nil {
+			break
+		}
+		if ent == iter.exception {
+			continue
+		}
+		body := ent.Body()
+		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+			return ent, id
+		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (iter *BodiesInSphereIter) HasNext() bool {
+	cloneIter := *iter
+	ent, _ := cloneIter.Next()
+	return ent != nil
+}
+
+func (iter *BodiesInSphereIter) Capacity() int {
+	return iter.innerIter.Capacity()
+}
+
+func (world *World) IterBodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) BodiesInSphereIter {
+	return BodiesInSphereIter{
+		innerIter: world.IterBodies(),
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
+}
+
+type ActorsInSphereIter struct {
+	innerIter ActorsIter
+	radius    float32
+	spherePos mgl32.Vec3
+	exception HasActor
+}
+
+func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
+	for {
+		ent, id := iter.innerIter.Next()
+		if ent == nil {
+			break
+		}
+		if ent == iter.exception {
+			continue
+		}
+		body := ent.Body()
+		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+			return ent, id
+		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (iter *ActorsInSphereIter) HasNext() bool {
+	cloneIter := *iter
+	ent, _ := cloneIter.Next()
+	return ent != nil
+}
+
+func (iter *ActorsInSphereIter) Capacity() int {
+	return iter.innerIter.Capacity()
+}
+
+func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) ActorsInSphereIter {
+	return ActorsInSphereIter{
+		innerIter: world.IterActors(),
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
+}
+
+type ProjectilesInSphereIter struct {
+	innerIter scene.StorageIter[Projectile]
+	radius    float32
+	spherePos mgl32.Vec3
+	exception *Projectile
+}
+
+func (iter *ProjectilesInSphereIter) Next() (*Projectile, scene.Handle) {
+	for {
+		ent, id := iter.innerIter.Next()
+		if ent == nil {
+			break
+		}
+		if ent == iter.exception {
+			continue
+		}
+		body := ent.Body()
+		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+			return ent, id
+		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (iter *ProjectilesInSphereIter) HasNext() bool {
+	cloneIter := *iter
+	ent, _ := cloneIter.Next()
+	return ent != nil
+}
+
+func (iter *ProjectilesInSphereIter) Capacity() int {
+	return iter.innerIter.Capacity()
+}
+
+func (world *World) IterProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception *Projectile) ProjectilesInSphereIter {
+	return ProjectilesInSphereIter{
+		innerIter: world.Projectiles.Iter(),
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
+	}
+}
+
