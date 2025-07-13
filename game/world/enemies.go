@@ -216,7 +216,11 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 }
 
 func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
-	enemy.attackTimer = rand.Float32() + 1.5
+	if oldState == &enemy.idleState {
+		enemy.attackTimer = 1.0
+	} else {
+		enemy.attackTimer = rand.Float32() + 1.5
+	}
 
 	// Switch periodically between shooting at the player and shooting to revive nearby enemies.
 	if rand.Float32() < 0.5 {

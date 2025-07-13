@@ -1,16 +1,10 @@
 # TODO
-- Port E1M1, E1M4
-  - E1M1 music
-  - Need textures:
-    - Satanic fountain
-    - Guardrail
-  - Eyeball messages
-    - E1M2
-    - E1M3
-- Add something to that room in E1M3
+- Port E1M1
+  - Music
+- Eyeball messages
+  - E1M2
+  - E1M3
 - Puns
-- Make mother wraith fire quicker after waking up
-- Make big shots do more damage.
 - Loading screen
 - Title screen
 - Player hit noise
@@ -26,6 +20,12 @@
 - Make enemies able to hear player behind walls as long as space is connected.
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
+
+- Port E1M4
+  - Textures
+    - Satanic fountain
+    - Guardrail
+  - Song
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?

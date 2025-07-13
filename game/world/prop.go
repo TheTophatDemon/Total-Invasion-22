@@ -178,6 +178,7 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 func (prop *Prop) eyeballUpdate(deltaTime float32) {
 	idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
 	openAnim, _ := prop.SpriteRender.Texture().GetAnimation("open")
+	closeAnim, _ := prop.SpriteRender.Texture().GetAnimation("close")
 	stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
 	eyeContact := false
 	projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
@@ -185,7 +186,7 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 		if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
 			toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
 			if camera.Forward().Dot(toCamera) < -0.95 {
-				res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 15.0, prop)
+				res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop)
 				if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
 					prop.stareTimer += deltaTime
 					eyeContact = true
@@ -199,7 +200,7 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 	if !eyeContact {
 		prop.stareTimer = 0.0
 		if prop.AnimPlayer.IsPlayingAnim(stareAnim) {
-			prop.AnimPlayer.PlayAnimSequence(openAnim, idleAnim)
+			prop.AnimPlayer.PlayAnimSequence(closeAnim, idleAnim)
 		}
 	} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
 		prop.world.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)

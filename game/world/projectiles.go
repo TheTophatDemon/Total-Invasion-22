@@ -337,11 +337,13 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
 		proj.body.Shape = collision.NewSphere(0.35)
 		proj.knockbackForce = 5.0
+		proj.Damage = 8
 		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
 		proj.body.Shape = collision.NewSphere(0.25)
 		proj.knockbackForce = 12.0
+		proj.Damage = 5
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
 	}
 
@@ -350,7 +352,6 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.dieAnim, _ = tex.GetAnimation("die")
 	proj.forwardSpeed = 120.0
 	proj.StunChance = 0.1
-	proj.Damage = 5
 
 	proj.moveFunc = proj.moveForward
 	proj.body.OnIntersect = proj.dieOnHit

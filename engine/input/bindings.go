@@ -31,7 +31,7 @@ func (kb *KeyBinding) Axis() float32 {
 }
 
 func (kb *KeyBinding) Name() string {
-	return glfw.GetKeyName(kb.key, 0)
+	return strings.ToUpper(glfw.GetKeyName(kb.key, 0))
 }
 
 type MouseButtonBinding struct {
