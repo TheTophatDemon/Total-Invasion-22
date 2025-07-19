@@ -3,8 +3,8 @@
   - Music
 - Eyeball messages
   - E1M2
+    - Mention sickle crux trick
   - E1M3
-- Puns
 - Loading screen
 - Title screen
 - Player hit noise
@@ -20,6 +20,7 @@
 - Make enemies able to hear player behind walls as long as space is connected.
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
+- Abstraction for timing (run_every, run_after)
 
 - Port E1M4
   - Textures

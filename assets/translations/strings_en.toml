@@ -30,7 +30,7 @@ levelComplete = "Level Complete"
 
 # Weapons
 sickle = "Sickle"
-sickleNotFound = "I don't have a sickle."
+sickleNotFound = "I don't have a sickle!?"
 sickleGet = "Got another sickle...?"
 
 chickenCannon = "Chicken Cannon"
@@ -42,8 +42,8 @@ grenadeLauncherNotFound = "I don't have a grenade launcher."
 grenadeLauncherGet = "Got a grenade launcher!"
 
 parusu = "Parusu"
-parusuNotFound = "I don't have a parusu."
-parusuGet = "Got a parusu!"
+parusuNotFound = "I don't have a Parusu."
+parusuGet = "Got a Parusu!"
 
 doubleGrenadeLauncher = "Double Grenade Launcher"
 doubleGrenadeLauncherNotFound = "I don't have a double grenade launcher."
@@ -81,6 +81,17 @@ armorBroken = "My armor has been broken!"
 foundSecret = "A secret has been found."
 geoffrey = "Who's this douchebag?"
 familyTalk = "They're in a safe place..."
+puns = """
+What's the matter?                                 CAT got your tongue?                          Hehehe...
+Where's the federal army?                          What a bunch of scaredy-cats!                 Hehehe...
+The wraiths ruined my garden again...              Now this is purr-sonal.                       Hehehe...
+If only the wraiths could think...                 That would be cat-astrophic!                  Hehehe...
+My fur is stained with blood...                    You've gotta be kitty-ing me!                 Hehehe...
+I was born for war...                              But it still freaks meow-t sometimes!         Hehehe...
+What if this is a simulation...                    It's paws-ible!                               Hehehe...
+The wraiths in front of me won't live...           To tell the tail!                             Hehehe...
+I eat wraiths for breakfast...                     But not litter-ally!                          Hehehe...
+I thought I saw a laser pointer over there...      I'm really cat-ter brained right now.         Hehehe..."""
 
 # Eyeball messages
 eyeballMessage0 = "'Eye' have nothing to say to you, scram!"

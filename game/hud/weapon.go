@@ -101,7 +101,7 @@ func (weap *Weapon) init() {
 func (weap *Weapon) endPos() mgl32.Vec2 {
 	return mgl32.Vec2{
 		(settings.UIWidth() / 2) - (weap.sprite.Dest.Width / 2.0) + weap.spriteOffset[0],
-		settings.UIHeight() - weap.sprite.Dest.Height + weap.spriteOffset[1],
+		settings.UIHeight() - weap.sprite.Dest.Height + weap.spriteOffset[1] + 32.0,
 	}
 }
 

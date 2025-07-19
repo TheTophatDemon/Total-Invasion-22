@@ -3,7 +3,6 @@ package hud
 import (
 	"fmt"
 	"log"
-	"unicode/utf8"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
@@ -27,11 +26,6 @@ type statusBar struct {
 	heartIcon, ammoIcon, armorIcon  ui.Box
 	keyIcons                        [4]ui.Box
 	healthStat, ammoStat, armorStat ui.Text
-	messageText                     ui.Text
-	messageBackground               ui.Box
-	messageTimer                    float32
-	messagePriority                 int
-	messageFlash                    float32 // Tracks the color change in the message bar after a message is shown
 }
 
 type faceState struct {
@@ -58,16 +52,6 @@ var ammoTypeIconNames = [game.AmmoTypeCount]string{
 	game.AmmoTypeEgg:     "egg",
 	game.AmmoTypeGrenade: "grenade",
 	game.AmmoTypePlasma:  "plasma",
-}
-
-func (status *statusBar) ShowMessage(text string, duration float32, priority int, colr color.Color) {
-	if priority >= status.messagePriority {
-		status.messageTimer = duration
-		status.messagePriority = priority
-		status.messageText.SetText(text)
-		status.messageText.Color = colr
-		status.messageFlash = 0.5
-	}
 }
 
 // Attempts to update the player's face to reflect in game events.
@@ -250,39 +234,6 @@ func (status *statusBar) init() {
 			status.keyIcons[i].Src = math2.Rect{X: 8, Y: 8, Width: 8, Height: 8}
 		}
 	}
-
-	// Message
-	status.messageBackground = ui.Box{
-		Color: color.Black,
-		Src: math2.Rect{
-			Width: 1.0, Height: 1.0,
-		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      float32(leftPanelTex.Width()) * settings.SpriteScale(),
-				Y:      settings.UIHeight() - 32.0,
-				Width:  settings.UIWidth() - float32(leftPanelTex.Width()+rightPanelTex.Width())*settings.SpriteScale(),
-				Height: 32.0,
-			},
-			Depth: 2.0,
-		},
-	}
-
-	status.messageText = ui.Text{
-		Settings: ui.TextSettings{
-			WrapWords: false,
-		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      status.messageBackground.Dest.X + 8.0,
-				Y:      status.messageBackground.Dest.Y + 1.0,
-				Width:  status.messageBackground.Dest.Width - 16.0,
-				Height: status.messageBackground.Dest.Height - 2.0,
-			},
-			Depth: 3.0,
-			Scale: 1.0,
-		},
-	}
 }
 
 func (status *statusBar) forcePlayerFace(newState faceState) {
@@ -366,32 +317,4 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	}
 	status.face.Update(deltaTime)
 	queue.Add(&status.face)
-
-	// Update message text
-	status.messageTimer -= deltaTime
-	if status.messageTimer <= 0.0 {
-		const scrollSpeed = -0.1
-		if status.messageTimer < scrollSpeed {
-			status.messageTimer = 0.0
-			msgText := status.messageText.Text()
-			if len(msgText) > 1 {
-				_, byteCount := utf8.DecodeRuneInString(msgText)
-				status.messageText.SetText(msgText[byteCount:])
-			} else {
-				status.messagePriority = 0
-				status.messageText.Color = color.Transparent
-				status.messageText.SetText("")
-			}
-		}
-	}
-	status.messageFlash = max(0.0, status.messageFlash-deltaTime)
-	status.messageBackground.Color = color.Color{
-		R: (1.0 - status.messageText.Color.R) * status.messageFlash,
-		G: (1.0 - status.messageText.Color.G) * status.messageFlash,
-		B: (1.0 - status.messageText.Color.B) * status.messageFlash,
-		A: 1.0,
-	}
-
-	queue.Add(&status.messageText)
-	queue.Add(&status.messageBackground)
 }

@@ -34,6 +34,7 @@ type Hud struct {
 	Intro         LevelIntro
 	VictoryScreen VictoryScreen
 	StatusBar     statusBar
+	MessageBar    messageBar
 	PlayerStats   PlayerStats // Information the player entity supplies
 }
 
@@ -56,6 +57,7 @@ func (hud *Hud) Init() {
 	hud.Weapons.init(hud)
 	hud.VictoryScreen.init()
 	hud.StatusBar.init()
+	hud.MessageBar.init()
 }
 
 func (hud *Hud) Update(deltaTime float32) {
@@ -71,6 +73,7 @@ func (hud *Hud) Update(deltaTime float32) {
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
 		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
+		hud.MessageBar.layout(&hud.renderQueue, deltaTime)
 		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
 	} else {
 		// Only show after level ends.
@@ -88,7 +91,7 @@ func (hud *Hud) Render() {
 }
 
 func (hud *Hud) ShowMessage(text string, duration float32, priority int, colr color.Color) {
-	hud.StatusBar.ShowMessage(text, duration, priority, colr)
+	hud.MessageBar.ShowMessage(text, duration, priority, colr)
 }
 
 func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {

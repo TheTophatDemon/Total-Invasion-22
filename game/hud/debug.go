@@ -17,13 +17,13 @@ type DebugStats struct {
 func (stats *DebugStats) init() {
 	stats.fpsCounter = ui.Text{
 		Transform: ui.Transform{
-			Dest: math2.Rect{X: 4.0, Y: 20.0, Width: 160.0, Height: 32.0},
+			Dest: math2.Rect{X: 4.0, Y: 52.0, Width: 160.0, Height: 32.0},
 		},
 	}
 
 	stats.drawCounters = ui.Text{
 		Transform: ui.Transform{
-			Dest: math2.Rect{X: 4.0, Y: 56.0, Width: 480.0, Height: 128.0},
+			Dest: math2.Rect{X: 4.0, Y: 88.0, Width: 480.0, Height: 128.0},
 		},
 		Color: color.Blue,
 	}

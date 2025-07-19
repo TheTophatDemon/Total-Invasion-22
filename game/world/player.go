@@ -2,6 +2,8 @@ package world
 
 import (
 	"math"
+	"math/rand"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -12,18 +14,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
-)
-
-const (
-	USE_DIST float32 = 3.0
-)
-
-const (
-	OVERHEAL_RESTORE_RATE = 1.0
 )
 
 type Player struct {
@@ -45,6 +40,8 @@ type Player struct {
 	armorType              game.ArmorType
 	armorAmount            float32
 	weaponWheelOpenness    float32 // 1 if wheel is open, gradually drops to 0 after closing.
+	punTimer               timer.Timer
+	puns                   []string
 }
 
 var _ HasActor = (*Player)(nil)
@@ -111,6 +108,15 @@ func SpawnPlayer(
 	player.world = world
 	player.cameraFall = 2.0
 
+	player.punTimer = timer.Timer{
+		Interval: 10.0,
+	}
+
+	player.puns = strings.Split(settings.Localize("puns"), "\n")
+	rand.Shuffle(len(player.puns), func(i, j int) {
+		player.puns[i], player.puns[j] = player.puns[j], player.puns[i]
+	})
+
 	tex := cache.GetTexture("assets/textures/sprites/segan.png")
 	player.Sprite = comps.NewSpriteRender(tex)
 	winAnim, _ := tex.GetAnimation("victory")
@@ -173,13 +179,24 @@ func (player *Player) Update(deltaTime float32) {
 		if player.world.IsOnPlayerCamera() {
 			player.takeUserInput(deltaTime)
 		} else {
+			player.punTimer.Reset()
 			player.actor.inputForward = 0
 			player.actor.inputStrafe = 0
 		}
+
 		if player.actor.Health > player.actor.TargetHealth {
 			// When overhealed, gradually decrease health back to base level
-			player.actor.Health = math2.Clamp(player.actor.Health-OVERHEAL_RESTORE_RATE*deltaTime, player.actor.TargetHealth, player.actor.MaxHealth)
+			const overhealRate = 1.0
+			player.actor.Health = math2.Clamp(player.actor.Health-overhealRate*deltaTime, player.actor.TargetHealth, player.actor.MaxHealth)
 		}
+
+		// Update puns
+		if player.punTimer.Update(deltaTime) && len(player.puns) > 0 {
+			hudPtr.ShowMessage(player.puns[0], 2.0, 10, color.Red)
+			player.puns = player.puns[1:]
+			player.punTimer.Elapsed -= 10.0
+		}
+
 		if camera, ok := player.Camera.Get(); ok {
 			// Keep camera transform in sync with the player
 			camera.Transform = player.Body().Transform
@@ -260,6 +277,10 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.actor.inputStrafe = 0.0
 	}
 
+	if math2.Abs(player.actor.inputForward)+math2.Abs(player.actor.inputStrafe) > 0 {
+		player.punTimer.Reset()
+	}
+
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ActionNoclip) {
 		var message string = settings.Localize("noclipActivate")
@@ -311,7 +332,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	if input.IsActionJustPressed(settings.ActionUse) {
 		rayOrigin := player.Body().Transform.Position()
 		rayDir := player.Body().Transform.Forward()
-		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, ColFilterForActors, USE_DIST, player)
+		const useDist float32 = 3.0
+		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, ColFilterForActors, useDist, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -438,6 +460,7 @@ func (player *Player) AddArmor(armorType game.ArmorType, amount int) bool {
 }
 
 func (player *Player) AttackWithWeapon(justPressed bool) {
+	player.punTimer.Reset()
 	weapon := player.world.Hud.Weapons.Selected()
 	if weapon == nil {
 		return
