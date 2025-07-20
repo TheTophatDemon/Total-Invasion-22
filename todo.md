@@ -1,10 +1,9 @@
 # TODO
-- Port E1M1
-  - Music
 - Eyeball messages
   - E1M2
     - Mention sickle crux trick
   - E1M3
+    - Weapon wheel don't stop the mouse
 - Loading screen
 - Title screen
 - Player hit noise
