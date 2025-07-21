@@ -16,7 +16,7 @@ func (tmr *Timer) Update(deltaTime float32) bool {
 	if tmr.Elapsed > tmr.Interval {
 		tmr.Elapsed = math2.Mod(tmr.Elapsed, tmr.Interval)
 		tmr.NumTicks++
-		if tmr.MaxTicks > 0 && tmr.NumTicks >= tmr.MaxTicks {
+		if tmr.MaxTicks > 0 && tmr.NumTicks > tmr.MaxTicks {
 			tmr.NumTicks = tmr.MaxTicks
 			return false
 		} else if tmr.Callback != nil {

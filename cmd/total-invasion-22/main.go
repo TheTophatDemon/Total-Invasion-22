@@ -6,12 +6,19 @@ import (
 	"runtime"
 	"slices"
 
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -19,7 +26,9 @@ import (
 )
 
 type App struct {
-	world *world.World
+	world        *world.World
+	loadingMap   game.MapChangeSignal
+	loadingTimer timer.Timer // Waits until the loading screen renders to load the map
 }
 
 func (app *App) Update(deltaTime float32) {
@@ -27,11 +36,30 @@ func (app *App) Update(deltaTime float32) {
 	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
 	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
-	app.world.Update(deltaTime)
+	if app.world != nil {
+		app.world.Update(deltaTime)
+	} else if app.loadingTimer.Update(deltaTime) {
+		app.LoadGame(app.loadingMap)
+	}
 }
 
 func (app *App) Render() {
-	app.world.Render()
+	if app.world != nil {
+		app.world.Render()
+	} else {
+		// Draw the loading screen
+		renderContext := render.Context{
+			View:       mgl32.Ident4(),
+			Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
+		}
+		loadingScreenTex := cache.GetTexture("assets/textures/ui/loading_screen_" + settings.Current.Locale + ".png")
+		gl.CullFace(gl.FRONT)
+		box := ui.NewBoxFull(math2.Rect{
+			Width:  settings.UIWidth(),
+			Height: settings.UIHeight(),
+		}, loadingScreenTex, color.White, 1.0)
+		box.Render(&renderContext)
+	}
 }
 
 func (app *App) ProcessSignal(signal any) {
@@ -40,17 +68,22 @@ func (app *App) ProcessSignal(signal any) {
 		if app.world != nil {
 			app.world.TearDown()
 		}
-		app.LoadGame(msg.NextMapPath, msg)
+		app.world = nil
+		app.loadingMap = msg
+		app.loadingTimer = timer.Timer{
+			Interval: 1.0, // Make the player wait at least one second to look at my amazing artwork ;-)
+			MaxTicks: 1,
+		}
 	}
 }
 
-func (app *App) LoadGame(mapPath string, sig game.MapChangeSignal) {
-	log.Println("Loading game at map ", mapPath)
+func (app *App) LoadGame(sig game.MapChangeSignal) {
+	log.Println("Loading game at map ", sig.NextMapPath)
 
 	cache.Reset()
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
-	world, err := world.NewWorld(app, mapPath, sig)
+	world, err := world.NewWorld(app, sig.NextMapPath, sig)
 	if err != nil {
 		panic(err)
 	}
@@ -119,11 +152,11 @@ func main() {
 
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {
-		mapName = "assets/maps/ti2-malicious-intents.te3"
+		mapName = "assets/maps/e1m1-genocide-carnival.te3"
 	}
 
 	app := &App{}
-	app.LoadGame(mapName, game.MapChangeSignal{
+	app.ProcessSignal(game.MapChangeSignal{
 		NextMapPath: mapName,
 	})
 	engine.Run(app)
