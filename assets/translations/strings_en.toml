@@ -104,6 +104,9 @@ tutorialSecret = 'This wall seems suspicious...'
 tutorialHealth = 'Items like this will heal you.'
 tutorialWeapon = 'Weapons can be selected using keys like {{ binding "sickle" }} and {{ binding "chicken" }} or by holding {{ binding "weaponWheel" }}.'
 tutorialTeleporter = 'The device on the ground will teleport you.'
+tutorialCrux = "If you hit an enemy at the apex of a sickle's trajectory you can do more damage!"
+tutorialWeaponWheel = 'No need to be precise with the weapon wheel. Just hold {{ binding "weaponWheel" }} and pass your cursor over the weapon quickly.'
+tutorialSwitch = 'Walk up to the switch and press {{ binding "use" }} to activate...uhh...I forgot.'
 
 # Map titles
 e1m1Title = "GENOCIDE CARNIVAL"

@@ -6,7 +6,7 @@ type Timer struct {
 	Elapsed  float32     // Number of seconds elapsed since last tick. Can be modified directly to make intervals temporarily longer or shorter.
 	Interval float32     // Number of seconds between each tick
 	NumTicks int         // How many ticks have transpired since this timer was created / last reset
-	MaxTicks int         // Maximum tick count. Once this number is exceeded, no more ticks occur.
+	MaxTicks int         // Maximum tick count. Once this number is exceeded and it is non-zero, no more ticks occur.
 	Callback func(Timer) // Optional function to call each time a tick occurs.
 }
 

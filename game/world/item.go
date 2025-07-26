@@ -125,6 +125,7 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 func SpawnStimpack(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25})
 	item.healAmount = 10.0
+	item.dontWaste = true
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/stimpack.png"))
 	return
 }
@@ -132,6 +133,7 @@ func SpawnStimpack(world *World, position mgl32.Vec3) (id scene.Id[*Item], item 
 func SpawnMedkit(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.375, 0.375, 0.375})
 	item.healAmount = 50.0
+	item.dontWaste = true
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/medkit.png"))
 	return
 }
@@ -150,7 +152,7 @@ func SpawnAmmo(world *World, position mgl32.Vec3, ammoType game.AmmoType) (scene
 
 func SpawnEggCarton(world *World, position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(world, position, mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveAmmo[game.AmmoTypeEgg] = 6
+	item.giveAmmo[game.AmmoTypeEgg] = 12
 	item.dontWaste = true
 	item.message = settings.Localize("eggCartonGet")
 	item.messageTime = 1.0
@@ -353,7 +355,11 @@ func (item *Item) OnUse(player *Player) {
 		return
 	}
 
-	player.actor.Health += item.healAmount
+	if player.actor.Health < player.actor.TargetHealth {
+		player.actor.Health += item.healAmount
+	} else if item.healAmount > 0 && item.dontWaste {
+		return
+	}
 
 	if item.giveKey != game.KeysNone {
 		player.keys |= item.giveKey

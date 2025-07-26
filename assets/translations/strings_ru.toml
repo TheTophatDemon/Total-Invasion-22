@@ -98,6 +98,9 @@ tutorialSecret = 'Мне кажется, что зта стена подозри
 tutorialHealth = 'Такие предметы, как это, лечат вас.'
 tutorialWeapon = 'Можно выбрать оружия такими кнопками, как {{ binding "sickle" }} и {{ binding "chicken" }}, или держанием {{ binding "weaponWheel" }}.'
 tutorialTeleporter = 'Прибор на земле телепортирует вас.'
+tutorialCrux = "Если ударяете врага при вершине траектории серпа, вы вредите его больше!"
+tutorialWeaponWheel = 'Не надо целиться точно в колесо оружия. Просто держите {{ binding "weaponWheel" }} и сразу же продвиньте курсор через оружие.'
+tutorialSwitch = 'Доберитесь до выключателя и нажмите {{ binding "use" }} чтобы влючить...нууу...я забыл.'
 
 # Map titles
 e1m1Title = "КАРНАВАЛ ГЕНОЦИДА"

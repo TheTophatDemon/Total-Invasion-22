@@ -1,23 +1,24 @@
 # TODO
 - Eyeball messages
-  - E1M2
-    - Mention sickle crux trick
-  - E1M3
-    - Weapon wheel don't stop the mouse
+  - Drop some lore in the secret room on E1M2
+- Put message bar on bottom of screen
 - Title screen
 - Player hit noise
+- Chicken cannon secondary attack
 - Game Difficulty Settings
 - Dialog Cutscene
 - Demo end screen
 - Settings menu
+- Gamepad support (for Steam Deck)
 
-- Fix collision jittering (prioritize map collision resolutions over resolutions with other entities)
+- Fix collision jittering
+  - Resolve map collisions first
+  - Do multiple iterations on the collision solver
+  - Will need to refactor collision callbacks to fire only once
 - Use texture config for additive rendering and convert to TOML
 - Modify map meshing to minimize polygons. BSP?
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
-- Chicken cannon secondary attack
-- Gamepad support (for Steam Deck)
 
 - Port E1M4
   - Textures
