@@ -26,9 +26,9 @@ func (messageBar *messageBar) init() {
 		Transform: ui.Transform{
 			Dest: math2.Rect{
 				X:      0.0,
-				Y:      0.0,
+				Y:      settings.UIHeight() - 32.0,
 				Width:  settings.UIWidth(),
-				Height: 48.0,
+				Height: 32.0,
 			},
 			Depth: 2.0,
 		},
@@ -41,7 +41,7 @@ func (messageBar *messageBar) init() {
 		Transform: ui.Transform{
 			Dest: math2.Rect{
 				X:      messageBar.background.Dest.X + 8.0,
-				Y:      messageBar.background.Dest.Y + 8.0,
+				Y:      messageBar.background.Dest.Y + 2.0,
 				Width:  messageBar.background.Dest.Width - 16.0,
 				Height: messageBar.background.Dest.Height - 2.0,
 			},

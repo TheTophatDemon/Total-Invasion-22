@@ -71,7 +71,7 @@ func (app *App) ProcessSignal(signal any) {
 		app.world = nil
 		app.loadingMap = msg
 		app.loadingTimer = timer.Timer{
-			Interval: 1.0, // Make the player wait at least one second to look at my amazing artwork ;-)
+			Interval: 0.5, // Make the player wait at least a bit to look at my amazing artwork ;-)
 			MaxTicks: 1,
 		}
 	}

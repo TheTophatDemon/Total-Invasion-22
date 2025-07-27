@@ -71,7 +71,7 @@ func (status *statusBar) init() {
 	panelHeight := float32(leftPanelTex.Height()) * settings.SpriteScale()
 	status.leftPanel = ui.NewBoxFull(
 		math2.Rect{
-			X: 0.0, Y: settings.UIHeight() - panelHeight,
+			X: 0.0, Y: settings.UIHeight() - panelHeight - 32.0,
 			Width:  float32(leftPanelTex.Width()) * settings.SpriteScale(),
 			Height: panelHeight,
 		},
@@ -148,7 +148,7 @@ func (status *statusBar) init() {
 	status.rightPanel = ui.NewBoxFull(
 		math2.Rect{
 			X:      settings.UIWidth() - rightPanelWidth,
-			Y:      settings.UIHeight() - panelHeight,
+			Y:      settings.UIHeight() - panelHeight - 32.0,
 			Width:  rightPanelWidth,
 			Height: panelHeight,
 		},
