@@ -10,14 +10,8 @@
 - Settings menu
 - Gamepad support (for Steam Deck)
 
-- Fix collision jittering
-  - Resolve map collisions first
-  - Do multiple iterations on the collision solver
-  - Will need to refactor collision callbacks to fire only once
-- Fix flickering artifacts on sloped walls
-  - Mostly happens on tiles that have some kind of rotation applied to them.
-  - Also shows up when spawning on test-teleporters map
-  - Could be solved using greedy meshing
+- Fix collision jittering between player and adjacent props
+- Fix flickering artifacts on walls. Consider greedy meshing.
 - Use texture config for additive rendering and convert to TOML
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.

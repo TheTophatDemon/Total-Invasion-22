@@ -68,7 +68,7 @@ func SpawnIntroSickle(world *World, position, rotation mgl32.Vec3, owner scene.H
 }
 
 func (proj *Projectile) sickleMove(deltaTime float32) {
-	var decelerationRate float32 = 50.0
+	var decelerationRate float32 = 65.0
 	if !input.IsActionPressed(settings.ActionFire) {
 		decelerationRate = 100.0
 	}
@@ -385,7 +385,7 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	tex := cache.GetTexture("assets/textures/sprites/blessing.png")
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
-	proj.forwardSpeed = 20.0
+	proj.forwardSpeed = 30.0
 	proj.voices[0] = cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position)
 	proj.StunChance = 0.0
 	proj.Damage = 15

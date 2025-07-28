@@ -201,6 +201,18 @@ textureLoop:
 					ind := shapeInds[(tri*3)+i]
 					mapInds = append(mapInds, uint32(len(mapVerts.Pos)))
 
+					// Vertices that are near grid boundaries are snapped to grid boundaries.
+					// This covers up floating point errors that result in flickering bands of color on the screen.
+					for v, coord := range triangle[i] {
+						lowerBound := math2.Floor(coord/GridSpacing) * GridSpacing
+						upperBound := math2.Ceil(coord/GridSpacing) * GridSpacing
+						if coord-lowerBound < 0.05 {
+							triangle[i][v] = lowerBound
+						} else if upperBound-coord < 0.05 {
+							triangle[i][v] = upperBound
+						}
+					}
+
 					// Add the shape's vertex position to the aggregate mesh, offset by the overall tile position
 					mapVerts.Pos = append(mapVerts.Pos, triangle[i])
 

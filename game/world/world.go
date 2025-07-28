@@ -3,8 +3,10 @@ package world
 import (
 	"errors"
 	"log"
+	"maps"
 	"math"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -304,12 +306,12 @@ func (world *World) Update(deltaTime float32) {
 	it = world.IterBodies()
 	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{}
 	for bodyEnt, _ := it.Next(); bodyEnt != nil; bodyEnt, _ = it.Next() {
-		collidableBodies := world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
+		collidableBodies := slices.Collect(maps.Keys(world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)))
 
 		// Add map layers to ensure collision is always checked with them
 		mapLayerIter := world.MapLayers.Iter()
 		for _, layer := mapLayerIter.Next(); !layer.IsNil(); _, layer = mapLayerIter.Next() {
-			collidableBodies.Add(layer)
+			collidableBodies = append(collidableBodies, layer)
 		}
 
 		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)

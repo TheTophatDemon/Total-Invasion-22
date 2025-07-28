@@ -59,3 +59,7 @@ func Floor[F Float](a F) F {
 func Ceil[F Float](a F) F {
 	return F(math.Ceil(float64(a)))
 }
+
+func Round[F Float](a F) F {
+	return F(math.Round(float64(a)))
+}
