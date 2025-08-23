@@ -2,10 +2,12 @@
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Title screen
+  - Background image
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
 - Dialog Cutscene
+  - Song
 - Demo end screen
 - Settings menu
 - Gamepad support (for Steam Deck)
