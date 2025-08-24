@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	FLAG_CLAMP_BORDER = "clampBorder"
+	FlagClampBorder = "clampBorder"
+	FlagBlendAdd    = "blendAdd"
 )
 
 type Texture struct {

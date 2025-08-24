@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	ENEMY_COL_LAYERS = ColLayerActors | ColLayerNPCs
+	EnemyColLayers = ColLayerActors | ColLayerNPCs
 )
 
 type Enemy struct {
@@ -118,7 +118,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
 			Shape:  collision.NewSphere(0.7),
-			Layer:  ENEMY_COL_LAYERS,
+			Layer:  EnemyColLayers,
 			Filter: ColFilterForActors,
 			LockY:  true,
 		},
@@ -297,7 +297,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		}
 
 		enemy.world.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.Layer = ENEMY_COL_LAYERS
+		enemy.actor.body.Layer = EnemyColLayers
 		enemy.actor.body.Filter = ColFilterForActors
 		enemy.bloodOffset = mgl32.Vec3{}
 	}

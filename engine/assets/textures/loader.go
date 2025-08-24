@@ -49,10 +49,6 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 
 func LoadTexture(assetPath string) (*Texture, error) {
 
-	// if strings.HasSuffix(assetPath, "sofa.png") {
-	// 	fmt.Println("BEGIN")
-	// }
-
 	// Look for metadata file
 	metaPath := strings.TrimSuffix(assetPath, ".png") + ".json"
 	metadata, err := assets.LoadAndUnmarshalJSON[aseSpriteSheet](metaPath)
@@ -115,7 +111,7 @@ func LoadTexture(assetPath string) (*Texture, error) {
 	// Apply filtering and mipmapping
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	if texture.HasFlag(FLAG_CLAMP_BORDER) {
+	if texture.HasFlag(FlagClampBorder) {
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
 		gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
 	} else {

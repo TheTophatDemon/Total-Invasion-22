@@ -14,7 +14,6 @@
 
 - Fix collision jittering between player and adjacent props
 - Fix flickering artifacts on walls. Consider greedy meshing.
-- Use texture config for additive rendering and convert to TOML
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
 

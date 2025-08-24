@@ -14,9 +14,8 @@ import (
 )
 
 type SpriteRender struct {
-	meshRender       MeshRender
-	DiffuseColor     color.Color
-	AdditiveBlending bool
+	meshRender   MeshRender
+	DiffuseColor color.Color
 }
 
 func NewSpriteRender(texture *textures.Texture) SpriteRender {
@@ -51,13 +50,23 @@ func (sr *SpriteRender) Render(
 	context *render.Context,
 	yawAngle float32,
 ) bool {
-	if !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
+	if !context.DrawingTransparent && !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
 		return false
 	}
 
-	if sr.meshRender.Shader == nil {
+	if transform == nil || sr.meshRender.Shader == nil {
 		return false
 	}
+
+	blendAdd := sr.Texture() != nil && sr.Texture().HasFlag(textures.FlagBlendAdd)
+
+	if (sr.DiffuseColor.A < 1.0 || blendAdd) && !context.DrawingTransparent {
+		context.EnqueueTransparentRender(func(context *render.Context) {
+			sr.Render(transform, animPlayer, context, yawAngle)
+		}, context.DistanceFromScreen(transform.Matrix()))
+		return true
+	}
+
 	sr.meshRender.Shader.Use()
 
 	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
@@ -98,7 +107,7 @@ func (sr *SpriteRender) Render(
 		failure.LogErrWithLocation("error setting diffuse color uniform: %v", err)
 	}
 
-	if sr.AdditiveBlending {
+	if blendAdd {
 		gl.BlendFunc(gl.ONE, gl.ONE)
 		defer gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	}
