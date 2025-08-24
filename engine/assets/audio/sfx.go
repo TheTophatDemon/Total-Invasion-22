@@ -15,7 +15,7 @@ const ERROR_SFX_PATH = "assets/sounds/error.wav"
 type sfxMetadata struct {
 	Loop      bool
 	Polyphony int
-	Rolloff   *float32
+	Rolloff   float32
 }
 
 func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
@@ -24,8 +24,8 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	}
 
 	// Look for metadata file
-	metaPath := strings.TrimSuffix(soundPath, ".wav") + ".json"
-	metadata, err := assets.LoadAndUnmarshalJSON[sfxMetadata](metaPath)
+	metaPath := strings.TrimSuffix(soundPath, ".wav") + ".toml"
+	metadata, err := assets.LoadAndUnmarshalTOML[sfxMetadata](metaPath)
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
 		return tdaudio.SoundId{}, fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
@@ -39,8 +39,8 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 			polyphony = uint8(metadata.Polyphony)
 		}
 		looped = metadata.Loop
-		if metadata.Rolloff != nil {
-			rolloff = *metadata.Rolloff
+		if metadata.Rolloff != 0.0 {
+			rolloff = metadata.Rolloff
 		}
 	}
 	soundHandle := tdaudio.LoadSound(soundPath, polyphony, looped, rolloff)
