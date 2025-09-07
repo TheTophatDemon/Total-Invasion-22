@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-	"log"
 	"strings"
 	"text/scanner"
 	"unicode"
@@ -101,6 +99,10 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 	boxes := make([]math2.Rect, 0, len(txt.Text()))
 	chars := make([]bmfont.Char, 0, cap(boxes))
 
+	if txt.Settings.Font == nil || txt.Settings.Text == "" {
+		return boxes, chars
+	}
+
 	var scan scanner.Scanner
 	scan.Init(strings.NewReader(txt.Text()))
 	// Don't skip spaces or newlines
@@ -154,6 +156,7 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 			var rn rune
 			rn, runeWidth = utf8.DecodeRuneInString(word[i:])
 			char, ok := txt.Settings.Font.Chars[rn]
+
 			if !ok {
 				// Add blank space for unknown character
 				cursorX += 16
@@ -224,7 +227,8 @@ func (txt *Text) generateBoxes() ([]math2.Rect, []bmfont.Char) {
 }
 
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
-func (txt *Text) Mesh() (*geom.Mesh, error) {
+// Returns false and logs error if there is a failure.
+func (txt *Text) Mesh() (*geom.Mesh, bool) {
 	if txt.Settings.Font == nil {
 		txt.Settings.Font = cache.DefaultFont
 	}
@@ -236,8 +240,9 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 		}
 
 		boxes, chars := txt.generateBoxes()
-		if len(boxes) == 0 || len(chars) == 0 {
-			return nil, fmt.Errorf("generated empty mesh when rendering text")
+		if len(boxes) != len(chars) {
+			failure.LogErrWithLocation("boxes(%v) and chars(%v) arrays mismatch for \"%v\"", len(boxes), len(chars), txt.Text())
+			return nil, false
 		}
 
 		// Regenerate text mesh
@@ -307,7 +312,7 @@ func (txt *Text) Mesh() (*geom.Mesh, error) {
 
 		txt.mesh = geom.CreateMesh(verts, inds)
 	}
-	return txt.mesh, nil
+	return txt.mesh, true
 }
 
 func (txt *Text) Matrix() mgl32.Mat4 {
@@ -348,11 +353,9 @@ func (txt *Text) Render(context *render.Context) {
 	// Set transform
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, txt.Matrix())
 	// Draw
-	if mesh, err := txt.Mesh(); err == nil && mesh != nil {
+	if mesh, succ := txt.Mesh(); succ && mesh != nil {
 		mesh.Bind()
 		mesh.DrawAll()
-	} else if err != nil {
-		log.Println(err)
 	}
 
 	failure.CheckOpenGLError()

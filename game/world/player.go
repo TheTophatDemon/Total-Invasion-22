@@ -192,7 +192,8 @@ func (player *Player) Update(deltaTime float32) {
 
 		// Update puns
 		if player.punTimer.Update(deltaTime) && len(player.puns) > 0 {
-			hudPtr.ShowMessage(player.puns[0], 2.0, 10, color.Red)
+			pun := player.puns[0]
+			hudPtr.ShowMessage(pun, 2.0, 10, color.Red)
 			player.puns = player.puns[1:]
 			player.punTimer.Elapsed -= 10.0
 		}

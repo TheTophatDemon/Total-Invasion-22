@@ -222,10 +222,12 @@ func (m *Mesh) Bind() {
 		m.Upload()
 	}
 
-	gl.BindVertexArray(m.vertArray)
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
-	m.verts.BindAttributes()
+	if len(m.verts.Pos) > 0 {
+		gl.BindVertexArray(m.vertArray)
+		gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
+		m.verts.BindAttributes()
+	}
 }
 
 func (m *Mesh) Upload() {
@@ -233,31 +235,33 @@ func (m *Mesh) Upload() {
 		m.Free()
 	}
 
-	//Flatten the vertex array into a series of floats
-	data, err := m.verts.Flatten()
-	if err != nil {
-		log.Println("Error: Invalid vertex data for mesh upload.")
-		return
+	if len(m.verts.Pos) > 0 {
+		//Flatten the vertex array into a series of floats
+		data, err := m.verts.Flatten()
+		if err != nil {
+			log.Println("Error: Invalid vertex data for mesh upload.")
+			return
+		}
+
+		//Create VAO
+		gl.GenVertexArrays(1, &m.vertArray)
+		gl.BindVertexArray(m.vertArray)
+
+		//Create buffers
+
+		//Vertex buffer
+		gl.GenBuffers(1, &m.vertBuffer)
+		gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
+		gl.BufferData(gl.ARRAY_BUFFER, len(data)*int(unsafe.Sizeof(data[0])), gl.Ptr(data), gl.STATIC_DRAW)
+
+		//Index buffer
+		gl.GenBuffers(1, &m.idxBuffer)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
+			len(m.inds)*int(unsafe.Sizeof(m.inds[0])), //Size in bytes of buffer data
+			gl.Ptr(m.inds),
+			gl.STATIC_DRAW)
 	}
-
-	//Create VAO
-	gl.GenVertexArrays(1, &m.vertArray)
-	gl.BindVertexArray(m.vertArray)
-
-	//Create buffers
-
-	//Vertex buffer
-	gl.GenBuffers(1, &m.vertBuffer)
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
-	gl.BufferData(gl.ARRAY_BUFFER, len(data)*int(unsafe.Sizeof(data[0])), gl.Ptr(data), gl.STATIC_DRAW)
-
-	//Index buffer
-	gl.GenBuffers(1, &m.idxBuffer)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER,
-		len(m.inds)*int(unsafe.Sizeof(m.inds[0])), //Size in bytes of buffer data
-		gl.Ptr(m.inds),
-		gl.STATIC_DRAW)
 
 	m.uploaded = true
 }
@@ -266,7 +270,9 @@ func (m *Mesh) DrawAll() {
 	if m == nil {
 		return
 	}
-	gl.DrawElementsWithOffset(m.primitiveType, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
+	if len(m.inds) > 0 {
+		gl.DrawElementsWithOffset(m.primitiveType, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
+	}
 }
 
 func (m *Mesh) DrawGroup(name string) error {
