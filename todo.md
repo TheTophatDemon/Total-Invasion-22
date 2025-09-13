@@ -1,4 +1,5 @@
 # TODO
+- Fix collision jittering between player and adjacent props
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Title screen
@@ -12,7 +13,6 @@
 - Settings menu
 - Gamepad support (for Steam Deck)
 
-- Fix collision jittering between player and adjacent props
 - Fix flickering artifacts on walls. Consider greedy meshing.
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
