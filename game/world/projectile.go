@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -27,6 +26,7 @@ type Projectile struct {
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
+	onIntersect                                    func(collidingEntity comps.HasBody, deltaTime float32)
 }
 
 var _ comps.HasBody = (*Projectile)(nil)
@@ -45,6 +45,23 @@ func (proj *Projectile) Update(deltaTime float32) {
 	} else if proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) && proj.AnimPlayer.IsAtEnd() {
 		proj.world.QueueRemoval(proj.id.Handle)
 	}
+
+	// Detect intersections with bodies
+	bodies := proj.world.bspTree.PotentiallyTouchingEnts(proj.body.Transform.Position(), proj.body.Shape)
+	for handle := range bodies {
+		collidingEnt, ok := scene.Get[comps.HasBody](handle)
+		if !ok {
+			continue
+		}
+		if collidingEnt.Body().Shape.Touches(
+			collidingEnt.Body().Transform.Position(),
+			proj.body.Transform.Position(),
+			proj.body.Shape,
+		) && proj.onIntersect != nil {
+			proj.onIntersect(collidingEnt, deltaTime)
+		}
+	}
+
 	proj.lifeTimer += deltaTime
 	if (proj.lifeTimer > proj.maxLife && proj.maxLife > 0) || proj.lifeTimer > 10.0 {
 		if proj.onDie != nil {
@@ -89,14 +106,13 @@ func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
 		proj.body.Layer = 0
 		proj.body.Filter = 0
-		proj.body.OnIntersect = nil
 		proj.body.Transform.TranslateV(proj.body.Velocity.Mul(-deltaTime))
 		proj.body.Velocity = mgl32.Vec3{}
 		proj.moveFunc = nil
 	}
 }
 
-func (proj *Projectile) dieOnHit(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+func (proj *Projectile) dieOnHit(otherEnt comps.HasBody, deltaTime float32) {
 	_ = deltaTime
 	if !proj.shouldIntersect(otherEnt) {
 		return

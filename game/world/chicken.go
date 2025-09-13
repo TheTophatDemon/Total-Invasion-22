@@ -64,7 +64,7 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position), mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5},
 			),
-			Shape:  collision.NewSphere(0.5),
+			Shape:  collision.NewCylinder(0.5, 0.5),
 			Layer:  ColLayerActors | ColLayerNPCs,
 			Filter: ColLayerMap | ColLayerActors,
 			LockY:  false,

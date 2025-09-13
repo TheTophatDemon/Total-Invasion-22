@@ -85,11 +85,10 @@ func SpawnPlayer(
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
-			Shape:       collision.NewSphere(0.7),
-			Layer:       player.initialCollisionLayers,
-			Filter:      ColFilterForActors,
-			LockY:       true,
-			OnIntersect: player.onIntersect,
+			Shape:  collision.NewCylinder(0.7, 0.7),
+			Layer:  player.initialCollisionLayers,
+			Filter: ColFilterForActors,
+			LockY:  true,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
 		AccelRate:    100.0,
@@ -214,14 +213,14 @@ func (player *Player) Update(deltaTime float32) {
 			if camera.Transform.Rotation().X() > -math.Pi/4.0 {
 				camera.Transform.Rotate(-deltaTime, 0.0, 0.0)
 			}
-			if camera.Transform.Position().Y()-player.actor.Position().Y() > -player.Body().Shape.(collision.Sphere).Radius() {
+			if camera.Transform.Position().Y()-player.actor.Position().Y() > -player.Body().Shape.Radius() {
 				player.cameraFall -= deltaTime * 10.0
 				camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
 			}
 		}
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ActionFire)) || player.transitionTimer > 10.0 {
-			player.world.app.ProcessSignal(game.MapChangeSignal{NextMapPath: player.world.GameMap.Name()})
+			player.world.app.ProcessSignal(game.MapChangeSignal{NextMapPath: player.world.GameMap.Name})
 		}
 	}
 
@@ -350,7 +349,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	if weap := hudPtr.Weapons.Selected(); weap != nil && input.IsActionPressed(settings.ActionFire) {
-		var cast collision.RaycastResult
+		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
 			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), ColLayerMap, 1.5, player)

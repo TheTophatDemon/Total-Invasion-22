@@ -12,13 +12,11 @@ import (
 // Rendering geometry is optional.
 type MapLayer struct {
 	GridShape      collision.Grid
-	name           string
-	body           Body
+	Layer          collision.Mask
+	Name           string
 	tileAnims      []AnimationPlayer // Animates each texture group of tiles
 	groupRenderers []MeshRender      // Renders each texture group of tiles
 }
-
-var _ HasBody = (*MapLayer)(nil)
 
 // Creates a map layer that renders geometry.
 // `collisionLayer` is assigned to the map's GridShape.
@@ -54,21 +52,10 @@ func NewExtraMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask) MapLa
 	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3.GridSpacing)
 
 	return MapLayer{
-		name: te3File.FilePath(),
-		body: Body{
-			Shape: gridShape,
-			Layer: collisionLayer,
-		},
+		Name:      te3File.FilePath(),
+		Layer:     collisionLayer,
 		GridShape: gridShape,
 	}
-}
-
-func (gameMap *MapLayer) Name() string {
-	return gameMap.name
-}
-
-func (gameMap *MapLayer) Body() *Body {
-	return &gameMap.body
 }
 
 func (gm *MapLayer) Update(deltaTime float32) {

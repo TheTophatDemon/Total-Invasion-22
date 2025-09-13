@@ -1,8 +1,17 @@
 # TODO
+- Fix collision jittering between player and adjacent props
+  - Fix transforming of convex tile shapes
+  - Implement sweeping against the map
+  - Need to replace spheres / cylinders with beveled boxes on the map?
+  - Define tile collisions thru config file?
+  - Add back intersection handling for projectiles
+- Add cheat code to launch TE3 from in the game and then reload the map after exiting.
+- Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Title screen
   - Background image
+- Indicator of which armor you have on
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
@@ -12,7 +21,6 @@
 - Settings menu
 - Gamepad support (for Steam Deck)
 
-- Fix collision jittering between player and adjacent props
 - Fix flickering artifacts on walls. Consider greedy meshing.
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.

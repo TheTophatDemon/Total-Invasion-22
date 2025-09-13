@@ -117,7 +117,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
-			Shape:  collision.NewSphere(0.7),
+			Shape:  collision.NewCylinder(0.7, 0.7),
 			Layer:  EnemyColLayers,
 			Filter: ColFilterForActors,
 			LockY:  true,
@@ -235,7 +235,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		}
 	case &enemy.dieState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
-		radius := enemy.Body().Shape.(collision.Sphere).Radius()
+		radius := enemy.Body().Shape.Radius()
 		if enemy.bloodOffset.Y() > -radius {
 			enemy.bloodOffset = enemy.bloodOffset.Sub(mgl32.Vec3{0.0, deltaTime, 0.0})
 		} else {
@@ -285,7 +285,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		oldState.leaveFunc(enemy, newState)
 	} else if oldState == &enemy.dieState {
 		// Ensure nobody's standing on top of the enemy that is getting revived.
-		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.(collision.Sphere).Radius(), enemy)
+		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.Radius(), enemy)
 		for {
 			actor, _ := actorsIter.Next()
 			if actor == nil {

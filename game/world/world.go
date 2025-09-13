@@ -113,13 +113,6 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 	*invisLayer = comps.NewExtraMapLayer(te3File, ColLayerInvisible)
 	*killLayer = comps.NewExtraMapLayer(te3File, ColLayerKillzone)
 
-	type transformedShape struct {
-		shapeName  string
-		yaw, pitch uint8
-	}
-	// Contains the collision meshes of shapes at various rotations for reuse.
-	transformedShapesCache := make(map[transformedShape]collision.Mesh)
-
 	// Process tiles after mesh is generated.
 	for id, tile := range te3File.Tiles.Data {
 		if tile.ShapeID < 0 {
@@ -140,40 +133,29 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 
 		// Set collision shapes
 		switch shapeName := te3File.Tiles.Shapes[tile.ShapeID]; shapeName {
-		case "assets/models/shapes/cylinder.obj":
-			// Cylinder
-			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
+		// case "assets/models/shapes/cylinder.obj":
+		// Cylinder
+		// mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
 		case "assets/models/shapes/corner.obj",
 			"assets/models/shapes/right_tetrahedron.obj",
 			"assets/models/shapes/tetrahedron_transition.obj",
 			"assets/models/shapes/wedge_corner_inner.obj",
 			"assets/models/shapes/wedge_corner_outer.obj",
-			"assets/models/shapes/wedge.obj":
+			"assets/models/shapes/wedge.obj",
+			"assets/models/shapes/cylinder.obj":
 
 			// Triangles
-			cacheKey := transformedShape{shapeName, tile.Yaw, tile.Pitch}
-			trianglesShape, ok := transformedShapesCache[cacheKey]
-			if !ok {
-				shapeMesh, err := cache.GetMesh(shapeName)
-				if err != nil {
-					log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
-					continue
-				}
-				transform := tile.GetRotationMatrix()
-				rawTrianglesIter := shapeMesh.IterTriangles()
-				transformedTriangles := make([]math2.Triangle, rawTrianglesIter.Count())
-				// Transform the vertices of the triangle according to the tile's orientation.
-				for i := 0; rawTrianglesIter.HasNext(); i++ {
-					rawTriangle := rawTrianglesIter.Next()
-					for p := range rawTriangle {
-						transformedTriangles[i][p] = mgl32.TransformNormal(rawTriangle[p], transform)
-					}
-				}
-				trianglesShape = collision.NewMeshFromTriangles(transformedTriangles)
-				transformedShapesCache[cacheKey] = trianglesShape
+
+			// transform := tile.GetRotationMatrix()
+			shapeMesh, err := cache.GetMesh(shapeName)
+			//TODO: Index the cash using the transform
+
+			if err != nil {
+				log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
+				continue
 			}
 
-			mapLayer.GridShape.SetShapeAtFlatIndex(id, trianglesShape)
+			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewConvex(shapeMesh))
 		case "assets/models/shapes/bars.obj",
 			"assets/models/shapes/panel.obj":
 
@@ -266,6 +248,7 @@ func (world *World) Update(deltaTime float32) {
 
 	world.removalQueue = world.removalQueue[0:0]
 
+	//TODO: Could handle this in Actor.Update instead...
 	if input.IsActionJustPressed(settings.ActionKillEnemies) {
 		iter := world.IterActors()
 		for actor, handle := iter.Next(); actor != nil; actor, handle = iter.Next() {
@@ -300,21 +283,34 @@ func (world *World) Update(deltaTime float32) {
 
 	// Create BSP tree
 	it := world.IterBodies()
-	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{} // Skip over the map layers since they'll always be tested for collision
 	world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
 
 	it = world.IterBodies()
-	it.iterMapLayers = scene.StorageIter[comps.MapLayer]{}
 	for bodyEnt, _ := it.Next(); bodyEnt != nil; bodyEnt, _ = it.Next() {
 		collidableBodies := slices.Collect(maps.Keys(world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)))
 
-		// Add map layers to ensure collision is always checked with them
-		mapLayerIter := world.MapLayers.Iter()
-		for _, layer := mapLayerIter.Next(); !layer.IsNil(); _, layer = mapLayerIter.Next() {
-			collidableBodies = append(collidableBodies, layer)
-		}
+		movement := bodyEnt.Body().ResolveBodyCollisions(deltaTime, collidableBodies)
 
-		bodyEnt.Body().MoveAndCollide(deltaTime, collidableBodies)
+		// Sphere cast against the world.
+		castShape := bodyEnt.Body().Shape.Inflate(-0.25)
+		moveLen := movement.Len()
+		minResult := collision.Result{Distance: moveLen}
+		layerIt := world.MapLayers.Iter()
+		for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
+			if (layer.Layer & bodyEnt.Body().Filter) != 0 {
+				res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
+				if res.Hit && res.Distance < minResult.Distance {
+					minResult = res
+				}
+			}
+		}
+		if moveLen > 0.0 {
+			if minResult.Hit {
+				bodyEnt.Body().Transform.TranslateV(movement.Mul(minResult.Distance / moveLen))
+			} else {
+				bodyEnt.Body().Transform.TranslateV(movement)
+			}
+		}
 	}
 
 	duration := time.Since(startTime).Milliseconds()
@@ -334,12 +330,11 @@ func (world *World) UpdateMapLayer(layer *comps.MapLayer, deltaTime float32) {
 	layer.Update(deltaTime)
 
 	// Damage any actors touching the killzone layer
-	if layer.Body().Layer == ColLayerKillzone {
+	if layer.Layer == ColLayerKillzone {
 		actorsIter := world.IterActors()
 		for ent, _ := actorsIter.Next(); ent != nil; ent, _ = actorsIter.Next() {
 			actor := ent.Actor()
-			actorShape, ok := actor.body.Shape.(collision.MovingShape)
-			if ok && actorShape.Touches(actor.Position(), mgl32.Vec3{}, layer.GridShape) {
+			if layer.GridShape.OtherBodyTouches(mgl32.Vec3{}, actor.body.Transform.Position(), actor.body.Shape) {
 				ent.OnDamage(layer, math2.Inf32())
 			}
 		}
@@ -350,7 +345,7 @@ func (world *World) Render() {
 	// Find camera
 	camera, cameraExists := world.CurrentCamera.Get()
 	if !cameraExists {
-		log.Println("Error: missing camera during rendering")
+		failure.LogErrWithLocation("missing camera during rendering")
 		return
 	}
 
@@ -417,10 +412,10 @@ func (world *World) IsOnPlayerCamera() bool {
 	return false
 }
 
-func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.RaycastResult, scene.Handle) {
+func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.Result, scene.Handle) {
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
-	var closestBodyHit collision.RaycastResult
+	var closestBodyHit collision.Result
 	closestBodyHit.Distance = math.MaxFloat32
 	iter := world.IterBodies()
 	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
@@ -439,7 +434,7 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 	if !closestEnt.IsNil() {
 		return closestBodyHit, closestEnt
 	}
-	return collision.RaycastResult{}, scene.Handle{}
+	return collision.Result{}, scene.Handle{}
 }
 
 // Returns an iterator over all linkables with the given non-zero link number.

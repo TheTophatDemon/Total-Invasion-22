@@ -26,37 +26,8 @@ func (node bspNode) IsLeaf() bool {
 
 // Returns whether a shape at a given position intersects with the left or right region of the node.
 func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3) (touchesLeft, touchesRight bool) {
-	// Covers spheres and cylinders
-	type ShapeWithRadius interface {
-		Radius() float32
-	}
-
-	switch sh := shape.(type) {
-	case ShapeWithRadius:
-		touchesRight = shapePosition[node.splitAxis]+sh.Radius() >= node.planeOffset
-		touchesLeft = shapePosition[node.splitAxis]-sh.Radius() <= node.planeOffset
-	case collision.Box, collision.Grid:
-		touchesRight = shapePosition[node.splitAxis]+sh.Extents().Max[node.splitAxis] >= node.planeOffset
-		touchesLeft = shapePosition[node.splitAxis]+sh.Extents().Min[node.splitAxis] <= node.planeOffset
-	case collision.Mesh:
-		for _, tri := range sh.Triangles() {
-			if touchesLeft && touchesRight {
-				break
-			}
-			for _, vert := range tri {
-				coord := vert[node.splitAxis] + shapePosition[node.splitAxis]
-				if coord >= node.planeOffset {
-					touchesRight = true
-				}
-				if coord <= node.planeOffset {
-					touchesLeft = true
-				}
-			}
-		}
-	default:
-		panic("bspNode.TouchesChild must be implemented for " + sh.String())
-	}
-
+	touchesRight = shapePosition[node.splitAxis]+shape.Extents().Max[node.splitAxis] >= node.planeOffset
+	touchesLeft = shapePosition[node.splitAxis]+shape.Extents().Min[node.splitAxis] <= node.planeOffset
 	return
 }
 

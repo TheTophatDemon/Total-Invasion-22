@@ -33,7 +33,7 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAngles(position, rotation),
-		Shape:     collision.NewSphere(0.5),
+		Shape:     collision.NewCylinder(0.5, 0.5),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -53,8 +53,7 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 	proj.Damage = 200.0
 
 	proj.moveFunc = proj.sickleMove
-	proj.body.OnIntersect = proj.sickleIntersect
-
+	proj.onIntersect = proj.sickleIntersect
 	return
 }
 
@@ -97,7 +96,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
 }
 
-func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, deltaTime float32) {
 	owner, hasOwner := scene.Get[HasActor](proj.owner)
 	otherBody := otherEnt.Body()
 	if proj.forwardSpeed <= -1.0 {
@@ -120,7 +119,7 @@ func (proj *Projectile) sickleIntersect(otherEnt comps.HasBody, result collision
 	if proj.forwardSpeed > -1.0 && otherBody.OnLayer(ColLayerMap) {
 		proj.forwardSpeed = -math2.Abs(proj.forwardSpeed) / 2.0
 		proj.voices[1] = cache.GetSfx("assets/sounds/weapon/sickle_clink.wav").
-			PlayAttenuatedV(result.Position)
+			PlayAttenuatedV(otherEnt.Body().Transform.Position())
 	}
 
 	// Apply damage per second
@@ -151,7 +150,7 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
-		Shape:     collision.NewSphere(0.1),
+		Shape:     collision.NewCylinder(0.1, 0.1),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -164,12 +163,12 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 	proj.Damage = 15
 
 	proj.moveFunc = proj.moveForward
-	proj.body.OnIntersect = proj.eggIntersect
+	proj.onIntersect = proj.eggIntersect
 
 	return
 }
 
-func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
+func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, deltaTime float32) {
 	if !proj.shouldIntersect(otherEnt) {
 		return
 	}
@@ -188,7 +187,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, result collision.Re
 	SpawnEffect(proj.world,
 		comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
 		1.0,
-		EggParticles(proj.body.Shape.(collision.Sphere).Radius()))
+		EggParticles(proj.body.Shape.Radius()))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
 	bodiesIter := proj.world.IterBodiesInSphere(chickenSpot, 0.5, proj)
@@ -214,7 +213,7 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.375, 0.375, 0.375}),
-		Shape:     collision.NewSphere(0.25),
+		Shape:     collision.NewCylinder(0.25, 0.25),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -229,7 +228,7 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.Damage = 15
 
 	proj.moveFunc = proj.moveForward
-	proj.body.OnIntersect = proj.dieOnHit
+	proj.onIntersect = proj.dieOnHit
 
 	return
 }
@@ -259,14 +258,15 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 	proj.onDie = proj.explodeOnDie
 
 	proj.body = comps.Body{
-		Transform:   comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25}),
-		Shape:       collision.NewContinuousSphere(0.25),
-		Velocity:    direction.Mul(20.0),
-		Layer:       ColLayerProjectiles,
-		Filter:      ColLayerMap,
-		LockY:       false,
-		OnIntersect: proj.grenadeHit,
+		Transform: comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25}),
+		Shape:     collision.NewCylinder(0.25, 0.25),
+		Velocity:  direction.Mul(20.0),
+		Layer:     ColLayerProjectiles,
+		Filter:    ColLayerMap,
+		LockY:     false,
 	}
+	proj.onIntersect = proj.grenadeHit
+
 	return
 }
 
@@ -275,7 +275,7 @@ func (proj *Projectile) applyGravity(deltaTime float32) {
 	proj.body.Velocity = math2.Vec3WithY(proj.body.Velocity, proj.fallSpeed)
 }
 
-func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, collision collision.Result, deltaTime float32) {
+func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, deltaTime float32) {
 	_ = deltaTime
 	if !proj.shouldIntersect(otherEnt) {
 		return
@@ -286,22 +286,23 @@ func (proj *Projectile) grenadeHit(otherEnt comps.HasBody, collision collision.R
 	} else if otherEnt.Body().OnLayer(ColLayerKillzone) {
 		proj.explodeOnDie(deltaTime)
 	} else if otherEnt.Body().OnLayer(ColLayerMap) {
-		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
-		speed := horzVelocity.Len() * 0.8
-		if collision.Normal.Y() > 0.1 && proj.fallSpeed < 0.0 {
-			if proj.fallSpeed > -0.01 {
-				proj.fallSpeed = 0.0
-			}
-			proj.fallSpeed = -proj.fallSpeed * 0.9
-			proj.body.Velocity = math2.Vec3WithY(horzVelocity.Normalize().Mul(speed), proj.fallSpeed)
-		} else {
-			if speed > 0.01 {
-				reflection := math2.Vec3Reflect(horzVelocity.Normalize(), collision.Normal)
-				proj.body.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
-			} else {
-				proj.body.Velocity = mgl32.Vec3{}
-			}
-		}
+		//TODO: Move to other function that has sweep result
+		// horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
+		// speed := horzVelocity.Len() * 0.8
+		// if collision.Normal.Y() > 0.1 && proj.fallSpeed < 0.0 {
+		// 	if proj.fallSpeed > -0.01 {
+		// 		proj.fallSpeed = 0.0
+		// 	}
+		// 	proj.fallSpeed = -proj.fallSpeed * 0.9
+		// 	proj.body.Velocity = math2.Vec3WithY(horzVelocity.Normalize().Mul(speed), proj.fallSpeed)
+		// } else {
+		// 	if speed > 0.01 {
+		// 		reflection := math2.Vec3Reflect(horzVelocity.Normalize(), collision.Normal)
+		// 		proj.body.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
+		// 	} else {
+		// 		proj.body.Velocity = mgl32.Vec3{}
+		// 	}
+		// }
 	}
 }
 
@@ -335,13 +336,13 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	if bigShot {
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
-		proj.body.Shape = collision.NewSphere(0.35)
+		proj.body.Shape = collision.NewCylinder(0.35, 0.35)
 		proj.knockbackForce = 5.0
 		proj.Damage = 8
 		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
-		proj.body.Shape = collision.NewSphere(0.25)
+		proj.body.Shape = collision.NewCylinder(0.25, 0.25)
 		proj.knockbackForce = 12.0
 		proj.Damage = 5
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
@@ -354,7 +355,7 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.StunChance = 0.1
 
 	proj.moveFunc = proj.moveForward
-	proj.body.OnIntersect = proj.dieOnHit
+	proj.onIntersect = proj.dieOnHit
 	proj.onDie = proj.playAnimOnDie
 
 	return
@@ -376,7 +377,7 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.5, 0.5, 0.5}),
-		Shape:     collision.NewSphere(0.5),
+		Shape:     collision.NewCylinder(0.5, 0.5),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -391,7 +392,7 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 	proj.Damage = 15
 
 	proj.moveFunc = proj.moveForwardAndRevive
-	proj.body.OnIntersect = proj.blessingOnHit
+	proj.onIntersect = proj.blessingOnHit
 
 	return
 }
@@ -422,8 +423,8 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 	}
 }
 
-func (proj *Projectile) blessingOnHit(collidingEntity comps.HasBody, collision collision.Result, deltaTime float32) {
+func (proj *Projectile) blessingOnHit(collidingEntity comps.HasBody, deltaTime float32) {
 	if _, isEnemy := collidingEntity.(*Enemy); !isEnemy {
-		proj.dieOnHit(collidingEntity, collision, deltaTime)
+		proj.dieOnHit(collidingEntity, deltaTime)
 	}
 }

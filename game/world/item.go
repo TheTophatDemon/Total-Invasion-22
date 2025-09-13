@@ -113,7 +113,7 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 	}
 
 	// Put the item on the floor using a raycast
-	cast := world.GameMap.Body().Shape.Raycast(ent.Position, math2.Vec3Down(), world.GameMap.Body().Transform.Position(), 100.0)
+	cast := world.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), mgl32.Vec3{}, 100.0)
 	if cast.Hit {
 		item.body.Transform.SetPosition(math2.Vec3WithY(cast.Position, cast.Position.Y()+item.body.Transform.Scale().Y()))
 		item.onGround = true
@@ -287,7 +287,7 @@ func spawnItemGeneric(world *World, position, rotation, scale mgl32.Vec3) (id sc
 	*item = Item{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(position, rotation, scale),
-			Shape:     collision.NewSphere(0.5),
+			Shape:     collision.NewCylinder(0.5, 0.5),
 			Layer:     0,
 			Filter:    0,
 		},
@@ -310,10 +310,10 @@ func (item *Item) Update(deltaTime float32) {
 	item.animPlayer.Update(deltaTime)
 	if !item.onGround && item.fallSpeed != 0.0 {
 		// Fall until the ground is touched.
-		cast := item.world.GameMap.Body().Shape.Raycast(
+		cast := item.world.GameMap.GridShape.Raycast(
 			item.body.Transform.Position(),
 			math2.Vec3Down(),
-			item.world.GameMap.Body().Transform.Position(),
+			mgl32.Vec3{},
 			item.body.Transform.Scale().Y()+(deltaTime*item.fallSpeed))
 		if cast.Hit {
 			item.body.Transform.SetPosition(math2.Vec3WithY(cast.Position, cast.Position.Y()+item.body.Transform.Scale().Y()))

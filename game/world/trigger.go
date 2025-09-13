@@ -11,7 +11,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -31,7 +30,7 @@ const (
 )
 
 type Trigger struct {
-	Sphere          collision.Sphere
+	Radius          float32
 	Transform       comps.Transform
 	id              scene.Id[*Trigger]
 	particles       comps.ParticleRender
@@ -56,7 +55,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 
 	tr.world = world
 	tr.id = id
-	tr.Sphere = collision.NewSphere(ent.Radius)
+	tr.Radius = ent.Radius
 	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
 	tr.linkNumber, _ = ent.IntProperty("link")
 	tr.entProperties = ent.Properties
@@ -95,7 +94,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 
 func (tr *Trigger) Update(deltaTime float32) {
 	// Call callbacks for new & already touching entities
-	touchingNow := tr.world.IterBodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
+	touchingNow := tr.world.IterBodiesInSphere(tr.Transform.Position(), tr.Radius, nil)
 	var stillTouching [triggerMaxContacts]bool
 	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
 		bodyHaver, _ := scene.Get[comps.HasBody](handle)
@@ -176,7 +175,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
-				actorsIter := tr.world.IterActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
+				actorsIter := tr.world.IterActorsInSphere(trOther.Transform.Position(), trOther.Radius, nil)
 				for {
 					_, actorHandle := actorsIter.Next()
 					if actorHandle.IsNil() {

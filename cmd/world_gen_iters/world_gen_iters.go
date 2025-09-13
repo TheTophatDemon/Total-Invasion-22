@@ -117,7 +117,7 @@ func (iter *{{ $sphereIterType }}) Next() ({{ .EntType }}, scene.Handle) {
 			continue
 		}
 		body := ent.Body()
-		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+		if body.Layer != ColLayerNone && collision.NewCylinder(iter.radius, iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
 			return ent, id
 		}
 	}

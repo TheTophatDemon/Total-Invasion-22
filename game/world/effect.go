@@ -7,7 +7,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -86,9 +85,7 @@ func SpawnSingleExplosion(world *World, transform comps.Transform) (id scene.Id[
 					continue
 				}
 			}
-			if sphere, isSphere := bodyHaver.Body().Shape.(collision.Sphere); isSphere {
-				distanceToExplosion -= sphere.Radius()
-			}
+			distanceToExplosion -= bodyHaver.Body().Shape.Extents().Max[0]
 			var damage float32
 			if _, isPlayer := damageable.(*Player); isPlayer {
 				difficulty := settings.CurrDifficulty()
