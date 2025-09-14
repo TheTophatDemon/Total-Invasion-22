@@ -272,7 +272,7 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 	grid.celsChecked[start] = true
 
 	minResult := Result{
-		Distance: math.MaxFloat32,
+		Distance: theirMovement.Len(),
 	}
 
 	for pos, empty := visitQueue.Dequeue(); !empty; pos, empty = visitQueue.Dequeue() {

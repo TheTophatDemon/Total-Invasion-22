@@ -2,6 +2,7 @@ package world
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"maps"
 	"math"
@@ -292,23 +293,31 @@ func (world *World) Update(deltaTime float32) {
 		movement := bodyEnt.Body().ResolveBodyCollisions(deltaTime, collidableBodies)
 
 		// Sphere cast against the world.
+
 		castShape := bodyEnt.Body().Shape.Inflate(-0.25)
-		moveLen := movement.Len()
-		minResult := collision.Result{Distance: moveLen}
-		layerIt := world.MapLayers.Iter()
-		for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-			if (layer.Layer & bodyEnt.Body().Filter) != 0 {
-				res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
-				if res.Hit && res.Distance < minResult.Distance {
-					minResult = res
+		for range 2 {
+			moveLen := movement.Len()
+			minResult := collision.Result{Distance: moveLen}
+			layerIt := world.MapLayers.Iter()
+			for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
+				if (layer.Layer & bodyEnt.Body().Filter) != 0 {
+					res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
+					if res.Hit && res.Distance < minResult.Distance {
+						minResult = res
+					}
 				}
 			}
-		}
-		if moveLen > 0.0 {
-			if minResult.Hit {
-				bodyEnt.Body().Transform.TranslateV(movement.Mul(minResult.Distance / moveLen))
-			} else {
-				bodyEnt.Body().Transform.TranslateV(movement)
+			if moveLen > 0.0 {
+				if minResult.Hit {
+					bodyEnt.Body().Transform.TranslateV(movement.Mul((minResult.Distance - 0.25) / moveLen))
+					// Slide
+					canceledMove := minResult.Normal.Mul(-movement.Dot(minResult.Normal.Mul(1.0)))
+					movement = movement.Add(canceledMove)
+					fmt.Printf("Cast radisu was %v, minResult.distance: %v, normal: %v, canceledMove: %v\n", castShape.Radius(), minResult.Distance, minResult.Normal, canceledMove)
+				} else {
+					bodyEnt.Body().Transform.TranslateV(movement)
+					break
+				}
 			}
 		}
 	}

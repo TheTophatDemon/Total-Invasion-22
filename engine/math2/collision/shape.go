@@ -1,6 +1,7 @@
 package collision
 
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -136,6 +137,7 @@ func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3
 	if theirPosition[1]+theirShape.extents.Min[1] > myPosition[1]+shape.extents.Max[1] {
 		// They start from above us
 		if theirMovement[1] >= 0.0 {
+			fmt.Println("A")
 			// They are moving away vertically
 			return Result{Distance: maxLen}
 		}
@@ -145,6 +147,7 @@ func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3
 	} else if theirPosition[1]+theirShape.extents.Max[1] < myPosition[1]+shape.extents.Min[1] {
 		// They start from below us
 		if theirMovement[1] <= 0.0 {
+			fmt.Println("B")
 			// They are moving away vertically
 			return Result{Distance: maxLen}
 		}
@@ -156,12 +159,13 @@ func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3
 	aPtr, aTrans := shape.c2Ptr(myPosition)
 	bPtr, bTrans := theirShape.c2Ptr(theirPosition)
 	sweepResult := c2.TOI(
-		aPtr, shape.type2d, &aTrans, mgl32.Vec2{},
-		bPtr, theirShape.type2d, &bTrans, mgl32.Vec2{theirMovement[0], theirMovement[2]}, true,
+		bPtr, theirShape.type2d, &bTrans, mgl32.Vec2{theirMovement[0], theirMovement[2]},
+		aPtr, shape.type2d, &aTrans, mgl32.Vec2{}, true,
 	)
 	if sweepResult.Hit {
 		sweepDist := sweepResult.Toi * maxLen
 		if sweepDist < planeT {
+			fmt.Println("C")
 			// They hit the cross section and then one of the caps.
 			if shape.Touches(myPosition, planePos, theirShape) {
 				return Result{
@@ -172,6 +176,7 @@ func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3
 				}
 			}
 		} else {
+			fmt.Println("D")
 			// They passed through the top or bottom plane and hit the cross section
 			sweepPos := theirPosition.Add(theirMovement.Mul(sweepDist / maxLen))
 			intersectsY := sweepPos[1]+theirShape.extents.Min[1] <= myPosition[1]+shape.extents.Max[1] &&
@@ -186,6 +191,7 @@ func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3
 			}
 		}
 	}
+	fmt.Println("E")
 	return Result{
 		Distance: maxLen,
 	}
