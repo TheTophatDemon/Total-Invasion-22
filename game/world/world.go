@@ -132,18 +132,12 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		}
 
 		// Set collision shapes
-		shapeName := te3File.Tiles.Shapes[tile.ShapeID]
-		transform := tile.GetRotationMatrix()
-		shapeMesh, err := cache.GetMesh(shapeName)
-		//TODO: Cache transformed shapes
-
+		shape, err := cache.GetCollisionShape(te3File.Tiles.Shapes[tile.ShapeID], tile.GetRotationMatrix())
 		if err != nil {
-			log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
 			continue
 		}
 
-		mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewShapeFromMesh(shapeMesh, transform))
-
+		mapLayer.GridShape.SetShapeAtFlatIndex(id, shape)
 	}
 
 	if levelFileName := path.Base(mapPath); len(levelFileName) >= 4 &&

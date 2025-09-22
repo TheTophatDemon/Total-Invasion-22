@@ -1,6 +1,5 @@
 # TODO
 - Collision rework
-  - Cache transformed tile shapes
   - Implement raycasting again
   - Get rid of Body.Transform and replace with Body.Position
   - Possible implement sweeping for the grenades
