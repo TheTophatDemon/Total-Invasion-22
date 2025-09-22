@@ -132,46 +132,18 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		}
 
 		// Set collision shapes
-		switch shapeName := te3File.Tiles.Shapes[tile.ShapeID]; shapeName {
-		// case "assets/models/shapes/cylinder.obj":
-		// Cylinder
-		// mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewCylinder(1.0, 2.0))
-		case "assets/models/shapes/corner.obj",
-			"assets/models/shapes/right_tetrahedron.obj",
-			"assets/models/shapes/tetrahedron_transition.obj",
-			"assets/models/shapes/wedge_corner_inner.obj",
-			"assets/models/shapes/wedge_corner_outer.obj",
-			"assets/models/shapes/wedge.obj",
-			"assets/models/shapes/cylinder.obj":
+		shapeName := te3File.Tiles.Shapes[tile.ShapeID]
+		transform := tile.GetRotationMatrix()
+		shapeMesh, err := cache.GetMesh(shapeName)
+		//TODO: Cache transformed shapes
 
-			// Triangles
-
-			// transform := tile.GetRotationMatrix()
-			shapeMesh, err := cache.GetMesh(shapeName)
-			//TODO: Index the cash using the transform
-
-			if err != nil {
-				log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
-				continue
-			}
-
-			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewConvex(shapeMesh))
-		case "assets/models/shapes/bars.obj",
-			"assets/models/shapes/panel.obj":
-
-			// Panel
-			var panelShape collision.Shape
-			switch tile.Yaw {
-			case 0, 2:
-				panelShape = collision.NewBox(math2.BoxFromExtents(1.0, 1.0, 0.5))
-			case 1, 3:
-				panelShape = collision.NewBox(math2.BoxFromExtents(0.5, 1.0, 1.0))
-			}
-			mapLayer.GridShape.SetShapeAtFlatIndex(id, panelShape)
-		default:
-			// Box
-			mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewBox(math2.BoxFromRadius(1.0)))
+		if err != nil {
+			log.Printf("error loading mesh for collisions shape of %v: %v\n", shapeName, err)
+			continue
 		}
+
+		mapLayer.GridShape.SetShapeAtFlatIndex(id, collision.NewShapeFromMesh(shapeMesh, transform))
+
 	}
 
 	if levelFileName := path.Base(mapPath); len(levelFileName) >= 4 &&
@@ -292,23 +264,33 @@ func (world *World) Update(deltaTime float32) {
 		movement := bodyEnt.Body().ResolveBodyCollisions(deltaTime, collidableBodies)
 
 		// Sphere cast against the world.
-		castShape := bodyEnt.Body().Shape.Inflate(-0.25)
-		moveLen := movement.Len()
-		minResult := collision.Result{Distance: moveLen}
+		// castShape := bodyEnt.Body().Shape.Inflate(-0.25)
+		// moveLen := movement.Len()
+		// minResult := collision.Result{Distance: moveLen}
+		// layerIt := world.MapLayers.Iter()
+		// for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
+		// 	if (layer.Layer & bodyEnt.Body().Filter) != 0 {
+		// 		res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
+		// 		if res.Hit && res.Distance < minResult.Distance {
+		// 			minResult = res
+		// 		}
+		// 	}
+		// }
+		// if moveLen > 0.0 {
+		// 	if minResult.Hit {
+		// 		bodyEnt.Body().Transform.TranslateV(movement.Mul(minResult.Distance / moveLen))
+		// 	} else {
+		// 		bodyEnt.Body().Transform.TranslateV(movement)
+		// 	}
+		// }
+
+		// Push out of map layers
+		bodyEnt.Body().Transform.TranslateV(movement)
 		layerIt := world.MapLayers.Iter()
 		for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
 			if (layer.Layer & bodyEnt.Body().Filter) != 0 {
-				res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
-				if res.Hit && res.Distance < minResult.Distance {
-					minResult = res
-				}
-			}
-		}
-		if moveLen > 0.0 {
-			if minResult.Hit {
-				bodyEnt.Body().Transform.TranslateV(movement.Mul(minResult.Distance / moveLen))
-			} else {
-				bodyEnt.Body().Transform.TranslateV(movement)
+				pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
+				bodyEnt.Body().Transform.TranslateV(pushVec)
 			}
 		}
 	}

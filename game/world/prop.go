@@ -82,7 +82,7 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 
 	prop.body = comps.Body{
 		Transform: comps.TransformFromTE3Ent(ent, true, true),
-		Shape:     collision.NewCylinder(prop.radius, 2.0),
+		Shape:     collision.NewBoxShape(prop.radius, 2.0, prop.radius),
 		Layer:     ColLayerMap,
 		Filter:    ColLayerNone,
 	}

@@ -316,6 +316,91 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 	return minResult
 }
 
+func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape) mgl32.Vec3 {
+	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
+
+	// Iterate over the subset of tiles that the body occupies
+	bbox := theirShape.Extents().Translate(theirPositionRelative)
+	i, j, k := grid.WorldToGridPos(bbox.Max)
+	l, m, n := grid.WorldToGridPos(bbox.Min)
+	minX, minY, minZ := max(0, min(i, l)), max(0, min(j, m)), max(0, min(k, n))
+	maxX, maxY, maxZ := min(max(i, l), grid.width-1), min(max(j, m), grid.height-1), min(max(k, n), grid.length-1)
+	tileCount := (maxX - minX + 1) * (maxZ - minZ + 1) * (maxY - minY + 1)
+	if tileCount <= 0 {
+		return mgl32.Vec3{}
+	}
+
+	// Visit each tile within the movement range, starting from the one closest to the current position and then proceeding to its neighbors.
+	clear(grid.celsChecked)
+	var visitBuffer [][3]int = grid.visitBuffer[:tileCount]
+	clear(visitBuffer)
+	visitQueue := containers.NewRingBuffer(visitBuffer)
+	startX, startY, startZ := grid.WorldToGridPos(theirPositionRelative)
+
+	start := [3]int{startX, startY, startZ}
+	visitQueue.Enqueue(start)
+	grid.celsChecked[start] = true
+
+	push := mgl32.Vec3{}
+
+	for pos, empty := visitQueue.Dequeue(); !empty; pos, empty = visitQueue.Dequeue() {
+		if grid.AreCoordsValid(pos[0], pos[1], pos[2]) {
+			if t := grid.FlattenGridPos(pos[0], pos[1], pos[2]); !grid.cels[t].IsNil() {
+				// Resolve collision against this tile
+				tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
+				tileShape := grid.cels[t]
+
+				hit, pushVec := theirShape.PushOutOf(theirPositionRelative.Add(push), tileCenter, tileShape)
+				if hit {
+					push = push.Add(pushVec)
+				}
+			}
+		}
+
+		// Add neighboring tiles to the queue
+		neighbors := [...][3]int{
+			{pos[0] + 1, pos[1], pos[2]},
+			{pos[0] - 1, pos[1], pos[2]},
+			{pos[0], pos[1] + 1, pos[2]},
+			{pos[0], pos[1] - 1, pos[2]},
+			{pos[0], pos[1], pos[2] + 1},
+			{pos[0], pos[1], pos[2] - 1},
+		}
+		for _, n := range neighbors {
+			if n[0] < minX || n[1] < minY || n[2] < minZ || n[0] > maxX || n[1] > maxY || n[2] > maxZ {
+				continue
+			}
+			_, v := grid.celsChecked[n]
+			if !v {
+				visitQueue.Enqueue(n)
+				grid.celsChecked[n] = true
+			}
+		}
+	}
+
+	return push
+}
+
+// func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape) mgl32.Vec3 {
+// 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
+
+// 	totalPush := mgl32.Vec3{}
+// 	for t, tileShape := range grid.cels {
+// 		// Resolve collision against this tile
+// 		if tileShape.IsNil() {
+// 			continue
+// 		}
+// 		i, j, k := grid.UnflattenGridPos(t)
+// 		tileCenter := grid.GridToWorldPos(i, j, k, true)
+// 		hit, pushVec := theirShape.PushOutOf(theirPositionRelative.Add(totalPush), tileCenter, tileShape)
+// 		if hit {
+// 			totalPush = totalPush.Add(pushVec)
+// 		}
+// 	}
+
+// 	return totalPush
+// }
+
 // Returns true if the other body touches a tile in the grid.
 func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirShape Shape) bool {
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)

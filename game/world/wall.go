@@ -93,7 +93,7 @@ func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall
 	wall.Origin = ent.Position
 	wall.body = comps.Body{
 		Transform: transform,
-		Shape:     collision.NewBox(bbox),
+		Shape:     collision.NewBoxShape(bbox.Max[0], bbox.Max[1], bbox.Max[2]),
 		Layer:     ColLayerMap,
 		Filter:    ColLayerNone,
 	}

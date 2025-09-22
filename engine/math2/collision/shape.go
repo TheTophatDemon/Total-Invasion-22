@@ -1,242 +1,338 @@
 package collision
 
 import (
-	"unsafe"
+	"math"
+	"slices"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision/c2"
 )
 
-type ShapeType c2.ShapeType
-
-const (
-	ShapeNone ShapeType = iota
-	ShapeCylinder
-	ShapeBox
-	ShapeConvex = 4
-)
+const MaxPointCount = 8
 
 // A generic collision shape representing a 2D shape on the XZ axis extended upwards.
-// Combines all of the C2 shape types into a single data structure and supplies a height variable.
-type Shape struct {
-	extents math2.Box // Represents the calculated bounding box for the shape. Will also contain the circle's radius.
-	type2d  c2.ShapeType
-	poly    c2.Poly
-}
-
-func (sh Shape) String() string {
-	switch sh.type2d {
-	case c2.TypeNone:
-		return "None"
-	case c2.TypeCircle:
-		return "Cylinder"
-	case c2.TypeAABB:
-		return "Box"
-	case c2.TypePoly:
-		return "Convex"
-	default:
-		return "Unknown"
+type (
+	Shape struct {
+		extents    math2.Box // Represents the calculated bounding box for the shape, relative to the center. Also represents the shape's height.
+		points     [MaxPointCount]mgl32.Vec2
+		pointCount int
 	}
-}
-
-func (sh Shape) Type() ShapeType {
-	return ShapeType(sh.type2d)
-}
-
-func (sh Shape) Extents() math2.Box {
-	return sh.extents
-}
-
-func (sh Shape) Radius() float32 {
-	return sh.extents.Max[0]
-}
-
-func NewCylinder(radius, height float32) Shape {
-	return Shape{
-		type2d:  c2.TypeCircle,
-		extents: math2.BoxFromRadius(radius),
+	SegmentIter struct {
+		Shape         Shape
+		PointIndex    int
+		ShapePosition mgl32.Vec2
 	}
+	Segment struct {
+		Points [2]mgl32.Vec2
+		Normal mgl32.Vec2
+	}
+)
+
+func NewShape(height float32, points ...mgl32.Vec2) Shape {
+	var shape Shape
+
+	if len(points) > MaxPointCount {
+		failure.LogErrWithLocation("warning: shape has %v points but the maximum number is %v; it will be truncated", len(points), MaxPointCount)
+	}
+	shape.pointCount = min(len(points), MaxPointCount)
+	copy(shape.points[:shape.pointCount], points)
+
+	// Calculate bounding box over points
+	shape.extents.Min[1] = -height / 2.0
+	shape.extents.Max[1] = height / 2.0
+	shape.extents.Max[0] = -math.MaxFloat32
+	shape.extents.Max[2] = -math.MaxFloat32
+	shape.extents.Min[0] = math.MaxFloat32
+	shape.extents.Min[2] = math.MaxFloat32
+
+	for _, point := range shape.points[:shape.pointCount] {
+		shape.extents.Max[0] = max(shape.extents.Max[0], point[0])
+		shape.extents.Max[2] = max(shape.extents.Max[2], point[1])
+		shape.extents.Min[0] = min(shape.extents.Min[0], point[0])
+		shape.extents.Min[2] = min(shape.extents.Min[2], point[1])
+	}
+
+	return shape
 }
 
-func NewBox(extents math2.Box) Shape {
-	return Shape{
-		type2d:  c2.TypeAABB,
-		extents: extents,
-	}
+func NewBoxShape(halfExtentX, halfExtentY, halfExtentZ float32) Shape {
+	return NewShape(halfExtentY*2.0, []mgl32.Vec2{
+		{-halfExtentX, -halfExtentZ},
+		{+halfExtentX, -halfExtentZ},
+		{+halfExtentX, +halfExtentZ},
+		{-halfExtentX, +halfExtentZ},
+	}...)
 }
 
-func NewConvex(mesh *geom.Mesh) Shape {
-	shape := Shape{
-		type2d: c2.TypePoly,
+func NewShapeHull(height float32, points ...mgl32.Vec2) Shape {
+	if len(points) <= 2 {
+		return Shape{}
 	}
+
+	// Andrew's algorithm
+	// Real Time Collision Detection 3.9.1
+
+	// Sort points from left to right
+	slices.SortFunc(points, func(a, b mgl32.Vec2) int {
+		if a[0] > b[0] {
+			return 1
+		} else if a[0] < b[0] {
+			return -1
+		} else if a[1] > b[1] {
+			return 1
+		} else if a[1] < b[1] {
+			return -1
+		}
+		return 0
+	})
+
+	// Construct upper hull
+	hullPoints := make([]mgl32.Vec2, 2, len(points))
+	hullPoints[0] = points[0]
+	hullPoints[1] = points[1]
+	for _, point := range points[2:] {
+		for back := range len(hullPoints) {
+			segIndex := len(hullPoints) - back - 2
+			if segIndex < 0 {
+				hullPoints = hullPoints[:1]
+				hullPoints = append(hullPoints, point)
+				break
+			}
+			segStart := hullPoints[segIndex]
+			segEnd := hullPoints[segIndex+1]
+			if segStart.ApproxEqual(segEnd) || segStart.ApproxEqual(point) {
+				// Segment degenerates into point. Ignore!
+				continue
+			}
+			previousSegment := segEnd.Sub(segStart)
+			dp := point.Sub(segStart).Dot(mgl32.Vec2{previousSegment[1], -previousSegment[0]})
+			if dp <= 0.0 && !point.ApproxEqual(segEnd) {
+				hullPoints = hullPoints[:segIndex+2]
+				hullPoints = append(hullPoints, point)
+				break
+			}
+		}
+	}
+
+	lowerStartIdx := len(hullPoints)
+
+	// Construct lower hull
+	for p := len(points) - 1; p >= 0; p -= 1 {
+		point := points[p]
+		for back := range len(hullPoints) - lowerStartIdx + 1 {
+			segIndex := len(hullPoints) - back - 2
+			segStart := hullPoints[segIndex]
+			segEnd := hullPoints[segIndex+1]
+			if segStart.ApproxEqual(segEnd) || segStart.ApproxEqual(point) {
+				// Segment degenerates into point. Ignore!
+				continue
+			}
+			previousSegment := segEnd.Sub(segStart)
+			dp := point.Sub(segStart).Dot(mgl32.Vec2{previousSegment[1], -previousSegment[0]})
+			if point.ApproxEqual(segEnd) {
+				break
+			}
+			if dp <= 0.0 {
+				hullPoints = hullPoints[:segIndex+2]
+				hullPoints = append(hullPoints, point)
+				break
+			}
+		}
+	}
+	// Remove redundant point at the end
+	hullPoints = hullPoints[:len(hullPoints)-1]
+
+	return NewShape(height, hullPoints...)
+}
+
+func NewShapeFromMesh(mesh *geom.Mesh, matrix mgl32.Mat4) Shape {
 	if mesh == nil {
-		return shape
+		return Shape{}
 	}
 
-	shape.extents = mesh.BoundingBox()
+	// Smush all of the vertices into a convex hull
+	hullVerts := make([]mgl32.Vec2, 0, len(mesh.Verts().Pos))
+	minY := float32(math.MaxFloat32)
+	maxY := -minY
 
-	// TODO: Smush all of the vertices into a convex hull
+meshLoop:
+	for _, pos := range mesh.Verts().Pos {
+		pos = mgl32.TransformCoordinate(pos, matrix)
+		minY = min(minY, pos[1])
+		maxY = max(maxY, pos[1])
+		pos2d := mgl32.Vec2{pos[0], pos[2]}
 
-	return shape
+		// Skip over duplicate vertices
+		for _, vert := range hullVerts {
+			if vert.ApproxEqual(pos2d) {
+				continue meshLoop
+			}
+		}
+
+		hullVerts = append(hullVerts, pos2d)
+	}
+
+	return NewShapeHull(maxY-minY, hullVerts...)
 }
 
-func (shape Shape) Inflate(amount float32) Shape {
-	switch shape.type2d {
-	case c2.TypeCircle, c2.TypeAABB:
-		shape.extents.Max = shape.extents.Max.Add(mgl32.Vec3{amount, amount, amount})
-		shape.extents.Min = shape.extents.Min.Sub(mgl32.Vec3{amount, amount, amount})
-	case c2.TypePoly:
-		polyPtr := unsafe.Pointer(&shape.poly)
-		c2.Inflate(polyPtr, shape.type2d, amount)
+func (shape Shape) Extents() math2.Box {
+	return shape.extents
+}
+
+func (shape Shape) Radius() float32 {
+	return shape.extents.LongestDimension() / 2.0
+}
+
+func (shape Shape) Points() []mgl32.Vec2 {
+	return shape.points[:shape.pointCount]
+}
+
+func (shape Shape) IsNil() bool {
+	return shape.pointCount == 0
+}
+
+func (shape Shape) Segments(myPosition mgl32.Vec2) SegmentIter {
+	return SegmentIter{Shape: shape, ShapePosition: myPosition}
+}
+
+func (iter *SegmentIter) Next() (Segment, bool) {
+	if iter == nil || iter.PointIndex >= iter.Shape.pointCount {
+		return Segment{}, false
 	}
-	return shape
+
+	pointA := iter.Shape.points[iter.PointIndex].Add(iter.ShapePosition)
+	pointB := iter.Shape.points[(iter.PointIndex+1)%iter.Shape.pointCount].Add(iter.ShapePosition)
+
+	iter.PointIndex += 1
+
+	if pointA.ApproxEqual(pointB) {
+		// Degenerated into a point, somethin' ain't right here.
+		return Segment{}, false
+	}
+
+	return Segment{
+		Points: [2]mgl32.Vec2{pointA, pointB},
+		Normal: mgl32.Vec2{pointB[1] - pointA[1], pointA[0] - pointB[0]}.Normalize(),
+	}, true
+}
+
+func (shape Shape) ContainsPoint(myPosition, testPoint mgl32.Vec2) bool {
+	segIter := shape.Segments(myPosition)
+	for seg, ok := segIter.Next(); ok; seg, ok = segIter.Next() {
+		if testPoint.Sub(seg.Points[0]).Dot(seg.Normal) > 0.0 {
+			return false
+		}
+	}
+	return true
 }
 
 func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shape) bool {
-	aPtr, aTrans := shape.c2Ptr(myPosition)
-	bPtr, bTrans := theirShape.c2Ptr(theirPosition)
-	return c2.Touches(aPtr, shape.type2d, &aTrans, bPtr, theirShape.type2d, &bTrans) &&
-		theirShape.extents.Max[1] >= shape.extents.Min[1] &&
-		theirShape.extents.Min[1] < shape.extents.Max[1]
+	// Check vertical intersection
+	if theirPosition[1]+theirShape.extents.Max[1] < myPosition[1]+shape.extents.Min[1] {
+		return false
+	}
+	if theirPosition[1]+theirShape.extents.Min[1] > myPosition[1]+shape.extents.Max[1] {
+		return false
+	}
+
+	myPos2D := mgl32.Vec2{myPosition[0], myPosition[2]}
+	theirPos2D := mgl32.Vec2{theirPosition[0], theirPosition[2]}
+
+	for _, point := range theirShape.Points() {
+		point = point.Add(theirPos2D)
+		if shape.ContainsPoint(myPos2D, point) {
+			return true
+		}
+	}
+
+	for _, point := range shape.Points() {
+		point = point.Add(myPos2D)
+		if theirShape.ContainsPoint(theirPos2D, point) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
-	shapePtr, shapeTrans := shape.c2Ptr(myPosition)
+	//TODO
 
-	hit, c2Result := c2.CastRay(c2.Ray{
-		Pos:      mgl32.Vec2{rayOrigin[0], rayOrigin[2]},
-		Dir:      mgl32.Vec2{rayDir[0], rayDir[2]},
-		Distance: maxDist,
-	}, shapePtr, shape.type2d, &shapeTrans)
-
-	if hit {
-		hitCrossSectionAt := rayOrigin.Add(rayDir.Mul(c2Result.Distance))
-		if hitCrossSectionAt[1] >= shape.extents.Min[1] && hitCrossSectionAt[1] < shape.extents.Max[1] {
-			return Result{
-				Hit:      true,
-				Position: hitCrossSectionAt,
-				Normal:   mgl32.Vec3{c2Result.Normal[0], 0.0, c2Result.Normal[1]},
-				Distance: c2Result.Distance,
-			}
-		}
-		// TODO: Check for upper and lower plane
-	}
 	return Result{
 		Distance: maxDist,
 	}
 }
 
 func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
-	maxLen := theirMovement.Len()
-	var planeT float32 = -math2.Inf32()
-	var planePos mgl32.Vec3
-	yDir := theirMovement[1] / maxLen
-	if theirPosition[1]+theirShape.extents.Min[1] > myPosition[1]+shape.extents.Max[1] {
-		// They start from above us
-		if theirMovement[1] >= 0.0 {
-			// They are moving away vertically
-			return Result{Distance: maxLen}
-		}
-		// They are moving towards the top plane. Find the time of intersection
-		planeT = (myPosition[1] + shape.extents.Max[1] - (theirPosition[1] + theirShape.extents.Min[1])) / yDir
-		planePos = theirPosition.Add(theirMovement.Mul(planeT / maxLen))
-	} else if theirPosition[1]+theirShape.extents.Max[1] < myPosition[1]+shape.extents.Min[1] {
-		// They start from below us
-		if theirMovement[1] <= 0.0 {
-			// They are moving away vertically
-			return Result{Distance: maxLen}
-		}
-		// They are moving towards the bottom plane. Find the time of intersection
-		planeT = (myPosition[1] + shape.extents.Min[1] - (theirPosition[1] + theirShape.extents.Max[1])) / yDir
-		planePos = theirPosition.Add(theirMovement.Mul(planeT / maxLen))
+	//TODO
+	return Result{}
+}
+
+// Returns the vector needed to push this shape out of theirShape when they are colliding.
+func (shape Shape) PushOutOf(myPosition, theirPosition mgl32.Vec3, theirShape Shape) (hit bool, pushOut mgl32.Vec3) {
+	// Check vertical intersection
+	var verticalInterval float32
+	if interval := (theirPosition[1] + theirShape.extents.Max[1]) - (myPosition[1] + shape.extents.Min[1]); interval < 0.0 {
+		return false, mgl32.Vec3{}
+	} else {
+		verticalInterval = interval
+	}
+	if interval := (theirPosition[1] + theirShape.extents.Min[1]) - (myPosition[1] + shape.extents.Max[1]); interval > 0.0 {
+		return false, mgl32.Vec3{}
+	} else if -interval < verticalInterval {
+		verticalInterval = interval
 	}
 
-	aPtr, aTrans := shape.c2Ptr(myPosition)
-	bPtr, bTrans := theirShape.c2Ptr(theirPosition)
-	sweepResult := c2.TOI(
-		aPtr, shape.type2d, &aTrans, mgl32.Vec2{},
-		bPtr, theirShape.type2d, &bTrans, mgl32.Vec2{theirMovement[0], theirMovement[2]}, true,
-	)
-	if sweepResult.Hit {
-		sweepDist := sweepResult.Toi * maxLen
-		if sweepDist < planeT {
-			// They hit the cross section and then one of the caps.
-			if shape.Touches(myPosition, planePos, theirShape) {
-				return Result{
-					Hit:      true,
-					Position: planePos,
-					Normal:   mgl32.Vec3{0.0, -math2.Signum(yDir), 0.0},
-					Distance: planeT,
-				}
+	var smallestInterval float32 = math.MaxFloat32
+	var closestNormal mgl32.Vec2
+
+	myPos2d := mgl32.Vec2{myPosition[0], myPosition[2]}
+	theirPos2d := mgl32.Vec2{theirPosition[0], theirPosition[2]}
+
+	for _, iter := range [...]SegmentIter{shape.Segments(myPos2d), theirShape.Segments(theirPos2d)} {
+		for seg, ok := iter.Next(); ok; seg, ok = iter.Next() {
+			var aMin float32 = math.MaxFloat32
+			var aMax float32 = -math.MaxFloat32
+			for _, point := range theirShape.Points() {
+				proj := point.Add(theirPos2d).Dot(seg.Normal)
+				aMin = min(aMin, proj)
+				aMax = max(aMax, proj)
 			}
-		} else {
-			// They passed through the top or bottom plane and hit the cross section
-			sweepPos := theirPosition.Add(theirMovement.Mul(sweepDist / maxLen))
-			intersectsY := sweepPos[1]+theirShape.extents.Min[1] <= myPosition[1]+shape.extents.Max[1] &&
-				sweepPos[1]+theirShape.extents.Max[1] >= myPosition[1]+shape.extents.Min[1]
-			if intersectsY {
-				return Result{
-					Hit:      true,
-					Position: sweepPos,
-					Normal:   mgl32.Vec3{sweepResult.Normal[0], 0.0, sweepResult.Normal[1]},
-					Distance: sweepDist,
-				}
+
+			var bMin float32 = math.MaxFloat32
+			var bMax float32 = -math.MaxFloat32
+			for _, point := range shape.Points() {
+				proj := point.Add(myPos2d).Dot(seg.Normal)
+				bMin = min(bMin, proj)
+				bMax = max(bMax, proj)
 			}
-		}
-	}
-	return Result{
-		Distance: maxLen,
-	}
-}
 
-// Returns the vector needed to push theirShape (roughly) out of this shape when they are colliding.
-func (shape Shape) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape) mgl32.Vec3 {
-	intersectsY := myPosition[1]+shape.extents.Max[1] >= theirPosition[1]+theirShape.extents.Min[1] &&
-		myPosition[1]+shape.extents.Min[1] < theirPosition[1]+theirShape.extents.Max[1]
-	if !intersectsY {
-		return mgl32.Vec3{}
-	}
-
-	aPtr, aTrans := shape.c2Ptr(myPosition)
-	bPtr, bTrans := theirShape.c2Ptr(theirPosition)
-	res := c2.Collide(aPtr, shape.type2d, &aTrans, bPtr, theirShape.type2d, &bTrans)
-	if res.Count > 0 {
-		avg := res.Depths[0]
-		if res.Count > 1 {
-			avg += res.Depths[1]
-			avg /= 2.0
-		}
-		pushVec := res.Normal.Mul(-0.25 * avg)
-		return mgl32.Vec3{pushVec[0], 0.0, pushVec[1]}
-	}
-	return mgl32.Vec3{}
-}
-
-func (shape Shape) IsNil() bool {
-	return shape.type2d == c2.TypeNone
-}
-
-func (shape Shape) c2Ptr(position mgl32.Vec3) (unsafe.Pointer, c2.XForm) {
-	switch shape.type2d {
-	case c2.TypeCircle:
-		circle := c2.Circle{
-			Pos:    mgl32.Vec2{position[0], position[2]},
-			Radius: shape.extents.Max[0],
-		}
-		return unsafe.Pointer(&circle), c2.XForm{}
-	case c2.TypeAABB:
-		aabb := c2.AABB{
-			Min: mgl32.Vec2{shape.extents.Min[0] + position[0], shape.extents.Min[2] + position[2]},
-			Max: mgl32.Vec2{shape.extents.Max[0] + position[0], shape.extents.Max[2] + position[2]},
-		}
-		return unsafe.Pointer(&aabb), c2.XForm{}
-	case c2.TypePoly:
-		return unsafe.Pointer(&shape.poly), c2.XForm{
-			Pos: mgl32.Vec2{position[0], position[2]},
-			Rot: c2.Rot{Cos: 1.0},
+			if bMin < aMax && bMax >= aMin {
+				var interval float32
+				if bMax >= aMax {
+					interval = aMax - bMin
+				} else {
+					interval = aMin - bMax
+				}
+				if math.Abs(float64(interval)) < math.Abs(float64(smallestInterval)) {
+					smallestInterval = interval
+					closestNormal = seg.Normal
+				}
+				continue
+			}
+			// Separating axis found
+			return
 		}
 	}
-	return nil, c2.XForm{}
+
+	hit = true
+	if math2.Abs(smallestInterval) < math2.Abs(verticalInterval) {
+		pushOut2d := closestNormal.Mul(smallestInterval)
+		pushOut = mgl32.Vec3{pushOut2d[0], 0.0, pushOut2d[1]}
+	} else {
+		pushOut = mgl32.Vec3{0.0, verticalInterval, 0.0}
+	}
+	return
 }

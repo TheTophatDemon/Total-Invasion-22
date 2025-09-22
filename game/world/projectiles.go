@@ -33,7 +33,7 @@ func SpawnSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAngles(position, rotation),
-		Shape:     collision.NewCylinder(0.5, 0.5),
+		Shape:     collision.NewBoxShape(0.5, 0.5, 0.5),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -150,7 +150,7 @@ func SpawnEgg(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.4, 0.4, 0.4}),
-		Shape:     collision.NewCylinder(0.1, 0.1),
+		Shape:     collision.NewBoxShape(0.1, 0.1, 0.1),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -187,7 +187,7 @@ func (proj *Projectile) eggIntersect(otherEnt comps.HasBody, deltaTime float32) 
 	SpawnEffect(proj.world,
 		comps.TransformFromTranslation(proj.body.Transform.Position().Add(backwards)),
 		1.0,
-		EggParticles(proj.body.Shape.Radius()))
+		EggParticles(proj.body.Shape.Extents().Max[0]))
 
 	chickenSpot := proj.body.Transform.Position().Add(backwards.Mul(1.5))
 	bodiesIter := proj.world.IterBodiesInSphere(chickenSpot, 0.5, proj)
@@ -213,7 +213,7 @@ func SpawnFireball(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.375, 0.375, 0.375}),
-		Shape:     collision.NewCylinder(0.25, 0.25),
+		Shape:     collision.NewBoxShape(0.25, 0.25, 0.25),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,
@@ -259,7 +259,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.25, 0.25, 0.25}),
-		Shape:     collision.NewCylinder(0.25, 0.25),
+		Shape:     collision.NewBoxShape(0.25, 0.25, 0.25),
 		Velocity:  direction.Mul(20.0),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerMap,
@@ -336,13 +336,13 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	if bigShot {
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
-		proj.body.Shape = collision.NewCylinder(0.35, 0.35)
+		proj.body.Shape = collision.NewBoxShape(0.35, 0.35, 0.35)
 		proj.knockbackForce = 5.0
 		proj.Damage = 8
 		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
 		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
-		proj.body.Shape = collision.NewCylinder(0.25, 0.25)
+		proj.body.Shape = collision.NewBoxShape(0.25, 0.25, 0.25)
 		proj.knockbackForce = 12.0
 		proj.Damage = 5
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
@@ -377,7 +377,7 @@ func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Hand
 
 	proj.body = comps.Body{
 		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.5, 0.5, 0.5}),
-		Shape:     collision.NewCylinder(0.5, 0.5),
+		Shape:     collision.NewBoxShape(0.5, 0.5, 0.5),
 		Layer:     ColLayerProjectiles,
 		Filter:    ColLayerNone,
 		LockY:     true,

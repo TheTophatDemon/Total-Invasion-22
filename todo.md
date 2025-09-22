@@ -1,10 +1,9 @@
 # TODO
-- Fix collision jittering between player and adjacent props
-  - Fix transforming of convex tile shapes
-  - Implement sweeping against the map
-  - Need to replace spheres / cylinders with beveled boxes on the map?
-  - Define tile collisions thru config file?
-  - Add back intersection handling for projectiles
+- Collision rework
+  - Cache transformed tile shapes
+  - Implement raycasting again
+  - Get rid of Body.Transform and replace with Body.Position
+  - Possible implement sweeping for the grenades
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages

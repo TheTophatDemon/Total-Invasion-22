@@ -117,7 +117,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 			Transform: comps.TransformFromTranslationAnglesScale(
 				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
 			),
-			Shape:  collision.NewCylinder(0.7, 0.7),
+			Shape:  collision.NewBoxShape(0.7, 0.7, 0.7),
 			Layer:  EnemyColLayers,
 			Filter: ColFilterForActors,
 			LockY:  true,

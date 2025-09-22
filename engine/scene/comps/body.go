@@ -30,12 +30,15 @@ func (body *Body) ResolveBodyCollisions(deltaTime float32, bodies []scene.Handle
 			}
 
 			// Bounding box check
-			bbox := body.Shape.Extents().Translate(body.Transform.pos)
+			bbox := body.Shape.Extents().Translate(body.Transform.pos.Add(movement))
 			if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Transform.pos)) {
 				continue
 			}
 
-			movement = movement.Add(body.Shape.PushOut(body.Transform.pos.Add(movement), otherBody.Transform.pos, otherBody.Shape))
+			hit, pushVec := body.Shape.PushOutOf(body.Transform.pos.Add(movement), otherBody.Transform.pos, otherBody.Shape)
+			if hit {
+				movement = movement.Add(pushVec)
+			}
 		}
 	}
 

@@ -253,7 +253,7 @@ func SpawnArmorStand(world *World, position mgl32.Vec3, armorType game.ArmorType
 	*item = Item{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(position, mgl32.Vec3{}, mgl32.Vec3{0.4, 0.8, 0.8}),
-			Shape:     collision.NewCylinder(0.6, 1.0),
+			Shape:     collision.NewBoxShape(0.6, 1.0, 0.6),
 			Layer:     ColLayerMap,
 		},
 		animPlayer:   comps.NewAnimationPlayer(anim, false),
@@ -287,7 +287,7 @@ func spawnItemGeneric(world *World, position, rotation, scale mgl32.Vec3) (id sc
 	*item = Item{
 		body: comps.Body{
 			Transform: comps.TransformFromTranslationAnglesScale(position, rotation, scale),
-			Shape:     collision.NewCylinder(0.5, 0.5),
+			Shape:     collision.NewBoxShape(0.5, 0.5, 0.5),
 			Layer:     0,
 			Filter:    0,
 		},

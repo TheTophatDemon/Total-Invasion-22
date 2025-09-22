@@ -85,7 +85,7 @@ func SpawnPlayer(
 			Transform: comps.TransformFromTranslationAngles(
 				position, angles,
 			),
-			Shape:  collision.NewCylinder(0.7, 0.7),
+			Shape:  collision.NewBoxShape(0.7, 0.7, 0.7),
 			Layer:  player.initialCollisionLayers,
 			Filter: ColFilterForActors,
 			LockY:  true,
@@ -213,7 +213,7 @@ func (player *Player) Update(deltaTime float32) {
 			if camera.Transform.Rotation().X() > -math.Pi/4.0 {
 				camera.Transform.Rotate(-deltaTime, 0.0, 0.0)
 			}
-			if camera.Transform.Position().Y()-player.actor.Position().Y() > -player.Body().Shape.Radius() {
+			if camera.Transform.Position().Y()-player.actor.Position().Y() > -player.Body().Shape.Extents().LongestDimension()/2.0 {
 				player.cameraFall -= deltaTime * 10.0
 				camera.Transform.Translate(0.0, deltaTime*player.cameraFall, 0.0)
 			}

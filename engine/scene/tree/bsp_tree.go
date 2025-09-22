@@ -120,6 +120,9 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 // Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
 func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
+	if len(tree.nodes) == 0 {
+		return containers.Set[scene.Handle]{}
+	}
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
