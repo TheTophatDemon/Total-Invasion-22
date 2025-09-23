@@ -138,7 +138,7 @@ func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 		tileIndex := grid.FlattenGridPos(i, j, k)
 		if tileShape := grid.cels[tileIndex]; !tileShape.IsNil() {
 			tileCenter := grid.GridToWorldPos(i, j, k, true)
-			if cast := tileShape.Raycast(rayOrigin, rayDir, tileCenter, maxDist); cast.Hit {
+			if cast := tileShape.Raycast(tileCenter, rayOrigin, rayDir, maxDist); cast.Hit {
 				if cast.Distance*cast.Distance > maxDistSqr {
 					return Result{}
 				}

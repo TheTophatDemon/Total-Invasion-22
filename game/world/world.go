@@ -401,7 +401,7 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 			!body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
 			continue
 		}
-		bodyHit := body.Shape.Raycast(rayOrigin, rayDir, body.Transform.Position(), maxDist)
+		bodyHit := body.Shape.Raycast(body.Transform.Position(), rayOrigin, rayDir, maxDist)
 		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
 			closestBodyHit = bodyHit
 			closestEnt = bodyId

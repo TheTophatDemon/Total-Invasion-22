@@ -1,6 +1,8 @@
 # TODO
 - Collision rework
-  - Implement raycasting again
+  - Fix projectiles going through walls
+  - Fix enemy sight lines
+  - Fix grenades
   - Get rid of Body.Transform and replace with Body.Position
   - Possible implement sweeping for the grenades
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.

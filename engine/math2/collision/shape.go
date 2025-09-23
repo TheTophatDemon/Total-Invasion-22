@@ -257,12 +257,60 @@ func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shap
 	return false
 }
 
-func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
-	//TODO
+func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist float32) (result Result) {
+	// Real Time Collision Detection 5.3.8
+	result.Distance = maxDist
 
-	return Result{
-		Distance: maxDist,
+	tFirst := float32(0.0)
+	tFirstNormal := mgl32.Vec3{}
+	tLast := float32(1.0)
+
+	var planesArr [MaxPointCount + 2]math2.Plane
+	planes := planesArr[0:0]
+
+	segs := shape.Segments(mgl32.Vec2{myPosition[0], myPosition[2]})
+	for seg, ok := segs.Next(); ok; seg, ok = segs.Next() {
+		planes = append(planes, math2.PlaneFromPointAndNormal(
+			mgl32.Vec3{seg.Points[0][0], myPosition[1], seg.Points[0][1]},
+			mgl32.Vec3{seg.Normal[0], 0.0, seg.Normal[1]},
+		))
 	}
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, myPosition[1] + shape.extents.Max[1], 0.0}, mgl32.Vec3{0.0, 1.0, 0.0}))
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, myPosition[1] + shape.extents.Min[1], 0.0}, mgl32.Vec3{0.0, -1.0, 0.0}))
+
+	for _, plane := range planes {
+		denom := plane.Normal.Dot(rayDir.Mul(maxDist))
+		dist := -plane.SignedDistance(rayOrigin)
+		if denom == 0.0 {
+			// Ray is a parallel to this plane, abort if it lies outside
+			if dist < 0.0 {
+				return
+			}
+		} else {
+			t := dist / denom
+			if denom < 0.0 {
+				// When entering halfspace, update tfirst if t is larger
+				if t > tFirst {
+					tFirst = t
+					tFirstNormal = plane.Normal
+				}
+			} else {
+				tLast = min(tLast, t)
+			}
+			if tFirst > tLast {
+				// When the interval becomes empty there is no intersection
+				return
+			}
+		}
+	}
+
+	result.Hit = true
+	result.Distance = tFirst
+	result.Normal = tFirstNormal
+	result.Position = rayOrigin.Add(rayDir.Mul(tFirst))
+	return
 }
 
 func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
