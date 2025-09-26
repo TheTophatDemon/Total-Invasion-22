@@ -468,10 +468,10 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 	switch weapon.Kind() {
 	case game.WeaponSickle:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, player.Body().Transform.Matrix())
-		SpawnSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+		SpawnSickle(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle)
 	case game.WeaponChicken:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, player.Body().Transform.Matrix())
-		SpawnEgg(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+		SpawnEgg(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
 	case game.WeaponGrenade:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.15, -1.25}, player.Body().Transform.Matrix())
@@ -479,7 +479,7 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
 	case game.WeaponParusu:
 		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.25, -0.5}, player.Body().Transform.Matrix())
-		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle, false)
+		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle, false)
 		cache.GetSfx("assets/sounds/weapon/parusu.wav").Play()
 	case game.WeaponAirhorn:
 		if justPressed {

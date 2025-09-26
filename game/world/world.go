@@ -59,7 +59,7 @@ type World struct {
 	Cameras          scene.Storage[Camera]
 	MapLayers        scene.Storage[comps.MapLayer]
 	Props            scene.Storage[Prop]
-	GameMap          *comps.MapLayer
+	GameMap          *comps.MapLayer // An easy access pointer to the main map layer
 	CurrentPlayer    scene.Id[*Player]
 	CurrentCamera    scene.Id[*Camera]
 	removalQueue     []scene.Handle  // Holds entities to be removed at the end of the frame.

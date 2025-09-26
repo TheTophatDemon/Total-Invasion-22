@@ -1,6 +1,7 @@
 # TODO
 - Collision rework
-  - Fix projectiles going through walls
+  - Fix projectiles
+    - Integrate the velocity in its own update func
   - Fix enemy sight lines
   - Fix grenades
   - Get rid of Body.Transform and replace with Body.Position

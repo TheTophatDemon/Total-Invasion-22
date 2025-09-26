@@ -13,3 +13,8 @@ type Result struct {
 
 // Represents a bit mask that filters what things will collide with what.
 type Mask uint64
+
+// Returns true if any of the bits in the provided mask are set on this mask.
+func (mask Mask) On(otherMask Mask) bool {
+	return (mask & otherMask) != 0
+}

@@ -4,10 +4,15 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+)
+
+const (
+	ColFilterForProjectiles = ColLayerActors | ColLayerMap | ColLayerNPCs | ColLayerPlayers
 )
 
 type Projectile struct {
@@ -17,8 +22,12 @@ type Projectile struct {
 	AnimPlayer                                     comps.AnimationPlayer
 	StunChance                                     float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
 	Damage                                         float32 // Damage done to actors.
-	body                                           comps.Body
+	Position, Velocity, Facing                     mgl32.Vec3
+	SpriteScale                                    float32
+	Shape                                          collision.Shape
+	ColLayer                                       collision.Mask // The collision layer(s) that this projectile resides on
 	owner                                          scene.Handle
+	hitOwner                                       bool
 	moveFunc                                       func(deltaTime float32)
 	onDie                                          func(deltaTime float32)
 	forwardSpeed, fallSpeed, maxFallSpeed, gravity float32
@@ -26,39 +35,64 @@ type Projectile struct {
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
-	onIntersect                                    func(collidingEntity comps.HasBody, deltaTime float32)
-}
-
-var _ comps.HasBody = (*Projectile)(nil)
-
-func (proj *Projectile) Body() *comps.Body {
-	return &proj.body
+	onCollide                                      func(collidingEntity any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32)
 }
 
 func (proj *Projectile) Update(deltaTime float32) {
+	if lensq := proj.Velocity.LenSqr(); lensq > 0.0 {
+		proj.Facing = proj.Velocity.Mul(1.0 / math2.Sqrt(lensq))
+	}
+
 	proj.AnimPlayer.Update(deltaTime)
 	for _, vid := range proj.voices {
-		vid.SetPositionV(proj.Body().Transform.Position())
+		vid.SetPositionV(proj.Position)
 	}
+
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)
 	} else if proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) && proj.AnimPlayer.IsAtEnd() {
 		proj.world.QueueRemoval(proj.id.Handle)
 	}
 
-	// Detect intersections with bodies
-	bodies := proj.world.bspTree.PotentiallyTouchingEnts(proj.body.Transform.Position(), proj.body.Shape)
-	for handle := range bodies {
-		collidingEnt, ok := scene.Get[comps.HasBody](handle)
-		if !ok {
-			continue
+	// Respond to collisions
+	if proj.ColLayer.On(ColLayerProjectiles) && proj.onCollide != nil {
+		// Detect intersections with bodies
+		bodies := proj.world.bspTree.PotentiallyTouchingEnts(proj.Position, proj.Shape)
+		for handle := range bodies {
+			collidingEnt, ok := scene.Get[comps.HasBody](handle)
+			if !ok {
+				continue
+			}
+
+			otherBody := collidingEnt.Body()
+			if otherBody.Layer == ColLayerNone || !otherBody.OnLayer(ColFilterForProjectiles) {
+				continue
+			}
+
+			owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
+			if !proj.hitOwner && hasOwner && otherBody == owner.Body() {
+				continue
+			}
+
+			hit, pushVec := proj.Shape.PushOutOf(proj.Position,
+				collidingEnt.Body().Transform.Position(),
+				collidingEnt.Body().Shape,
+			)
+			if hit {
+				proj.onCollide(collidingEnt, collidingEnt.Body().Layer, pushVec, deltaTime)
+			}
 		}
-		if collidingEnt.Body().Shape.Touches(
-			collidingEnt.Body().Transform.Position(),
-			proj.body.Transform.Position(),
-			proj.body.Shape,
-		) && proj.onIntersect != nil {
-			proj.onIntersect(collidingEnt, deltaTime)
+
+		// Detect intersection with the map
+		layers := proj.world.MapLayers.Iter()
+		for layer, _ := layers.Next(); layer != nil; layer, _ = layers.Next() {
+			if !layer.Layer.On(ColFilterForProjectiles) {
+				continue
+			}
+			pushOut := layer.GridShape.PushOut(mgl32.Vec3{}, proj.Position, proj.Shape)
+			if !pushOut.ApproxEqual(mgl32.Vec3{}) {
+				proj.onCollide(layer, layer.Layer, pushOut, deltaTime)
+			}
 		}
 	}
 
@@ -73,55 +107,34 @@ func (proj *Projectile) Update(deltaTime float32) {
 }
 
 func (proj *Projectile) Render(context *render.Context) {
-	proj.SpriteRender.Render(&proj.body.Transform, &proj.AnimPlayer, context, proj.body.Transform.Yaw())
-}
-
-func (proj *Projectile) shouldIntersect(otherEnt comps.HasBody) bool {
-	if !proj.body.OnLayer(ColLayerProjectiles) {
-		return false
-	}
-	otherBody := otherEnt.Body()
-	if otherBody.Layer == ColLayerNone || otherBody.OnLayer(ColLayerInvisible|ColLayerProjectiles) {
-		return false
-	}
-	owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
-	if !hasOwner || (hasOwner && otherBody != owner.Body()) {
-		return true
-	}
-	return false
+	trans := comps.TransformFromTranslationAnglesScale(proj.Position, mgl32.Vec3{}, math2.Vec3One().Mul(proj.SpriteScale))
+	proj.SpriteRender.Render(&trans, &proj.AnimPlayer, context, 0.0)
 }
 
 func (proj *Projectile) moveForward(deltaTime float32) {
-	_ = deltaTime
-	proj.body.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
+	proj.Velocity = proj.Facing.Mul(proj.forwardSpeed)
 }
 
 func (proj *Projectile) removeOnDie(deltaTime float32) {
-	_ = deltaTime
 	proj.world.QueueRemoval(proj.id.Handle)
 }
 
 func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
-		proj.body.Layer = 0
-		proj.body.Filter = 0
-		proj.body.Transform.TranslateV(proj.body.Velocity.Mul(-deltaTime))
-		proj.body.Velocity = mgl32.Vec3{}
+		proj.ColLayer = 0
+		proj.Position.Add(proj.Velocity.Mul(-deltaTime))
+		proj.Velocity = mgl32.Vec3{}
 		proj.moveFunc = nil
 	}
 }
 
-func (proj *Projectile) dieOnHit(otherEnt comps.HasBody, deltaTime float32) {
-	_ = deltaTime
-	if !proj.shouldIntersect(otherEnt) {
-		return
-	}
+func (proj *Projectile) dieOnCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 	}
-	if actorHaver, hasActor := otherEnt.(HasActor); hasActor && proj.knockbackForce != 0.0 && !proj.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
-		actorHaver.Actor().ApplyKnockback(proj.body.Velocity.Normalize().Mul(proj.knockbackForce))
+	if actorHaver, hasActor := otherEnt.(HasActor); hasActor && proj.knockbackForce != 0.0 && !proj.Velocity.ApproxEqual(mgl32.Vec3{}) {
+		actorHaver.Actor().ApplyKnockback(proj.Velocity.Normalize().Mul(proj.knockbackForce))
 	}
 
 	proj.lifeTimer = math2.Inf32()
