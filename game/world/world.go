@@ -3,10 +3,8 @@ package world
 import (
 	"errors"
 	"log"
-	"maps"
 	"math"
 	"path"
-	"slices"
 	"strings"
 	"time"
 
@@ -233,6 +231,12 @@ func (world *World) Update(deltaTime float32) {
 		}
 	}
 
+	// Create BSP tree
+	{
+		it := world.IterBodies()
+		world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
+	}
+
 	// Update entities
 	scene.UpdateStores(world, deltaTime)
 	world.Hud.Update(deltaTime)
@@ -246,48 +250,6 @@ func (world *World) Update(deltaTime float32) {
 
 	// Update bodies and resolve collisions
 	startTime := time.Now()
-
-	// Create BSP tree
-	it := world.IterBodies()
-	world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
-
-	it = world.IterBodies()
-	for bodyEnt, _ := it.Next(); bodyEnt != nil; bodyEnt, _ = it.Next() {
-		collidableBodies := slices.Collect(maps.Keys(world.bspTree.PotentiallyTouchingEnts(bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)))
-
-		movement := bodyEnt.Body().ResolveBodyCollisions(deltaTime, collidableBodies)
-
-		// Sphere cast against the world.
-		// castShape := bodyEnt.Body().Shape.Inflate(-0.25)
-		// moveLen := movement.Len()
-		// minResult := collision.Result{Distance: moveLen}
-		// layerIt := world.MapLayers.Iter()
-		// for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-		// 	if (layer.Layer & bodyEnt.Body().Filter) != 0 {
-		// 		res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), movement, castShape)
-		// 		if res.Hit && res.Distance < minResult.Distance {
-		// 			minResult = res
-		// 		}
-		// 	}
-		// }
-		// if moveLen > 0.0 {
-		// 	if minResult.Hit {
-		// 		bodyEnt.Body().Transform.TranslateV(movement.Mul(minResult.Distance / moveLen))
-		// 	} else {
-		// 		bodyEnt.Body().Transform.TranslateV(movement)
-		// 	}
-		// }
-
-		// Push out of map layers
-		bodyEnt.Body().Transform.TranslateV(movement)
-		layerIt := world.MapLayers.Iter()
-		for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-			if (layer.Layer & bodyEnt.Body().Filter) != 0 {
-				pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, bodyEnt.Body().Transform.Position(), bodyEnt.Body().Shape)
-				bodyEnt.Body().Transform.TranslateV(pushVec)
-			}
-		}
-	}
 
 	duration := time.Since(startTime).Milliseconds()
 	if world.avgCollisionTime != 0 {
@@ -310,11 +272,32 @@ func (world *World) UpdateMapLayer(layer *comps.MapLayer, deltaTime float32) {
 		actorsIter := world.IterActors()
 		for ent, _ := actorsIter.Next(); ent != nil; ent, _ = actorsIter.Next() {
 			actor := ent.Actor()
-			if layer.GridShape.OtherBodyTouches(mgl32.Vec3{}, actor.body.Transform.Position(), actor.body.Shape) {
+			if layer.GridShape.OtherBodyTouches(mgl32.Vec3{}, actor.body.Position, actor.body.Shape) {
 				ent.OnDamage(layer, math2.Inf32())
 			}
 		}
 	}
+}
+
+func (world *World) ResolveMapCollisions(
+	deltaTime float32,
+	body *comps.Body,
+	lockY bool,
+	filter collision.Mask,
+) mgl32.Vec3 {
+	movement := body.Velocity.Mul(deltaTime)
+	layerIt := world.MapLayers.Iter()
+	for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
+		nextPos := body.Position.Add(movement)
+		if (layer.Layer & filter) != 0 {
+			pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, nextPos, body.Shape)
+			movement = movement.Add(pushVec)
+		}
+	}
+	if lockY {
+		movement[1] = 0.0
+	}
+	return movement
 }
 
 func (world *World) Render() {
@@ -388,7 +371,10 @@ func (world *World) IsOnPlayerCamera() bool {
 	return false
 }
 
-func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask, maxDist float32, excludeBody comps.HasBody) (collision.Result, scene.Handle) {
+func (world *World) Raycast(
+	rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
+	maxDist float32, excludeBody comps.HasBody,
+) (collision.Result, scene.Handle) {
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
 	var closestBodyHit collision.Result
@@ -398,10 +384,10 @@ func (world *World) Raycast(rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
 		body := bodyEnt.Body()
 		if bodyEnt == excludeBody ||
 			!bodyEnt.Body().OnLayer(filter) ||
-			!body.Shape.Extents().Translate(body.Transform.Position()).Intersects(rayBB) {
+			!body.Shape.Extents().Translate(body.Position).Intersects(rayBB) {
 			continue
 		}
-		bodyHit := body.Shape.Raycast(body.Transform.Position(), rayOrigin, rayDir, maxDist)
+		bodyHit := body.Shape.Raycast(body.Position, rayOrigin, rayDir, maxDist)
 		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
 			closestBodyHit = bodyHit
 			closestEnt = bodyId

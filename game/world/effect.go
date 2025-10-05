@@ -61,24 +61,24 @@ func (fx *Effect) Render(context *render.Context) {
 	fx.particles.Render(&fx.Transform, context)
 }
 
-func SpawnSingleExplosion(world *World, transform comps.Transform) (id scene.Id[*Effect], fx *Effect, err error) {
+func SpawnSingleExplosion(world *World, position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect, err error) {
 	const DAMAGE_RADIUS = 3.5
 	const MAX_ENEMY_DAMAGE = 175.0
 	const MIN_ENEMY_DAMAGE = 50.0
-	id, fx, err = SpawnEffect(world, transform, 1.0, ExplosionParticles(1, 1.0, 1.5))
+	id, fx, err = SpawnEffect(world, comps.TransformFromTranslation(position), 1.0, ExplosionParticles(1, 1.0, 1.5))
 	if err != nil {
 		return
 	}
-	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(transform.Position())
+	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(position)
 
 	// Apply splash damage to surrounding entities
-	bodyIter := world.IterBodiesInSphere(transform.Position(), DAMAGE_RADIUS, nil)
+	bodyIter := world.IterBodiesInSphere(position, DAMAGE_RADIUS, nil)
 	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
 		if damageable, ok := bodyHaver.(Damageable); ok {
-			vecToTarget := bodyHaver.Body().Transform.Position().Sub(transform.Position())
+			vecToTarget := bodyHaver.Body().Transform.Position().Sub(position)
 			distanceToExplosion := vecToTarget.Len()
 			if distanceToExplosion > 0 {
-				cast, _ := world.Raycast(transform.Position(), vecToTarget.Mul(1.0/distanceToExplosion),
+				cast, _ := world.Raycast(position, vecToTarget.Mul(1.0/distanceToExplosion),
 					ColLayerMap, distanceToExplosion, nil)
 				// Do not apply damage to entities when there is a wall between them and the explosion.
 				if cast.Hit {

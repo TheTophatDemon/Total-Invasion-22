@@ -5,14 +5,15 @@
   - Fix enemy sight lines
   - Fix grenades
   - Get rid of Body.Transform and replace with Body.Position
+  - Remove Transform from Trigger / Effects and replace with just position
   - Possible implement sweeping for the grenades
+- Replace world pointer with global world variable
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Title screen
   - Background image
-- Indicator of which armor you have on
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
@@ -21,6 +22,7 @@
 - Demo end screen
 - Settings menu
 - Gamepad support (for Steam Deck)
+- Saving / checkpoints
 
 - Fix flickering artifacts on walls. Consider greedy meshing.
 - Re-record enemy voices
@@ -34,7 +36,6 @@
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
-- Save states
 - Additional Enemies
   - Prisrak
   - Providence

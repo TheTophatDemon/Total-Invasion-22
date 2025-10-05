@@ -31,17 +31,16 @@ type Player struct {
 	actor                                    Actor
 	world                                    *World
 
-	initialCollisionLayers collision.Mask
-	cameraFall             float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
-	transitionTimer        float32 // Counts the seconds until the game resets after winning or dying.
-	godMode                bool    // If true, the player does not take damage.
-	ammo                   game.Ammo
-	keys                   game.Keys
-	armorType              game.ArmorType
-	armorAmount            float32
-	weaponWheelOpenness    float32 // 1 if wheel is open, gradually drops to 0 after closing.
-	punTimer               timer.Timer
-	puns                   []string
+	cameraFall          float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
+	transitionTimer     float32 // Counts the seconds until the game resets after winning or dying.
+	godMode             bool    // If true, the player does not take damage.
+	ammo                game.Ammo
+	keys                game.Keys
+	armorType           game.ArmorType
+	armorAmount         float32
+	weaponWheelOpenness float32 // 1 if wheel is open, gradually drops to 0 after closing.
+	punTimer            timer.Timer
+	puns                []string
 }
 
 var _ HasActor = (*Player)(nil)
@@ -79,16 +78,11 @@ func SpawnPlayer(
 		return
 	}
 	player.id = id
-	player.initialCollisionLayers = ColLayerActors | ColLayerPlayers
 	player.actor = Actor{
 		body: comps.Body{
-			Transform: comps.TransformFromTranslationAngles(
-				position, angles,
-			),
-			Shape:  collision.NewBoxShape(0.7, 0.7, 0.7),
-			Layer:  player.initialCollisionLayers,
-			Filter: ColFilterForActors,
-			LockY:  true,
+			Position: position,
+			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
+			Layer:    ColLayerActors | ColLayerPlayers,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
 		AccelRate:    100.0,
@@ -121,8 +115,6 @@ func SpawnPlayer(
 	winAnim, _ := tex.GetAnimation("victory")
 	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
-	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
-
 	// Initialize armor and ammo
 	player.ammo = changeInfo.GiveAmmo
 	player.ammo[game.AmmoTypeSickle] = 0
@@ -140,8 +132,8 @@ func SpawnPlayer(
 
 	if world.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
-		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -80.0}, player.Body().Transform.Matrix())
-		SpawnIntroSickle(player.world, firePos, player.Body().Transform.Rotation(), player.id.Handle)
+		firePos := player.actor.FacingVec().Mul(-80.0)
+		SpawnIntroSickle(player.world, firePos, player.actor.FacingVec(), player.id.Handle)
 	} else {
 		player.ammo[game.AmmoTypeSickle] = 1
 	}
@@ -199,7 +191,7 @@ func (player *Player) Update(deltaTime float32) {
 
 		if camera, ok := player.Camera.Get(); ok {
 			// Keep camera transform in sync with the player
-			camera.Transform = player.Body().Transform
+			camera.Transform.SetPosition(player.Body().Position)
 		}
 	} else {
 		// Death logic
@@ -234,7 +226,6 @@ func (player *Player) Update(deltaTime float32) {
 		player.actor.Friction = player.StandFriction
 	}
 
-	player.Body().Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 	player.actor.Update(deltaTime)
 
 	hudPtr.PlayerStats = hud.PlayerStats{
@@ -285,11 +276,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	if input.IsActionJustPressed(settings.ActionNoclip) {
 		var message string = settings.Localize("noclipActivate")
 		if player.Body().Layer != ColLayerNone {
-			player.Body().Layer = ColLayerNone
-			player.Body().Filter = ColLayerNone
+			player.Body().Layer.SetBypass()
 		} else {
-			player.Body().Layer = player.initialCollisionLayers
-			player.Body().Filter = ColFilterForActors
+			player.Body().Layer.ResetBypass()
 			message = settings.Localize("noclipDeactivate")
 		}
 		hudPtr.ShowMessage(message, 4.0, 100, color.Red)

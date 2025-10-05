@@ -50,11 +50,11 @@ func (sr *SpriteRender) Render(
 	context *render.Context,
 	yawAngle float32,
 ) bool {
-	if !context.DrawingTransparent && !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
+	if transform == nil || sr.meshRender.Shader == nil {
 		return false
 	}
 
-	if transform == nil || sr.meshRender.Shader == nil {
+	if !context.DrawingTransparent && !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
 		return false
 	}
 

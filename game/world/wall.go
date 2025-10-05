@@ -92,10 +92,9 @@ func SpawnWallFromTE3(world *World, ent te3.Ent) (id scene.Id[*Wall], wall *Wall
 
 	wall.Origin = ent.Position
 	wall.body = comps.Body{
-		Transform: transform,
-		Shape:     collision.NewBoxShape(bbox.Max[0], bbox.Max[1], bbox.Max[2]),
-		Layer:     ColLayerMap,
-		Filter:    ColLayerNone,
+		Position: transform.Position(),
+		Shape:    collision.NewBoxShape(bbox.Max[0], bbox.Max[1], bbox.Max[2]),
+		Layer:    ColLayerMap,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
@@ -236,10 +235,9 @@ func SpawnInvisibleWall(
 	wall.world = world
 	wall.Origin = position
 	wall.body = comps.Body{
-		Transform: comps.TransformFromTranslation(position),
-		Shape:     shape,
-		Layer:     ColLayerInvisible,
-		Filter:    ColLayerNone,
+		Position: position,
+		Shape:    shape,
+		Layer:    ColLayerInvisible,
 	}
 
 	return
@@ -259,17 +257,17 @@ func (wall *Wall) Update(deltaTime float32) {
 
 	switch wall.movePhase {
 	case MOVE_PHASE_OPENING:
-		targetDir := wall.Destination.Sub(wall.body.Transform.Position())
+		targetDir := wall.Destination.Sub(wall.body.Position)
 		targetDist := targetDir.Len()
 		if targetDist <= wall.Speed*deltaTime {
-			wall.body.Transform.SetPosition(wall.Destination)
+			wall.body.Position = wall.Destination
 			wall.movePhase = MOVE_PHASE_OPEN
 			wall.body.Velocity = mgl32.Vec3{}
 		} else {
 			wall.body.Velocity = targetDir.Mul(wall.Speed / targetDist)
 		}
 	case MOVE_PHASE_CLOSING:
-		targetDir := wall.Origin.Sub(wall.body.Transform.Position())
+		targetDir := wall.Origin.Sub(wall.body.Position)
 		targetDist := targetDir.Len()
 		// Detect if something is standing in the way
 		actorsIter := wall.world.IterActorsInSphere(wall.Origin, wall.body.Shape.Extents().LongestDimension(), nil)
@@ -277,7 +275,7 @@ func (wall *Wall) Update(deltaTime float32) {
 			wall.body.Velocity = mgl32.Vec3{}
 			wall.movePhase = MOVE_PHASE_OPENING
 		} else if targetDist <= wall.Speed*deltaTime {
-			wall.body.Transform.SetPosition(wall.Origin)
+			wall.body.Position = wall.Origin
 			wall.movePhase = MOVE_PHASE_CLOSED
 			wall.body.Velocity = mgl32.Vec3{}
 		} else {
@@ -296,7 +294,7 @@ func (wall *Wall) Update(deltaTime float32) {
 }
 
 func (wall *Wall) Render(context *render.Context) {
-	if !context.IsBoxVisible(wall.Body().Shape.Extents().Translate(wall.body.Transform.Position())) ||
+	if !context.IsBoxVisible(wall.Body().Shape.Extents().Translate(wall.body.Position)) ||
 		wall.MeshRender.Mesh == nil {
 		return
 	}
@@ -333,17 +331,17 @@ func (wall *Wall) OnUse(player *Player) {
 	case wall.switchState == SWITCH_OFF:
 		anim, _ := wall.MeshRender.Texture.GetAnimation("on")
 		wall.AnimPlayer.PlayNewAnim(anim)
-		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuatedV(wall.body.Transform.Position())
+		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuatedV(wall.body.Position)
 	case wall.switchState == SWITCH_ON:
 		anim, _ := wall.MeshRender.Texture.GetAnimation("off")
 		wall.AnimPlayer.PlayNewAnim(anim)
-		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Transform.Position())
+		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Position)
 	case wall.unopenable:
 		wall.world.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
 	case wall.key != game.KeysNone && (player.keys&wall.key) != wall.key:
 		// Locked if keycard not retrieved
 		wall.world.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 2.0, 10, color.Red)
-		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Transform.Position())
+		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Position)
 	case wall.linkNumber != 0:
 		// Door is opened by some other mechanism
 		wall.world.Hud.ShowMessage(settings.Localize("doorSwitch"), 2.0, 10, color.Red)
@@ -365,7 +363,7 @@ func (wall *Wall) Open() {
 	wall.movePhase = MOVE_PHASE_OPENING
 	wall.waitTimer = 0
 	if len(wall.activateSound) > 0 {
-		cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Transform.Position())
+		cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
 	}
 }
 

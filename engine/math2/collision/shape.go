@@ -257,6 +257,28 @@ func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shap
 	return false
 }
 
+// Returns the signed distance to the nearest 3D plane on this shape.
+func (shape Shape) DistanceFromPoint(myPosition, testPosition mgl32.Vec3) float32 {
+	//TODO: This algorithm doesn't actually work.
+	segIter := shape.Segments(mgl32.Vec2{myPosition[0], myPosition[2]})
+	minDist := float32(math.MaxFloat32) // Tracks the smallest (IN MAGNITUDE) distance to a segment's plane
+	for seg, ok := segIter.Next(); ok; seg, ok = segIter.Next() {
+		dist := seg.Normal.Dot(mgl32.Vec2{testPosition[0], testPosition[1]}.Sub(seg.Points[0]))
+		if math2.Abs(dist) < minDist {
+			minDist = dist
+		}
+	}
+	topDist := testPosition[1] - myPosition[1] - shape.extents.Max[1]
+	if math2.Abs(topDist) < minDist {
+		minDist = topDist
+	}
+	bottomDist := myPosition[1] + shape.extents.Min[1] - testPosition[1]
+	if math2.Abs(bottomDist) < minDist {
+		minDist = bottomDist
+	}
+	return minDist
+}
+
 func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist float32) (result Result) {
 	// Real Time Collision Detection 5.3.8
 	result.Distance = maxDist

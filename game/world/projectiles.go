@@ -29,13 +29,15 @@ func SpawnSickle(world *World, position, facing mgl32.Vec3, owner scene.Handle) 
 	}
 
 	*proj = Projectile{
-		world:        world,
-		id:           id,
-		owner:        owner,
-		Position:     position,
+		world: world,
+		id:    id,
+		owner: owner,
+		Body: comps.Body{
+			Position: position,
+			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
+			Layer:    ColLayerProjectiles,
+		},
 		Facing:       facing,
-		Shape:        collision.NewBoxShape(0.5, 0.5, 0.5),
-		ColLayer:     ColLayerProjectiles,
 		forwardSpeed: 35.0,
 		voices: [4]tdaudio.VoiceId{
 			0: cache.GetSfx("assets/sounds/weapon/sickle.wav").PlayAttenuatedV(position),
@@ -59,9 +61,9 @@ func SpawnSickle(world *World, position, facing mgl32.Vec3, owner scene.Handle) 
 	return
 }
 
-func SpawnIntroSickle(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
-	id, proj, err = SpawnSickle(world, position, rotation, owner)
-	proj.ColLayer = ColLayerNone
+func SpawnIntroSickle(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+	id, proj, err = SpawnSickle(world, position, facing, owner)
+	proj.Layer = ColLayerNone
 	proj.moveFunc = proj.introSickleMove
 	proj.forwardSpeed = -1.0
 
@@ -76,7 +78,7 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*decelerationRate)
 	if owner, ok := scene.Get[HasActor](proj.owner); ok {
 		if proj.forwardSpeed < 0.0 {
-			ownerPos := owner.Body().Transform.Position()
+			ownerPos := owner.Body().Position
 			projPos := proj.Position
 			proj.Facing = ownerPos.Sub(projPos)
 			if proj.Facing.LenSqr() > 0 {
@@ -92,7 +94,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*50.0)
 	if owner, ok := scene.Get[HasActor](proj.owner); ok {
 		if proj.forwardSpeed < 0.0 {
-			ownerPos := owner.Body().Transform.Position()
+			ownerPos := owner.Body().Position
 			projPos := proj.Position
 			proj.Facing = ownerPos.Sub(projPos)
 			if proj.Facing.LenSqr() > 0 {
@@ -101,7 +103,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 		}
 	}
 
-	proj.Velocity = mgl32.TransformNormal(mgl32.Vec3{0.0, 0.0, -proj.forwardSpeed}, proj.body.Transform.Matrix())
+	proj.Velocity = proj.Facing.Mul(proj.forwardSpeed)
 }
 
 func (proj *Projectile) sickleCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
@@ -154,14 +156,16 @@ func SpawnEgg(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id
 
 	eggTex := cache.GetTexture("assets/textures/sprites/egg.png")
 	*proj = Projectile{
-		world:        world,
-		id:           id,
-		owner:        owner,
-		Position:     position,
+		world: world,
+		id:    id,
+		owner: owner,
+		Body: comps.Body{
+			Position: position,
+			Shape:    collision.NewBoxShape(0.1, 0.1, 0.1),
+			Layer:    ColLayerProjectiles,
+		},
 		Facing:       facing,
-		Shape:        collision.NewBoxShape(0.1, 0.1, 0.1),
 		SpriteScale:  0.4,
-		ColLayer:     ColLayerProjectiles,
 		SpriteRender: comps.NewSpriteRender(eggTex),
 		forwardSpeed: 100.0,
 		StunChance:   0.1,
@@ -179,7 +183,7 @@ func (proj *Projectile) eggCollide(otherEnt any, mask collision.Mask, pushVec mg
 	}
 
 	proj.world.QueueRemoval(proj.id.Handle)
-	proj.ColLayer = 0
+	proj.Layer.SetBypass()
 
 	var backwards mgl32.Vec3
 	if proj.Velocity.LenSqr() != 0.0 {
@@ -210,14 +214,16 @@ func SpawnFireball(world *World, position, facing mgl32.Vec3, owner scene.Handle
 
 	tex := cache.GetTexture("assets/textures/sprites/fireball.png")
 	*proj = Projectile{
-		world:        world,
-		id:           id,
-		owner:        owner,
-		Position:     position,
+		world: world,
+		id:    id,
+		owner: owner,
+		Body: comps.Body{
+			Position: position,
+			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
+			Layer:    ColLayerProjectiles,
+		},
 		SpriteScale:  0.375,
 		Facing:       facing,
-		Shape:        collision.NewBoxShape(0.25, 0.25, 0.25),
-		ColLayer:     ColLayerProjectiles,
 		SpriteRender: comps.NewSpriteRender(tex),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 70.0,
@@ -246,8 +252,14 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 	tex := cache.GetTexture("assets/textures/sprites/grenade.png")
 
 	*proj = Projectile{
-		world:        world,
-		id:           id,
+		world: world,
+		id:    id,
+		Body: comps.Body{
+			Position: position,
+			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
+			Velocity: direction.Mul(20.0),
+			Layer:    ColLayerProjectiles,
+		},
 		SpriteRender: comps.NewSpriteRender(tex),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		StunChance:   0.0,
@@ -258,11 +270,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 		maxLife:      1.5,
 		onDie:        proj.explodeOnDie,
 		onCollide:    proj.grenadeCollide,
-		Position:     position,
 		SpriteScale:  0.25,
-		Shape:        collision.NewBoxShape(0.25, 0.25, 0.25),
-		Velocity:     direction.Mul(20.0),
-		ColLayer:     ColLayerProjectiles,
 	}
 
 	return
@@ -270,7 +278,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 
 func (proj *Projectile) applyGravity(deltaTime float32) {
 	proj.fallSpeed = max(-proj.maxFallSpeed, proj.fallSpeed+(proj.gravity*deltaTime))
-	proj.body.Velocity = math2.Vec3WithY(proj.body.Velocity, proj.fallSpeed)
+	proj.Velocity = math2.Vec3WithY(proj.Velocity, proj.fallSpeed)
 }
 
 func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
@@ -280,20 +288,20 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 	} else if (mask & ColLayerKillzone) != 0 {
 		proj.explodeOnDie(deltaTime)
 	} else if (mask & ColLayerMap) != 0 {
-		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
+		horzVelocity := math2.Vec3WithY(proj.Velocity, 0.0)
 		speed := horzVelocity.Len() * 0.8
 		if pushVec[1] > 0.1 && proj.fallSpeed < 0.0 {
 			if proj.fallSpeed > -0.01 {
 				proj.fallSpeed = 0.0
 			}
 			proj.fallSpeed = -proj.fallSpeed * 0.9
-			proj.body.Velocity = math2.Vec3WithY(horzVelocity.Normalize().Mul(speed), proj.fallSpeed)
+			proj.Velocity = math2.Vec3WithY(horzVelocity.Normalize().Mul(speed), proj.fallSpeed)
 		} else if pushVec.LenSqr() > 0.0 {
 			if speed > 0.01 {
 				reflection := math2.Vec3Reflect(horzVelocity.Normalize(), pushVec.Normalize())
-				proj.body.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
+				proj.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
 			} else {
-				proj.body.Velocity = mgl32.Vec3{}
+				proj.Velocity = mgl32.Vec3{}
 			}
 		}
 	}
@@ -301,8 +309,8 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 
 func (proj *Projectile) explodeOnDie(deltaTime float32) {
 	_ = deltaTime
-	proj.body.Transform.Translate(0.0, 0.5, 0.0)
-	SpawnSingleExplosion(proj.world, proj.body.Transform)
+	proj.Position = proj.Position.Add(mgl32.Vec3{0.0, 0.5, 0.0})
+	SpawnSingleExplosion(proj.world, proj.Position)
 	proj.world.QueueRemoval(proj.id.Handle)
 }
 
@@ -310,32 +318,42 @@ func (proj *Projectile) explodeOnDie(deltaTime float32) {
  *               Plasma Ball
  *=============================================**/
 
-func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Handle, bigShot bool) (id scene.Id[*Projectile], proj *Projectile, err error) {
+func SpawnPlasmaBall(
+	world *World, position, facing mgl32.Vec3,
+	owner scene.Handle, bigShot bool,
+) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = world.Projectiles.New()
 	if err != nil {
 		return
 	}
 
-	proj.world = world
-	proj.id = id
-	proj.owner = owner
-
-	proj.body = comps.Body{
-		Layer:  ColLayerProjectiles,
-		Filter: ProjectileColLayers,
-		LockY:  true,
+	*proj = Projectile{
+		world: world,
+		id:    id,
+		owner: owner,
+		Body: comps.Body{
+			Position: position,
+			Layer:    ColLayerProjectiles,
+		},
+		Facing:       facing,
+		forwardSpeed: 120.0,
+		StunChance:   0.1,
+		moveFunc:     proj.moveForward,
+		onCollide:    proj.dieOnCollide,
+		onDie:        proj.playAnimOnDie,
 	}
+
 	var tex *textures.Texture
 	if bigShot {
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
-		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.35, 0.35, 0.35})
-		proj.body.Shape = collision.NewBoxShape(0.35, 0.35, 0.35)
+		proj.SpriteScale = 0.35
+		proj.Shape = collision.NewBoxShape(0.35, 0.35, 0.35)
 		proj.knockbackForce = 5.0
 		proj.Damage = 8
 		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
-		proj.body.Transform = comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.25, 0.25, 0.25})
-		proj.body.Shape = collision.NewBoxShape(0.25, 0.25, 0.25)
+		proj.SpriteScale = 0.25
+		proj.Shape = collision.NewBoxShape(0.25, 0.25, 0.25)
 		proj.knockbackForce = 12.0
 		proj.Damage = 5
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
@@ -344,12 +362,6 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
 	proj.SpriteRender = comps.NewSpriteRender(tex)
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
 	proj.dieAnim, _ = tex.GetAnimation("die")
-	proj.forwardSpeed = 120.0
-	proj.StunChance = 0.1
-
-	proj.moveFunc = proj.moveForward
-	proj.onCollide = proj.dieOnCollide
-	proj.onDie = proj.playAnimOnDie
 
 	return
 }
@@ -358,34 +370,36 @@ func SpawnPlasmaBall(world *World, position, rotation mgl32.Vec3, owner scene.Ha
  *               Blessing
  *=============================================**/
 
-func SpawnBlessing(world *World, position, rotation mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+func SpawnBlessing(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = world.Projectiles.New()
 	if err != nil {
 		return
 	}
 
-	proj.world = world
-	proj.id = id
-	proj.owner = owner
-
-	proj.body = comps.Body{
-		Transform: comps.TransformFromTranslationAnglesScale(position, rotation, mgl32.Vec3{0.5, 0.5, 0.5}),
-		Shape:     collision.NewBoxShape(0.5, 0.5, 0.5),
-		Layer:     ColLayerProjectiles,
-		Filter:    ProjectileColLayers,
-		LockY:     true,
-	}
-
 	tex := cache.GetTexture("assets/textures/sprites/blessing.png")
-	proj.SpriteRender = comps.NewSpriteRender(tex)
-	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
-	proj.forwardSpeed = 30.0
-	proj.voices[0] = cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position)
-	proj.StunChance = 0.0
-	proj.Damage = 15
 
-	proj.moveFunc = proj.moveForwardAndRevive
-	proj.onCollide = proj.blessingCollide
+	*proj = Projectile{
+		world:  world,
+		id:     id,
+		owner:  owner,
+		Facing: facing,
+		Body: comps.Body{
+			Position: position,
+			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
+			Layer:    ColLayerProjectiles,
+		},
+		SpriteScale:  0.5,
+		SpriteRender: comps.NewSpriteRender(tex),
+		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
+		forwardSpeed: 30.0,
+		voices: [4]tdaudio.VoiceId{
+			cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position),
+		},
+		StunChance: 0.0,
+		Damage:     15,
+		moveFunc:   proj.moveForwardAndRevive,
+		onCollide:  proj.blessingCollide,
+	}
 
 	return
 }
@@ -403,11 +417,11 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 			continue
 		}
 		if enemy.actor.Health <= 0.0 {
-			diff := enemy.Body().Transform.Position().Sub(proj.body.Transform.Position())
+			diff := enemy.Body().Position.Sub(proj.Position)
 			dist := diff.Len()
 			if dist < 2.0 {
 				// Ensure we are not reviving an enemy from behind a wall.
-				rayHit, _ := proj.world.Raycast(proj.body.Transform.Position(), diff.Mul(1.0/dist), ColLayerMap, dist, nil)
+				rayHit, _ := proj.world.Raycast(proj.Position, diff.Mul(1.0/dist), ColLayerMap, dist, nil)
 				if !rayHit.Hit {
 					enemy.changeState(&enemy.reviveState)
 				}

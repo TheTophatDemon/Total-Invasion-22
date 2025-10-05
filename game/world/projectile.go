@@ -16,16 +16,15 @@ const (
 )
 
 type Projectile struct {
+	comps.Body
 	world                                          *World
 	id                                             scene.Id[*Projectile]
 	SpriteRender                                   comps.SpriteRender
 	AnimPlayer                                     comps.AnimationPlayer
 	StunChance                                     float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
 	Damage                                         float32 // Damage done to actors.
-	Position, Velocity, Facing                     mgl32.Vec3
+	Facing                                         mgl32.Vec3
 	SpriteScale                                    float32
-	Shape                                          collision.Shape
-	ColLayer                                       collision.Mask // The collision layer(s) that this projectile resides on
 	owner                                          scene.Handle
 	hitOwner                                       bool
 	moveFunc                                       func(deltaTime float32)
@@ -54,8 +53,10 @@ func (proj *Projectile) Update(deltaTime float32) {
 		proj.world.QueueRemoval(proj.id.Handle)
 	}
 
+	proj.Position = proj.Position.Add(proj.Velocity.Mul(deltaTime))
+
 	// Respond to collisions
-	if proj.ColLayer.On(ColLayerProjectiles) && proj.onCollide != nil {
+	if proj.Layer.On(ColLayerProjectiles) && proj.onCollide != nil {
 		// Detect intersections with bodies
 		bodies := proj.world.bspTree.PotentiallyTouchingEnts(proj.Position, proj.Shape)
 		for handle := range bodies {
@@ -75,7 +76,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 			}
 
 			hit, pushVec := proj.Shape.PushOutOf(proj.Position,
-				collidingEnt.Body().Transform.Position(),
+				collidingEnt.Body().Position,
 				collidingEnt.Body().Shape,
 			)
 			if hit {
@@ -122,7 +123,7 @@ func (proj *Projectile) removeOnDie(deltaTime float32) {
 func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
-		proj.ColLayer = 0
+		proj.Layer.SetBypass()
 		proj.Position.Add(proj.Velocity.Mul(-deltaTime))
 		proj.Velocity = mgl32.Vec3{}
 		proj.moveFunc = nil

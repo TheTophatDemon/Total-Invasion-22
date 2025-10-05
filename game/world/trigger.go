@@ -192,7 +192,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 					victimEnt.(Damageable).OnDamage(tr, math2.Inf32())
 				}
 
-				teleportingBody.Transform.SetPosition(trOther.Transform.Position())
+				teleportingBody.Position = trOther.Transform.Position()
 				teleportingBody.Velocity = mgl32.Vec3{}
 				actor := teleportingEnt.Actor()
 				actor.SetYaw(trOther.Transform.Yaw())

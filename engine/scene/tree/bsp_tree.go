@@ -1,6 +1,9 @@
 package tree
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -69,7 +72,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 		if !ok {
 			continue
 		}
-		avgPos += bodyHaver.Body().Transform.Position()[splitAxis]
+		avgPos += bodyHaver.Body().Position[splitAxis]
 	}
 	avgPos /= float32(len(bodies))
 
@@ -88,7 +91,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 			continue
 		}
 
-		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Transform.Position())
+		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Position)
 		if touchesLeft {
 			leftBodies.Add(handle)
 		}
@@ -143,4 +146,44 @@ func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.V
 		}
 	}
 	return res
+}
+
+// Returns the body's movement vector modified to avoid obstacles in the tree.
+func (tree *BspTree) ResolveCollisions(
+	deltaTime float32,
+	body *comps.Body,
+	lockY bool,
+	filter collision.Mask,
+) mgl32.Vec3 {
+	movement := body.Velocity.Mul(deltaTime)
+
+	obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
+	for _, handle := range obstacles {
+		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+			otherBody := collidingEnt.Body()
+			if otherBody == nil || body == otherBody || !otherBody.Layer.On(filter) {
+				continue
+			}
+
+			nextPos := body.Position.Add(movement)
+
+			// Bounding box check
+			bbox := body.Shape.Extents().Translate(nextPos)
+			if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
+				continue
+			}
+
+			hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
+			if hit {
+				movement = movement.Add(pushVec)
+			}
+		}
+	}
+
+	if lockY {
+		// Restrict movement to the XZ plane
+		movement[1] = 0.0
+	}
+
+	return movement
 }

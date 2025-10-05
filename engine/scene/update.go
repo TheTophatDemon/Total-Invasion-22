@@ -8,34 +8,35 @@ import (
 
 // Given a pointer to a struct, this will find any exported fields that implement StorageOps and call Update(deltaTime) on them.
 func UpdateStores(scene any, deltaTime float32) {
-	ForEachStorageField(scene, func(storage StorageOps) {
+	ForEachStorageField(scene, func(field reflect.StructField, storage StorageOps) {
 		storage.Update(deltaTime)
 	})
 }
 
 // Given a pointer to a struct, this will find any exported fields that implement StorageOps and call Render(context) on them.
 func RenderStores(scene any, context *render.Context) {
-	ForEachStorageField(scene, func(storage StorageOps) {
+	ForEachStorageField(scene, func(field reflect.StructField, storage StorageOps) {
 		storage.Render(context)
 	})
 }
 
 // Given a pointer to a struct, this will find any exported fields that implement StorageOps and call TearDown() on them.
 func TearDownStores(scene any) {
-	ForEachStorageField(scene, func(storage StorageOps) {
+	ForEachStorageField(scene, func(field reflect.StructField, storage StorageOps) {
 		storage.TearDown()
 	})
 }
 
 // Runs the given function on the value of every exported field in the given struct pointer that implements StorageOps.
-func ForEachStorageField(scene any, do func(StorageOps)) {
+func ForEachStorageField(scene any, do func(reflect.StructField, StorageOps)) {
 	sceneVal := reflect.ValueOf(scene).Elem()
 	if sceneVal.Kind() != reflect.Struct {
 		panic("this ain't a struct!")
 	}
 	for f := range sceneVal.NumField() {
 		fieldVal := sceneVal.Field(f)
-		if !fieldVal.CanAddr() || !sceneVal.Type().Field(f).IsExported() {
+		field := sceneVal.Type().Field(f)
+		if !fieldVal.CanAddr() || !field.IsExported() {
 			continue
 		}
 		var storage StorageOps
@@ -45,6 +46,6 @@ func ForEachStorageField(scene any, do func(StorageOps)) {
 				continue
 			}
 		}
-		do(storage)
+		do(field, storage)
 	}
 }

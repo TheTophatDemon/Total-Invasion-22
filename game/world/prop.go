@@ -81,10 +81,9 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 	}
 
 	prop.body = comps.Body{
-		Transform: comps.TransformFromTE3Ent(ent, true, true),
-		Shape:     collision.NewBoxShape(prop.radius, 2.0, prop.radius),
-		Layer:     ColLayerMap,
-		Filter:    ColLayerNone,
+		Position: mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, ent.Radius - 1.0, 0.0}),
+		Shape:    collision.NewBoxShape(prop.radius, 2.0, prop.radius),
+		Layer:    ColLayerMap,
 	}
 
 	if prop.radius == 0 {
@@ -101,8 +100,8 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		prop.body.Layer = ColLayerMap | ColLayerNPCs
 	case "fire":
 		prop.body.Layer = ColLayerInvisible
-		prop.body.Transform.SetScale(1.0, 1.25, 1.0)
-		prop.body.Transform.Translate(0.0, 0.25, 0.0)
+		// prop.body.Transform.SetScale(1.0, 1.25, 1.0)
+		prop.body.Position = prop.body.Position.Add(mgl32.Vec3{0.0, -0.25, 0.0})
 	}
 
 	prop.SpriteRender = comps.NewSpriteRender(sprite)
@@ -112,9 +111,7 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
-	particlesTransform := prop.Body().Transform
-	particlesTransform.TranslateV(mgl32.Vec3{0.0, 0.0, 0.0})
-	prop.voice.SetPositionV(prop.Body().Transform.Position())
+	prop.voice.SetPositionV(prop.Body().Position)
 
 	if prop.updateFunc != nil {
 		prop.updateFunc(deltaTime)
@@ -135,7 +132,7 @@ func (prop *Prop) geoffreyUse(player *Player) {
 
 func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 	vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation("vanish")
-	bodiesIter := prop.world.IterBodiesInSphere(prop.body.Transform.Position(), prop.radius, prop)
+	bodiesIter := prop.world.IterBodiesInSphere(prop.body.Position, prop.radius, prop)
 	if !prop.isSeen && !bodiesIter.HasNext() {
 		// Make Geoffrey re-appear when nobody is looking.
 		if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
@@ -145,11 +142,11 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 		}
 	} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 		// Check for incoming projectiles and trigger the disappearing animation.
-		projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+		projsIter := prop.world.IterProjectilesInSphere(prop.body.Position, projectileSafetyRadius, nil)
 		if projsIter.HasNext() {
 			prop.AnimPlayer.PlayNewAnim(vanishAnim)
 			prop.body.Layer = 0
-			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Transform.Position())
+			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Position)
 		}
 	}
 }
@@ -164,12 +161,12 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 	closeAnim, _ := prop.SpriteRender.Texture().GetAnimation("close")
 	stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
 	eyeContact := false
-	projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+	projsIter := prop.world.IterProjectilesInSphere(prop.body.Position, projectileSafetyRadius, nil)
 	if !projsIter.HasNext() {
-		if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
-			toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
+		if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Position {
+			toCamera := camera.Position().Sub(prop.body.Position).Normalize()
 			if camera.Forward().Dot(toCamera) < -0.95 {
-				res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop)
+				res, handle := prop.world.Raycast(prop.body.Position, toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop)
 				if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
 					prop.stareTimer += deltaTime
 					eyeContact = true
