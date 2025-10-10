@@ -9,42 +9,37 @@ import (
 )
 
 type MeshRender struct {
-	Mesh    *geom.Mesh
-	Shader  *shaders.Shader
-	Texture *textures.Texture
-	Group   string
+	Mesh           *geom.Mesh
+	Shader         *shaders.Shader
+	Texture        *textures.Texture
+	LocalTransform Transform // Transform relative to the rendered position
+	Group          string
 }
 
 func NewMeshRender(Mesh *geom.Mesh, Shader *shaders.Shader, Texture *textures.Texture) MeshRender {
 	return NewMeshRenderGroup(Mesh, Shader, Texture, "")
 }
 
-func NewMeshRenderGroup(Mesh *geom.Mesh, Shader *shaders.Shader, Texture *textures.Texture, Group string) MeshRender {
+func NewMeshRenderGroup(mesh *geom.Mesh, shader *shaders.Shader, texture *textures.Texture, group string) MeshRender {
 	return MeshRender{
-		Mesh,
-		Shader,
-		Texture,
-		Group,
+		Mesh:    mesh,
+		Shader:  shader,
+		Texture: texture,
+		Group:   group,
 	}
 }
 
 // Renders the mesh with the given local transform and the optional animation player.
-// If transform is nil, then the model matrix is the identity matrix.
 func (mr *MeshRender) Render(
-	transform *Transform,
+	position mgl32.Vec3,
 	animPlayer *AnimationPlayer,
 	context *render.Context,
 ) {
-	if mr.Mesh == nil || mr.Shader == nil {
+	if mr == nil || mr.Mesh == nil || mr.Shader == nil {
 		return
 	}
 
-	var modelMatrix mgl32.Mat4
-	if transform != nil {
-		modelMatrix = transform.Matrix()
-	} else {
-		modelMatrix = mgl32.Ident4()
-	}
+	modelMatrix := mgl32.Translate3D(position[0], position[1], position[2]).Mul4(mr.LocalTransform.Matrix())
 
 	// Bind resources
 	mr.Mesh.Bind()

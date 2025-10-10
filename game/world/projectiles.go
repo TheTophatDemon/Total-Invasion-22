@@ -50,7 +50,7 @@ func SpawnSickle(world *World, position, facing mgl32.Vec3, owner scene.Handle) 
 	}
 
 	sickleTex := cache.GetTexture("assets/textures/sprites/sickle_thrown.png")
-	proj.SpriteRender = comps.NewSpriteRender(sickleTex)
+	proj.SpriteRender = comps.NewSpriteRender(sickleTex, nil, nil)
 
 	throwAnim, ok := sickleTex.GetAnimation("throw;front")
 	if !ok {
@@ -165,8 +165,7 @@ func SpawnEgg(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id
 			Layer:    ColLayerProjectiles,
 		},
 		Facing:       facing,
-		SpriteScale:  0.4,
-		SpriteRender: comps.NewSpriteRender(eggTex),
+		SpriteRender: comps.NewSpriteRender(eggTex, nil, &mgl32.Vec2{0.4, 0.4}),
 		forwardSpeed: 100.0,
 		StunChance:   0.1,
 		Damage:       15,
@@ -222,9 +221,8 @@ func SpawnFireball(world *World, position, facing mgl32.Vec3, owner scene.Handle
 			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
 			Layer:    ColLayerProjectiles,
 		},
-		SpriteScale:  0.375,
 		Facing:       facing,
-		SpriteRender: comps.NewSpriteRender(tex),
+		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.375, 0.375}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 70.0,
 		voices: [4]tdaudio.VoiceId{
@@ -260,7 +258,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 			Velocity: direction.Mul(20.0),
 			Layer:    ColLayerProjectiles,
 		},
-		SpriteRender: comps.NewSpriteRender(tex),
+		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.25, 0.25}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		StunChance:   0.0,
 		Damage:       15,
@@ -270,7 +268,6 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 		maxLife:      1.5,
 		onDie:        proj.explodeOnDie,
 		onCollide:    proj.grenadeCollide,
-		SpriteScale:  0.25,
 	}
 
 	return
@@ -343,23 +340,24 @@ func SpawnPlasmaBall(
 		onDie:        proj.playAnimOnDie,
 	}
 
+	scale := float32(0.25)
+
 	var tex *textures.Texture
 	if bigShot {
 		// NOW'S YOUR CHANCE TO BE A BIG SHOT
-		proj.SpriteScale = 0.35
+		scale = 0.35
 		proj.Shape = collision.NewBoxShape(0.35, 0.35, 0.35)
 		proj.knockbackForce = 5.0
 		proj.Damage = 8
 		tex = cache.GetTexture("assets/textures/sprites/big_plasma_ball.png")
 	} else {
-		proj.SpriteScale = 0.25
 		proj.Shape = collision.NewBoxShape(0.25, 0.25, 0.25)
 		proj.knockbackForce = 12.0
 		proj.Damage = 5
 		tex = cache.GetTexture("assets/textures/sprites/plasma_ball.png")
 	}
 
-	proj.SpriteRender = comps.NewSpriteRender(tex)
+	proj.SpriteRender = comps.NewSpriteRender(tex, nil, &mgl32.Vec2{scale, scale})
 	proj.AnimPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
 	proj.dieAnim, _ = tex.GetAnimation("die")
 
@@ -388,8 +386,7 @@ func SpawnBlessing(world *World, position, facing mgl32.Vec3, owner scene.Handle
 			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
 			Layer:    ColLayerProjectiles,
 		},
-		SpriteScale:  0.5,
-		SpriteRender: comps.NewSpriteRender(tex),
+		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 30.0,
 		voices: [4]tdaudio.VoiceId{

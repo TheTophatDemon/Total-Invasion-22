@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	SFX_CHICKEN_BOK  = "assets/sounds/chicken/chicken_bok.wav"
-	SFX_CHICKEN_PAIN = "assets/sounds/chicken/chicken_pain.wav"
+	SfxChickenBok  = "assets/sounds/chicken/chicken_bok.wav"
+	SfxChickenPain = "assets/sounds/chicken/chicken_pain.wav"
 )
 
 type Chicken struct {
@@ -61,13 +61,11 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 
 	chk.actor = Actor{
 		body: comps.Body{
-			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position), mgl32.Vec3{}, mgl32.Vec3{0.5, 0.5, 0.5},
-			),
-			Shape:  collision.NewBoxShape(0.5, 0.5, 0.5),
-			Layer:  ColLayerActors | ColLayerNPCs,
-			Filter: ColLayerMap | ColLayerActors,
-			LockY:  false,
+			Position: position,
+			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
+			Layer:    ColLayerActors | ColLayerNPCs,
+			// Filter: ColLayerMap | ColLayerActors,
+			// LockY:  false,
 		},
 		YawAngle:     mgl32.DegToRad(angles[1]),
 		AccelRate:    80.0,
@@ -77,13 +75,14 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 		MaxFallSpeed: 15.0,
 		world:        world,
 	}
-	chk.SpriteRender = comps.NewSpriteRender(tex)
+	chk.SpriteRender = comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5})
+
 	chk.AnimPlayer = comps.NewAnimationPlayer(chk.walkAnim, false)
 
 	chk.actor.Health = 45.0
 	chk.actor.MaxHealth, chk.actor.TargetHealth = chk.actor.Health, chk.actor.Health
 
-	chk.voice = cache.GetSfx(SFX_CHICKEN_BOK).PlayAttenuatedV(position)
+	chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(position)
 
 	chk.decomposeTimer = 120.0
 
@@ -97,9 +96,9 @@ func (chk *Chicken) Finalize() {
 func (chk *Chicken) Update(deltaTime float32) {
 	chk.AnimPlayer.Update(deltaTime)
 	chk.actor.Update(deltaTime)
-	chk.bloodParticles.Update(deltaTime, &chk.Body().Transform)
+	chk.bloodParticles.Update(deltaTime, chk.Body().Position)
 
-	chkPos := chk.Body().Transform.Position()
+	chkPos := chk.Body().Position
 	chkDir := chk.actor.FacingVec()
 	if chk.voice.IsValid() {
 		chk.voice.SetPositionV(chkPos)
@@ -140,15 +139,14 @@ func (chk *Chicken) Update(deltaTime float32) {
 		}
 
 		if chk.actor.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
-			chk.actor.body.Layer = ColLayerNone
-			chk.actor.body.Filter = ColLayerNone
+			chk.actor.body.Layer.SetBypass()
 		}
 	}
 }
 
 func (chk *Chicken) Render(context *render.Context) {
-	chk.SpriteRender.Render(&chk.Body().Transform, &chk.AnimPlayer, context, chk.actor.YawAngle)
-	chk.bloodParticles.Render(&chk.Body().Transform, context)
+	chk.SpriteRender.Render(chk.Body().Position, &chk.AnimPlayer, context, chk.actor.YawAngle)
+	chk.bloodParticles.Render(chk.Body().Position, context)
 }
 
 func (chk *Chicken) ProcessSignal(signal any) {
@@ -162,7 +160,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	chk.actor.Health -= damage
 	if chk.actor.Health <= 0 {
 		chk.voice.Stop()
-		chk.voice = cache.GetSfx(SFX_CHICKEN_PAIN).PlayAttenuatedV(chk.Body().Transform.Position())
+		chk.voice = cache.GetSfx(SfxChickenPain).PlayAttenuatedV(chk.Body().Position)
 		// Spawn an item sometimes
 		switch v := rand.Float32(); {
 		case v < 0.1:
@@ -171,7 +169,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 			SpawnEggCarton(chk.world, chk.actor.Position())
 		}
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {
-		chk.voice = cache.GetSfx(SFX_CHICKEN_BOK).PlayAttenuatedV(chk.Body().Transform.Position())
+		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(chk.Body().Position)
 	}
 	return true
 }

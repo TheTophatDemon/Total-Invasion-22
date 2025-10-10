@@ -26,9 +26,9 @@ func (actor *Actor) Update(deltaTime float32) {
 	// Diminish noise level
 	actor.noisyTimer = max(0.0, actor.noisyTimer-deltaTime)
 
-	if actor.GravityAccel != 0.0 && actor.body.Filter&ColLayerMap != 0 {
+	if actor.GravityAccel != 0.0 {
 		distToBottom := (actor.body.Shape.Extents().Max.Y()) + 0.01
-		downCast, _ := actor.world.Raycast(actor.body.Transform.Position(), mgl32.Vec3{0.0, -1.0, 0.0}, ColLayerMap, distToBottom, nil)
+		downCast, _ := gWorld.Raycast(actor.body.Position, mgl32.Vec3{0.0, -1.0, 0.0}, ColLayerMap, distToBottom, nil)
 		actor.onGround = downCast.Hit
 	}
 
@@ -72,6 +72,12 @@ func (actor *Actor) Update(deltaTime float32) {
 
 		actor.body.Velocity = actor.body.Velocity.Add(actor.knockbackForce)
 	}
+
+	// Do collisions
+	movement := actor.body.Velocity.Mul(deltaTime)
+	movement = movement.Add(gWorld.bspTree.ResolveCollisions(&actor.body, movement, true, ColFilterForActors))
+	movement = movement.Add(gWorld.ResolveMapCollisions(&actor.body, movement, true, ColFilterForActors))
+	actor.body.TranslateV(movement)
 }
 
 func (actor *Actor) SetYaw(newYaw float32) {
@@ -91,7 +97,7 @@ func (actor *Actor) Body() *comps.Body {
 }
 
 func (actor *Actor) Position() mgl32.Vec3 {
-	return actor.body.Transform.Position()
+	return actor.body.Position
 }
 
 func (actor *Actor) ApplyKnockback(force mgl32.Vec3) {

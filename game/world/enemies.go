@@ -236,7 +236,7 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 			}
 
 			if corpse.actor.Health <= 0 {
-				diff := corpse.Body().Transform.Position().Sub(enemy.Body().Transform.Position())
+				diff := corpse.Body().Position.Sub(enemy.Body().Position)
 				distSq := diff.LenSqr()
 				if distSq < nearestCorpseDistance {
 					dist := math2.Sqrt(distSq)

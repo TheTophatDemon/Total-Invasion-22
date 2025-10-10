@@ -16,7 +16,7 @@ import (
 var debugShapeCount uint = 0
 
 type DebugShape struct {
-	Transform  comps.Transform
+	Position   mgl32.Vec3
 	MeshRender comps.MeshRender
 	TimeLeft   float32
 	id         scene.Id[*DebugShape]
@@ -30,7 +30,7 @@ func (debugShape *DebugShape) Update(deltaTime float32) {
 }
 
 func (debugShape *DebugShape) Render(context *render.Context) {
-	debugShape.MeshRender.Render(&debugShape.Transform, nil, context)
+	debugShape.MeshRender.Render(debugShape.Position, nil, context)
 }
 
 func SpawnDebugLine(

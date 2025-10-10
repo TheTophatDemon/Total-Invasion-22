@@ -6,7 +6,6 @@ import (
 	"math"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -44,66 +43,66 @@ const (
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
-	Hud              hud.Hud
-	Players          scene.Storage[Player]
-	Enemies          scene.Storage[Enemy]
-	Chickens         scene.Storage[Chicken]
-	Walls            scene.Storage[Wall]
-	Triggers         scene.Storage[Trigger]
-	Projectiles      scene.Storage[Projectile]
-	Effects          scene.Storage[Effect]
-	Items            scene.Storage[Item]
-	DebugShapes      scene.Storage[DebugShape]
-	Cameras          scene.Storage[Camera]
-	MapLayers        scene.Storage[comps.MapLayer]
-	Props            scene.Storage[Prop]
-	GameMap          *comps.MapLayer // An easy access pointer to the main map layer
-	CurrentPlayer    scene.Id[*Player]
-	CurrentCamera    scene.Id[*Camera]
-	removalQueue     []scene.Handle  // Holds entities to be removed at the end of the frame.
-	app              engine.Observer // Communicates with the main application
-	impendingLevel   string          // Path to the next level. Set once the player reaches an exit.
-	bspTree          tree.BspTree    // The BSP tree built in the previous frame.
-	avgCollisionTime int64           // Average number of milliseconds spent per frame solving collisions.
-	tickCount        int64
-	skyRender        comps.SkyRender
+	Hud            hud.Hud
+	Players        scene.Storage[Player]
+	Enemies        scene.Storage[Enemy]
+	Chickens       scene.Storage[Chicken]
+	Walls          scene.Storage[Wall]
+	Triggers       scene.Storage[Trigger]
+	Projectiles    scene.Storage[Projectile]
+	Effects        scene.Storage[Effect]
+	Items          scene.Storage[Item]
+	DebugShapes    scene.Storage[DebugShape]
+	Cameras        scene.Storage[Camera]
+	MapLayers      scene.Storage[comps.MapLayer]
+	Props          scene.Storage[Prop]
+	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
+	CurrentPlayer  scene.Id[*Player]
+	CurrentCamera  scene.Id[*Camera]
+	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
+	app            engine.Observer // Communicates with the main application
+	impendingLevel string          // Path to the next level. Set once the player reaches an exit.
+	bspTree        tree.BspTree    // The BSP tree built in the previous frame.
+	skyRender      comps.SkyRender
 }
 
+var gWorld *World
+
 func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSignal) (*World, error) {
-	world := &World{
+	gWorld = &World{
 		removalQueue: make([]scene.Handle, 0, 8),
 		app:          app,
 	}
 
-	world.Hud.Init()
+	gWorld.Hud.Init()
 
-	world.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
-	world.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
-	world.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
-	world.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
-	world.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
-	world.Triggers = scene.NewStorageWithFuncs(512, (*Trigger).Update, (*Trigger).Render)
-	world.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
-	world.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
-	world.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
-	world.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
-	world.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
-	world.MapLayers = scene.NewStorageWithFuncs(3, world.UpdateMapLayer, (*comps.MapLayer).Render)
+	gWorld.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
+	gWorld.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
+	gWorld.Chickens = scene.NewStorageWithFuncs(64, (*Chicken).Update, (*Chicken).Render)
+	gWorld.Walls = scene.NewStorageWithFuncs(256, (*Wall).Update, (*Wall).Render)
+	gWorld.Props = scene.NewStorageWithFuncs(256, (*Prop).Update, (*Prop).Render)
+	gWorld.Triggers = scene.NewStorageWithFuncs(512, (*Trigger).Update, (*Trigger).Render)
+	gWorld.Projectiles = scene.NewStorageWithFuncs(256, (*Projectile).Update, (*Projectile).Render)
+	gWorld.Effects = scene.NewStorageWithFuncs(256, (*Effect).Update, (*Effect).Render)
+	gWorld.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
+	gWorld.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
+	gWorld.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
+	gWorld.MapLayers = scene.NewStorageWithFuncs(3, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
 		return nil, err
 	}
 
-	_, world.GameMap, err = world.MapLayers.New()
-	_, invisLayer, err2 := world.MapLayers.New()
-	_, killLayer, err3 := world.MapLayers.New()
+	_, gWorld.GameMap, err = gWorld.MapLayers.New()
+	_, invisLayer, err2 := gWorld.MapLayers.New()
+	_, killLayer, err3 := gWorld.MapLayers.New()
 	if err = errors.Join(err, err2, err3); err != nil {
 		return nil, err
 	}
 
 	const texFlagInvisible = "invisible"
-	*world.GameMap, err = comps.NewMainMapLayer(te3File, ColLayerMap, []string{texFlagInvisible})
+	*gWorld.GameMap, err = comps.NewMainMapLayer(te3File, ColLayerMap, []string{texFlagInvisible})
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +118,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 
 		primaryTexture := cache.GetTexture(te3File.Tiles.Textures[tile.TextureIDs[0]])
 
-		mapLayer := world.GameMap
+		mapLayer := gWorld.GameMap
 		if primaryTexture.HasFlag(texFlagInvisible) {
 			mapLayer = invisLayer
 		} else if primaryTexture.HasFlag("killzone") {
@@ -145,9 +144,9 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		levelFileName[3] >= '0' && levelFileName[3] <= '9' {
 
 		// Level files starting with e#m# activate the level intro.
-		world.Hud.Intro.Init(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
+		gWorld.Hud.Intro.Init(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
 	} else {
-		world.Hud.Intro.Init("", "")
+		gWorld.Hud.Intro.Init("", "")
 	}
 
 	// Spawn entities
@@ -170,7 +169,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 				if meshErr != nil {
 					failure.LogErrWithLocation("Error loading sky: %v\n", meshErr)
 				} else {
-					world.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
+					gWorld.skyRender = comps.NewSkyRender(skyMesh, shaders.SkyShader, skyTex)
 				}
 			}
 
@@ -181,46 +180,34 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		var err error
 		switch entType {
 		case "enemy":
-			_, _, err = SpawnEnemyFromTE3(world, ent)
+			_, _, err = SpawnEnemyFromTE3(gWorld, ent)
 		case "door", "switch":
-			_, _, err = SpawnWallFromTE3(world, ent)
+			_, _, err = SpawnWallFromTE3(gWorld, ent)
 		case "prop":
-			_, _, err = SpawnPropFromTE3(world, ent)
+			_, _, err = SpawnPropFromTE3(gWorld, ent)
 		case "trigger":
-			_, _, err = SpawnTriggerFromTE3(world, ent)
+			_, _, err = SpawnTriggerFromTE3(gWorld, ent)
 		case "item":
-			_, _, err = SpawnItemFromTE3(world, ent)
+			_, _, err = SpawnItemFromTE3(gWorld, ent)
 		case "camera":
-			_, _, err = SpawnCameraFromTE3(world, ent)
+			_, _, err = SpawnCameraFromTE3(gWorld, ent)
 		case "player":
-			world.CurrentCamera, _, err = SpawnCameraFromTE3(world, ent)
+			gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(gWorld, ent)
 			if err != nil {
 				log.Printf("error spawning player camera: %v\n", err)
 			}
-			world.CurrentPlayer, _, err = SpawnPlayer(world, ent.Position, ent.Angles, world.CurrentCamera, changeInfo)
+			gWorld.CurrentPlayer, _, err = SpawnPlayer(gWorld, ent.Position, ent.Angles, gWorld.CurrentCamera, changeInfo)
 		}
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
 		}
 	}
 
-	return world, nil
+	return gWorld, nil
 }
 
 func (world *World) Update(deltaTime float32) {
-	defer func() { world.tickCount++ }()
-
 	world.removalQueue = world.removalQueue[0:0]
-
-	//TODO: Could handle this in Actor.Update instead...
-	if input.IsActionJustPressed(settings.ActionKillEnemies) {
-		iter := world.IterActors()
-		for actor, handle := iter.Next(); actor != nil; actor, handle = iter.Next() {
-			if !handle.Equals(world.CurrentPlayer.Handle) {
-				actor.Actor().Health = 0
-			}
-		}
-	}
 
 	// Free mouse
 	if input.IsActionJustPressed(settings.ActionTrapMouse) {
@@ -248,16 +235,6 @@ func (world *World) Update(deltaTime float32) {
 		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
 	}
 
-	// Update bodies and resolve collisions
-	startTime := time.Now()
-
-	duration := time.Since(startTime).Milliseconds()
-	if world.avgCollisionTime != 0 {
-		world.avgCollisionTime = (world.avgCollisionTime + duration) / world.tickCount
-	} else {
-		world.avgCollisionTime = duration
-	}
-
 	// Remove deleted entities
 	for _, handle := range world.removalQueue {
 		handle.Remove()
@@ -280,24 +257,24 @@ func (world *World) UpdateMapLayer(layer *comps.MapLayer, deltaTime float32) {
 }
 
 func (world *World) ResolveMapCollisions(
-	deltaTime float32,
 	body *comps.Body,
+	movement mgl32.Vec3,
 	lockY bool,
 	filter collision.Mask,
 ) mgl32.Vec3 {
-	movement := body.Velocity.Mul(deltaTime)
 	layerIt := world.MapLayers.Iter()
+	push := mgl32.Vec3{}
 	for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-		nextPos := body.Position.Add(movement)
+		nextPos := body.Position.Add(movement).Add(push)
 		if (layer.Layer & filter) != 0 {
 			pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, nextPos, body.Shape)
-			movement = movement.Add(pushVec)
+			push = push.Add(pushVec)
 		}
 	}
 	if lockY {
-		movement[1] = 0.0
+		push[1] = 0.0
 	}
-	return movement
+	return push
 }
 
 func (world *World) Render() {
@@ -331,7 +308,7 @@ func (world *World) Render() {
 		renderContext.RenderTranslucentObjects()
 	}
 
-	world.Hud.Debug.UpdateCounters(&renderContext, world.avgCollisionTime)
+	world.Hud.Debug.UpdateCounters(&renderContext)
 	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {
 		world.Hud.Render()
 	}

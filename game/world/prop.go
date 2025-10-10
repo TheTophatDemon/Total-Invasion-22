@@ -90,6 +90,8 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		prop.body.Layer = ColLayerNone
 	}
 
+	spriteScale := mgl32.Vec2{1, 1}
+
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.updateFunc = prop.geoffreyUpdate
@@ -100,11 +102,11 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		prop.body.Layer = ColLayerMap | ColLayerNPCs
 	case "fire":
 		prop.body.Layer = ColLayerInvisible
-		// prop.body.Transform.SetScale(1.0, 1.25, 1.0)
+		spriteScale = mgl32.Vec2{1.0, 1.25}
 		prop.body.Position = prop.body.Position.Add(mgl32.Vec3{0.0, -0.25, 0.0})
 	}
 
-	prop.SpriteRender = comps.NewSpriteRender(sprite)
+	prop.SpriteRender = comps.NewSpriteRender(sprite, nil, &spriteScale)
 
 	return
 }
@@ -119,7 +121,7 @@ func (prop *Prop) Update(deltaTime float32) {
 }
 
 func (prop *Prop) Render(context *render.Context) {
-	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	prop.isSeen = prop.SpriteRender.Render(prop.body.Position, &prop.AnimPlayer, context, 0.0)
 }
 
 /************

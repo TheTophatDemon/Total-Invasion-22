@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -30,7 +31,6 @@ type Enemy struct {
 	StunTime                                       float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
 	StunChance                                     float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
 	bloodParticles                                 comps.ParticleRender
-	bloodOffset                                    mgl32.Vec3
 	actor                                          Actor
 	id                                             scene.Id[*Enemy]
 	world                                          *World
@@ -114,13 +114,11 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 
 	enemy.actor = Actor{
 		body: comps.Body{
-			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
-			),
-			Shape:  collision.NewBoxShape(0.7, 0.7, 0.7),
-			Layer:  EnemyColLayers,
-			Filter: ColFilterForActors,
-			LockY:  true,
+			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
+			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
+			Layer:    EnemyColLayers,
+			// Filter: ColFilterForActors,
+			// LockY:  true,
 		},
 		YawAngle:  angles[1],
 		AccelRate: 80.0,
@@ -141,7 +139,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
 	enemy.actor.Health, enemy.actor.TargetHealth = enemy.actor.MaxHealth, enemy.actor.MaxHealth
 
-	enemy.SpriteRender = comps.NewSpriteRender(params.texture)
+	enemy.SpriteRender = comps.NewSpriteRender(params.texture, nil, &mgl32.Vec2{0.9, 0.9})
 	enemy.AnimPlayer = comps.NewAnimationPlayer(params.defaultAnim, false)
 
 	return
@@ -152,14 +150,21 @@ func (enemy *Enemy) Finalize() {
 }
 
 func (enemy *Enemy) Update(deltaTime float32) {
+	if enemy == nil {
+		return
+	}
+
+	if input.IsActionJustPressed(settings.ActionKillEnemies) {
+		// Kill all cheat
+		enemy.actor.Health = 0
+	}
+
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
 
-	bloodTransform := enemy.Body().Transform
-	bloodTransform.TranslateV(enemy.bloodOffset)
-	enemy.bloodParticles.Update(deltaTime, &bloodTransform)
+	enemy.bloodParticles.Update(deltaTime, enemy.Body().Position)
 
-	enemyPos := enemy.Body().Transform.Position()
+	enemyPos := enemy.Body().Position
 	enemyDir := enemy.actor.FacingVec()
 	if enemy.voice.IsValid() {
 		enemy.voice.SetPositionV(enemyPos)
@@ -173,7 +178,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		enemy.targetHandle = enemy.world.CurrentPlayer.Handle
 	}
 	if targetActor, ok := scene.Get[HasActor](enemy.targetHandle); ok && enemy.world.IsOnPlayerCamera() {
-		vecToTarget = targetActor.Body().Transform.Position().Sub(enemyPos)
+		vecToTarget = targetActor.Body().Position.Sub(enemyPos)
 		enemy.distToTarget = vecToTarget.Len()
 		if enemy.distToTarget != 0.0 {
 			enemy.dirToTarget = vecToTarget.Normalize()
@@ -236,10 +241,10 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	case &enemy.dieState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 		radius := enemy.Body().Shape.Radius()
-		if enemy.bloodOffset.Y() > -radius {
-			enemy.bloodOffset = enemy.bloodOffset.Sub(mgl32.Vec3{0.0, deltaTime, 0.0})
+		if enemy.bloodParticles.LocalTransform.Position()[1] > -radius {
+			enemy.bloodParticles.LocalTransform.Translate(0.0, -deltaTime, 0.0)
 		} else {
-			enemy.bloodOffset = mgl32.Vec3{0.0, -radius, 0.0}
+			enemy.bloodParticles.LocalTransform.SetPosition(0.0, -radius, 0.0)
 		}
 	case &enemy.reviveState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
@@ -258,8 +263,8 @@ func (enemy *Enemy) Update(deltaTime float32) {
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.spriteAngle)
-	enemy.bloodParticles.Render(&enemy.Body().Transform, context)
+	enemy.SpriteRender.Render(enemy.Body().Position, &enemy.AnimPlayer, context, enemy.spriteAngle)
+	enemy.bloodParticles.Render(enemy.Body().Position, context)
 }
 
 func (enemy *Enemy) ProcessSignal(signal any) {
@@ -285,7 +290,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		oldState.leaveFunc(enemy, newState)
 	} else if oldState == &enemy.dieState {
 		// Ensure nobody's standing on top of the enemy that is getting revived.
-		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.Radius(), enemy)
+		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Position, enemy.Body().Shape.Radius(), enemy)
 		for {
 			actor, _ := actorsIter.Next()
 			if actor == nil {
@@ -297,9 +302,8 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		}
 
 		enemy.world.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.Layer = EnemyColLayers
-		enemy.actor.body.Filter = ColFilterForActors
-		enemy.bloodOffset = mgl32.Vec3{}
+		enemy.actor.body.Layer.ResetBypass()
+		enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
 		enemy.voice.Stop()
@@ -324,8 +328,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
 		enemy.world.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.Layer = ColLayerNone
-		enemy.actor.body.Filter = ColLayerMap | ColLayerInvisible
+		enemy.actor.body.Layer.SetBypass()
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {

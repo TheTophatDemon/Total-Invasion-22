@@ -16,6 +16,16 @@ func (body *Body) Body() *Body {
 	return body
 }
 
+func (body *Body) Translate(x, y, z float32) {
+	body.Position[0] += x
+	body.Position[1] += y
+	body.Position[2] += z
+}
+
+func (body *Body) TranslateV(vec mgl32.Vec3) {
+	body.Position = body.Position.Add(vec)
+}
+
 func (body *Body) OnLayer(layer collision.Mask) bool {
 	return body.Layer.On(layer)
 }

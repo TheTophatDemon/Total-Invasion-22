@@ -24,7 +24,6 @@ type Projectile struct {
 	StunChance                                     float32 // Probability from 0-1 that this projectile will cause enemies to stun. Multiplied with the enemy's pain chance.
 	Damage                                         float32 // Damage done to actors.
 	Facing                                         mgl32.Vec3
-	SpriteScale                                    float32
 	owner                                          scene.Handle
 	hitOwner                                       bool
 	moveFunc                                       func(deltaTime float32)
@@ -108,8 +107,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 }
 
 func (proj *Projectile) Render(context *render.Context) {
-	trans := comps.TransformFromTranslationAnglesScale(proj.Position, mgl32.Vec3{}, math2.Vec3One().Mul(proj.SpriteScale))
-	proj.SpriteRender.Render(&trans, &proj.AnimPlayer, context, 0.0)
+	proj.SpriteRender.Render(proj.Position, &proj.AnimPlayer, context, 0.0)
 }
 
 func (proj *Projectile) moveForward(deltaTime float32) {

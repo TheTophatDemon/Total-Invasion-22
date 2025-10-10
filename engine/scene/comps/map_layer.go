@@ -1,6 +1,7 @@
 package comps
 
 import (
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -66,6 +67,6 @@ func (gm *MapLayer) Update(deltaTime float32) {
 
 func (gm *MapLayer) Render(context *render.Context) {
 	for i := range gm.groupRenderers {
-		gm.groupRenderers[i].Render(nil, &gm.tileAnims[i], context)
+		gm.groupRenderers[i].Render(mgl32.Vec3{}, &gm.tileAnims[i], context)
 	}
 }

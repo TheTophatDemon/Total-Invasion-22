@@ -36,11 +36,10 @@ func (stats *DebugStats) Layout(queue *ui.RenderQueue) {
 	queue.Add(&stats.drawCounters)
 }
 
-func (stats *DebugStats) UpdateCounters(renderContext *render.Context, avgCollisionTime int64) {
+func (stats *DebugStats) UpdateCounters(renderContext *render.Context) {
 	stats.drawCounters.SetText(
-		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v\nAvg. Collision MS: %v",
+		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v",
 			renderContext.DrawnSpriteCount,
 			renderContext.DrawnWallCount,
-			renderContext.DrawnParticlesCount,
-			avgCollisionTime))
+			renderContext.DrawnParticlesCount))
 }

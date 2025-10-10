@@ -111,7 +111,7 @@ func SpawnPlayer(
 	})
 
 	tex := cache.GetTexture("assets/textures/sprites/segan.png")
-	player.Sprite = comps.NewSpriteRender(tex)
+	player.Sprite = comps.NewSpriteRender(tex, nil, nil)
 	winAnim, _ := tex.GetAnimation("victory")
 	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
@@ -191,7 +191,8 @@ func (player *Player) Update(deltaTime float32) {
 
 		if camera, ok := player.Camera.Get(); ok {
 			// Keep camera transform in sync with the player
-			camera.Transform.SetPosition(player.Body().Position)
+			camera.Transform.SetPositionV(player.Body().Position)
+			camera.Transform.SetRotation(0.0, player.actor.YawAngle, 0.0)
 		}
 	} else {
 		// Death logic
@@ -231,7 +232,7 @@ func (player *Player) Update(deltaTime float32) {
 	hudPtr.PlayerStats = hud.PlayerStats{
 		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Health:              int(math2.Ceil(player.actor.Health)),
-		Noclip:              player.Body().Layer == ColLayerNone,
+		Noclip:              player.Body().Layer.Bypassed(),
 		GodMode:             player.godMode,
 		Ammo:                player.ammo,
 		Keys:                player.keys,
@@ -244,7 +245,7 @@ func (player *Player) Update(deltaTime float32) {
 
 func (player *Player) Render(context *render.Context) {
 	if player.world.InWinState() {
-		player.Sprite.Render(&player.Body().Transform, &player.AnimPlayer, context, player.actor.YawAngle)
+		player.Sprite.Render(player.Body().Position, &player.AnimPlayer, context, player.actor.YawAngle)
 	}
 }
 
@@ -275,7 +276,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ActionNoclip) {
 		var message string = settings.Localize("noclipActivate")
-		if player.Body().Layer != ColLayerNone {
+		if !player.Body().Layer.Bypassed() {
 			player.Body().Layer.SetBypass()
 		} else {
 			player.Body().Layer.ResetBypass()
@@ -319,10 +320,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	// Use key
 	if input.IsActionJustPressed(settings.ActionUse) {
-		rayOrigin := player.Body().Transform.Position()
-		rayDir := player.Body().Transform.Forward()
 		const useDist float32 = 3.0
-		hit, closestBody := player.world.Raycast(rayOrigin, rayDir, ColFilterForActors, useDist, player)
+		hit, closestBody := player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColFilterForActors, useDist, player)
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -341,7 +340,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
-			cast, _ = player.world.Raycast(player.Body().Transform.Position(), player.Body().Transform.Forward(), ColLayerMap, 1.5, player)
+			cast, _ = player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player)
 		}
 
 		ammoBefore := player.ammo
@@ -404,7 +403,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 
 		if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
 			// Change the hurt face with respect to the direction the damage is coming from
-			dmgDir := bodyHaver.Body().Transform.Position().Sub(player.Body().Transform.Position())
+			dmgDir := bodyHaver.Body().Position.Sub(player.Body().Position)
 			if dmgDir.LenSqr() > 0.0 {
 				dmgDir = dmgDir.Normalize()
 			}
@@ -456,19 +455,18 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 	}
 	switch weapon.Kind() {
 	case game.WeaponSickle:
-		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.0, -0.5}, player.Body().Transform.Matrix())
-		SpawnSickle(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle)
+		SpawnSickle(player.world, player.actor.FacingVec().Mul(0.5), player.actor.FacingVec(), player.id.Handle)
 	case game.WeaponChicken:
-		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.15, -0.5}, player.Body().Transform.Matrix())
-		SpawnEgg(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle)
+		firePos := player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.15, 0.0})
+		SpawnEgg(player.world, firePos, player.actor.FacingVec(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
 	case game.WeaponGrenade:
-		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, 0.15, -1.25}, player.Body().Transform.Matrix())
-		SpawnGrenade(player.world, firePos, player.Body().Transform.Forward())
+		firePos := player.actor.FacingVec().Mul(1.25).Add(mgl32.Vec3{0.0, 0.15, 0.0})
+		SpawnGrenade(player.world, firePos, player.actor.FacingVec())
 		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
 	case game.WeaponParusu:
-		firePos := mgl32.TransformCoordinate(mgl32.Vec3{0.0, -0.25, -0.5}, player.Body().Transform.Matrix())
-		SpawnPlasmaBall(player.world, firePos, player.Body().Transform.Forward(), player.id.Handle, false)
+		firePos := player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.25, 0.0})
+		SpawnPlasmaBall(player.world, firePos, player.actor.FacingVec(), player.id.Handle, false)
 		cache.GetSfx("assets/sounds/weapon/parusu.wav").Play()
 	case game.WeaponAirhorn:
 		if justPressed {

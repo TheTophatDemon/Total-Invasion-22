@@ -15,12 +15,16 @@ type Result struct {
 type Mask uint64
 
 // When this bit is set, collisions will be bypassed.
-const BypassBit Mask = 2 ^ 63
+const BypassBit Mask = 1 << 63
 
 // Returns true if any of the bits in the provided mask are set on this mask.
 // Will return false if otherMask has the bypass bit set.
 func (mask Mask) On(otherMask Mask) bool {
 	return ((mask|otherMask)&BypassBit == 0) && (mask&otherMask) != 0
+}
+
+func (mask Mask) Bypassed() bool {
+	return (mask & BypassBit) != 0
 }
 
 // Sets the bypass bit on this mask so that it'll temporarily ignore collisions.

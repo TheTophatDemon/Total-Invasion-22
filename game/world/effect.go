@@ -48,7 +48,7 @@ func (fx *Effect) Finalize() {
 
 func (fx *Effect) Update(deltaTime float32) {
 	fx.Lifetime -= deltaTime
-	fx.particles.Update(deltaTime, &fx.Transform)
+	fx.particles.Update(deltaTime, mgl32.Vec3{})
 	if fx.voice.IsValid() {
 		fx.voice.SetPositionV(fx.Transform.Position())
 	}
@@ -58,13 +58,13 @@ func (fx *Effect) Update(deltaTime float32) {
 }
 
 func (fx *Effect) Render(context *render.Context) {
-	fx.particles.Render(&fx.Transform, context)
+	fx.particles.Render(mgl32.Vec3{}, context)
 }
 
 func SpawnSingleExplosion(world *World, position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect, err error) {
-	const DAMAGE_RADIUS = 3.5
-	const MAX_ENEMY_DAMAGE = 175.0
-	const MIN_ENEMY_DAMAGE = 50.0
+	const damageRadius = 3.5
+	const maxEnemyDamage = 175.0
+	const minEnemyDamage = 50.0
 	id, fx, err = SpawnEffect(world, comps.TransformFromTranslation(position), 1.0, ExplosionParticles(1, 1.0, 1.5))
 	if err != nil {
 		return
@@ -72,10 +72,10 @@ func SpawnSingleExplosion(world *World, position mgl32.Vec3) (id scene.Id[*Effec
 	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(position)
 
 	// Apply splash damage to surrounding entities
-	bodyIter := world.IterBodiesInSphere(position, DAMAGE_RADIUS, nil)
+	bodyIter := world.IterBodiesInSphere(position, damageRadius, nil)
 	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
 		if damageable, ok := bodyHaver.(Damageable); ok {
-			vecToTarget := bodyHaver.Body().Transform.Position().Sub(position)
+			vecToTarget := bodyHaver.Body().Position.Sub(position)
 			distanceToExplosion := vecToTarget.Len()
 			if distanceToExplosion > 0 {
 				cast, _ := world.Raycast(position, vecToTarget.Mul(1.0/distanceToExplosion),
@@ -89,9 +89,9 @@ func SpawnSingleExplosion(world *World, position mgl32.Vec3) (id scene.Id[*Effec
 			var damage float32
 			if _, isPlayer := damageable.(*Player); isPlayer {
 				difficulty := settings.CurrDifficulty()
-				damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/DAMAGE_RADIUS)
+				damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/damageRadius)
 			} else {
-				damage = math2.Lerp(MAX_ENEMY_DAMAGE, MIN_ENEMY_DAMAGE, distanceToExplosion/DAMAGE_RADIUS)
+				damage = math2.Lerp(maxEnemyDamage, minEnemyDamage, distanceToExplosion/damageRadius)
 			}
 			damageable.OnDamage(fx, damage)
 		}
@@ -121,9 +121,9 @@ func BloodParticles(maxCount int, color color.Color, radius float32) comps.Parti
 			info.AnimPlayer.MoveToRandomFrame()
 		},
 		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			const SHRINK_RATE = 0.75
-			form.Size[0] -= deltaTime * SHRINK_RATE
-			form.Size[1] -= deltaTime * SHRINK_RATE
+			const shrinkRate = 0.75
+			form.Size[0] -= deltaTime * shrinkRate
+			form.Size[1] -= deltaTime * shrinkRate
 			if form.Size[0] <= 0.1 {
 				form.Size = mgl32.Vec2{}
 				info.Lifetime = 0.0
@@ -151,9 +151,9 @@ func EggParticles(radius float32) comps.ParticleRender {
 			info.AnimPlayer.MoveToRandomFrame()
 		},
 		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			const SHRINK_RATE = 0.75
-			form.Size[0] -= deltaTime * SHRINK_RATE
-			form.Size[1] -= deltaTime * SHRINK_RATE
+			const shrinkRate = 0.75
+			form.Size[0] -= deltaTime * shrinkRate
+			form.Size[1] -= deltaTime * shrinkRate
 			if form.Size[0] <= 0.1 {
 				form.Size = mgl32.Vec2{}
 				info.Lifetime = 0.0
@@ -207,9 +207,9 @@ func TeleportParticles(radius float32) comps.ParticleRender {
 			info.Lifetime = 0.5
 		},
 		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
-			const SHRINK_RATE = 0.75
-			form.Size[0] -= deltaTime * SHRINK_RATE
-			form.Size[1] -= deltaTime * SHRINK_RATE
+			const shrinkRate = 0.75
+			form.Size[0] -= deltaTime * shrinkRate
+			form.Size[1] -= deltaTime * shrinkRate
 			if form.Size[0] <= 0.1 {
 				form.Size = mgl32.Vec2{}
 				info.Lifetime = 0.0

@@ -31,7 +31,8 @@ const (
 
 type Trigger struct {
 	Radius          float32
-	Transform       comps.Transform
+	Position        mgl32.Vec3
+	Yaw             float32
 	id              scene.Id[*Trigger]
 	particles       comps.ParticleRender
 	filter          func(comps.HasBody) bool
@@ -56,7 +57,9 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	tr.world = world
 	tr.id = id
 	tr.Radius = ent.Radius
-	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
+	tr.Position = ent.Position
+	trans := comps.TransformFromTE3Ent(ent, false, false)
+	tr.Yaw = trans.Yaw()
 	tr.linkNumber, _ = ent.IntProperty("link")
 	tr.entProperties = ent.Properties
 
@@ -94,7 +97,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 
 func (tr *Trigger) Update(deltaTime float32) {
 	// Call callbacks for new & already touching entities
-	touchingNow := tr.world.IterBodiesInSphere(tr.Transform.Position(), tr.Radius, nil)
+	touchingNow := tr.world.IterBodiesInSphere(tr.Position, tr.Radius, nil)
 	var stillTouching [triggerMaxContacts]bool
 	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
 		bodyHaver, _ := scene.Get[comps.HasBody](handle)
@@ -122,11 +125,11 @@ func (tr *Trigger) Update(deltaTime float32) {
 		}
 	}
 
-	tr.particles.Update(deltaTime, &tr.Transform)
+	tr.particles.Update(deltaTime, tr.Position)
 }
 
 func (tr *Trigger) Render(context *render.Context) {
-	tr.particles.Render(&tr.Transform, context)
+	tr.particles.Render(tr.Position, context)
 }
 
 func (tr *Trigger) LinkNumber() int {
@@ -175,7 +178,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
-				actorsIter := tr.world.IterActorsInSphere(trOther.Transform.Position(), trOther.Radius, nil)
+				actorsIter := tr.world.IterActorsInSphere(trOther.Position, trOther.Radius, nil)
 				for {
 					_, actorHandle := actorsIter.Next()
 					if actorHandle.IsNil() {
@@ -192,10 +195,10 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 					victimEnt.(Damageable).OnDamage(tr, math2.Inf32())
 				}
 
-				teleportingBody.Position = trOther.Transform.Position()
+				teleportingBody.Position = trOther.Position
 				teleportingBody.Velocity = mgl32.Vec3{}
 				actor := teleportingEnt.Actor()
-				actor.SetYaw(trOther.Transform.Yaw())
+				actor.SetYaw(trOther.Yaw)
 				actor.inputForward, actor.inputStrafe = 0.0, 0.0
 				teleportingEnt.ProcessSignal(game.TeleportationSignal{})
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
@@ -203,7 +206,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				trOther.addToTouching(handle)
 				const sfxTeleport = "assets/sounds/teleport.wav"
 				cache.GetSfx(sfxTeleport).PlayAttenuatedV(actor.Position())
-				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Transform.Position())
+				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Position)
 				tr.particles.EmissionTimer = 0.5
 				trOther.particles.EmissionTimer = 0.5
 
