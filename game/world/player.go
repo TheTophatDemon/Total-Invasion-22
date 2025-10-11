@@ -84,13 +84,14 @@ func SpawnPlayer(
 			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
 			Layer:    ColLayerActors | ColLayerPlayers,
 		},
-		YawAngle:     mgl32.DegToRad(angles[1]),
-		AccelRate:    100.0,
-		Friction:     20.0,
-		MaxHealth:    200,
-		TargetHealth: 100,
-		Health:       100,
-		world:        world,
+		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
+		YawAngle:        mgl32.DegToRad(angles[1]),
+		AccelRate:       100.0,
+		Friction:        20.0,
+		MaxHealth:       200,
+		TargetHealth:    100,
+		Health:          100,
+		world:           world,
 	}
 	player.Camera = camera
 	player.RunSpeed = 12.0
@@ -232,7 +233,7 @@ func (player *Player) Update(deltaTime float32) {
 	hudPtr.PlayerStats = hud.PlayerStats{
 		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Health:              int(math2.Ceil(player.actor.Health)),
-		Noclip:              player.Body().Layer.Bypassed(),
+		Noclip:              player.Body().Noclip,
 		GodMode:             player.godMode,
 		Ammo:                player.ammo,
 		Keys:                player.keys,
@@ -275,14 +276,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ActionNoclip) {
-		var message string = settings.Localize("noclipActivate")
-		if !player.Body().Layer.Bypassed() {
-			player.Body().Layer.SetBypass()
+		if !player.Body().Noclip {
+			player.Body().Noclip = true
+			hudPtr.ShowMessage(settings.Localize("noclipActivate"), 4.0, 100, color.Red)
 		} else {
-			player.Body().Layer.ResetBypass()
-			message = settings.Localize("noclipDeactivate")
+			player.Body().Noclip = false
+			hudPtr.ShowMessage(settings.Localize("noclipDeactivate"), 4.0, 100, color.Red)
 		}
-		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
 	if input.IsActionJustPressed(settings.ActionGodMode) {
@@ -321,7 +321,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Use key
 	if input.IsActionJustPressed(settings.ActionUse) {
 		const useDist float32 = 3.0
-		hit, closestBody := player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColFilterForActors, useDist, player)
+		hit, closestBody := player.world.Raycast(player.Body().Position, player.actor.FacingVec(), player.actor.collisionFilter, useDist, player.Body())
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -340,7 +340,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
-			cast, _ = player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player)
+			cast, _ = player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
 		}
 
 		ammoBefore := player.ammo
@@ -457,8 +457,8 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 	case game.WeaponSickle:
 		SpawnSickle(player.world, player.actor.FacingVec().Mul(0.5), player.actor.FacingVec(), player.id.Handle)
 	case game.WeaponChicken:
-		firePos := player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.15, 0.0})
-		SpawnEgg(player.world, firePos, player.actor.FacingVec(), player.id.Handle)
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.15, 0.0}))
+		SpawnEgg(firePos, player.actor.FacingVec(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
 	case game.WeaponGrenade:
 		firePos := player.actor.FacingVec().Mul(1.25).Add(mgl32.Vec3{0.0, 0.15, 0.0})

@@ -37,10 +37,6 @@ const (
 	ColLayerKillzone // Kills any actor that touches
 )
 
-const (
-	ColFilterForActors collision.Mask = ColLayerMap | ColLayerActors | ColLayerInvisible
-)
-
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
 	Hud            hud.Hud
@@ -262,6 +258,10 @@ func (world *World) ResolveMapCollisions(
 	lockY bool,
 	filter collision.Mask,
 ) mgl32.Vec3 {
+	if body == nil || body.Noclip {
+		return mgl32.Vec3{}
+	}
+
 	layerIt := world.MapLayers.Iter()
 	push := mgl32.Vec3{}
 	for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
@@ -350,28 +350,45 @@ func (world *World) IsOnPlayerCamera() bool {
 
 func (world *World) Raycast(
 	rayOrigin, rayDir mgl32.Vec3, filter collision.Mask,
-	maxDist float32, excludeBody comps.HasBody,
+	maxDist float32, excludeBody *comps.Body,
 ) (collision.Result, scene.Handle) {
 	var rayBB math2.Box = math2.BoxFromPoints(rayOrigin, rayOrigin.Add(rayDir.Mul(maxDist)))
 	var closestEnt scene.Handle
-	var closestBodyHit collision.Result
-	closestBodyHit.Distance = math.MaxFloat32
+	var closestHit collision.Result
+	closestHit.Distance = math.MaxFloat32
+
+	// Check bodies
+	//TODO: Could optimize this using bsp tree
 	iter := world.IterBodies()
 	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
 		body := bodyEnt.Body()
-		if bodyEnt == excludeBody ||
-			!bodyEnt.Body().OnLayer(filter) ||
+		if body == nil || body == excludeBody ||
+			!body.OnLayer(filter) ||
 			!body.Shape.Extents().Translate(body.Position).Intersects(rayBB) {
 			continue
 		}
 		bodyHit := body.Shape.Raycast(body.Position, rayOrigin, rayDir, maxDist)
-		if bodyHit.Hit && bodyHit.Distance < closestBodyHit.Distance {
-			closestBodyHit = bodyHit
+		if bodyHit.Hit && bodyHit.Distance < closestHit.Distance {
+			closestHit = bodyHit
 			closestEnt = bodyId
 		}
 	}
+
+	// Check map layers
+	layerIt := world.MapLayers.Iter()
+	for layer, layerId := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
+		if !layer.Layer.On(filter) {
+			continue
+		}
+		mapHit := layer.GridShape.Raycast(rayOrigin, rayDir, maxDist)
+		if mapHit.Hit && mapHit.Distance < closestHit.Distance {
+			closestHit = mapHit
+			closestEnt = layerId
+		}
+	}
+
 	if !closestEnt.IsNil() {
-		return closestBodyHit, closestEnt
+		return closestHit, closestEnt
 	}
 	return collision.Result{}, scene.Handle{}
 }

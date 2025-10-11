@@ -141,7 +141,7 @@ func fireWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)
@@ -245,7 +245,7 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 						diff.Mul(1.0/dist),
 						ColLayerMap,
 						dist,
-						enemy,
+						enemy.Body(),
 					)
 					if !hit.Hit {
 						dist = nearestCorpseDistance
@@ -271,7 +271,7 @@ func motherWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)
@@ -367,7 +367,7 @@ func dummkopfUpdateChase(enemy *Enemy, deltaTime float32) {
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)

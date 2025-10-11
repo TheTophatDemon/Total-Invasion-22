@@ -29,7 +29,6 @@ func SpawnSickle(world *World, position, facing mgl32.Vec3, owner scene.Handle) 
 	}
 
 	*proj = Projectile{
-		world: world,
 		id:    id,
 		owner: owner,
 		Body: comps.Body{
@@ -117,7 +116,7 @@ func (proj *Projectile) sickleCollide(otherEnt any, mask collision.Mask, pushVec
 				proj.id.Remove()
 				if player, isPlayer := owner.(*Player); isPlayer {
 					player.AddAmmo(game.AmmoTypeSickle, 1)
-					if sickleWeapon := proj.world.Hud.Weapons.Get(game.WeaponSickle); sickleWeapon != nil {
+					if sickleWeapon := gWorld.Hud.Weapons.Get(game.WeaponSickle); sickleWeapon != nil {
 						sickleWeapon.Equipped = true
 					}
 				}
@@ -148,15 +147,14 @@ func (proj *Projectile) sickleCollide(otherEnt any, mask collision.Mask, pushVec
 
 var timeSinceLastChicken time.Time
 
-func SpawnEgg(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
-	id, proj, err = world.Projectiles.New()
+func SpawnEgg(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
+	id, proj, err = gWorld.Projectiles.New()
 	if err != nil {
 		return
 	}
 
 	eggTex := cache.GetTexture("assets/textures/sprites/egg.png")
 	*proj = Projectile{
-		world: world,
 		id:    id,
 		owner: owner,
 		Body: comps.Body{
@@ -166,7 +164,7 @@ func SpawnEgg(world *World, position, facing mgl32.Vec3, owner scene.Handle) (id
 		},
 		Facing:       facing,
 		SpriteRender: comps.NewSpriteRender(eggTex, nil, &mgl32.Vec2{0.4, 0.4}),
-		forwardSpeed: 100.0,
+		forwardSpeed: 50.0,
 		StunChance:   0.1,
 		Damage:       15,
 		moveFunc:     proj.moveForward,
@@ -181,22 +179,19 @@ func (proj *Projectile) eggCollide(otherEnt any, mask collision.Mask, pushVec mg
 		damageable.OnDamage(proj, proj.Damage)
 	}
 
-	proj.world.QueueRemoval(proj.id.Handle)
-	proj.Layer.SetBypass()
+	gWorld.QueueRemoval(proj.id.Handle)
+	proj.Body.Noclip = true
 
 	var backwards mgl32.Vec3
 	if proj.Velocity.LenSqr() != 0.0 {
 		backwards = proj.Velocity.Normalize().Mul(-1.0)
 	}
-	SpawnEffect(proj.world,
-		comps.TransformFromTranslation(proj.Position.Add(backwards)),
-		1.0,
-		EggParticles(proj.Shape.Extents().Max[0]))
+	SpawnEffect(proj.Position.Add(backwards), 1.0, EggParticles(proj.Shape.Extents().Max[0]))
 
 	chickenSpot := proj.Position.Add(backwards.Mul(1.5))
-	bodiesIter := proj.world.IterBodiesInSphere(chickenSpot, 0.5, nil)
+	bodiesIter := gWorld.IterBodiesInSphere(chickenSpot, 0.5, nil)
 	if rand.Float32() < 0.3 && !bodiesIter.HasNext() && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
-		SpawnChicken(proj.world, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
+		SpawnChicken(gWorld, chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
 		timeSinceLastChicken = time.Now()
 	}
 }
@@ -213,7 +208,6 @@ func SpawnFireball(world *World, position, facing mgl32.Vec3, owner scene.Handle
 
 	tex := cache.GetTexture("assets/textures/sprites/fireball.png")
 	*proj = Projectile{
-		world: world,
 		id:    id,
 		owner: owner,
 		Body: comps.Body{
@@ -250,8 +244,7 @@ func SpawnGrenade(world *World, position, direction mgl32.Vec3) (id scene.Id[*Pr
 	tex := cache.GetTexture("assets/textures/sprites/grenade.png")
 
 	*proj = Projectile{
-		world: world,
-		id:    id,
+		id: id,
 		Body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
@@ -307,8 +300,8 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 func (proj *Projectile) explodeOnDie(deltaTime float32) {
 	_ = deltaTime
 	proj.Position = proj.Position.Add(mgl32.Vec3{0.0, 0.5, 0.0})
-	SpawnSingleExplosion(proj.world, proj.Position)
-	proj.world.QueueRemoval(proj.id.Handle)
+	SpawnSingleExplosion(proj.Position)
+	gWorld.QueueRemoval(proj.id.Handle)
 }
 
 /**============================================
@@ -325,7 +318,6 @@ func SpawnPlasmaBall(
 	}
 
 	*proj = Projectile{
-		world: world,
 		id:    id,
 		owner: owner,
 		Body: comps.Body{
@@ -377,7 +369,6 @@ func SpawnBlessing(world *World, position, facing mgl32.Vec3, owner scene.Handle
 	tex := cache.GetTexture("assets/textures/sprites/blessing.png")
 
 	*proj = Projectile{
-		world:  world,
 		id:     id,
 		owner:  owner,
 		Facing: facing,
@@ -404,7 +395,7 @@ func SpawnBlessing(world *World, position, facing mgl32.Vec3, owner scene.Handle
 func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 	proj.moveForward(deltaTime)
 
-	enemiesIter := proj.world.Enemies.Iter()
+	enemiesIter := gWorld.Enemies.Iter()
 	for {
 		enemy, handle := enemiesIter.Next()
 		if enemy == nil {
@@ -418,7 +409,7 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 			dist := diff.Len()
 			if dist < 2.0 {
 				// Ensure we are not reviving an enemy from behind a wall.
-				rayHit, _ := proj.world.Raycast(proj.Position, diff.Mul(1.0/dist), ColLayerMap, dist, nil)
+				rayHit, _ := gWorld.Raycast(proj.Position, diff.Mul(1.0/dist), ColLayerMap, dist, nil)
 				if !rayHit.Hit {
 					enemy.changeState(&enemy.reviveState)
 				}

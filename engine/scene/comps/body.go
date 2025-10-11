@@ -10,6 +10,7 @@ type Body struct {
 	Position, Velocity mgl32.Vec3
 	Shape              collision.Shape
 	Layer              collision.Mask // The collision layer(s) that this body resides on
+	Noclip             bool
 }
 
 func (body *Body) Body() *Body {

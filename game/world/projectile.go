@@ -17,7 +17,6 @@ const (
 
 type Projectile struct {
 	comps.Body
-	world                                          *World
 	id                                             scene.Id[*Projectile]
 	SpriteRender                                   comps.SpriteRender
 	AnimPlayer                                     comps.AnimationPlayer
@@ -49,15 +48,15 @@ func (proj *Projectile) Update(deltaTime float32) {
 	if proj.moveFunc != nil {
 		proj.moveFunc(deltaTime)
 	} else if proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) && proj.AnimPlayer.IsAtEnd() {
-		proj.world.QueueRemoval(proj.id.Handle)
+		gWorld.QueueRemoval(proj.id.Handle)
 	}
 
 	proj.Position = proj.Position.Add(proj.Velocity.Mul(deltaTime))
 
 	// Respond to collisions
-	if proj.Layer.On(ColLayerProjectiles) && proj.onCollide != nil {
+	if !proj.Noclip && proj.onCollide != nil {
 		// Detect intersections with bodies
-		bodies := proj.world.bspTree.PotentiallyTouchingEnts(proj.Position, proj.Shape)
+		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.Position, proj.Shape)
 		for handle := range bodies {
 			collidingEnt, ok := scene.Get[comps.HasBody](handle)
 			if !ok {
@@ -84,7 +83,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 		}
 
 		// Detect intersection with the map
-		layers := proj.world.MapLayers.Iter()
+		layers := gWorld.MapLayers.Iter()
 		for layer, _ := layers.Next(); layer != nil; layer, _ = layers.Next() {
 			if !layer.Layer.On(ColFilterForProjectiles) {
 				continue
@@ -115,13 +114,13 @@ func (proj *Projectile) moveForward(deltaTime float32) {
 }
 
 func (proj *Projectile) removeOnDie(deltaTime float32) {
-	proj.world.QueueRemoval(proj.id.Handle)
+	gWorld.QueueRemoval(proj.id.Handle)
 }
 
 func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
-		proj.Layer.SetBypass()
+		proj.Body.Noclip = true
 		proj.Position.Add(proj.Velocity.Mul(-deltaTime))
 		proj.Velocity = mgl32.Vec3{}
 		proj.moveFunc = nil

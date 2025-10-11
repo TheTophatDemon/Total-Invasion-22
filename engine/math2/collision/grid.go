@@ -113,14 +113,13 @@ func (grid *Grid) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 	return out
 }
 
-func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist float32) Result {
+func (grid Grid) Raycast(rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
 	if lenSqr := rayDir.LenSqr(); lenSqr == 0.0 {
 		return Result{}
 	} else if lenSqr != 1.0 {
 		rayDir = rayDir.Normalize()
 	}
 
-	rayOrigin = rayOrigin.Sub(shapeOffset)
 	var maxDistSqr float32 = maxDist * maxDist
 
 	var pos mgl32.Vec3 = rayOrigin
@@ -139,14 +138,13 @@ func (grid Grid) Raycast(rayOrigin, rayDir, shapeOffset mgl32.Vec3, maxDist floa
 		if tileShape := grid.cels[tileIndex]; !tileShape.IsNil() {
 			tileCenter := grid.GridToWorldPos(i, j, k, true)
 			if cast := tileShape.Raycast(tileCenter, rayOrigin, rayDir, maxDist); cast.Hit {
-				if cast.Distance*cast.Distance > maxDistSqr {
-					return Result{}
-				}
-				return Result{
-					Hit:      true,
-					Position: cast.Position.Add(shapeOffset),
-					Normal:   cast.Normal,
-					Distance: cast.Distance,
+				if cast.Distance*cast.Distance <= maxDistSqr {
+					return Result{
+						Hit:      true,
+						Position: cast.Position,
+						Normal:   cast.Normal,
+						Distance: cast.Distance,
+					}
 				}
 			}
 		}
@@ -326,7 +324,7 @@ func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape
 	minX, minY, minZ := max(0, min(i, l)), max(0, min(j, m)), max(0, min(k, n))
 	maxX, maxY, maxZ := min(max(i, l), grid.width-1), min(max(j, m), grid.height-1), min(max(k, n), grid.length-1)
 	tileCount := (maxX - minX + 1) * (maxZ - minZ + 1) * (maxY - minY + 1)
-	if tileCount <= 0 {
+	if tileCount <= 0 || tileCount >= len(grid.visitBuffer) {
 		return mgl32.Vec3{}
 	}
 
@@ -380,26 +378,6 @@ func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape
 
 	return push
 }
-
-// func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape) mgl32.Vec3 {
-// 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
-
-// 	totalPush := mgl32.Vec3{}
-// 	for t, tileShape := range grid.cels {
-// 		// Resolve collision against this tile
-// 		if tileShape.IsNil() {
-// 			continue
-// 		}
-// 		i, j, k := grid.UnflattenGridPos(t)
-// 		tileCenter := grid.GridToWorldPos(i, j, k, true)
-// 		hit, pushVec := theirShape.PushOutOf(theirPositionRelative.Add(totalPush), tileCenter, tileShape)
-// 		if hit {
-// 			totalPush = totalPush.Add(pushVec)
-// 		}
-// 	}
-
-// 	return totalPush
-// }
 
 // Returns true if the other body touches a tile in the grid.
 func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirShape Shape) bool {

@@ -15,25 +15,23 @@ import (
 )
 
 type Effect struct {
-	Transform comps.Transform
-	Lifetime  float32
+	Position mgl32.Vec3
+	Lifetime float32
 
-	world     *World
 	id        scene.Id[*Effect]
 	particles comps.ParticleRender
 	voice     tdaudio.VoiceId
 }
 
-func SpawnEffect(world *World, transform comps.Transform, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {
-	id, fx, err = world.Effects.New()
+func SpawnEffect(position mgl32.Vec3, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {
+	id, fx, err = gWorld.Effects.New()
 	if err != nil {
 		return
 	}
 
 	*fx = Effect{
-		Transform: transform,
+		Position:  position,
 		Lifetime:  lifetime,
-		world:     world,
 		id:        id,
 		particles: particles,
 	}
@@ -47,38 +45,44 @@ func (fx *Effect) Finalize() {
 }
 
 func (fx *Effect) Update(deltaTime float32) {
+	if fx == nil {
+		return
+	}
 	fx.Lifetime -= deltaTime
-	fx.particles.Update(deltaTime, mgl32.Vec3{})
+	fx.particles.Update(deltaTime, fx.Position)
 	if fx.voice.IsValid() {
-		fx.voice.SetPositionV(fx.Transform.Position())
+		fx.voice.SetPositionV(fx.Position)
 	}
 	if fx.Lifetime < 0.0 {
-		fx.world.QueueRemoval(fx.id.Handle)
+		gWorld.QueueRemoval(fx.id.Handle)
 	}
 }
 
 func (fx *Effect) Render(context *render.Context) {
-	fx.particles.Render(mgl32.Vec3{}, context)
+	if fx == nil {
+		return
+	}
+	fx.particles.Render(fx.Position, context)
 }
 
-func SpawnSingleExplosion(world *World, position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect, err error) {
+func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect, err error) {
 	const damageRadius = 3.5
 	const maxEnemyDamage = 175.0
 	const minEnemyDamage = 50.0
-	id, fx, err = SpawnEffect(world, comps.TransformFromTranslation(position), 1.0, ExplosionParticles(1, 1.0, 1.5))
+	id, fx, err = SpawnEffect(position, 1.0, ExplosionParticles(1, 1.0, 1.5))
 	if err != nil {
 		return
 	}
 	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(position)
 
 	// Apply splash damage to surrounding entities
-	bodyIter := world.IterBodiesInSphere(position, damageRadius, nil)
+	bodyIter := gWorld.IterBodiesInSphere(position, damageRadius, nil)
 	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
 		if damageable, ok := bodyHaver.(Damageable); ok {
 			vecToTarget := bodyHaver.Body().Position.Sub(position)
 			distanceToExplosion := vecToTarget.Len()
 			if distanceToExplosion > 0 {
-				cast, _ := world.Raycast(position, vecToTarget.Mul(1.0/distanceToExplosion),
+				cast, _ := gWorld.Raycast(position, vecToTarget.Mul(1.0/distanceToExplosion),
 					ColLayerMap, distanceToExplosion, nil)
 				// Do not apply damage to entities when there is a wall between them and the explosion.
 				if cast.Hit {

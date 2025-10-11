@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -20,15 +21,17 @@ type Actor struct {
 	world                           *World
 	knockbackForce                  mgl32.Vec3
 	noisyTimer                      float32 // While this timer is > 0, enemies will be able to 'hear' the actor
+	collisionFilter                 collision.Mask
 }
 
 func (actor *Actor) Update(deltaTime float32) {
 	// Diminish noise level
 	actor.noisyTimer = max(0.0, actor.noisyTimer-deltaTime)
 
-	if actor.GravityAccel != 0.0 {
+	doGravity := actor.GravityAccel != 0.0
+	if doGravity {
 		distToBottom := (actor.body.Shape.Extents().Max.Y()) + 0.01
-		downCast, _ := gWorld.Raycast(actor.body.Position, mgl32.Vec3{0.0, -1.0, 0.0}, ColLayerMap, distToBottom, nil)
+		downCast, _ := gWorld.Raycast(actor.body.Position, mgl32.Vec3{0.0, -1.0, 0.0}, actor.collisionFilter, distToBottom, &actor.body)
 		actor.onGround = downCast.Hit
 	}
 
@@ -75,8 +78,8 @@ func (actor *Actor) Update(deltaTime float32) {
 
 	// Do collisions
 	movement := actor.body.Velocity.Mul(deltaTime)
-	movement = movement.Add(gWorld.bspTree.ResolveCollisions(&actor.body, movement, true, ColFilterForActors))
-	movement = movement.Add(gWorld.ResolveMapCollisions(&actor.body, movement, true, ColFilterForActors))
+	movement = movement.Add(gWorld.bspTree.ResolveCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
+	movement = movement.Add(gWorld.ResolveMapCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
 	actor.body.TranslateV(movement)
 }
 

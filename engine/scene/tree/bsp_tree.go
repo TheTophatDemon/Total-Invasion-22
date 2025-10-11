@@ -148,19 +148,23 @@ func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.V
 	return res
 }
 
-// Returns the body's movement vector modified to avoid obstacles in the tree.
+// Returns the vector that needs to be added to the body's movement to avoid obstacles in the tree.
 func (tree *BspTree) ResolveCollisions(
 	body *comps.Body,
 	movement mgl32.Vec3,
 	lockY bool,
 	filter collision.Mask,
 ) mgl32.Vec3 {
+	if body == nil || body.Noclip {
+		return mgl32.Vec3{}
+	}
+
 	obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
 	push := mgl32.Vec3{}
 	for _, handle := range obstacles {
 		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
 			otherBody := collidingEnt.Body()
-			if otherBody == nil || body == otherBody || !otherBody.Layer.On(filter) {
+			if otherBody == nil || body == otherBody || !otherBody.Layer.On(filter) || otherBody.Noclip {
 				continue
 			}
 

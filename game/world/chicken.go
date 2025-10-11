@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -27,7 +28,6 @@ type Chicken struct {
 	actor                      Actor
 	voice                      tdaudio.VoiceId
 	walkAnim, flyAnim, dieAnim textures.Animation
-	world                      *World
 	id                         scene.Id[*Chicken]
 	decomposeTimer             float32 // Time in seconds before the chicken's corpse disappears.
 }
@@ -48,7 +48,6 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 		return
 	}
 
-	chk.world = world
 	chk.id = id
 
 	chk.bloodParticles = BloodParticles(5, color.Red, 0.3)
@@ -64,16 +63,15 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 			Position: position,
 			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
 			Layer:    ColLayerActors | ColLayerNPCs,
-			// Filter: ColLayerMap | ColLayerActors,
-			// LockY:  false,
 		},
-		YawAngle:     mgl32.DegToRad(angles[1]),
-		AccelRate:    80.0,
-		Friction:     20.0,
-		MaxSpeed:     2.5,
-		GravityAccel: 80.0,
-		MaxFallSpeed: 15.0,
-		world:        world,
+		collisionFilter: ColLayerMap | ColLayerActors,
+		YawAngle:        mgl32.DegToRad(angles[1]),
+		AccelRate:       80.0,
+		Friction:        20.0,
+		MaxSpeed:        2.5,
+		GravityAccel:    80.0,
+		MaxFallSpeed:    15.0,
+		world:           world,
 	}
 	chk.SpriteRender = comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5})
 
@@ -94,11 +92,15 @@ func (chk *Chicken) Finalize() {
 }
 
 func (chk *Chicken) Update(deltaTime float32) {
+	if chk == nil {
+		return
+	}
+	body := chk.Body()
 	chk.AnimPlayer.Update(deltaTime)
 	chk.actor.Update(deltaTime)
-	chk.bloodParticles.Update(deltaTime, chk.Body().Position)
+	chk.bloodParticles.Update(deltaTime, body.Position)
 
-	chkPos := chk.Body().Position
+	chkPos := body.Position
 	chkDir := chk.actor.FacingVec()
 	if chk.voice.IsValid() {
 		chk.voice.SetPositionV(chkPos)
@@ -115,7 +117,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 		chk.AnimPlayer.Play()
 
 		// Cast forward to see if there is a wall in front
-		hit, closestBody := chk.world.Raycast(chkPos, chkDir, ColFilterForActors, 1.0, chk)
+		hit, closestBody := gWorld.Raycast(chkPos, chkDir, chk.actor.collisionFilter, 1.0, &chk.actor.body)
 		if hit.Hit && !closestBody.IsNil() {
 			// Turn around if we're about to hit a wall
 			chk.actor.YawAngle += math.Pi/2.0 + rand.Float32()*math.Pi/2.0
@@ -123,7 +125,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 	} else {
 		chk.decomposeTimer -= deltaTime
 		if chk.decomposeTimer <= 0.0 {
-			chk.world.QueueRemoval(chk.id.Handle)
+			gWorld.QueueRemoval(chk.id.Handle)
 		}
 
 		chk.actor.inputForward = 0.0
@@ -138,8 +140,10 @@ func (chk *Chicken) Update(deltaTime float32) {
 			chk.bloodParticles.EmissionTimer = 0.5
 		}
 
-		if chk.actor.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
-			chk.actor.body.Layer.SetBypass()
+		if math2.Vec3WithY(body.Velocity, 0.0).ApproxEqual(mgl32.Vec3{}) {
+			body.Velocity = mgl32.Vec3{}
+			chk.actor.GravityAccel = 0.0
+			body.Noclip = true
 		}
 	}
 }
@@ -164,9 +168,9 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 		// Spawn an item sometimes
 		switch v := rand.Float32(); {
 		case v < 0.1:
-			SpawnStimpack(chk.world, chk.actor.Position())
+			SpawnStimpack(gWorld, chk.actor.Position())
 		case v < 0.3:
-			SpawnEggCarton(chk.world, chk.actor.Position())
+			SpawnEggCarton(gWorld, chk.actor.Position())
 		}
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {
 		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(chk.Body().Position)

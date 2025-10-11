@@ -117,14 +117,13 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
 			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
 			Layer:    EnemyColLayers,
-			// Filter: ColFilterForActors,
-			// LockY:  true,
 		},
-		YawAngle:  angles[1],
-		AccelRate: 80.0,
-		Friction:  20.0,
-		MaxSpeed:  5.5,
-		world:     world,
+		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
+		YawAngle:        angles[1],
+		AccelRate:       80.0,
+		Friction:        20.0,
+		MaxSpeed:        5.5,
+		world:           world,
 	}
 	enemy.WakeTime = 0.5
 	enemy.WakeLimit = 5.0
@@ -302,7 +301,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		}
 
 		enemy.world.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.Layer.ResetBypass()
+		enemy.actor.body.Noclip = false
 		enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
@@ -328,7 +327,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
 		enemy.world.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.Layer.SetBypass()
+		enemy.actor.body.Noclip = true
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
@@ -397,7 +396,7 @@ func (enemy *Enemy) chase(
 			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
 			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
-			enemy,
+			enemy.Body(),
 		)
 		if hit.Hit {
 			enemy.spriteAngle = enemy.actor.YawAngle
@@ -440,7 +439,7 @@ func (enemy *Enemy) stalk(
 			enemy.actor.FacingVec(),
 			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
-			enemy,
+			enemy.Body(),
 		)
 		if hit.Hit {
 			enemy.chaseTimer = moveTime
