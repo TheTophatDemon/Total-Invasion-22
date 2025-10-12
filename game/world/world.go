@@ -178,11 +178,11 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		case "enemy":
 			_, _, err = SpawnEnemyFromTE3(gWorld, ent)
 		case "door", "switch":
-			_, _, err = SpawnWallFromTE3(gWorld, ent)
+			_, _, err = SpawnWallFromTE3(ent)
 		case "prop":
-			_, _, err = SpawnPropFromTE3(gWorld, ent)
+			_, _, err = SpawnPropFromTE3(ent)
 		case "trigger":
-			_, _, err = SpawnTriggerFromTE3(gWorld, ent)
+			_, _, err = SpawnTriggerFromTE3(ent)
 		case "item":
 			_, _, err = SpawnItemFromTE3(gWorld, ent)
 		case "camera":
@@ -192,7 +192,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 			if err != nil {
 				log.Printf("error spawning player camera: %v\n", err)
 			}
-			gWorld.CurrentPlayer, _, err = SpawnPlayer(gWorld, ent.Position, ent.Angles, gWorld.CurrentCamera, changeInfo)
+			gWorld.CurrentPlayer, _, err = SpawnPlayer(ent.Position, ent.Angles, gWorld.CurrentCamera, changeInfo)
 		}
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
@@ -221,7 +221,7 @@ func (world *World) Update(deltaTime float32) {
 	}
 
 	// Update entities
-	scene.UpdateStores(world, deltaTime)
+	world.UpdateStores(deltaTime)
 	world.Hud.Update(deltaTime)
 
 	// Set audio listener position
@@ -304,7 +304,7 @@ func (world *World) Render() {
 		world.skyRender.Render(&renderContext)
 
 		// Render 3D game elements
-		scene.RenderStores(world, &renderContext)
+		world.RenderStores(&renderContext)
 		renderContext.RenderTranslucentObjects()
 	}
 
@@ -315,7 +315,7 @@ func (world *World) Render() {
 }
 
 func (world *World) TearDown() {
-	scene.TearDownStores(world)
+	world.TearDownStores()
 }
 
 func (world *World) QueueRemoval(entHandle scene.Handle) {

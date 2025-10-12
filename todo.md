@@ -1,13 +1,13 @@
 # TODO
 - Collision rework
+  - Fix triggers
   - Fix projectiles
+  - Fix items
   - Fix enemy sight lines
   - Fix grenades
-  - Get rid of Body.Transform and replace with Body.Position
-  - Remove Transform from Trigger / Effects and replace with just position
   - Possible implement sweeping for the grenades
-- Replace world pointer with global world variable
-  - Maybe get rid of the world struct and make them all into global variables?
+  - Jitters when moving along adjacent box shapes
+- Big stutter when rendering first particle effect
 - Optimize world raycasts using the bsp tree
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes

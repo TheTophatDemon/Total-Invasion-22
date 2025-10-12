@@ -16,7 +16,7 @@ const (
 )
 
 type Projectile struct {
-	comps.Body
+	body                                           comps.Body
 	id                                             scene.Id[*Projectile]
 	SpriteRender                                   comps.SpriteRender
 	AnimPlayer                                     comps.AnimationPlayer
@@ -35,14 +35,18 @@ type Projectile struct {
 	onCollide                                      func(collidingEntity any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32)
 }
 
+func (proj *Projectile) Body() *comps.Body {
+	return &proj.body
+}
+
 func (proj *Projectile) Update(deltaTime float32) {
-	if lensq := proj.Velocity.LenSqr(); lensq > 0.0 {
-		proj.Facing = proj.Velocity.Mul(1.0 / math2.Sqrt(lensq))
+	if lensq := proj.body.Velocity.LenSqr(); lensq > 0.0 {
+		proj.Facing = proj.body.Velocity.Mul(1.0 / math2.Sqrt(lensq))
 	}
 
 	proj.AnimPlayer.Update(deltaTime)
 	for _, vid := range proj.voices {
-		vid.SetPositionV(proj.Position)
+		vid.SetPositionV(proj.body.Position)
 	}
 
 	if proj.moveFunc != nil {
@@ -51,12 +55,12 @@ func (proj *Projectile) Update(deltaTime float32) {
 		gWorld.QueueRemoval(proj.id.Handle)
 	}
 
-	proj.Position = proj.Position.Add(proj.Velocity.Mul(deltaTime))
+	proj.body.Position = proj.body.Position.Add(proj.body.Velocity.Mul(deltaTime))
 
 	// Respond to collisions
-	if !proj.Noclip && proj.onCollide != nil {
+	if !proj.body.Noclip && proj.onCollide != nil {
 		// Detect intersections with bodies
-		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.Position, proj.Shape)
+		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.body.Position, proj.body.Shape)
 		for handle := range bodies {
 			collidingEnt, ok := scene.Get[comps.HasBody](handle)
 			if !ok {
@@ -73,7 +77,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 				continue
 			}
 
-			hit, pushVec := proj.Shape.PushOutOf(proj.Position,
+			hit, pushVec := proj.body.Shape.PushOutOf(proj.body.Position,
 				collidingEnt.Body().Position,
 				collidingEnt.Body().Shape,
 			)
@@ -88,7 +92,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 			if !layer.Layer.On(ColFilterForProjectiles) {
 				continue
 			}
-			pushOut := layer.GridShape.PushOut(mgl32.Vec3{}, proj.Position, proj.Shape)
+			pushOut := layer.GridShape.PushOut(mgl32.Vec3{}, proj.body.Position, proj.body.Shape)
 			if !pushOut.ApproxEqual(mgl32.Vec3{}) {
 				proj.onCollide(layer, layer.Layer, pushOut, deltaTime)
 			}
@@ -106,11 +110,11 @@ func (proj *Projectile) Update(deltaTime float32) {
 }
 
 func (proj *Projectile) Render(context *render.Context) {
-	proj.SpriteRender.Render(proj.Position, &proj.AnimPlayer, context, 0.0)
+	proj.SpriteRender.Render(proj.body.Position, &proj.AnimPlayer, context, 0.0)
 }
 
 func (proj *Projectile) moveForward(deltaTime float32) {
-	proj.Velocity = proj.Facing.Mul(proj.forwardSpeed)
+	proj.body.Velocity = proj.Facing.Mul(proj.forwardSpeed)
 }
 
 func (proj *Projectile) removeOnDie(deltaTime float32) {
@@ -120,9 +124,9 @@ func (proj *Projectile) removeOnDie(deltaTime float32) {
 func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
-		proj.Body.Noclip = true
-		proj.Position.Add(proj.Velocity.Mul(-deltaTime))
-		proj.Velocity = mgl32.Vec3{}
+		proj.body.Noclip = true
+		proj.body.Position.Add(proj.body.Velocity.Mul(-deltaTime))
+		proj.body.Velocity = mgl32.Vec3{}
 		proj.moveFunc = nil
 	}
 }
@@ -131,8 +135,8 @@ func (proj *Projectile) dieOnCollide(otherEnt any, mask collision.Mask, pushVec 
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 	}
-	if actorHaver, hasActor := otherEnt.(HasActor); hasActor && proj.knockbackForce != 0.0 && !proj.Velocity.ApproxEqual(mgl32.Vec3{}) {
-		actorHaver.Actor().ApplyKnockback(proj.Velocity.Normalize().Mul(proj.knockbackForce))
+	if actorHaver, hasActor := otherEnt.(HasActor); hasActor && proj.knockbackForce != 0.0 && !proj.body.Velocity.ApproxEqual(mgl32.Vec3{}) {
+		actorHaver.Actor().ApplyKnockback(proj.body.Velocity.Normalize().Mul(proj.knockbackForce))
 	}
 
 	proj.lifeTimer = math2.Inf32()

@@ -29,7 +29,6 @@ type Player struct {
 	StandFriction, WalkFriction, RunFriction float32
 	id                                       scene.Id[*Player]
 	actor                                    Actor
-	world                                    *World
 
 	cameraFall          float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
 	transitionTimer     float32 // Counts the seconds until the game resets after winning or dying.
@@ -67,13 +66,12 @@ func (player *Player) Body() *comps.Body {
 }
 
 func SpawnPlayer(
-	world *World,
 	position,
 	angles mgl32.Vec3,
 	camera scene.Id[*Camera],
 	changeInfo game.MapChangeSignal,
 ) (id scene.Id[*Player], player *Player, err error) {
-	id, player, err = world.Players.New()
+	id, player, err = gWorld.Players.New()
 	if err != nil {
 		return
 	}
@@ -91,7 +89,6 @@ func SpawnPlayer(
 		MaxHealth:       200,
 		TargetHealth:    100,
 		Health:          100,
-		world:           world,
 	}
 	player.Camera = camera
 	player.RunSpeed = 12.0
@@ -99,7 +96,6 @@ func SpawnPlayer(
 	player.StandFriction = 80.0
 	player.WalkFriction = 1.0
 	player.RunFriction = 20.0
-	player.world = world
 	player.cameraFall = 2.0
 
 	player.punTimer = timer.Timer{
@@ -123,18 +119,18 @@ func SpawnPlayer(
 	player.armorAmount = changeInfo.ArmorAmount
 
 	// Initialize weapons
-	player.world.Hud.Weapons.Get(game.WeaponSickle).Equipped = true
-	player.world.Hud.Weapons.Select(game.WeaponSickle)
+	gWorld.Hud.Weapons.Get(game.WeaponSickle).Equipped = true
+	gWorld.Hud.Weapons.Select(game.WeaponSickle)
 	for i, equipped := range changeInfo.EquippedWeapons {
 		if equipped {
-			player.world.Hud.Weapons.Get(game.WeaponType(i)).Equipped = true
+			gWorld.Hud.Weapons.Get(game.WeaponType(i)).Equipped = true
 		}
 	}
 
-	if world.Hud.Intro.TimeLeft() > 0.0 {
+	if gWorld.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
-		firePos := player.actor.FacingVec().Mul(-80.0)
-		SpawnIntroSickle(player.world, firePos, player.actor.FacingVec(), player.id.Handle)
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(80.0))
+		SpawnIntroSickle(firePos, player.actor.FacingVec(), player.id.Handle)
 	} else {
 		player.ammo[game.AmmoTypeSickle] = 1
 	}
@@ -143,12 +139,12 @@ func SpawnPlayer(
 }
 
 func (player *Player) Update(deltaTime float32) {
-	hudPtr := &player.world.Hud
+	hudPtr := &gWorld.Hud
 
 	player.weaponWheelOpenness = max(0.0, player.weaponWheelOpenness-(deltaTime*10.0))
 	if hudPtr.Intro.TimeLeft() > 0.5 {
 		// Wait
-	} else if player.world.InWinState() {
+	} else if gWorld.InWinState() {
 		// Win logic
 		if !player.AnimPlayer.IsPlaying() {
 			player.AnimPlayer.Play()
@@ -159,8 +155,8 @@ func (player *Player) Update(deltaTime float32) {
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ActionFire)) || player.transitionTimer > 35.0 {
-			player.world.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath:     player.world.impendingLevel,
+			gWorld.app.ProcessSignal(game.MapChangeSignal{
+				NextMapPath:     gWorld.impendingLevel,
 				GiveAmmo:        player.ammo,
 				GiveArmor:       player.armorType,
 				ArmorAmount:     player.armorAmount,
@@ -168,7 +164,7 @@ func (player *Player) Update(deltaTime float32) {
 			})
 		}
 	} else if player.actor.Health > 0 {
-		if player.world.IsOnPlayerCamera() {
+		if gWorld.IsOnPlayerCamera() {
 			player.takeUserInput(deltaTime)
 		} else {
 			player.punTimer.Reset()
@@ -214,7 +210,7 @@ func (player *Player) Update(deltaTime float32) {
 		}
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ActionFire)) || player.transitionTimer > 10.0 {
-			player.world.app.ProcessSignal(game.MapChangeSignal{NextMapPath: player.world.GameMap.Name})
+			gWorld.app.ProcessSignal(game.MapChangeSignal{NextMapPath: gWorld.GameMap.Name})
 		}
 	}
 
@@ -245,13 +241,13 @@ func (player *Player) Update(deltaTime float32) {
 }
 
 func (player *Player) Render(context *render.Context) {
-	if player.world.InWinState() {
+	if gWorld.InWinState() {
 		player.Sprite.Render(player.Body().Position, &player.AnimPlayer, context, player.actor.YawAngle)
 	}
 }
 
 func (player *Player) takeUserInput(deltaTime float32) {
-	hudPtr := &player.world.Hud
+	hudPtr := &gWorld.Hud
 
 	_ = deltaTime
 	if input.IsActionPressed(settings.ActionForward) {
@@ -315,13 +311,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ActionCastBlessing) {
-		SpawnBlessing(player.world, player.actor.Position(), mgl32.Vec3{0.0, player.actor.YawAngle, 0.0}, player.id.Handle)
+		SpawnBlessing(player.actor.Position(), mgl32.Vec3{0.0, player.actor.YawAngle, 0.0}, player.id.Handle)
 	}
 
 	// Use key
 	if input.IsActionJustPressed(settings.ActionUse) {
 		const useDist float32 = 3.0
-		hit, closestBody := player.world.Raycast(player.Body().Position, player.actor.FacingVec(), player.actor.collisionFilter, useDist, player.Body())
+		hit, closestBody := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), player.actor.collisionFilter, useDist, player.Body())
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
@@ -340,7 +336,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
-			cast, _ = player.world.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
+			cast, _ = gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
 		}
 
 		ammoBefore := player.ammo
@@ -370,7 +366,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 func (player *Player) ProcessSignal(signal any) {
 	switch signal.(type) {
 	case game.TeleportationSignal:
-		player.world.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
 	}
 }
 
@@ -385,7 +381,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 		return false
 	}
 
-	hudPtr := &player.world.Hud
+	hudPtr := &gWorld.Hud
 
 	wasNonZero := player.armorAmount > 0
 	player.armorAmount = max(0, player.armorAmount-damage)
@@ -449,28 +445,29 @@ func (player *Player) AddArmor(armorType game.ArmorType, amount int) bool {
 
 func (player *Player) AttackWithWeapon(justPressed bool) {
 	player.punTimer.Reset()
-	weapon := player.world.Hud.Weapons.Selected()
+	weapon := gWorld.Hud.Weapons.Selected()
 	if weapon == nil {
 		return
 	}
 	switch weapon.Kind() {
 	case game.WeaponSickle:
-		SpawnSickle(player.world, player.actor.FacingVec().Mul(0.5), player.actor.FacingVec(), player.id.Handle)
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5))
+		SpawnSickle(firePos, player.actor.FacingVec(), player.id.Handle)
 	case game.WeaponChicken:
 		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.15, 0.0}))
 		SpawnEgg(firePos, player.actor.FacingVec(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
 	case game.WeaponGrenade:
-		firePos := player.actor.FacingVec().Mul(1.25).Add(mgl32.Vec3{0.0, 0.15, 0.0})
-		SpawnGrenade(player.world, firePos, player.actor.FacingVec())
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(1.25).Add(mgl32.Vec3{0.0, 0.15, 0.0}))
+		SpawnGrenade(firePos, player.actor.FacingVec())
 		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
 	case game.WeaponParusu:
-		firePos := player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.25, 0.0})
-		SpawnPlasmaBall(player.world, firePos, player.actor.FacingVec(), player.id.Handle, false)
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.25, 0.0}))
+		SpawnPlasmaBall(firePos, player.actor.FacingVec(), player.id.Handle, false)
 		cache.GetSfx("assets/sounds/weapon/parusu.wav").Play()
 	case game.WeaponAirhorn:
 		if justPressed {
-			enemyIter := player.world.Enemies.Iter()
+			enemyIter := gWorld.Enemies.Iter()
 			for {
 				enemy, _ := enemyIter.Next()
 				if enemy == nil {
