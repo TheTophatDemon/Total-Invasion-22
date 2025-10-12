@@ -317,10 +317,22 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Use key
 	if input.IsActionJustPressed(settings.ActionUse) {
 		const useDist float32 = 3.0
-		hit, closestBody := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), player.actor.collisionFilter, useDist, player.Body())
+		hit, closestBody := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerUsable, useDist, player.Body())
 		if hit.Hit && !closestBody.IsNil() {
 			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
 				usable.OnUse(player)
+			}
+		}
+	} else {
+		// Use items by walking into them
+		ents := gWorld.bspTree.PotentiallyTouchingEnts(player.Body().Position, player.Body().Shape)
+		for handle := range ents {
+			item, ok := scene.Get[*Item](handle)
+			if !ok || item.Body() == nil || !item.Body().OnLayer(ColLayerUsable) {
+				continue
+			}
+			if item.Body().Shape.Touches(item.Body().Position, player.Body().Position, player.Body().Shape) {
+				item.OnUse(player)
 			}
 		}
 	}
@@ -367,12 +379,6 @@ func (player *Player) ProcessSignal(signal any) {
 	switch signal.(type) {
 	case game.TeleportationSignal:
 		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
-	}
-}
-
-func (player *Player) onIntersect(otherEnt comps.HasBody, result collision.Result, deltaTime float32) {
-	if item, isItem := otherEnt.(*Item); isItem {
-		item.OnUse(player)
 	}
 }
 

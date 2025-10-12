@@ -37,3 +37,107 @@ func checkDist(t *testing.T, expected, actual float32) {
 		t.Fatalf("dist should be %v but was %v", expected, actual)
 	}
 }
+
+func TestRaycast(t *testing.T) {
+	cubeShape := NewBoxShape(0.5, 0.5, 0.5)
+
+	t.Run("cast from top", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 3.0, 3.0},
+			mgl32.Vec3{0.0, -1.0, 0.0},
+			10.0,
+		)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{1.0, 2.5, 3.0},
+			Normal:   mgl32.Vec3{0.0, 1.0, 0.0},
+			Distance: 0.5,
+		}, result)
+	})
+
+	t.Run("cast from top but it misses", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 3.0, 3.0},
+			mgl32.Vec3{0.0, -1.0, 0.0},
+			0.25,
+		)
+		checkResult(t, Result{
+			Hit:      false,
+			Position: mgl32.Vec3{},
+			Normal:   mgl32.Vec3{},
+			Distance: 0.25,
+		}, result)
+	})
+
+	t.Run("cast from bottom", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 1.0, 3.0},
+			mgl32.Vec3{0.0, 1.0, 0.0},
+			10.0,
+		)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{1.0, 1.5, 3.0},
+			Normal:   mgl32.Vec3{0.0, -1.0, 0.0},
+			Distance: 0.5,
+		}, result)
+	})
+
+	t.Run("cast from bottom but it misses", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 1.0, 3.0},
+			mgl32.Vec3{0.0, 1.0, 0.0},
+			0.25,
+		)
+		checkResult(t, Result{
+			Hit:      false,
+			Position: mgl32.Vec3{},
+			Normal:   mgl32.Vec3{},
+			Distance: 0.25,
+		}, result)
+	})
+
+	t.Run("cast from side", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{0.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 0.0, 0.0},
+			10.0,
+		)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{0.5, 2.0, 3.0},
+			Normal:   mgl32.Vec3{-1.0, 0.0, 0.0},
+			Distance: 0.5,
+		}, result)
+	})
+
+	t.Run("cast from side but it misses", func(t *testing.T) {
+		result := cubeShape.Raycast(
+			mgl32.Vec3{1.0, 2.0, 3.0},
+			mgl32.Vec3{0.0, 2.0, 3.0},
+			mgl32.Vec3{1.0, 0.0, 0.0},
+			0.25,
+		)
+		checkResult(t, Result{
+			Hit:      false,
+			Position: mgl32.Vec3{},
+			Normal:   mgl32.Vec3{},
+			Distance: 0.25,
+		}, result)
+	})
+}
+
+func checkResult(t *testing.T, expected, actual Result) {
+	fail := expected.Hit != actual.Hit ||
+		!expected.Position.ApproxEqual(actual.Position) ||
+		!expected.Normal.ApproxEqual(actual.Normal) ||
+		!math2.Almost(expected.Distance, actual.Distance)
+	if fail {
+		t.Fatalf("result should be %v but was %v", expected, actual)
+	}
+}

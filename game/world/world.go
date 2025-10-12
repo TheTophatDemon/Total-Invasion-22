@@ -35,6 +35,7 @@ const (
 	ColLayerPlayers
 	ColLayerNPCs     // Includes enemies, chickens, and Geoffrey
 	ColLayerKillzone // Kills any actor that touches
+	ColLayerUsable   // Marks entities that can have the use key applied to interact with them
 )
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go

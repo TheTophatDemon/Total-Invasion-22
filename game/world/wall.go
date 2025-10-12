@@ -116,6 +116,12 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 }
 
 func (wall *Wall) configureForDoor(ent te3.Ent) error {
+	if wall == nil {
+		return nil
+	}
+
+	wall.body.Layer |= ColLayerUsable
+
 	// Determine the door's destination position
 	unopenable, _ := ent.BoolProperty("unopenable")
 	if !unopenable {
@@ -210,6 +216,12 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 
 func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	var err error
+
+	if wall == nil {
+		return err
+	}
+
+	wall.body.Layer |= ColLayerUsable
 
 	wall.switchState = SwitchOff
 	wall.Destination = wall.Origin

@@ -291,7 +291,7 @@ func motherWraithUpdateAttack(enemy *Enemy, deltaTime float32) {
 	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 	if enemy.AnimPlayer.HitTriggerFrame(0) {
 		enemy.faceTarget()
-		SpawnBlessing(enemy.actor.Position(), mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0}, enemy.id.Handle)
+		SpawnBlessing(enemy.actor.Position(), enemy.actor.FacingVec(), enemy.id.Handle)
 	}
 	if enemy.AnimPlayer.IsAtEnd() {
 		enemy.changeState(&enemy.chaseState)

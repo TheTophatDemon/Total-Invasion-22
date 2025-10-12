@@ -1,6 +1,8 @@
 package collision
 
 import (
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -9,6 +11,13 @@ type Result struct {
 	Hit              bool
 	Position, Normal mgl32.Vec3
 	Distance         float32 // Distance traveled for rays, distance to push out for other objects.
+}
+
+func (res Result) String() string {
+	return fmt.Sprintf(
+		"Result{ Hit: %t, Position: %v, Normal: %v, Distance: %v }",
+		res.Hit, res.Position, res.Normal, res.Distance,
+	)
 }
 
 // Represents a bit mask that filters what things will collide with what.

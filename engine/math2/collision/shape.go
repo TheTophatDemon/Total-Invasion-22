@@ -342,9 +342,9 @@ func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist flo
 	}
 
 	result.Hit = true
-	result.Distance = tFirst
+	result.Distance = tFirst * maxDist
 	result.Normal = tFirstNormal
-	result.Position = rayOrigin.Add(rayDir.Mul(tFirst))
+	result.Position = rayOrigin.Add(rayDir.Mul(result.Distance))
 	return
 }
 

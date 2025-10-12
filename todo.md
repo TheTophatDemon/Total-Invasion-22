@@ -1,8 +1,8 @@
 # TODO
 - Collision rework
+  - Walk into doors calls use too much
+  - Projectiles explode on corpses
   - Fix projectiles
-  - Fix items
-  - Fix enemy sight lines
   - Fix grenades
   - Possible implement sweeping for the grenades
   - Jitters when moving along adjacent box shapes
