@@ -1,6 +1,5 @@
 # TODO
 - Collision rework
-  - Fix triggers
   - Fix projectiles
   - Fix items
   - Fix enemy sight lines

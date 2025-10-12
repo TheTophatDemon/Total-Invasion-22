@@ -257,25 +257,37 @@ func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shap
 	return false
 }
 
-// Returns the signed distance to the nearest 3D plane on this shape.
+// Returns the distance to the nearest 3D plane on this shape, 0 if it's inside.
 func (shape Shape) DistanceFromPoint(myPosition, testPosition mgl32.Vec3) float32 {
-	return 1000
-	//TODO: This algorithm doesn't actually work.
 	segIter := shape.Segments(mgl32.Vec2{myPosition[0], myPosition[2]})
 	minDist := float32(math.MaxFloat32) // Tracks the smallest (IN MAGNITUDE) distance to a segment's plane
+	isOutside := false
 	for seg, ok := segIter.Next(); ok; seg, ok = segIter.Next() {
-		dist := seg.Normal.Dot(mgl32.Vec2{testPosition[0], testPosition[1]}.Sub(seg.Points[0]))
+		testPointXZ := mgl32.Vec2{testPosition[0], testPosition[2]}
+		lineDir := seg.Points[1].Sub(seg.Points[0])
+		toTestPoint := testPointXZ.Sub(seg.Points[0])
+		t := toTestPoint.Dot(lineDir) / lineDir.Dot(lineDir)
+		closestPoint := seg.Points[0].Add(lineDir.Mul(math2.Clamp(t, 0.0, 1.0)))
+		dist := closestPoint.Sub(testPointXZ).Len()
 		if math2.Abs(dist) < minDist {
 			minDist = dist
 		}
+		// Check if point is in front of segment.
+		if !isOutside && toTestPoint.Dot(seg.Normal) > 0.0 {
+			isOutside = true
+		}
 	}
-	topDist := testPosition[1] - myPosition[1] - shape.extents.Max[1]
-	if math2.Abs(topDist) < minDist {
-		minDist = topDist
-	}
-	bottomDist := myPosition[1] + shape.extents.Min[1] - testPosition[1]
-	if math2.Abs(bottomDist) < minDist {
-		minDist = bottomDist
+	if !isOutside {
+		// The point intersects on the XZ plane so we measure distance from top and bottom planes instead.
+		topDist := testPosition[1] - myPosition[1] - shape.extents.Max[1]
+		bottomDist := myPosition[1] + shape.extents.Min[1] - testPosition[1]
+		if topDist <= 0 && bottomDist <= 0 {
+			// The point lies between top and bottom and is fully inside.
+			return 0
+		} else if math2.Abs(topDist) < math2.Abs(bottomDist) {
+			return topDist
+		}
+		return bottomDist
 	}
 	return minDist
 }

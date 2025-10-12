@@ -192,3 +192,7 @@ func Lerp[F Float](min, max, ratio F) F {
 	}
 	return min + (max-min)*ratio
 }
+
+func Almost[F float32 | float64](number, equalTo F) bool {
+	return Abs(number-equalTo) < F(mgl32.Epsilon)
+}
