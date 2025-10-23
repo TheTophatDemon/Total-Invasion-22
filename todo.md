@@ -1,7 +1,6 @@
 # TODO
 - Collision rework
   - Fix items spawning on top of corpses
-  - Fix armor stand spawning
   - Fix explosion positions
   - Fix random deaths due to grenades
   - Fix getting caught sliding along secret walls
@@ -9,6 +8,7 @@
     - Do that for the doors as well.
   - Fix grenades clipping through floor
   - Add multiple solver iterations to avoid corner jitters
+  - Make game speed more stable
 - Big stutter when rendering first particle effect
 - Optimize world raycasts using the bsp tree
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.

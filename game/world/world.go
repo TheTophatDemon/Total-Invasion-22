@@ -185,11 +185,11 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		case "trigger":
 			_, _, err = SpawnTriggerFromTE3(ent)
 		case "item":
-			_, _, err = SpawnItemFromTE3(gWorld, ent)
+			_, _, err = SpawnItemFromTE3(ent)
 		case "camera":
-			_, _, err = SpawnCameraFromTE3(gWorld, ent)
+			_, _, err = SpawnCameraFromTE3(ent)
 		case "player":
-			gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(gWorld, ent)
+			gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(ent)
 			if err != nil {
 				log.Printf("error spawning player camera: %v\n", err)
 			}

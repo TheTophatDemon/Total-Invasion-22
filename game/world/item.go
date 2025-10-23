@@ -51,7 +51,7 @@ type Item struct {
 
 var _ comps.HasBody = (*Item)(nil)
 
-func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
+func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 	itemType, isItem := ent.Properties["item"]
 	if !isItem {
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item is missing 'item' property")
@@ -112,7 +112,7 @@ func SpawnItemFromTE3(world *World, ent te3.Ent) (id scene.Id[*Item], item *Item
 	}
 
 	// Put the item on the floor using a raycast
-	cast := world.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0)
+	cast := gWorld.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0)
 	if cast.Hit {
 		item.body.Position = math2.Vec3WithY(cast.Position, cast.Position.Y()+item.spriteRender.Scale()[1])
 		item.onGround = true
@@ -252,7 +252,7 @@ func SpawnArmorStand(position mgl32.Vec3, armorType game.ArmorType) (id scene.Id
 	*item = Item{
 		body: comps.Body{
 			Position: position,
-			Shape:    collision.NewBoxShape(0.6, 1.0, 0.6),
+			Shape:    collision.NewBoxShape(0.6, 0.8, 0.6),
 			Layer:    ColLayerMap | ColLayerUsable,
 		},
 		animPlayer:   comps.NewAnimationPlayer(anim, false),
@@ -306,7 +306,7 @@ func (item *Item) Update(deltaTime float32) {
 	item.animPlayer.Update(deltaTime)
 	if !item.onGround && item.fallSpeed != 0.0 {
 
-		height := item.body.Shape.Extents().Size()[1]
+		height := item.body.Shape.Extents().Size()[1] / 2.0
 
 		// Fall until the ground is touched.
 		cast := gWorld.GameMap.GridShape.Raycast(
