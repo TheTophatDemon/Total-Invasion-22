@@ -71,7 +71,6 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 		MaxSpeed:        2.5,
 		GravityAccel:    80.0,
 		MaxFallSpeed:    15.0,
-		world:           world,
 	}
 	chk.SpriteRender = comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5})
 

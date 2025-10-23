@@ -118,6 +118,7 @@ func (proj *Projectile) moveForward(deltaTime float32) {
 }
 
 func (proj *Projectile) removeOnDie(deltaTime float32) {
+	_ = deltaTime
 	gWorld.QueueRemoval(proj.id.Handle)
 }
 

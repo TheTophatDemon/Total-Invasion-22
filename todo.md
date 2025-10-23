@@ -3,7 +3,7 @@
   - Fix items spawning on top of corpses
   - Fix armor stand spawning
   - Fix explosion positions
-  - Fix random deaths due to lava
+  - Fix random deaths due to grenades
   - Fix getting caught sliding along secret walls
     - Can make the tile solid but invisible until the wall is opened.
     - Do that for the doors as well.

@@ -18,7 +18,6 @@ type Actor struct {
 	body                            comps.Body
 	inputForward, inputStrafe       float32
 	onGround                        bool
-	world                           *World
 	knockbackForce                  mgl32.Vec3
 	noisyTimer                      float32 // While this timer is > 0, enemies will be able to 'hear' the actor
 	collisionFilter                 collision.Mask

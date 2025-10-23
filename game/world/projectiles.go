@@ -325,7 +325,7 @@ func SpawnPlasmaBall(
 			Layer:    ColLayerProjectiles,
 		},
 		Facing:       facing,
-		forwardSpeed: 120.0,
+		forwardSpeed: 60.0,
 		StunChance:   0.1,
 		moveFunc:     proj.moveForward,
 		onCollide:    proj.dieOnCollide,
@@ -379,7 +379,7 @@ func SpawnBlessing(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		},
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
-		forwardSpeed: 30.0,
+		forwardSpeed: 15.0,
 		voices: [4]tdaudio.VoiceId{
 			cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position),
 		},

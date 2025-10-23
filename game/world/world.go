@@ -177,7 +177,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		var err error
 		switch entType {
 		case "enemy":
-			_, _, err = SpawnEnemyFromTE3(gWorld, ent)
+			_, _, err = SpawnEnemyFromTE3(ent)
 		case "door", "switch":
 			_, _, err = SpawnWallFromTE3(ent)
 		case "prop":
