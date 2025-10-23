@@ -1,11 +1,14 @@
 # TODO
 - Collision rework
-  - Walk into doors calls use too much
-  - Projectiles explode on corpses
-  - Fix projectiles
-  - Fix grenades
-  - Possible implement sweeping for the grenades
-  - Jitters when moving along adjacent box shapes
+  - Fix items spawning on top of corpses
+  - Fix armor stand spawning
+  - Fix explosion positions
+  - Fix random deaths due to lava
+  - Fix getting caught sliding along secret walls
+    - Can make the tile solid but invisible until the wall is opened.
+    - Do that for the doors as well.
+  - Fix grenades clipping through floor
+  - Add multiple solver iterations to avoid corner jitters
 - Big stutter when rendering first particle effect
 - Optimize world raycasts using the bsp tree
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
@@ -25,6 +28,7 @@
 - Saving / checkpoints
 
 - Fix flickering artifacts on walls. Consider greedy meshing.
+- Optimize the memory usage of map loading to avoid GC stutters
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
 

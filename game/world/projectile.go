@@ -68,7 +68,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 			}
 
 			otherBody := collidingEnt.Body()
-			if otherBody.Layer == ColLayerNone || !otherBody.OnLayer(ColFilterForProjectiles) {
+			if otherBody.Noclip || !otherBody.OnLayer(ColFilterForProjectiles) {
 				continue
 			}
 
