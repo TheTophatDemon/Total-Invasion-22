@@ -1,13 +1,11 @@
 # TODO
 - Collision rework
-  - Fix grenades clipping through floor
-    - Grenades 
-    - Add sweeping to all projectiles so they don't go through walls
+  - Add sweeping to all projectiles so they don't go through walls
   - Fix getting caught sliding along secret walls
     - Can make the tile solid but invisible until the wall is opened.
     - Do that for the doors as well.
   - Add multiple solver iterations to avoid corner jitters
-  - Make game speed more stable
+- Make game tick speed more stable
 - Big stutter when rendering first particle effect
 - Fix flickering artifacts on walls. Consider greedy meshing.
 - Optimize the memory usage of map loading to avoid GC stutters

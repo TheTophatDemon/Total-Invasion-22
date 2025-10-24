@@ -280,15 +280,20 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 	} else if (mask & ColLayerMap) != 0 {
 		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
 		speed := horzVelocity.Len() * 0.8
+		var direction mgl32.Vec3
+		if speed > 0 {
+			direction = horzVelocity.Normalize()
+		}
+
 		if pushVec[1] > 0.1 && proj.fallSpeed < 0.0 {
 			if proj.fallSpeed > -0.01 {
 				proj.fallSpeed = 0.0
 			}
 			proj.fallSpeed = -proj.fallSpeed * 0.9
-			proj.body.Velocity = math2.Vec3WithY(horzVelocity.Normalize().Mul(speed), proj.fallSpeed)
+			proj.body.Velocity = math2.Vec3WithY(direction.Mul(speed), proj.fallSpeed)
 		} else if pushVec.LenSqr() > 0.0 {
 			if speed > 0.01 {
-				reflection := math2.Vec3Reflect(horzVelocity.Normalize(), pushVec.Normalize())
+				reflection := math2.Vec3Reflect(direction, pushVec.Normalize())
 				proj.body.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
 			} else {
 				proj.body.Velocity = mgl32.Vec3{}
