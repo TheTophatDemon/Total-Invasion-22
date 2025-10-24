@@ -299,8 +299,7 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 
 func (proj *Projectile) explodeOnDie(deltaTime float32) {
 	_ = deltaTime
-	proj.body.Position = proj.body.Position.Add(mgl32.Vec3{0.0, 0.5, 0.0})
-	SpawnSingleExplosion(proj.body.Position)
+	SpawnSingleExplosion(proj.body.Position.Add(mgl32.Vec3{0.0, 0.5, 0.0}))
 	gWorld.QueueRemoval(proj.id.Handle)
 }
 

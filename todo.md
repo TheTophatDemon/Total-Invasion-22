@@ -1,15 +1,16 @@
 # TODO
 - Collision rework
-  - Fix explosion positions
-  - Fix random deaths due to grenades
+  - Fix grenades clipping through floor
+    - Grenades 
+    - Add sweeping to all projectiles so they don't go through walls
   - Fix getting caught sliding along secret walls
     - Can make the tile solid but invisible until the wall is opened.
     - Do that for the doors as well.
-  - Fix grenades clipping through floor
-    - Add sweeping to all projectiles so they don't go through walls
   - Add multiple solver iterations to avoid corner jitters
   - Make game speed more stable
 - Big stutter when rendering first particle effect
+- Fix flickering artifacts on walls. Consider greedy meshing.
+- Optimize the memory usage of map loading to avoid GC stutters
 - Optimize world raycasts using the bsp tree
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes
@@ -27,9 +28,6 @@
 - Settings menu
 - Gamepad support (for Steam Deck)
 - Saving / checkpoints
-
-- Fix flickering artifacts on walls. Consider greedy meshing.
-- Optimize the memory usage of map loading to avoid GC stutters
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
 

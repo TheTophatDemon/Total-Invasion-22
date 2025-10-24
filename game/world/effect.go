@@ -69,17 +69,17 @@ func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect
 	const damageRadius = 3.5
 	const maxEnemyDamage = 175.0
 	const minEnemyDamage = 50.0
-	id, fx, err = SpawnEffect(position, 1.0, ExplosionParticles(1, 1.0, 1.5))
+	id, fx, err = SpawnEffect(position, 1.0, ExplosionParticles(1, 1.0, 1.5, 0.0))
 	if err != nil {
 		return
 	}
 	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(position)
 
 	// Apply splash damage to surrounding entities
-	bodyIter := gWorld.IterBodiesInSphere(position, damageRadius, nil)
-	for bodyHaver, _ := bodyIter.Next(); bodyHaver != nil; bodyHaver, _ = bodyIter.Next() {
-		if damageable, ok := bodyHaver.(Damageable); ok {
-			vecToTarget := bodyHaver.Body().Position.Sub(position)
+	actorIter := gWorld.IterActorsInSphere(position, damageRadius, nil)
+	for actorHaver, _ := actorIter.Next(); actorHaver != nil; actorHaver, _ = actorIter.Next() {
+		if damageable, ok := actorHaver.(Damageable); ok {
+			vecToTarget := actorHaver.Body().Position.Sub(position)
 			distanceToExplosion := vecToTarget.Len()
 			if distanceToExplosion > 0 {
 				cast, _ := gWorld.Raycast(position, vecToTarget.Mul(1.0/distanceToExplosion),
@@ -89,7 +89,7 @@ func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect
 					continue
 				}
 			}
-			distanceToExplosion -= bodyHaver.Body().Shape.Extents().Max[0]
+			distanceToExplosion -= actorHaver.Body().Shape.Extents().Max[0]
 			var damage float32
 			if _, isPlayer := damageable.(*Player); isPlayer {
 				difficulty := settings.CurrDifficulty()
@@ -166,7 +166,7 @@ func EggParticles(radius float32) comps.ParticleRender {
 	}
 }
 
-func ExplosionParticles(maxCount int, rate float32, radius float32) comps.ParticleRender {
+func ExplosionParticles(maxCount int, rate float32, spriteSize, spawnRadius float32) comps.ParticleRender {
 	tex := cache.GetTexture("assets/textures/sprites/explosion.png")
 	anim := tex.GetDefaultAnimation()
 	if rate == 0 {
@@ -177,12 +177,12 @@ func ExplosionParticles(maxCount int, rate float32, radius float32) comps.Partic
 		Texture:       tex,
 		EmissionTimer: 0.2,
 		MaxCount:      maxCount,
-		SpawnRadius:   radius,
+		SpawnRadius:   spawnRadius,
 		SpawnRate:     rate,
 		BurstCount:    1,
 		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
 			form.Color = color.White.Vector()
-			form.Size = mgl32.Vec2{radius, radius}
+			form.Size = mgl32.Vec2{spriteSize, spriteSize}
 			info.Velocity = mgl32.Vec3{}
 			info.Acceleration = mgl32.Vec3{}
 			info.Lifetime = 1.0
