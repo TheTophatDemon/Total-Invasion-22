@@ -1,12 +1,12 @@
 # TODO
 - Collision rework
-  - Fix items spawning on top of corpses
   - Fix explosion positions
   - Fix random deaths due to grenades
   - Fix getting caught sliding along secret walls
     - Can make the tile solid but invisible until the wall is opened.
     - Do that for the doors as well.
   - Fix grenades clipping through floor
+    - Add sweeping to all projectiles so they don't go through walls
   - Add multiple solver iterations to avoid corner jitters
   - Make game speed more stable
 - Big stutter when rendering first particle effect
@@ -17,6 +17,7 @@
   - Drop some lore in the secret room on E1M2
 - Title screen
   - Background image
+- Modify loading screen graphic to be more on-model
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings

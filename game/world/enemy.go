@@ -328,7 +328,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
-			SpawnAmmo(enemy.actor.Position(), enemy.spawnAmmo)
+			SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
 		}
 	}
 

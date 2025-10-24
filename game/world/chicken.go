@@ -164,12 +164,13 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	if chk.actor.Health <= 0 {
 		chk.voice.Stop()
 		chk.voice = cache.GetSfx(SfxChickenPain).PlayAttenuatedV(chk.Body().Position)
+		spawnPosition := chk.actor.Position().Add(chk.actor.FacingVec().Mul(0.5))
 		// Spawn an item sometimes
 		switch v := rand.Float32(); {
 		case v < 0.1:
-			SpawnStimpack(chk.actor.Position())
+			SpawnStimpack(spawnPosition)
 		case v < 0.3:
-			SpawnEggCarton(chk.actor.Position())
+			SpawnEggCarton(spawnPosition)
 		}
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {
 		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(chk.Body().Position)
