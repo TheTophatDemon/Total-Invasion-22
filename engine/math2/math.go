@@ -92,6 +92,10 @@ func Vec3Reflect(direction, normal mgl32.Vec3) mgl32.Vec3 {
 	return direction.Sub(normal.Mul(2 * direction.Dot(normal)))
 }
 
+func Vec3IsNan(vec mgl32.Vec3) bool {
+	return IsNan(vec[0]) || IsNan(vec[1]) || IsNan(vec[2])
+}
+
 // Returns a unit vector pointing in a random direction.
 func RandomDir() mgl32.Vec3 {
 	dir := mgl32.Vec3{

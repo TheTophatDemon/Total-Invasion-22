@@ -259,6 +259,9 @@ func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shap
 
 // Returns the distance to the nearest 3D plane on this shape, 0 if it's inside.
 func (shape Shape) DistanceFromPoint(myPosition, testPosition mgl32.Vec3) float32 {
+	if math2.Vec3IsNan(myPosition) || math2.Vec3IsNan(testPosition) {
+		return math2.Inf32()
+	}
 	segIter := shape.Segments(mgl32.Vec2{myPosition[0], myPosition[2]})
 	minDist := float32(math.MaxFloat32) // Tracks the smallest (IN MAGNITUDE) distance to a segment's plane
 	isOutside := false

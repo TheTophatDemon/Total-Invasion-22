@@ -30,6 +30,17 @@ func TestDistanceFromPoint(t *testing.T) {
 		dist := cubeShape.DistanceFromPoint(mgl32.Vec3{3.0, 1.0, 5.0}, mgl32.Vec3{3.1, 0.9, 4.8})
 		checkDist(t, 0, dist)
 	})
+
+	t.Run("NaN is infinite distance", func(t *testing.T) {
+		dist := cubeShape.DistanceFromPoint(mgl32.Vec3{math2.NaN[float32](), 1.0, 5.0}, mgl32.Vec3{3.1, 0.9, 4.8})
+		if !math2.IsInf(dist, 0) {
+			t.Fatalf("dist should be infinite")
+		}
+		dist = cubeShape.DistanceFromPoint(mgl32.Vec3{0.0, 1.0, 5.0}, mgl32.Vec3{3.1, math2.NaN[float32](), 4.8})
+		if !math2.IsInf(dist, 0) {
+			t.Fatalf("dist should be infinite")
+		}
+	})
 }
 
 func checkDist(t *testing.T, expected, actual float32) {
