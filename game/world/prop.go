@@ -76,7 +76,7 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 
 	prop.radius, err = ent.FloatProperty("radius")
 	if err != nil {
-		prop.radius = ent.Radius
+		prop.radius = 0.5
 		err = nil
 	}
 

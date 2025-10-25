@@ -113,7 +113,7 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 	enemy.actor = Actor{
 		body: comps.Body{
 			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
-			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
+			Shape:    collision.NewBoxShape(0.5, 0.7, 0.5),
 			Layer:    EnemyColLayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,

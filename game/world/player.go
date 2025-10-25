@@ -79,7 +79,7 @@ func SpawnPlayer(
 	player.actor = Actor{
 		body: comps.Body{
 			Position: position,
-			Shape:    collision.NewBoxShape(0.7, 0.7, 0.7),
+			Shape:    collision.NewBoxShape(0.5, 0.7, 0.5),
 			Layer:    ColLayerActors | ColLayerPlayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
