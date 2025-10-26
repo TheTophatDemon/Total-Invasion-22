@@ -58,7 +58,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 	proj.body.Position = proj.body.Position.Add(proj.body.Velocity.Mul(deltaTime))
 
 	// Respond to collisions
-	if !proj.body.Noclip && proj.onCollide != nil {
+	if proj.onCollide != nil {
 		// Detect intersections with bodies
 		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.body.Position, proj.body.Shape)
 		for handle := range bodies {
@@ -68,7 +68,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 			}
 
 			otherBody := collidingEnt.Body()
-			if otherBody.Noclip || !otherBody.OnLayer(ColFilterForProjectiles) {
+			if !otherBody.OnLayer(ColFilterForProjectiles) {
 				continue
 			}
 
@@ -81,8 +81,8 @@ func (proj *Projectile) Update(deltaTime float32) {
 				collidingEnt.Body().Position,
 				collidingEnt.Body().Shape,
 			)
-			if hit {
-				proj.onCollide(collidingEnt, collidingEnt.Body().Layer, pushVec, deltaTime)
+			if hit && proj.onCollide != nil {
+				proj.onCollide(collidingEnt, collidingEnt.Body().Layers, pushVec, deltaTime)
 			}
 		}
 
@@ -93,7 +93,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 				continue
 			}
 			pushOut := layer.GridShape.PushOut(mgl32.Vec3{}, proj.body.Position, proj.body.Shape)
-			if !pushOut.ApproxEqual(mgl32.Vec3{}) {
+			if !pushOut.ApproxEqual(mgl32.Vec3{}) && proj.onCollide != nil {
 				proj.onCollide(layer, layer.Layer, pushOut, deltaTime)
 			}
 		}
@@ -125,10 +125,11 @@ func (proj *Projectile) removeOnDie(deltaTime float32) {
 func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	if !proj.AnimPlayer.IsPlayingAnim(proj.dieAnim) {
 		proj.AnimPlayer.PlayNewAnim(proj.dieAnim)
-		proj.body.Noclip = true
+		proj.body.Layers = 0
+		proj.onCollide = nil
+		proj.moveFunc = nil
 		proj.body.Position.Add(proj.body.Velocity.Mul(-deltaTime))
 		proj.body.Velocity = mgl32.Vec3{}
-		proj.moveFunc = nil
 	}
 }
 

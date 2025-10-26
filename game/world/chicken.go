@@ -62,7 +62,7 @@ func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chick
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
-			Layer:    ColLayerActors | ColLayerNPCs,
+			Layers:   ColLayerActors | ColLayerNPCs,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors,
 		YawAngle:        mgl32.DegToRad(angles[1]),
@@ -142,7 +142,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 		if math2.Vec3WithY(body.Velocity, 0.0).ApproxEqual(mgl32.Vec3{}) {
 			body.Velocity = mgl32.Vec3{}
 			chk.actor.GravityAccel = 0.0
-			body.Noclip = true
+			body.ExcludeLayers(body.Layers)
 		}
 	}
 }

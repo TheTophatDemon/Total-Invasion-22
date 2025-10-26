@@ -113,8 +113,8 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 	enemy.actor = Actor{
 		body: comps.Body{
 			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
-			Shape:    collision.NewBoxShape(0.5, 0.7, 0.5),
-			Layer:    EnemyColLayers,
+			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
+			Layers:   EnemyColLayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
 		YawAngle:        angles[1],
@@ -298,7 +298,8 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		}
 
 		gWorld.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.Noclip = false
+		enemy.actor.body.RestoreLayers()
+		enemy.actor.NoClip = false
 		enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
@@ -324,7 +325,8 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
 		gWorld.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.Noclip = true
+		enemy.actor.body.ExcludeLayers(collision.MaskAll)
+		enemy.actor.NoClip = true
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {

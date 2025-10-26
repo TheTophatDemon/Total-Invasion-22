@@ -79,8 +79,8 @@ func SpawnPlayer(
 	player.actor = Actor{
 		body: comps.Body{
 			Position: position,
-			Shape:    collision.NewBoxShape(0.5, 0.7, 0.5),
-			Layer:    ColLayerActors | ColLayerPlayers,
+			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
+			Layers:   ColLayerActors | ColLayerPlayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
 		YawAngle:        mgl32.DegToRad(angles[1]),
@@ -229,7 +229,7 @@ func (player *Player) Update(deltaTime float32) {
 	hudPtr.PlayerStats = hud.PlayerStats{
 		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Health:              int(math2.Ceil(player.actor.Health)),
-		Noclip:              player.Body().Noclip,
+		Noclip:              player.actor.NoClip,
 		GodMode:             player.godMode,
 		Ammo:                player.ammo,
 		Keys:                player.keys,
@@ -272,11 +272,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ActionNoclip) {
-		if !player.Body().Noclip {
-			player.Body().Noclip = true
+		if !player.actor.NoClip {
+			player.actor.NoClip = true
 			hudPtr.ShowMessage(settings.Localize("noclipActivate"), 4.0, 100, color.Red)
 		} else {
-			player.Body().Noclip = false
+			player.actor.NoClip = false
 			hudPtr.ShowMessage(settings.Localize("noclipDeactivate"), 4.0, 100, color.Red)
 		}
 	}
@@ -311,7 +311,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	if input.IsActionJustPressed(settings.ActionCastBlessing) {
-		SpawnBlessing(player.actor.Position(), mgl32.Vec3{0.0, player.actor.YawAngle, 0.0}, player.id.Handle)
+		SpawnBlessing(player.actor.Position(), player.actor.FacingVec(), player.id.Handle)
 	}
 
 	// Use key

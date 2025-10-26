@@ -15,6 +15,7 @@ type Actor struct {
 	MaxFallSpeed                    float32
 	YawAngle                        float32 // Radians
 	Health, MaxHealth, TargetHealth float32 // Health cannot be more than MaxHealth but will gradually drop to TargetHealth if overhealed.
+	NoClip                          bool
 	body                            comps.Body
 	inputForward, inputStrafe       float32
 	onGround                        bool
@@ -77,8 +78,10 @@ func (actor *Actor) Update(deltaTime float32) {
 
 	// Do collisions
 	movement := actor.body.Velocity.Mul(deltaTime)
-	movement = movement.Add(gWorld.bspTree.ResolveCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
-	movement = movement.Add(gWorld.ResolveMapCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
+	if !actor.NoClip {
+		movement = movement.Add(gWorld.bspTree.ResolveCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
+		movement = movement.Add(gWorld.ResolveMapCollisions(&actor.body, movement, !doGravity, actor.collisionFilter))
+	}
 	actor.body.TranslateV(movement)
 }
 

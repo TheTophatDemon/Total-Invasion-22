@@ -23,6 +23,8 @@ func (res Result) String() string {
 // Represents a bit mask that filters what things will collide with what.
 type Mask uint64
 
+const MaskAll Mask = 0xFFFFFFFFFFFFFFFF
+
 // Returns true if any of the bits in the provided mask are set on this mask.
 // Will return false if otherMask has the bypass bit set.
 func (mask Mask) On(otherMask Mask) bool {

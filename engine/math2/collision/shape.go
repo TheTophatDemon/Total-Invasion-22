@@ -237,24 +237,35 @@ func (shape Shape) Touches(myPosition, theirPosition mgl32.Vec3, theirShape Shap
 		return false
 	}
 
-	myPos2D := mgl32.Vec2{myPosition[0], myPosition[2]}
-	theirPos2D := mgl32.Vec2{theirPosition[0], theirPosition[2]}
+	myPos2d := mgl32.Vec2{myPosition[0], myPosition[2]}
+	theirPos2d := mgl32.Vec2{theirPosition[0], theirPosition[2]}
 
-	for _, point := range theirShape.Points() {
-		point = point.Add(theirPos2D)
-		if shape.ContainsPoint(myPos2D, point) {
-			return true
+	for _, iter := range [...]SegmentIter{shape.Segments(myPos2d), theirShape.Segments(theirPos2d)} {
+		for seg, ok := iter.Next(); ok; seg, ok = iter.Next() {
+			var aMin float32 = math.MaxFloat32
+			var aMax float32 = -math.MaxFloat32
+			for _, point := range theirShape.Points() {
+				proj := point.Add(theirPos2d).Dot(seg.Normal)
+				aMin = min(aMin, proj)
+				aMax = max(aMax, proj)
+			}
+
+			var bMin float32 = math.MaxFloat32
+			var bMax float32 = -math.MaxFloat32
+			for _, point := range shape.Points() {
+				proj := point.Add(myPos2d).Dot(seg.Normal)
+				bMin = min(bMin, proj)
+				bMax = max(bMax, proj)
+			}
+
+			if bMin >= aMax || bMax < aMin {
+				// Separating axis found
+				return false
+			}
 		}
 	}
 
-	for _, point := range shape.Points() {
-		point = point.Add(myPos2D)
-		if theirShape.ContainsPoint(theirPos2D, point) {
-			return true
-		}
-	}
-
-	return false
+	return true
 }
 
 // Returns the distance to the nearest 3D plane on this shape, 0 if it's inside.

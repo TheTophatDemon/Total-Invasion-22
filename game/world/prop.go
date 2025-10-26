@@ -83,11 +83,11 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 	prop.body = comps.Body{
 		Position: mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, ent.Radius - 1.0, 0.0}),
 		Shape:    collision.NewBoxShape(prop.radius, 2.0, prop.radius),
-		Layer:    ColLayerMap,
+		Layers:   ColLayerMap,
 	}
 
 	if prop.radius == 0 {
-		prop.body.Layer = ColLayerNone
+		prop.body.Layers = ColLayerNone
 	}
 
 	spriteScale := mgl32.Vec2{ent.Radius, ent.Radius}
@@ -96,12 +96,12 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 	case "geoffrey":
 		prop.updateFunc = prop.geoffreyUpdate
 		prop.useFunc = prop.geoffreyUse
-		prop.body.Layer = ColLayerMap | ColLayerNPCs
+		prop.body.Layers = ColLayerMap | ColLayerNPCs
 	case "eyeball":
 		prop.updateFunc = prop.eyeballUpdate
-		prop.body.Layer = ColLayerMap | ColLayerNPCs
+		prop.body.Layers = ColLayerMap | ColLayerNPCs
 	case "fire":
-		prop.body.Layer = ColLayerInvisible
+		prop.body.Layers = ColLayerInvisible
 	}
 
 	prop.SpriteRender = comps.NewSpriteRender(sprite, nil, &spriteScale)
@@ -138,14 +138,14 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 		if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
 			idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
 			prop.AnimPlayer.PlayNewAnim(idleAnim)
-			prop.body.Layer = ColLayerMap | ColLayerNPCs
+			prop.body.Layers = ColLayerMap | ColLayerNPCs
 		}
 	} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 		// Check for incoming projectiles and trigger the disappearing animation.
 		projsIter := gWorld.IterProjectilesInSphere(prop.body.Position, projectileSafetyRadius, nil)
 		if projsIter.HasNext() {
 			prop.AnimPlayer.PlayNewAnim(vanishAnim)
-			prop.body.Layer = 0
+			prop.body.Layers = 0
 			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Position)
 		}
 	}

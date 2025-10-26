@@ -155,7 +155,7 @@ func (tree *BspTree) ResolveCollisions(
 	lockY bool,
 	filter collision.Mask,
 ) mgl32.Vec3 {
-	if body == nil || body.Noclip {
+	if body == nil || body.Layers == 0 {
 		return mgl32.Vec3{}
 	}
 
@@ -164,7 +164,7 @@ func (tree *BspTree) ResolveCollisions(
 	for _, handle := range obstacles {
 		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
 			otherBody := collidingEnt.Body()
-			if otherBody == nil || body == otherBody || !otherBody.Layer.On(filter) || otherBody.Noclip {
+			if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
 				continue
 			}
 

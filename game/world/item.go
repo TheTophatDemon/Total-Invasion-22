@@ -253,7 +253,7 @@ func SpawnArmorStand(position mgl32.Vec3, armorType game.ArmorType) (id scene.Id
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.6, 0.8, 0.6),
-			Layer:    ColLayerMap | ColLayerUsable,
+			Layers:   ColLayerMap | ColLayerUsable,
 		},
 		animPlayer:   comps.NewAnimationPlayer(anim, false),
 		pickupSound:  cache.GetSfx("assets/sounds/armor.wav"),
@@ -286,7 +286,7 @@ func spawnItemGeneric(position, size mgl32.Vec3) (id scene.Id[*Item], item *Item
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(size[0], size[1], size[2]),
-			Layer:    ColLayerUsable,
+			Layers:   ColLayerUsable,
 		},
 		flashColor:   color.White.WithAlpha(0.75),
 		pickupSound:  cache.GetSfx("assets/sounds/pickup.wav"),

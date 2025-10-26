@@ -54,6 +54,7 @@ type World struct {
 	MapLayers      scene.Storage[comps.MapLayer]
 	Props          scene.Storage[Prop]
 	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
+	InvisibleLayer *comps.MapLayer
 	CurrentPlayer  scene.Id[*Player]
 	CurrentCamera  scene.Id[*Camera]
 	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
@@ -91,8 +92,9 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		return nil, err
 	}
 
+	var err2 error
 	_, gWorld.GameMap, err = gWorld.MapLayers.New()
-	_, invisLayer, err2 := gWorld.MapLayers.New()
+	_, gWorld.InvisibleLayer, err2 = gWorld.MapLayers.New()
 	_, killLayer, err3 := gWorld.MapLayers.New()
 	if err = errors.Join(err, err2, err3); err != nil {
 		return nil, err
@@ -104,7 +106,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		return nil, err
 	}
 
-	*invisLayer = comps.NewExtraMapLayer(te3File, ColLayerInvisible)
+	*gWorld.InvisibleLayer = comps.NewExtraMapLayer(te3File, ColLayerInvisible)
 	*killLayer = comps.NewExtraMapLayer(te3File, ColLayerKillzone)
 
 	// Process tiles after mesh is generated.
@@ -117,7 +119,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 
 		mapLayer := gWorld.GameMap
 		if primaryTexture.HasFlag(texFlagInvisible) {
-			mapLayer = invisLayer
+			mapLayer = gWorld.InvisibleLayer
 		} else if primaryTexture.HasFlag("killzone") {
 			mapLayer = killLayer
 		} else if primaryTexture.HasFlag("liquid") {
@@ -178,7 +180,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		switch entType {
 		case "enemy":
 			_, _, err = SpawnEnemyFromTE3(ent)
-		case "door", "switch":
+		case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
 			_, _, err = SpawnWallFromTE3(ent)
 		case "prop":
 			_, _, err = SpawnPropFromTE3(ent)
@@ -259,7 +261,7 @@ func (world *World) ResolveMapCollisions(
 	lockY bool,
 	filter collision.Mask,
 ) mgl32.Vec3 {
-	if body == nil || body.Noclip {
+	if body == nil {
 		return mgl32.Vec3{}
 	}
 

@@ -34,7 +34,7 @@ func SpawnSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		Facing:       facing,
 		forwardSpeed: 35.0,
@@ -62,7 +62,7 @@ func SpawnSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*
 
 func SpawnIntroSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = SpawnSickle(position, facing, owner)
-	proj.body.Layer = ColLayerNone
+	proj.body.Layers = ColLayerNone
 	proj.moveFunc = proj.introSickleMove
 	proj.forwardSpeed = -1.0
 
@@ -160,7 +160,7 @@ func SpawnEgg(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Pro
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.1, 0.1, 0.1),
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		Facing:       facing,
 		SpriteRender: comps.NewSpriteRender(eggTex, nil, &mgl32.Vec2{0.4, 0.4}),
@@ -180,7 +180,9 @@ func (proj *Projectile) eggCollide(otherEnt any, mask collision.Mask, pushVec mg
 	}
 
 	gWorld.QueueRemoval(proj.id.Handle)
-	proj.body.Noclip = true
+	proj.body.Layers = 0
+	proj.onCollide = nil
+	proj.moveFunc = nil
 
 	var backwards mgl32.Vec3
 	if proj.body.Velocity.LenSqr() != 0.0 {
@@ -213,7 +215,7 @@ func SpawnFireball(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		Facing:       facing,
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.375, 0.375}),
@@ -249,7 +251,7 @@ func SpawnGrenade(position, direction mgl32.Vec3) (id scene.Id[*Projectile], pro
 			Position: position,
 			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
 			Velocity: direction.Mul(20.0),
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.25, 0.25}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
@@ -326,7 +328,7 @@ func SpawnPlasmaBall(
 		owner: owner,
 		body: comps.Body{
 			Position: position,
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		Facing:       facing,
 		forwardSpeed: 60.0,
@@ -379,7 +381,7 @@ func SpawnBlessing(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		body: comps.Body{
 			Position: position,
 			Shape:    collision.NewBoxShape(0.5, 0.5, 0.5),
-			Layer:    ColLayerProjectiles,
+			Layers:   ColLayerProjectiles,
 		},
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),

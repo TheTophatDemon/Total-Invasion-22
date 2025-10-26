@@ -1,15 +1,10 @@
 # TODO
 - Collision rework
   - Add sweeping to all projectiles so they don't go through walls
-  - Fix getting caught sliding along secret walls
-    - Can make the tile solid but invisible until the wall is opened.
-    - Do that for the doors as well.
   - Add multiple solver iterations to avoid corner jitters
+    - Solve getting caught when sliding along adjecent sloped walls?
 - Make game tick speed more stable
-- Big stutter when rendering first particle effect
-- Fix flickering artifacts on walls. Consider greedy meshing.
-- Optimize the memory usage of map loading to avoid GC stutters
-- Optimize world raycasts using the bsp tree
+- Optimize memory usage of particle effects
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages
@@ -28,6 +23,9 @@
 - Saving / checkpoints
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
+- Fix flickering artifacts on walls. Consider greedy meshing.
+- Optimize the memory usage of map loading to avoid GC stutters
+- Optimize world raycasts using the bsp tree
 
 - Port E1M4
   - Textures

@@ -152,3 +152,24 @@ func checkResult(t *testing.T, expected, actual Result) {
 		t.Fatalf("result should be %v but was %v", expected, actual)
 	}
 }
+
+func TestShapeTouches(t *testing.T) {
+	t.Run("shapes separated vertically", func(t *testing.T) {
+		box := NewBoxShape(1.0, 1.0, 1.0)
+
+		if box.Touches(mgl32.Vec3{}, mgl32.Vec3{0, 2.1, 0}, box) {
+			t.Fatal("box above other box should not touch")
+		}
+		if box.Touches(mgl32.Vec3{}, mgl32.Vec3{0, -2.1, 0}, box) {
+			t.Fatal("box below other box should not touch")
+		}
+	})
+
+	t.Run("shapes that intersect on segments and not points", func(t *testing.T) {
+		shapeA := NewBoxShape(1.0, 1.0, 1.0)
+		shapeB := NewBoxShape(0.5, 0.5, 4.0)
+		if !shapeA.Touches(mgl32.Vec3{}, mgl32.Vec3{}, shapeB) {
+			t.Fatal("shapeA and shapeB should be touching")
+		}
+	})
+}

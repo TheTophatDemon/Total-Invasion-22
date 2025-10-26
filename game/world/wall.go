@@ -26,6 +26,7 @@ const (
 	MovePhaseOpening
 	MovePhaseOpen
 	MovePhaseClosing
+	MovePhaseCount
 )
 
 type SwitchState uint8
@@ -36,24 +37,39 @@ const (
 	SwitchOn
 )
 
+type WallType string
+
+const (
+	WallTypeDoor     = "door"
+	WallTypePushWall = "pushwall"
+	WallTypeSwitch   = "switch"
+)
+
+type WallFlags uint8
+
+const (
+	WallFlagsCantUse = 1 << iota
+	WallFlagsBlockUntilOpen
+)
+
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
 type Wall struct {
-	MeshRender    comps.MeshRender
-	AnimPlayer    comps.AnimationPlayer
-	Origin        mgl32.Vec3 // The position in global space that the wall starts in.
-	Destination   mgl32.Vec3 // The position in global space that the wall will move to.
-	WaitTime      float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
-	Speed         float32
-	id            scene.Id[*Wall]
-	body          comps.Body
-	waitTimer     float32
-	movePhase     MovePhase
-	unopenable    bool
-	activateSound string
-	key           game.Keys
-	linkNumber    int
-	switchState   SwitchState
-	blockUse      bool
+	MeshRender               comps.MeshRender
+	AnimPlayer               comps.AnimationPlayer
+	Origin                   mgl32.Vec3 // The position in global space that the wall starts in.
+	Destination              mgl32.Vec3 // The position in global space that the wall will move to.
+	WaitTime                 float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
+	Speed                    float32
+	id                       scene.Id[*Wall]
+	body                     comps.Body
+	movePhase, lastMovePhase MovePhase
+	switchState              SwitchState
+	key                      game.Keys
+	activateSound            string
+	activateMessageKey       string
+	flags                    WallFlags
+	waitTimer                float32
+	linkNumber               int
 }
 
 var _ Usable = (*Wall)(nil)
@@ -77,8 +93,15 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 			return scene.Id[*Wall]{}, nil, err
 		}
 		transform := comps.TransformFromTE3Ent(ent, false, false)
+		if strings.ToLower(ent.Properties["type"]) == WallTypeDoor {
+			// Doors have an extra wide hitbox so you can hit the use key on the space
+			// they leave behind after opening.
+			transform.SetScale(2.0, 1.0, 1.0)
+		}
 		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
+
 		transform.SetPosition(0, 0, 0)
+		transform.SetScale(1.0, 1.0, 1.0)
 		wall.MeshRender.LocalTransform = transform
 		wall.MeshRender.Shader = shaders.MapShader
 	} else {
@@ -93,16 +116,16 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 	wall.body = comps.Body{
 		Position: ent.Position,
 		Shape:    collision.NewBoxShape(bbox.Max[0], bbox.Max[1], bbox.Max[2]),
-		Layer:    ColLayerMap,
+		Layers:   ColLayerMap,
 	}
 
 	if typ, ok := ent.Properties["type"]; !ok {
 		return scene.Id[*Wall]{}, nil, fmt.Errorf("no type property")
 	} else {
-		switch typ {
-		case "door":
-			err = wall.configureForDoor(ent)
-		case "switch":
+		switch strings.ToLower(typ) {
+		case WallTypeDoor, WallTypePushWall:
+			err = wall.configureForMover(ent)
+		case WallTypeSwitch:
 			err = wall.configureForSwitch(ent)
 		default:
 			wall.Destination = wall.Origin
@@ -115,26 +138,36 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 	return
 }
 
-func (wall *Wall) configureForDoor(ent te3.Ent) error {
+func (wall *Wall) configureForMover(ent te3.Ent) error {
 	if wall == nil {
 		return nil
 	}
 
-	wall.body.Layer |= ColLayerUsable
+	wall.body.Layers |= ColLayerUsable
+
+	isPushWall := strings.ToLower(ent.Properties["type"]) == WallTypePushWall
 
 	// Determine the door's destination position
 	unopenable, _ := ent.BoolProperty("unopenable")
 	if !unopenable {
 		dist, err := ent.FloatProperty("distance")
 		if _, notFound := err.(te3.PropNotFoundError); notFound {
-			dist = 1.8
+			if isPushWall {
+				dist = 4.0
+			} else {
+				dist = 1.8
+			}
 		} else if err != nil {
 			return err
 		}
 
 		dirStr, ok := ent.Properties["direction"]
 		if !ok {
-			return fmt.Errorf("need direction property")
+			if isPushWall {
+				dirStr = "backward"
+			} else {
+				dirStr = "right"
+			}
 		}
 
 		localTrans := wall.MeshRender.LocalTransform.Matrix()
@@ -165,6 +198,8 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 			} else {
 				wall.WaitTime = 0.0
 			}
+		} else if isPushWall {
+			wall.WaitTime = -1.0
 		} else {
 			wall.WaitTime = 3.0
 		}
@@ -181,28 +216,35 @@ func (wall *Wall) configureForDoor(ent te3.Ent) error {
 			wall.key = game.KeyTypeFromName(keyName)
 		}
 
-		if blockUse, err := ent.BoolProperty("blockUse"); err == nil {
-			wall.blockUse = blockUse
-		} else if _, notFound := err.(te3.PropNotFoundError); !notFound {
-			return fmt.Errorf("could not parse blockuse property: %v", err)
-		}
-
 		if linkStr, ok := ent.Properties["link"]; ok {
 			if linkNum, err := strconv.ParseInt(linkStr, 10, 32); err == nil {
 				wall.linkNumber = int(linkNum)
+				if !isPushWall {
+					wall.activateMessageKey = "doorSwitch"
+				}
+				wall.flags |= WallFlagsCantUse
 			} else {
 				return fmt.Errorf("could not parse link number; %v", err)
 			}
 		}
+
+		if !isPushWall {
+			wall.flags |= WallFlagsBlockUntilOpen
+		}
 	} else {
 		wall.Destination = wall.Origin
-		wall.unopenable = true
+		wall.flags |= WallFlagsCantUse
+		if !isPushWall {
+			wall.activateMessageKey = "doorStuck"
+		}
 	}
 
 	if sfxStr, ok := ent.Properties["activateSound"]; ok {
 		if len(sfxStr) > 0 {
 			wall.activateSound = "assets/sounds/" + sfxStr
 		}
+	} else if isPushWall {
+		wall.activateSound = "assets/sounds/secretwall.wav"
 	} else {
 		wall.activateSound = "assets/sounds/opendoor.wav"
 	}
@@ -221,7 +263,7 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 		return err
 	}
 
-	wall.body.Layer |= ColLayerUsable
+	wall.body.Layers |= ColLayerUsable
 
 	wall.switchState = SwitchOff
 	wall.Destination = wall.Origin
@@ -235,25 +277,6 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	return nil
 }
 
-func SpawnInvisibleWall(
-	position mgl32.Vec3,
-	shape collision.Shape,
-) (id scene.Id[*Wall], wall *Wall, err error) {
-	id, wall, err = gWorld.Walls.New()
-	if err != nil {
-		return
-	}
-
-	wall.Origin = position
-	wall.body = comps.Body{
-		Position: position,
-		Shape:    shape,
-		Layer:    ColLayerInvisible,
-	}
-
-	return
-}
-
 func (wall *Wall) Update(deltaTime float32) {
 	wall.AnimPlayer.Update(deltaTime)
 	if wall.switchState != NotASwitch && wall.AnimPlayer.HitATriggerFrame() {
@@ -265,6 +288,9 @@ func (wall *Wall) Update(deltaTime float32) {
 			gWorld.DeactivateLinks(wall)
 		}
 	}
+
+	isNewPhase := wall.movePhase != wall.lastMovePhase
+	wall.lastMovePhase = wall.movePhase
 
 	switch wall.movePhase {
 	case MovePhaseOpening:
@@ -280,12 +306,29 @@ func (wall *Wall) Update(deltaTime float32) {
 	case MovePhaseClosing:
 		targetDir := wall.Origin.Sub(wall.body.Position)
 		targetDist := targetDir.Len()
+
 		// Detect if something is standing in the way
-		actorsIter := gWorld.IterActorsInSphere(wall.Origin, wall.body.Shape.Extents().LongestDimension(), nil)
-		if actor, _ := actorsIter.Next(); actor != nil {
-			wall.body.Velocity = mgl32.Vec3{}
-			wall.movePhase = MovePhaseOpening
-		} else if targetDist <= wall.Speed*deltaTime {
+		ents := gWorld.bspTree.PotentiallyTouchingEnts(wall.Origin, wall.body.Shape)
+		obstructed := false
+		for ent := range ents {
+			if actorHaver, ok := scene.Get[HasActor](ent); ok {
+				if actorHaver.Body().Shape.Touches(actorHaver.Body().Position, wall.body.Position, wall.body.Shape) {
+					wall.body.Velocity = mgl32.Vec3{}
+					wall.movePhase = MovePhaseOpening
+					obstructed = true
+					break
+				}
+			}
+		}
+		if obstructed {
+			break
+		}
+
+		if wall.body.ExcludedLayers.On(ColLayerMap) {
+			wall.body.RestoreLayers()
+		}
+
+		if targetDist <= wall.Speed*deltaTime {
 			wall.body.Position = wall.Origin
 			wall.movePhase = MovePhaseClosed
 			wall.body.Velocity = mgl32.Vec3{}
@@ -293,18 +336,20 @@ func (wall *Wall) Update(deltaTime float32) {
 			wall.body.Velocity = targetDir.Mul(wall.Speed / targetDist)
 		}
 	case MovePhaseOpen:
+		if isNewPhase && (wall.flags&WallFlagsBlockUntilOpen) != 0 {
+			wall.body.ExcludeLayers(ColLayerMap)
+		}
 		wall.waitTimer += deltaTime
 		if wall.waitTimer > wall.WaitTime && wall.WaitTime >= 0.0 {
 			wall.movePhase = MovePhaseClosing
 			wall.waitTimer = 0.0
 		}
-		fallthrough
+		wall.body.Velocity = mgl32.Vec3{}
 	case MovePhaseClosed:
 		wall.body.Velocity = mgl32.Vec3{}
 	}
 
 	movement := wall.body.Velocity.Mul(deltaTime)
-	movement = movement.Add(gWorld.bspTree.ResolveCollisions(&wall.body, movement, true, ColLayerMap|ColLayerActors))
 	wall.body.TranslateV(movement)
 }
 
@@ -339,7 +384,10 @@ func (wall *Wall) Body() *comps.Body {
 }
 
 func (wall *Wall) OnUse(player *Player) {
-	if wall.blockUse {
+	if len(wall.activateMessageKey) > 0 {
+		gWorld.Hud.ShowMessage(settings.Localize(wall.activateMessageKey), 2.0, 10, color.Red)
+	}
+	if (wall.flags & WallFlagsCantUse) != 0 {
 		return
 	}
 	switch true {
@@ -351,15 +399,10 @@ func (wall *Wall) OnUse(player *Player) {
 		anim, _ := wall.MeshRender.Texture.GetAnimation("off")
 		wall.AnimPlayer.PlayNewAnim(anim)
 		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Position)
-	case wall.unopenable:
-		gWorld.Hud.ShowMessage(settings.Localize("doorStuck"), 2.0, 10, color.Red)
 	case wall.key != game.KeysNone && (player.keys&wall.key) != wall.key:
 		// Locked if keycard not retrieved
 		gWorld.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 2.0, 10, color.Red)
 		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Position)
-	case wall.linkNumber != 0:
-		// Door is opened by some other mechanism
-		gWorld.Hud.ShowMessage(settings.Localize("doorSwitch"), 2.0, 10, color.Red)
 	case !wall.Origin.ApproxEqual(wall.Destination):
 		wall.ToggleMovement()
 	}
@@ -385,5 +428,8 @@ func (wall *Wall) Open() {
 func (wall *Wall) Close() {
 	if wall.WaitTime >= 0.0 {
 		wall.movePhase = MovePhaseClosing
+		if len(wall.activateSound) > 0 {
+			cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
+		}
 	}
 }
