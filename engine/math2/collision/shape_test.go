@@ -1,6 +1,7 @@
 package collision
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -148,8 +149,9 @@ func checkResult(t *testing.T, expected, actual Result) {
 		!expected.Position.ApproxEqual(actual.Position) ||
 		!expected.Normal.ApproxEqual(actual.Normal) ||
 		!math2.Almost(expected.Distance, actual.Distance)
+	_, file, line, _ := runtime.Caller(1)
 	if fail {
-		t.Fatalf("result should be %v but was %v", expected, actual)
+		t.Fatalf("result should be %v but was %v at %v:%v", expected, actual, file, line)
 	}
 }
 
@@ -171,5 +173,83 @@ func TestShapeTouches(t *testing.T) {
 		if !shapeA.Touches(mgl32.Vec3{}, mgl32.Vec3{}, shapeB) {
 			t.Fatal("shapeA and shapeB should be touching")
 		}
+	})
+}
+
+func TestSweep(t *testing.T) {
+	t.Run("horziontal box vs. box", func(t *testing.T) {
+		box := NewBoxShape(1.0, 1.0, 1.0)
+
+		res := box.Sweep(mgl32.Vec3{0.0, 0.0, 0.0}, mgl32.Vec3{10.0, 0.0, 0.0}, mgl32.Vec3{5.0, 0.0, 0.0}, box)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{3.0, 0.0, 0.0},
+			Normal:   mgl32.Vec3{-1.0, 0.0, 0.0},
+			Distance: 3.0,
+		}, res)
+
+		// Miss in front
+		res = box.Sweep(mgl32.Vec3{0.0, 0.0, 5.0}, mgl32.Vec3{10.0, 0.0, 0.0}, mgl32.Vec3{5.0, 0.0, 0.0}, box)
+		checkResult(t, Result{
+			Distance: 10.0,
+			Position: mgl32.Vec3{10.0, 0.0, 5.0},
+		}, res)
+
+		// Miss behind
+		res = box.Sweep(mgl32.Vec3{0.0, 0.0, -5.0}, mgl32.Vec3{10.0, 0.0, 0.0}, mgl32.Vec3{5.0, 0.0, 0.0}, box)
+		checkResult(t, Result{
+			Distance: 10.0,
+			Position: mgl32.Vec3{10.0, 0.0, -5.0},
+		}, res)
+	})
+
+	t.Run("vertical box vs. box", func(t *testing.T) {
+		box := NewBoxShape(1.0, 1.0, 1.0)
+
+		// Going down
+		res := box.Sweep(mgl32.Vec3{0.0, 0.0, 0.0}, mgl32.Vec3{0.0, -10.0, 0.0}, mgl32.Vec3{0.0, -5.0, 0.0}, box)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{0.0, -3.0, 0.0},
+			Normal:   mgl32.Vec3{0.0, 1.0, 0.0},
+			Distance: 3.0,
+		}, res)
+
+		// Miss to the left
+		res = box.Sweep(mgl32.Vec3{5.0, 0.0, 0.0}, mgl32.Vec3{0.0, -10.0, 0.0}, mgl32.Vec3{0.0, -5.0, 0.0}, box)
+		checkResult(t, Result{
+			Position: mgl32.Vec3{5.0, -10.0, 0.0},
+			Distance: 10.0,
+		}, res)
+
+		// Miss to the right
+		res = box.Sweep(mgl32.Vec3{-5.0, 0.0, 0.0}, mgl32.Vec3{0.0, -10.0, 0.0}, mgl32.Vec3{0.0, -5.0, 0.0}, box)
+		checkResult(t, Result{
+			Position: mgl32.Vec3{-5.0, -10.0, 0.0},
+			Distance: 10.0,
+		}, res)
+
+		// Going up
+		res = box.Sweep(mgl32.Vec3{0.0, 0.0, 0.0}, mgl32.Vec3{0.0, 10.0, 0.0}, mgl32.Vec3{1.0, 5.0, 0.0}, box)
+		checkResult(t, Result{
+			Hit:      true,
+			Position: mgl32.Vec3{0.0, 3.0, 0.0},
+			Normal:   mgl32.Vec3{0.0, -1.0, 0.0},
+			Distance: 3.0,
+		}, res)
+
+		// Miss to the left
+		res = box.Sweep(mgl32.Vec3{0.0, 0.0, 0.0}, mgl32.Vec3{-10.0, 10.0, 0.0}, mgl32.Vec3{1.0, 5.0, 0.0}, box)
+		checkResult(t, Result{
+			Position: mgl32.Vec3{-10.0, 10.0, 0.0},
+			Distance: mgl32.Vec3{-10.0, 10.0, 0.0}.Len(),
+		}, res)
+
+		// Miss to the right
+		res = box.Sweep(mgl32.Vec3{5.0, 0.0, 0.0}, mgl32.Vec3{0.0, 10.0, 0.0}, mgl32.Vec3{1.0, 5.0, 0.0}, box)
+		checkResult(t, Result{
+			Position: mgl32.Vec3{5.0, 10.0, 0.0},
+			Distance: 10.0,
+		}, res)
 	})
 }

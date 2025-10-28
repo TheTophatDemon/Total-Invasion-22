@@ -362,9 +362,119 @@ func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist flo
 	return
 }
 
-func (shape Shape) Shapecast(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
-	//TODO
-	return Result{}
+func (shape Shape) Sweep(myPosition, myMovement, theirPosition mgl32.Vec3, theirShape Shape) (result Result) {
+	if shape.Touches(myPosition, theirPosition, theirShape) {
+		result.Hit = true
+		result.Position = theirPosition
+		if myMovement.LenSqr() > 0 {
+			result.Normal = myMovement.Normalize().Mul(-1.0)
+		}
+		return
+	} else if myMovement.LenSqr() == 0.0 {
+		return
+	}
+
+	result.Distance = myMovement.Len()
+	result.Position = myPosition.Add(myMovement)
+
+	var planesArr [(MaxPointCount * 2) + 4]math2.Plane
+	planes := planesArr[0:0]
+
+	segIters := [...]SegmentIter{
+		shape.Segments(mgl32.Vec2{myPosition[0], myPosition[2]}),
+		theirShape.Segments(mgl32.Vec2{theirPosition[0], theirPosition[2]}),
+	}
+	for _, iter := range segIters {
+		for seg, ok := iter.Next(); ok; seg, ok = iter.Next() {
+			planes = append(planes, math2.PlaneFromPointAndNormal(
+				mgl32.Vec3{seg.Points[0][0], myPosition[1], seg.Points[0][1]},
+				mgl32.Vec3{seg.Normal[0], 0.0, seg.Normal[1]},
+			))
+		}
+	}
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, myPosition[1] + shape.extents.Max[1], 0.0}, mgl32.Vec3{0.0, 1.0, 0.0}))
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, myPosition[1] + shape.extents.Min[1], 0.0}, mgl32.Vec3{0.0, -1.0, 0.0}))
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, theirPosition[1] + theirShape.extents.Max[1], 0.0}, mgl32.Vec3{0.0, 1.0, 0.0}))
+	planes = append(planes,
+		math2.PlaneFromPointAndNormal(mgl32.Vec3{0.0, theirPosition[1] + theirShape.extents.Min[1], 0.0}, mgl32.Vec3{0.0, -1.0, 0.0}))
+
+	var tFirst float32 = 0.0
+	var nFirst mgl32.Vec3
+	var tLast float32 = 1.0
+
+	for _, plane := range planes {
+		var aMin float32 = math.MaxFloat32
+		var aMax float32 = -math.MaxFloat32
+		for _, point := range theirShape.Points() {
+			proj := mgl32.Vec3{point[0], theirShape.extents.Max[1], point[1]}.Add(theirPosition).Dot(plane.Normal)
+			aMin = min(aMin, proj)
+			aMax = max(aMax, proj)
+		}
+		for _, point := range theirShape.Points() {
+			proj := mgl32.Vec3{point[0], theirShape.extents.Min[1], point[1]}.Add(theirPosition).Dot(plane.Normal)
+			aMin = min(aMin, proj)
+			aMax = max(aMax, proj)
+		}
+
+		var bMin float32 = math.MaxFloat32
+		var bMax float32 = -math.MaxFloat32
+		for _, point := range shape.Points() {
+			proj := mgl32.Vec3{point[0], shape.extents.Max[1], point[1]}.Add(myPosition).Dot(plane.Normal)
+			bMin = min(bMin, proj)
+			bMax = max(bMax, proj)
+		}
+		for _, point := range shape.Points() {
+			proj := mgl32.Vec3{point[0], shape.extents.Min[1], point[1]}.Add(myPosition).Dot(plane.Normal)
+			bMin = min(bMin, proj)
+			bMax = max(bMax, proj)
+		}
+
+		projMove := myMovement.Dot(plane.Normal)
+
+		if projMove < 0.0 {
+			if bMax < aMin {
+				return
+			}
+			if aMax < bMin {
+				t := (aMax - bMin) / projMove
+				if t > tFirst {
+					tFirst = t
+					nFirst = plane.Normal
+				}
+			}
+			if bMax > aMin {
+				tLast = min(tLast, (aMin-bMax)/projMove)
+			}
+		} else if projMove > 0.0 {
+			if bMin > aMax {
+				return
+			}
+			if bMax < aMin {
+				t := (aMin - bMax) / projMove
+				if t > tFirst {
+					tFirst = t
+					nFirst = plane.Normal.Mul(-1.0)
+				}
+			}
+			if aMax > bMin {
+				tLast = min(tLast, (aMax-bMin)/projMove)
+			}
+		} else if bMin > aMax || bMax < aMin {
+			return
+		}
+		if tFirst > tLast {
+			return
+		}
+	}
+
+	result.Hit = true
+	result.Distance *= tFirst
+	result.Normal = nFirst
+	result.Position = myPosition.Add(myMovement.Mul(tFirst))
+	return
 }
 
 // Returns the vector needed to push this shape out of theirShape when they are colliding.

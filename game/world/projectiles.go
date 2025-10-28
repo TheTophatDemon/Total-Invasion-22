@@ -105,7 +105,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 	proj.body.Velocity = proj.Facing.Mul(proj.forwardSpeed)
 }
 
-func (proj *Projectile) sickleCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
+func (proj *Projectile) sickleCollide(otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) {
 	owner, hasOwner := scene.Get[HasActor](proj.owner)
 
 	if bodyHaver, hasBody := otherEnt.(comps.HasBody); hasBody {
@@ -174,7 +174,7 @@ func SpawnEgg(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*Pro
 	return
 }
 
-func (proj *Projectile) eggCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
+func (proj *Projectile) eggCollide(otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) {
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 	}
@@ -273,13 +273,15 @@ func (proj *Projectile) applyGravity(deltaTime float32) {
 	proj.body.Velocity = math2.Vec3WithY(proj.body.Velocity, proj.fallSpeed)
 }
 
-func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
+func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) {
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 		proj.explodeOnDie(deltaTime)
 	} else if (mask & ColLayerKillzone) != 0 {
 		proj.explodeOnDie(deltaTime)
 	} else if (mask & ColLayerMap) != 0 {
+		proj.body.Position = result.Position
+
 		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
 		speed := horzVelocity.Len() * 0.8
 		var direction mgl32.Vec3
@@ -287,15 +289,15 @@ func (proj *Projectile) grenadeCollide(otherEnt any, mask collision.Mask, pushVe
 			direction = horzVelocity.Normalize()
 		}
 
-		if pushVec[1] > 0.1 && proj.fallSpeed < 0.0 {
+		if result.Normal[1] > 0.1 && proj.fallSpeed < 0.0 {
 			if proj.fallSpeed > -0.01 {
 				proj.fallSpeed = 0.0
 			}
 			proj.fallSpeed = -proj.fallSpeed * 0.9
 			proj.body.Velocity = math2.Vec3WithY(direction.Mul(speed), proj.fallSpeed)
-		} else if pushVec.LenSqr() > 0.0 {
+		} else if result.Normal.LenSqr() > 0.0 {
 			if speed > 0.01 {
-				reflection := math2.Vec3Reflect(direction, pushVec.Normalize())
+				reflection := math2.Vec3Reflect(direction, result.Normal)
 				proj.body.Velocity = mgl32.Vec3{reflection.X() * speed, 0.0, reflection.Z() * speed}
 			} else {
 				proj.body.Velocity = mgl32.Vec3{}
@@ -424,8 +426,8 @@ func (proj *Projectile) moveForwardAndRevive(deltaTime float32) {
 	}
 }
 
-func (proj *Projectile) blessingCollide(collidingEntity any, mask collision.Mask, pushVec mgl32.Vec3, deltaTime float32) {
+func (proj *Projectile) blessingCollide(collidingEntity any, mask collision.Mask, result collision.Result, deltaTime float32) {
 	if _, isEnemy := collidingEntity.(*Enemy); !isEnemy {
-		proj.dieOnCollide(collidingEntity, mask, pushVec, deltaTime)
+		proj.dieOnCollide(collidingEntity, mask, result, deltaTime)
 	}
 }
