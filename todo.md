@@ -1,7 +1,5 @@
 # TODO
 - Collision rework
-  - Add sweeping to all projectiles so they don't go through walls
-    - Interactions with non-map bodies causes clipping through walls
   - Projectiles are colliding with the invisible barriers beside the doors
   - Add multiple solver iterations to avoid corner jitters
     - Solve getting caught when sliding along adjecent sloped walls?

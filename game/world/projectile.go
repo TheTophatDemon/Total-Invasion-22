@@ -32,7 +32,13 @@ type Projectile struct {
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
-	onCollide                                      func(collidingEntity any, mask collision.Mask, result collision.Result, deltaTime float32)
+	onCollide                                      func(
+		movement mgl32.Vec3,
+		collidingEntity any,
+		mask collision.Mask,
+		result collision.Result,
+		deltaTime float32,
+	) mgl32.Vec3
 }
 
 func (proj *Projectile) Body() *comps.Body {
@@ -55,8 +61,14 @@ func (proj *Projectile) Update(deltaTime float32) {
 		gWorld.QueueRemoval(proj.id.Handle)
 	}
 
+	movement := proj.body.Velocity.Mul(deltaTime)
+
 	// Respond to collisions
 	if proj.onCollide != nil {
+		minRes := collision.Result{Distance: math2.Inf32()}
+		var minEnt any
+		var minLayers collision.Mask
+
 		// Detect intersections with bodies
 		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.body.Position, proj.body.Shape)
 		for handle := range bodies {
@@ -76,35 +88,31 @@ func (proj *Projectile) Update(deltaTime float32) {
 			}
 
 			res := proj.body.Shape.Sweep(
-				proj.body.Position, proj.body.Velocity.Mul(deltaTime),
+				proj.body.Position, movement,
 				collidingEnt.Body().Position,
 				collidingEnt.Body().Shape,
 			)
-			if res.Hit && proj.onCollide != nil {
-				proj.onCollide(collidingEnt, collidingEnt.Body().Layers, res, deltaTime)
+			if res.Hit && res.Distance < minRes.Distance {
+				minRes = res
+				minEnt = collidingEnt
+				minLayers = collidingEnt.Body().Layers
 			}
 		}
 
 		// Detect intersection with the map
-		layers := gWorld.MapLayers.Iter()
-		minHit := collision.Result{Distance: math2.Inf32()}
-		var minHitLayer *comps.MapLayer = nil
-		for layer, _ := layers.Next(); layer != nil; layer, _ = layers.Next() {
-			if !layer.Layer.On(ColFilterForProjectiles) {
-				continue
-			}
-			res := layer.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, proj.body.Velocity.Mul(deltaTime), proj.body.Shape)
-			if res.Hit && res.Distance < minHit.Distance {
-				minHit = res
-				minHitLayer = layer
-			}
+		mapRes := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, movement, proj.body.Shape)
+		if mapRes.Hit && mapRes.Distance < minRes.Distance {
+			minRes = mapRes
+			minEnt = gWorld.GameMap
+			minLayers = gWorld.GameMap.Layer
 		}
-		if minHit.Hit && minHitLayer != nil && proj.onCollide != nil {
-			proj.onCollide(minHitLayer, minHitLayer.Layer, minHit, deltaTime)
+
+		if minRes.Hit {
+			movement = proj.onCollide(movement, minEnt, minLayers, minRes, deltaTime)
 		}
 	}
 
-	proj.body.TranslateV(proj.body.Velocity.Mul(deltaTime))
+	proj.body.TranslateV(movement)
 
 	proj.lifeTimer += deltaTime
 	if (proj.lifeTimer > proj.maxLife && proj.maxLife > 0) || proj.lifeTimer > 10.0 {
@@ -140,7 +148,25 @@ func (proj *Projectile) playAnimOnDie(deltaTime float32) {
 	}
 }
 
-func (proj *Projectile) dieOnCollide(otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) {
+func (proj *Projectile) stopOnCollide(
+	movement mgl32.Vec3,
+	collidingEntity any,
+	mask collision.Mask,
+	result collision.Result,
+	deltaTime float32,
+) mgl32.Vec3 {
+	_ = collidingEntity
+	_ = mask
+	_ = deltaTime
+	if movement.LenSqr() > 0.0 {
+		// Move to just before the point of collision
+		proj.body.Position = proj.body.Position.Add(movement.Normalize().Mul(result.Distance - 0.1))
+		movement = mgl32.Vec3{}
+	}
+	return movement
+}
+
+func (proj *Projectile) dieOnCollide(movement mgl32.Vec3, otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) mgl32.Vec3 {
 	if damageable, canDamage := otherEnt.(Damageable); canDamage {
 		damageable.OnDamage(proj, proj.Damage)
 	}
@@ -149,4 +175,5 @@ func (proj *Projectile) dieOnCollide(otherEnt any, mask collision.Mask, result c
 	}
 
 	proj.lifeTimer = math2.Inf32()
+	return mgl32.Vec3{}
 }
