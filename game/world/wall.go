@@ -45,31 +45,25 @@ const (
 	WallTypeSwitch   = "switch"
 )
 
-type WallFlags uint8
-
-const (
-	WallFlagsCantUse = 1 << iota
-	WallFlagsBlockUntilOpen
-)
-
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
 type Wall struct {
-	MeshRender               comps.MeshRender
-	AnimPlayer               comps.AnimationPlayer
-	Origin                   mgl32.Vec3 // The position in global space that the wall starts in.
-	Destination              mgl32.Vec3 // The position in global space that the wall will move to.
-	WaitTime                 float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
-	Speed                    float32
-	id                       scene.Id[*Wall]
-	body                     comps.Body
-	movePhase, lastMovePhase MovePhase
-	switchState              SwitchState
-	key                      game.Keys
-	activateSound            string
-	activateMessageKey       string
-	flags                    WallFlags
-	waitTimer                float32
-	linkNumber               int
+	MeshRender         comps.MeshRender
+	AnimPlayer         comps.AnimationPlayer
+	Origin             mgl32.Vec3 // The position in global space that the wall starts in.
+	Destination        mgl32.Vec3 // The position in global space that the wall will move to.
+	WaitTime           float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
+	Speed              float32
+	id                 scene.Id[*Wall]
+	body               comps.Body
+	movePhase          MovePhase
+	switchState        SwitchState
+	key                game.Keys
+	activateSound      string
+	activateMessageKey string
+	disableUse         bool
+	waitTimer          float32
+	linkNumber         int
+	proxiedWall        scene.Id[*Wall]
 }
 
 var _ Usable = (*Wall)(nil)
@@ -93,15 +87,9 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 			return scene.Id[*Wall]{}, nil, err
 		}
 		transform := comps.TransformFromTE3Ent(ent, false, false)
-		if strings.ToLower(ent.Properties["type"]) == WallTypeDoor {
-			// Doors have an extra wide hitbox so you can hit the use key on the space
-			// they leave behind after opening.
-			transform.SetScale(2.0, 1.0, 1.0)
-		}
 		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
 
 		transform.SetPosition(0, 0, 0)
-		transform.SetScale(1.0, 1.0, 1.0)
 		wall.MeshRender.LocalTransform = transform
 		wall.MeshRender.Shader = shaders.MapShader
 	} else {
@@ -222,18 +210,21 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 				if !isPushWall {
 					wall.activateMessageKey = "doorSwitch"
 				}
-				wall.flags |= WallFlagsCantUse
+				wall.disableUse = true
 			} else {
 				return fmt.Errorf("could not parse link number; %v", err)
 			}
 		}
 
 		if !isPushWall {
-			wall.flags |= WallFlagsBlockUntilOpen
+			_, _, err = SpawnProxyWall(wall)
+			if err != nil {
+				return fmt.Errorf("could not spawn proxy wall: %v", err)
+			}
 		}
 	} else {
 		wall.Destination = wall.Origin
-		wall.flags |= WallFlagsCantUse
+		wall.disableUse = true
 		if !isPushWall {
 			wall.activateMessageKey = "doorStuck"
 		}
@@ -277,6 +268,37 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	return nil
 }
 
+// Proxy walls are for covering up the gap left by a door that is in the process of opening.
+// This allows the player to hit the use key in the empty space to close the door
+// and also prevents jittering caused by slipping through the narrow gap in the door as it opens.
+func SpawnProxyWall(parentWall *Wall) (id scene.Id[*Wall], wall *Wall, err error) {
+	if parentWall == nil {
+		err = fmt.Errorf("parentWall shouldn't be nil")
+		return
+	}
+
+	id, wall, err = gWorld.Walls.New()
+	if err != nil {
+		return
+	}
+
+	wall.id = id
+
+	wall.Origin = parentWall.Origin
+	wall.Destination = wall.Origin
+	expandedBox := parentWall.body.Shape.Extents()
+	expandedBox.Max = expandedBox.Max.Add(mgl32.Vec3{0.1, 0.1, 0.1})
+	expandedBox.Min = expandedBox.Min.Sub(mgl32.Vec3{0.1, 0.1, 0.1})
+	wall.body = comps.Body{
+		Position: parentWall.body.Position,
+		Shape:    collision.NewShapeFromBox(expandedBox),
+		Layers:   ColLayerInvisible | ColLayerUsable,
+	}
+	wall.proxiedWall = parentWall.id
+
+	return
+}
+
 func (wall *Wall) Update(deltaTime float32) {
 	wall.AnimPlayer.Update(deltaTime)
 	if wall.switchState != NotASwitch && wall.AnimPlayer.HitATriggerFrame() {
@@ -289,8 +311,13 @@ func (wall *Wall) Update(deltaTime float32) {
 		}
 	}
 
-	isNewPhase := wall.movePhase != wall.lastMovePhase
-	wall.lastMovePhase = wall.movePhase
+	if proxiedWall, isProxy := wall.proxiedWall.Get(); isProxy {
+		if proxiedWall.movePhase == MovePhaseClosed && wall.body.ExcludedLayers.On(ColLayerInvisible) {
+			wall.body.RestoreLayers()
+		} else if proxiedWall.movePhase == MovePhaseOpen && !wall.body.ExcludedLayers.On(ColLayerInvisible) {
+			wall.body.ExcludeLayers(ColLayerInvisible)
+		}
+	}
 
 	switch wall.movePhase {
 	case MovePhaseOpening:
@@ -324,10 +351,6 @@ func (wall *Wall) Update(deltaTime float32) {
 			break
 		}
 
-		if wall.body.ExcludedLayers.On(ColLayerMap) {
-			wall.body.RestoreLayers()
-		}
-
 		if targetDist <= wall.Speed*deltaTime {
 			wall.body.Position = wall.Origin
 			wall.movePhase = MovePhaseClosed
@@ -336,9 +359,6 @@ func (wall *Wall) Update(deltaTime float32) {
 			wall.body.Velocity = targetDir.Mul(wall.Speed / targetDist)
 		}
 	case MovePhaseOpen:
-		if isNewPhase && (wall.flags&WallFlagsBlockUntilOpen) != 0 {
-			wall.body.ExcludeLayers(ColLayerMap)
-		}
 		wall.waitTimer += deltaTime
 		if wall.waitTimer > wall.WaitTime && wall.WaitTime >= 0.0 {
 			wall.movePhase = MovePhaseClosing
@@ -387,7 +407,11 @@ func (wall *Wall) OnUse(player *Player) {
 	if len(wall.activateMessageKey) > 0 {
 		gWorld.Hud.ShowMessage(settings.Localize(wall.activateMessageKey), 2.0, 10, color.Red)
 	}
-	if (wall.flags & WallFlagsCantUse) != 0 {
+	if wall.disableUse {
+		return
+	}
+	if proxiedWall, isProxy := wall.proxiedWall.Get(); isProxy {
+		proxiedWall.OnUse(player)
 		return
 	}
 	switch true {

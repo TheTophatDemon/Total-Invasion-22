@@ -66,6 +66,11 @@ func NewBoxShape(halfExtentX, halfExtentY, halfExtentZ float32) Shape {
 	}...)
 }
 
+func NewShapeFromBox(box math2.Box) Shape {
+	halfExtents := box.Max.Sub(box.Min).Mul(0.5)
+	return NewBoxShape(halfExtents[0], halfExtents[1], halfExtents[2])
+}
+
 func NewShapeHull(height float32, points ...mgl32.Vec2) Shape {
 	if len(points) <= 2 {
 		return Shape{}

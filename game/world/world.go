@@ -54,7 +54,7 @@ type World struct {
 	MapLayers      scene.Storage[comps.MapLayer]
 	Props          scene.Storage[Prop]
 	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
-	InvisibleLayer *comps.MapLayer
+	InvisibleLayer *comps.MapLayer // Pointer to the map layer for invisible walls
 	CurrentPlayer  scene.Id[*Player]
 	CurrentCamera  scene.Id[*Camera]
 	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
