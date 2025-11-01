@@ -1,6 +1,5 @@
 # TODO
 - Collision rework
-  - Make doors un collidable when open again
   - Add multiple solver iterations to avoid corner jitters
     - Solve getting caught when sliding along adjecent sloped walls?
 - Make game tick speed more stable

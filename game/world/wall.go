@@ -314,7 +314,9 @@ func (wall *Wall) Update(deltaTime float32) {
 	if proxiedWall, isProxy := wall.proxiedWall.Get(); isProxy {
 		if proxiedWall.movePhase == MovePhaseClosed && wall.body.ExcludedLayers.On(ColLayerInvisible) {
 			wall.body.RestoreLayers()
+			proxiedWall.body.Layers |= ColLayerMap
 		} else if proxiedWall.movePhase == MovePhaseOpen && !wall.body.ExcludedLayers.On(ColLayerInvisible) {
+			proxiedWall.body.Layers &= (^ColLayerMap)
 			wall.body.ExcludeLayers(ColLayerInvisible)
 		}
 	}
