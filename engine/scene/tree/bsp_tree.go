@@ -160,26 +160,36 @@ func (tree *BspTree) ResolveCollisions(
 	}
 
 	obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
+
 	push := mgl32.Vec3{}
-	for _, handle := range obstacles {
-		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
-			otherBody := collidingEnt.Body()
-			if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
-				continue
-			}
+	const numIters = 4
+	subStep := movement.Mul(1.0 / numIters)
+	iteration := 0
+	for iteration = 1; iteration <= numIters; iteration++ {
+		pushBefore := push
+		for _, handle := range obstacles {
+			if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+				otherBody := collidingEnt.Body()
+				if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
+					continue
+				}
 
-			nextPos := body.Position.Add(movement).Add(push)
+				nextPos := body.Position.Add(subStep.Mul(float32(iteration))).Add(push)
 
-			// Bounding box check
-			bbox := body.Shape.Extents().Translate(nextPos)
-			if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
-				continue
-			}
+				// Bounding box check
+				bbox := body.Shape.Extents().Translate(nextPos)
+				if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
+					continue
+				}
 
-			hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
-			if hit {
-				push = push.Add(pushVec)
+				hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
+				if hit {
+					push = push.Add(pushVec)
+				}
 			}
+		}
+		if pushBefore.ApproxEqual(push) {
+			break
 		}
 	}
 

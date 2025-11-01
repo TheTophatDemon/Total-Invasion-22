@@ -1,7 +1,6 @@
 # TODO
 - Collision rework
-  - Add multiple solver iterations to avoid corner jitters
-    - Solve getting caught when sliding along adjecent sloped walls?
+  - Solve getting caught when sliding along adjecent sloped walls?
 - Make game tick speed more stable
 - Optimize memory usage of particle effects
 - Add cheat code to launch TE3 from in the game and then reload the map after exiting.
