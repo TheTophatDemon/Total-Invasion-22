@@ -464,8 +464,8 @@ func (player *Player) AttackWithWeapon(justPressed bool) {
 		SpawnEgg(firePos, player.actor.FacingVec(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
 	case game.WeaponGrenade:
-		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(1.25).Add(mgl32.Vec3{0.0, 0.15, 0.0}))
-		SpawnGrenade(firePos, player.actor.FacingVec())
+		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(1.0).Add(mgl32.Vec3{0.0, 0.15, 0.0}))
+		SpawnGrenade(firePos, player.actor.FacingVec(), player.id.Handle)
 		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
 	case game.WeaponParusu:
 		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.25, 0.0}))

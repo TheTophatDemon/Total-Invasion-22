@@ -75,12 +75,28 @@ func Vec3Min(a, b mgl32.Vec3) mgl32.Vec3 {
 	}
 }
 
+// Returns a vector with the element-wise minimum value on each axis.
+func Vec2Min(a, b mgl32.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{
+		min(a[0], b[0]),
+		min(a[1], b[1]),
+	}
+}
+
 // Returns a vector with the element-wise maximum value on each axis.
 func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{
 		max(a[0], b[0]),
 		max(a[1], b[1]),
 		max(a[2], b[2]),
+	}
+}
+
+// Returns a vector with the element-wise maximum value on each axis.
+func Vec2Max(a, b mgl32.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{
+		max(a[0], b[0]),
+		max(a[1], b[1]),
 	}
 }
 

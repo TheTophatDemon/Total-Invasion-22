@@ -311,6 +311,31 @@ func (shape Shape) DistanceFromPoint(myPosition, testPosition mgl32.Vec3) float3
 	return minDist
 }
 
+func (shape Shape) ShrunkenBy(amount float32) Shape {
+	if shape.IsNil() {
+		return shape
+	}
+	midPoint := mgl32.Vec2{}
+	for _, point := range shape.Points() {
+		midPoint = midPoint.Add(point)
+	}
+	midPoint.Mul(1.0 / float32(shape.pointCount))
+	minXZ := shape.Points()[0]
+	maxXZ := shape.Points()[0]
+	for i := range shape.Points() {
+		diff := midPoint.Sub(shape.points[i])
+		ln := diff.Len()
+		if ln > 0 {
+			shape.points[i] = shape.points[i].Add(diff.Mul(amount / ln))
+			minXZ = math2.Vec2Min(minXZ, shape.points[i])
+			maxXZ = math2.Vec2Max(maxXZ, shape.points[i])
+		}
+	}
+	shape.extents.Max = mgl32.Vec3{maxXZ[0], max(0, shape.extents.Max[1]-amount), maxXZ[1]}
+	shape.extents.Min = mgl32.Vec3{minXZ[0], min(0, shape.extents.Min[1]+amount), minXZ[1]}
+	return shape
+}
+
 func (shape Shape) Raycast(myPosition, rayOrigin, rayDir mgl32.Vec3, maxDist float32) (result Result) {
 	// Real Time Collision Detection 5.3.8
 	result.Distance = maxDist

@@ -69,6 +69,8 @@ func (proj *Projectile) Update(deltaTime float32) {
 		var minEnt any
 		var minLayers collision.Mask
 
+		shrunkenShape := proj.body.Shape.ShrunkenBy(0.05)
+
 		// Detect intersections with bodies
 		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.body.Position, proj.body.Shape)
 		for handle := range bodies {
@@ -87,7 +89,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 				continue
 			}
 
-			res := proj.body.Shape.Sweep(
+			res := shrunkenShape.Sweep(
 				proj.body.Position, movement,
 				collidingEnt.Body().Position,
 				collidingEnt.Body().Shape,
@@ -100,7 +102,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 		}
 
 		// Detect intersection with the map
-		mapRes := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, movement, proj.body.Shape)
+		mapRes := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, movement, shrunkenShape)
 		if mapRes.Hit && mapRes.Distance < minRes.Distance {
 			minRes = mapRes
 			minEnt = gWorld.GameMap

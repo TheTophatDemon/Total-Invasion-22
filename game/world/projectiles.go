@@ -242,7 +242,7 @@ func SpawnFireball(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
  *               Grenade
  *=============================================**/
 
-func SpawnGrenade(position, direction mgl32.Vec3) (id scene.Id[*Projectile], proj *Projectile, err error) {
+func SpawnGrenade(position, direction mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = gWorld.Projectiles.New()
 	if err != nil {
 		return
@@ -264,6 +264,8 @@ func SpawnGrenade(position, direction mgl32.Vec3) (id scene.Id[*Projectile], pro
 		Damage:       15,
 		gravity:      -25.0,
 		maxFallSpeed: 10.0,
+		owner:        owner,
+		hitOwner:     false,
 		moveFunc:     proj.applyGravity,
 		maxLife:      1.5,
 		onDie:        proj.explodeOnDie,
@@ -285,13 +287,10 @@ func (proj *Projectile) grenadeCollide(movement mgl32.Vec3, otherEnt any, mask c
 	} else if (mask & ColLayerKillzone) != 0 {
 		proj.explodeOnDie(deltaTime)
 	} else if (mask & ColLayerMap) != 0 {
-		fuzzyNormal := result.Normal.Add(math2.RandomDir().Mul(0.1)).Normalize()
+		// The grenade won't hit its owner until its first bounce to prevent grenades exploding in the player's face
+		proj.hitOwner = true
 
-		if result.Distance == 0 {
-			// If already stuck in the wall, just explode already. It ain't worth dealing with.
-			proj.explodeOnDie(deltaTime)
-			return mgl32.Vec3{}
-		}
+		fuzzyNormal := result.Normal.Add(math2.RandomDir().Mul(0.1)).Normalize()
 
 		horzVelocity := math2.Vec3WithY(proj.body.Velocity, 0.0)
 		speed := horzVelocity.Len() * 0.7
