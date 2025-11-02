@@ -1,7 +1,8 @@
 # TODO
+- Add cheat code to launch TE3 from in the game and then reload the map after exiting.
+- Remove map layers and allow individual tiles to set collision layer
 - Make game tick speed more stable
 - Optimize memory usage of particle effects
-- Add cheat code to launch TE3 from in the game and then reload the map after exiting.
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
