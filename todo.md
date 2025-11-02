@@ -1,9 +1,14 @@
 # TODO
-- Fix collision jittering between player and adjacent props
+- Add cheat code to launch TE3 from in the game and then reload the map after exiting.
+- Remove map layers and allow individual tiles to set collision layer
+- Make game tick speed more stable
+- Optimize memory usage of particle effects
+- Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Title screen
   - Background image
+- Modify loading screen graphic to be more on-model
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
@@ -12,10 +17,12 @@
 - Demo end screen
 - Settings menu
 - Gamepad support (for Steam Deck)
-
-- Fix flickering artifacts on walls. Consider greedy meshing.
+- Saving / checkpoints
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
+- Fix flickering artifacts on walls. Consider greedy meshing.
+- Optimize the memory usage of map loading to avoid GC stutters
+- Optimize world raycasts using the bsp tree
 
 - Port E1M4
   - Textures
@@ -25,7 +32,6 @@
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
-- Save states
 - Additional Enemies
   - Prisrak
   - Providence

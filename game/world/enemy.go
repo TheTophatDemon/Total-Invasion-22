@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -30,10 +31,8 @@ type Enemy struct {
 	StunTime                                       float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
 	StunChance                                     float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
 	bloodParticles                                 comps.ParticleRender
-	bloodOffset                                    mgl32.Vec3
 	actor                                          Actor
 	id                                             scene.Id[*Enemy]
-	world                                          *World
 	wakeTimer, chaseTimer, stateTimer, attackTimer float32
 	chaseStrafeDir                                 float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
 	spriteAngle                                    float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
@@ -77,7 +76,7 @@ var enemyTypeConfigFuncs = [game.EnemyTypeCount]func(enemy *Enemy) enemyConfig{
 var _ HasActor = (*Enemy)(nil)
 var _ comps.HasBody = (*Enemy)(nil)
 
-func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
+func SpawnEnemyFromTE3(ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
 	var variant game.EnemyType
 	switch ent.Properties["enemy"] {
 	case "fire wraith":
@@ -89,7 +88,7 @@ func SpawnEnemyFromTE3(world *World, ent te3.Ent) (scene.Id[*Enemy], *Enemy, err
 	default:
 		variant = game.EnemyTypeWraith
 	}
-	return SpawnEnemy(world, ent.Position, ent.AnglesInRadians(), variant)
+	return SpawnEnemy(ent.Position, ent.AnglesInRadians(), variant)
 }
 
 func (enemy *Enemy) Actor() *Actor {
@@ -100,33 +99,28 @@ func (enemy *Enemy) Body() *comps.Body {
 	return &enemy.actor.body
 }
 
-func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyType) (id scene.Id[*Enemy], enemy *Enemy, err error) {
-	id, enemy, err = world.Enemies.New()
+func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.Id[*Enemy], enemy *Enemy, err error) {
+	id, enemy, err = gWorld.Enemies.New()
 	if err != nil {
 		return
 	}
 
-	world.Hud.VictoryScreen.EnemiesTotal++
-	enemy.world = world
+	gWorld.Hud.VictoryScreen.EnemiesTotal++
 	enemy.variant = variant
 	enemy.state = &enemy.idleState
 	enemy.id = id
 
 	enemy.actor = Actor{
 		body: comps.Body{
-			Transform: comps.TransformFromTranslationAnglesScale(
-				mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}), mgl32.Vec3{}, mgl32.Vec3{0.9, 0.9, 0.9},
-			),
-			Shape:  collision.NewSphere(0.7),
-			Layer:  EnemyColLayers,
-			Filter: ColFilterForActors,
-			LockY:  true,
+			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
+			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
+			Layers:   EnemyColLayers,
 		},
-		YawAngle:  angles[1],
-		AccelRate: 80.0,
-		Friction:  20.0,
-		MaxSpeed:  5.5,
-		world:     world,
+		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
+		YawAngle:        angles[1],
+		AccelRate:       80.0,
+		Friction:        20.0,
+		MaxSpeed:        5.5,
 	}
 	enemy.WakeTime = 0.5
 	enemy.WakeLimit = 5.0
@@ -141,7 +135,7 @@ func SpawnEnemy(world *World, position, angles mgl32.Vec3, variant game.EnemyTyp
 	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
 	enemy.actor.Health, enemy.actor.TargetHealth = enemy.actor.MaxHealth, enemy.actor.MaxHealth
 
-	enemy.SpriteRender = comps.NewSpriteRender(params.texture)
+	enemy.SpriteRender = comps.NewSpriteRender(params.texture, nil, &mgl32.Vec2{0.9, 0.9})
 	enemy.AnimPlayer = comps.NewAnimationPlayer(params.defaultAnim, false)
 
 	return
@@ -152,14 +146,21 @@ func (enemy *Enemy) Finalize() {
 }
 
 func (enemy *Enemy) Update(deltaTime float32) {
+	if enemy == nil {
+		return
+	}
+
+	if input.IsActionJustPressed(settings.ActionKillEnemies) {
+		// Kill all cheat
+		enemy.actor.Health = 0
+	}
+
 	enemy.AnimPlayer.Update(deltaTime)
 	enemy.actor.Update(deltaTime)
 
-	bloodTransform := enemy.Body().Transform
-	bloodTransform.TranslateV(enemy.bloodOffset)
-	enemy.bloodParticles.Update(deltaTime, &bloodTransform)
+	enemy.bloodParticles.Update(deltaTime, enemy.Body().Position)
 
-	enemyPos := enemy.Body().Transform.Position()
+	enemyPos := enemy.Body().Position
 	enemyDir := enemy.actor.FacingVec()
 	if enemy.voice.IsValid() {
 		enemy.voice.SetPositionV(enemyPos)
@@ -170,16 +171,16 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	enemy.canHearTarget = false
 	var vecToTarget mgl32.Vec3
 	if enemy.targetHandle.IsNil() {
-		enemy.targetHandle = enemy.world.CurrentPlayer.Handle
+		enemy.targetHandle = gWorld.CurrentPlayer.Handle
 	}
-	if targetActor, ok := scene.Get[HasActor](enemy.targetHandle); ok && enemy.world.IsOnPlayerCamera() {
-		vecToTarget = targetActor.Body().Transform.Position().Sub(enemyPos)
+	if targetActor, ok := scene.Get[HasActor](enemy.targetHandle); ok && gWorld.IsOnPlayerCamera() {
+		vecToTarget = targetActor.Body().Position.Sub(enemyPos)
 		enemy.distToTarget = vecToTarget.Len()
 		if enemy.distToTarget != 0.0 {
 			enemy.dirToTarget = vecToTarget.Normalize()
 		}
 
-		playerWeapon := enemy.world.Hud.Weapons.Selected()
+		playerWeapon := gWorld.Hud.Weapons.Selected()
 		inHearingRange := targetActor.Actor().noisyTimer > 0 &&
 			playerWeapon != nil && enemy.distToTarget < playerWeapon.NoiseLevel()
 
@@ -190,7 +191,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		if enemy.distToTarget < wakeProximity {
 			enemy.canSeeTarget = true
 		} else if inHearingRange || inFieldOfView {
-			res, _ := enemy.world.Raycast(enemyPos, enemy.dirToTarget, ColLayerMap, enemy.distToTarget, nil)
+			res, _ := gWorld.Raycast(enemyPos, enemy.dirToTarget, ColLayerMap, enemy.distToTarget, nil)
 			if !res.Hit && enemy.distToTarget < noticeProximity {
 				enemy.canSeeTarget = true
 				enemy.canHearTarget = true
@@ -235,11 +236,11 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		}
 	case &enemy.dieState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
-		radius := enemy.Body().Shape.(collision.Sphere).Radius()
-		if enemy.bloodOffset.Y() > -radius {
-			enemy.bloodOffset = enemy.bloodOffset.Sub(mgl32.Vec3{0.0, deltaTime, 0.0})
+		radius := enemy.Body().Shape.Radius()
+		if enemy.bloodParticles.LocalTransform.Position()[1] > -radius {
+			enemy.bloodParticles.LocalTransform.Translate(0.0, -deltaTime, 0.0)
 		} else {
-			enemy.bloodOffset = mgl32.Vec3{0.0, -radius, 0.0}
+			enemy.bloodParticles.LocalTransform.SetPosition(0.0, -radius, 0.0)
 		}
 	case &enemy.reviveState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
@@ -258,8 +259,8 @@ func (enemy *Enemy) Update(deltaTime float32) {
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(&enemy.Body().Transform, &enemy.AnimPlayer, context, enemy.spriteAngle)
-	enemy.bloodParticles.Render(&enemy.Body().Transform, context)
+	enemy.SpriteRender.Render(enemy.Body().Position, &enemy.AnimPlayer, context, enemy.spriteAngle)
+	enemy.bloodParticles.Render(enemy.Body().Position, context)
 }
 
 func (enemy *Enemy) ProcessSignal(signal any) {
@@ -285,7 +286,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		oldState.leaveFunc(enemy, newState)
 	} else if oldState == &enemy.dieState {
 		// Ensure nobody's standing on top of the enemy that is getting revived.
-		actorsIter := enemy.world.IterActorsInSphere(enemy.Body().Transform.Position(), enemy.Body().Shape.(collision.Sphere).Radius(), enemy)
+		actorsIter := gWorld.IterActorsInSphere(enemy.Body().Position, enemy.Body().Shape.Radius(), enemy)
 		for {
 			actor, _ := actorsIter.Next()
 			if actor == nil {
@@ -296,10 +297,10 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			}
 		}
 
-		enemy.world.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.Layer = EnemyColLayers
-		enemy.actor.body.Filter = ColFilterForActors
-		enemy.bloodOffset = mgl32.Vec3{}
+		gWorld.Hud.VictoryScreen.EnemiesKilled--
+		enemy.actor.body.RestoreLayers()
+		enemy.actor.NoClip = false
+		enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 	}
 	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
 		enemy.voice.Stop()
@@ -323,13 +324,13 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 	if newState.enterFunc != nil {
 		newState.enterFunc(enemy, enemy.state)
 	} else if newState == &enemy.dieState {
-		enemy.world.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.Layer = ColLayerNone
-		enemy.actor.body.Filter = ColLayerMap | ColLayerInvisible
+		gWorld.Hud.VictoryScreen.EnemiesKilled++
+		enemy.actor.body.ExcludeLayers(collision.MaskAll)
+		enemy.actor.NoClip = true
 		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
-			SpawnAmmo(enemy.world, enemy.actor.Position(), enemy.spawnAmmo)
+			SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
 		}
 	}
 
@@ -389,12 +390,12 @@ func (enemy *Enemy) chase(
 		enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
 
 		// Cancel the turn if we are facing a wall
-		hit, _ := enemy.world.Raycast(
+		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
 			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
-			enemy,
+			enemy.Body(),
 		)
 		if hit.Hit {
 			enemy.spriteAngle = enemy.actor.YawAngle
@@ -432,12 +433,12 @@ func (enemy *Enemy) stalk(
 		enemy.chaseTimer = 0.0
 	} else {
 		// Cancel the movement if we are approaching an obstacle
-		hit, _ := enemy.world.Raycast(
+		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			enemy.actor.FacingVec(),
 			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
-			enemy,
+			enemy.Body(),
 		)
 		if hit.Hit {
 			enemy.chaseTimer = moveTime

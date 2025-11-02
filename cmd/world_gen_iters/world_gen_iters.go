@@ -24,8 +24,36 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/render"
 )
+
+/******************************
+ * UPDATE AND RENDER FUNCTIONS *
+ ******************************/
+
+func (world *World) UpdateStores(deltaTime float32) {
+	{{- range .AllStores }}
+	world.{{ .Name }}.Update(deltaTime)
+	{{- end }}
+}
+
+func (world *World) RenderStores(context *render.Context) {
+	{{- range .AllStores }}
+	world.{{ .Name }}.Render(context)
+	{{- end }}
+}
+
+func (world *World) TearDownStores() {
+	{{- range .AllStores }}
+	world.{{ .Name }}.TearDown()
+	{{- end }}
+}
+
+/*******************************************************
+ * ITERATING ENTITIES IMPLEMENTING SPECIFIC INTERFACES *
+ *******************************************************/
+
 {{ range .InterfaceIterators }}
 
 {{- $iterName := (print .PluralName "Iter") -}}
@@ -117,7 +145,8 @@ func (iter *{{ $sphereIterType }}) Next() ({{ .EntType }}, scene.Handle) {
 			continue
 		}
 		body := ent.Body()
-		if body.Layer != ColLayerNone && collision.NewSphere(iter.radius).Touches(iter.spherePos, body.Transform.Position(), body.Shape) {
+		 
+		if body.Layer != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
 			return ent, id
 		}
 	}
@@ -254,6 +283,7 @@ func main() {
 	tplParams := struct {
 		InterfaceIterators []InterfaceIterParams
 		SphereIterators    []SphereIterParams
+		AllStores          []StorageInfo
 	}{
 		InterfaceIterators: []InterfaceIterParams{
 			genIterParamsFor[comps.HasBody]("Bodies"),
@@ -280,6 +310,7 @@ func main() {
 				IterConstructor: "Projectiles.Iter",
 			},
 		},
+		AllStores: genIterParamsFor[any]("").Stores,
 	}
 
 	// Create output file

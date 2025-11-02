@@ -24,7 +24,6 @@ type Prop struct {
 	SpriteRender  comps.SpriteRender
 	AnimPlayer    comps.AnimationPlayer
 	body          comps.Body
-	world         *World
 	voice         tdaudio.VoiceId
 	isSeen        bool
 	radius        float32
@@ -32,6 +31,7 @@ type Prop struct {
 	entProperties map[string]string
 	updateFunc    func(deltaTime float32)
 	useFunc       func(player *Player)
+	yaw           float32
 }
 
 func (prop *Prop) Body() *comps.Body {
@@ -44,7 +44,7 @@ func (prop *Prop) OnUse(player *Player) {
 	}
 }
 
-func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
+func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 	if ent.Display != te3.ENT_DISPLAY_SPHERE && ent.Display != te3.ENT_DISPLAY_SPRITE {
 		err = fmt.Errorf("te3 ent display mode should be 'sprite' or 'sphere'")
 		return
@@ -58,14 +58,14 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 		texturePath = ent.Texture
 	}
 
-	id, prop, err = world.Props.New()
+	id, prop, err = gWorld.Props.New()
 	if err != nil {
 		return
 	}
 
 	prop.id = id
-	prop.world = world
 	prop.entProperties = ent.Properties
+	prop.yaw = ent.AnglesInRadians()[1]
 
 	sprite := cache.GetTexture(texturePath)
 
@@ -76,45 +76,42 @@ func SpawnPropFromTE3(world *World, ent te3.Ent) (id scene.Id[*Prop], prop *Prop
 
 	prop.radius, err = ent.FloatProperty("radius")
 	if err != nil {
-		prop.radius = ent.Radius
+		prop.radius = 0.5
 		err = nil
 	}
 
 	prop.body = comps.Body{
-		Transform: comps.TransformFromTE3Ent(ent, true, true),
-		Shape:     collision.NewCylinder(prop.radius, 2.0),
-		Layer:     ColLayerMap,
-		Filter:    ColLayerNone,
+		Position: mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, ent.Radius - 1.0, 0.0}),
+		Shape:    collision.NewBoxShape(prop.radius, 2.0, prop.radius),
+		Layers:   ColLayerMap,
 	}
 
 	if prop.radius == 0 {
-		prop.body.Layer = ColLayerNone
+		prop.body.Layers = ColLayerNone
 	}
+
+	spriteScale := mgl32.Vec2{ent.Radius, ent.Radius}
 
 	switch strings.ToLower(ent.Properties["prop"]) {
 	case "geoffrey":
 		prop.updateFunc = prop.geoffreyUpdate
 		prop.useFunc = prop.geoffreyUse
-		prop.body.Layer = ColLayerMap | ColLayerNPCs
+		prop.body.Layers = ColLayerMap | ColLayerNPCs
 	case "eyeball":
 		prop.updateFunc = prop.eyeballUpdate
-		prop.body.Layer = ColLayerMap | ColLayerNPCs
+		prop.body.Layers = ColLayerMap | ColLayerNPCs
 	case "fire":
-		prop.body.Layer = ColLayerInvisible
-		prop.body.Transform.SetScale(1.0, 1.25, 1.0)
-		prop.body.Transform.Translate(0.0, 0.25, 0.0)
+		prop.body.Layers = ColLayerInvisible
 	}
 
-	prop.SpriteRender = comps.NewSpriteRender(sprite)
+	prop.SpriteRender = comps.NewSpriteRender(sprite, nil, &spriteScale)
 
 	return
 }
 
 func (prop *Prop) Update(deltaTime float32) {
 	prop.AnimPlayer.Update(deltaTime)
-	particlesTransform := prop.Body().Transform
-	particlesTransform.TranslateV(mgl32.Vec3{0.0, 0.0, 0.0})
-	prop.voice.SetPositionV(prop.Body().Transform.Position())
+	prop.voice.SetPositionV(prop.Body().Position)
 
 	if prop.updateFunc != nil {
 		prop.updateFunc(deltaTime)
@@ -122,7 +119,7 @@ func (prop *Prop) Update(deltaTime float32) {
 }
 
 func (prop *Prop) Render(context *render.Context) {
-	prop.isSeen = prop.SpriteRender.Render(&prop.body.Transform, &prop.AnimPlayer, context, prop.body.Transform.Yaw())
+	prop.isSeen = prop.SpriteRender.Render(prop.body.Position, &prop.AnimPlayer, context, prop.yaw)
 }
 
 /************
@@ -130,26 +127,26 @@ func (prop *Prop) Render(context *render.Context) {
  ************/
 
 func (prop *Prop) geoffreyUse(player *Player) {
-	prop.world.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+	gWorld.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
 }
 
 func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 	vanishAnim, _ := prop.SpriteRender.Texture().GetAnimation("vanish")
-	bodiesIter := prop.world.IterBodiesInSphere(prop.body.Transform.Position(), prop.radius, prop)
+	bodiesIter := gWorld.IterBodiesInSphere(prop.body.Position, prop.radius, prop)
 	if !prop.isSeen && !bodiesIter.HasNext() {
 		// Make Geoffrey re-appear when nobody is looking.
 		if prop.AnimPlayer.IsPlayingAnim(vanishAnim) && prop.AnimPlayer.IsAtEnd() {
 			idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
 			prop.AnimPlayer.PlayNewAnim(idleAnim)
-			prop.body.Layer = ColLayerMap | ColLayerNPCs
+			prop.body.Layers = ColLayerMap | ColLayerNPCs
 		}
 	} else if !prop.AnimPlayer.IsPlayingAnim(vanishAnim) {
 		// Check for incoming projectiles and trigger the disappearing animation.
-		projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+		projsIter := gWorld.IterProjectilesInSphere(prop.body.Position, projectileSafetyRadius, nil)
 		if projsIter.HasNext() {
 			prop.AnimPlayer.PlayNewAnim(vanishAnim)
-			prop.body.Layer = 0
-			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Transform.Position())
+			prop.body.Layers = 0
+			cache.GetSfx("assets/sounds/honk.wav").PlayAttenuatedV(prop.body.Position)
 		}
 	}
 }
@@ -164,12 +161,12 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 	closeAnim, _ := prop.SpriteRender.Texture().GetAnimation("close")
 	stareAnim, _ := prop.SpriteRender.Texture().GetAnimation("stare")
 	eyeContact := false
-	projsIter := prop.world.IterProjectilesInSphere(prop.body.Transform.Position(), projectileSafetyRadius, nil)
+	projsIter := gWorld.IterProjectilesInSphere(prop.body.Position, projectileSafetyRadius, nil)
 	if !projsIter.HasNext() {
-		if camera, ok := prop.world.CurrentCamera.Get(); ok && camera.Position() != prop.body.Transform.Position() {
-			toCamera := camera.Position().Sub(prop.body.Transform.Position()).Normalize()
+		if camera, ok := gWorld.CurrentCamera.Get(); ok && camera.Position() != prop.body.Position {
+			toCamera := camera.Position().Sub(prop.body.Position).Normalize()
 			if camera.Forward().Dot(toCamera) < -0.95 {
-				res, handle := prop.world.Raycast(prop.body.Transform.Position(), toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop)
+				res, handle := gWorld.Raycast(prop.body.Position, toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop.Body())
 				if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
 					prop.stareTimer += deltaTime
 					eyeContact = true
@@ -186,6 +183,6 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 			prop.AnimPlayer.PlayAnimSequence(closeAnim, idleAnim)
 		}
 	} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
-		prop.world.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
+		gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
 	}
 }

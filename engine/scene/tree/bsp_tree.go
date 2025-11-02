@@ -1,6 +1,9 @@
 package tree
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -26,37 +29,8 @@ func (node bspNode) IsLeaf() bool {
 
 // Returns whether a shape at a given position intersects with the left or right region of the node.
 func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3) (touchesLeft, touchesRight bool) {
-	// Covers spheres and cylinders
-	type ShapeWithRadius interface {
-		Radius() float32
-	}
-
-	switch sh := shape.(type) {
-	case ShapeWithRadius:
-		touchesRight = shapePosition[node.splitAxis]+sh.Radius() >= node.planeOffset
-		touchesLeft = shapePosition[node.splitAxis]-sh.Radius() <= node.planeOffset
-	case collision.Box, collision.Grid:
-		touchesRight = shapePosition[node.splitAxis]+sh.Extents().Max[node.splitAxis] >= node.planeOffset
-		touchesLeft = shapePosition[node.splitAxis]+sh.Extents().Min[node.splitAxis] <= node.planeOffset
-	case collision.Mesh:
-		for _, tri := range sh.Triangles() {
-			if touchesLeft && touchesRight {
-				break
-			}
-			for _, vert := range tri {
-				coord := vert[node.splitAxis] + shapePosition[node.splitAxis]
-				if coord >= node.planeOffset {
-					touchesRight = true
-				}
-				if coord <= node.planeOffset {
-					touchesLeft = true
-				}
-			}
-		}
-	default:
-		panic("bspNode.TouchesChild must be implemented for " + sh.String())
-	}
-
+	touchesRight = shapePosition[node.splitAxis]+shape.Extents().Max[node.splitAxis] >= node.planeOffset
+	touchesLeft = shapePosition[node.splitAxis]+shape.Extents().Min[node.splitAxis] <= node.planeOffset
 	return
 }
 
@@ -98,7 +72,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 		if !ok {
 			continue
 		}
-		avgPos += bodyHaver.Body().Transform.Position()[splitAxis]
+		avgPos += bodyHaver.Body().Position[splitAxis]
 	}
 	avgPos /= float32(len(bodies))
 
@@ -117,7 +91,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 			continue
 		}
 
-		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Transform.Position())
+		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Position)
 		if touchesLeft {
 			leftBodies.Add(handle)
 		}
@@ -149,6 +123,9 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 // Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
 func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
+	if len(tree.nodes) == 0 {
+		return containers.Set[scene.Handle]{}
+	}
 	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
@@ -169,4 +146,49 @@ func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.V
 		}
 	}
 	return res
+}
+
+// Returns the vector that needs to be added to the body's movement to avoid obstacles in the tree.
+func (tree *BspTree) ResolveCollisions(
+	body *comps.Body,
+	movement mgl32.Vec3,
+	lockY bool,
+	filter collision.Mask,
+) mgl32.Vec3 {
+	if body == nil || body.Layers == 0 {
+		return mgl32.Vec3{}
+	}
+
+	obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
+
+	push := mgl32.Vec3{}
+
+	for _, handle := range obstacles {
+		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+			otherBody := collidingEnt.Body()
+			if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
+				continue
+			}
+
+			nextPos := body.Position.Add(movement).Add(push)
+
+			// Bounding box check
+			bbox := body.Shape.Extents().Translate(nextPos)
+			if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
+				continue
+			}
+
+			hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
+			if hit {
+				push = push.Add(pushVec)
+			}
+		}
+	}
+
+	if lockY {
+		// Restrict movement to the XZ plane
+		push[1] = 0.0
+	}
+
+	return push
 }

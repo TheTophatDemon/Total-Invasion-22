@@ -11,7 +11,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -31,15 +30,15 @@ const (
 )
 
 type Trigger struct {
-	Sphere          collision.Sphere
-	Transform       comps.Transform
+	Radius          float32
+	Position        mgl32.Vec3
+	Yaw             float32
 	id              scene.Id[*Trigger]
 	particles       comps.ParticleRender
 	filter          func(comps.HasBody) bool
 	onEnter         func(trigger *Trigger, entHandle scene.Handle)
 	whileTouching   func(trigger *Trigger, entHandle scene.Handle, deltaTime float32)
 	onExit          func(trigger *Trigger, entHandle scene.Handle)
-	world           *World
 	linkNumber      int
 	touching        [triggerMaxContacts]scene.Handle
 	damagePerSecond float32
@@ -48,16 +47,17 @@ type Trigger struct {
 
 var _ Linkable = (*Trigger)(nil)
 
-func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
-	id, tr, err = world.Triggers.New()
+func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
+	id, tr, err = gWorld.Triggers.New()
 	if err != nil {
 		return
 	}
 
-	tr.world = world
 	tr.id = id
-	tr.Sphere = collision.NewSphere(ent.Radius)
-	tr.Transform = comps.TransformFromTE3Ent(ent, false, false)
+	tr.Radius = ent.Radius
+	tr.Position = ent.Position
+	trans := comps.TransformFromTE3Ent(ent, false, false)
+	tr.Yaw = trans.Yaw()
 	tr.linkNumber, _ = ent.IntProperty("link")
 	tr.entProperties = ent.Properties
 
@@ -81,7 +81,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 	case TriggerActionSecret:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
-		world.Hud.VictoryScreen.SecretsTotal++
+		gWorld.Hud.VictoryScreen.SecretsTotal++
 	case TriggerActionActivate:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = activateAction
@@ -95,7 +95,7 @@ func SpawnTriggerFromTE3(world *World, ent te3.Ent) (id scene.Id[*Trigger], tr *
 
 func (tr *Trigger) Update(deltaTime float32) {
 	// Call callbacks for new & already touching entities
-	touchingNow := tr.world.IterBodiesInSphere(tr.Transform.Position(), tr.Sphere.Radius(), nil)
+	touchingNow := gWorld.IterBodiesInSphere(tr.Position, tr.Radius, nil)
 	var stillTouching [triggerMaxContacts]bool
 	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
 		bodyHaver, _ := scene.Get[comps.HasBody](handle)
@@ -123,11 +123,11 @@ func (tr *Trigger) Update(deltaTime float32) {
 		}
 	}
 
-	tr.particles.Update(deltaTime, &tr.Transform)
+	tr.particles.Update(deltaTime, tr.Position)
 }
 
 func (tr *Trigger) Render(context *render.Context) {
-	tr.particles.Render(&tr.Transform, context)
+	tr.particles.Render(tr.Position, context)
 }
 
 func (tr *Trigger) LinkNumber() int {
@@ -167,16 +167,16 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 		return
 	}
 	teleportingBody := teleportingEnt.Body()
-	iter := tr.world.IterLinkables()
+	iter := gWorld.IterLinkables()
 	for {
-		link, _ := tr.world.NextLinkableWithNumber(&iter, tr.linkNumber)
+		link, _ := gWorld.NextLinkableWithNumber(&iter, tr.linkNumber)
 		if link == nil {
 			break
 		}
 		if link != tr {
 			if trOther, isTrigger := link.(*Trigger); isTrigger {
 				// If there are NPCs standing on the other side, kill them.
-				actorsIter := tr.world.IterActorsInSphere(trOther.Transform.Position(), trOther.Sphere.Radius(), nil)
+				actorsIter := gWorld.IterActorsInSphere(trOther.Position, trOther.Radius, nil)
 				for {
 					_, actorHandle := actorsIter.Next()
 					if actorHandle.IsNil() {
@@ -193,10 +193,10 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 					victimEnt.(Damageable).OnDamage(tr, math2.Inf32())
 				}
 
-				teleportingBody.Transform.SetPosition(trOther.Transform.Position())
+				teleportingBody.Position = trOther.Position
 				teleportingBody.Velocity = mgl32.Vec3{}
 				actor := teleportingEnt.Actor()
-				actor.SetYaw(trOther.Transform.Yaw())
+				actor.SetYaw(trOther.Yaw)
 				actor.inputForward, actor.inputStrafe = 0.0, 0.0
 				teleportingEnt.ProcessSignal(game.TeleportationSignal{})
 				// This registers with the other teleporter that the body is touching without triggering the onEnter() callback,
@@ -204,7 +204,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				trOther.addToTouching(handle)
 				const sfxTeleport = "assets/sounds/teleport.wav"
 				cache.GetSfx(sfxTeleport).PlayAttenuatedV(actor.Position())
-				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Transform.Position())
+				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Position)
 				tr.particles.EmissionTimer = 0.5
 				trOther.particles.EmissionTimer = 0.5
 
@@ -216,9 +216,9 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 
 func exitLevelAction(tr *Trigger, handle scene.Handle) {
 	var cameraHandle scene.Handle
-	iter := tr.world.IterLinkables()
+	iter := gWorld.IterLinkables()
 	for {
-		linkable, id := tr.world.NextLinkableWithNumber(&iter, tr.linkNumber)
+		linkable, id := gWorld.NextLinkableWithNumber(&iter, tr.linkNumber)
 		if linkable == nil {
 			break
 		}
@@ -228,21 +228,21 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 		}
 	}
 	if cameraHandle.IsNil() {
-		cameraHandle = tr.world.CurrentCamera.Handle
+		cameraHandle = gWorld.CurrentCamera.Handle
 	}
 
-	tr.world.EnterWinState("assets/maps/"+tr.entProperties["level"]+".te3", cameraHandle)
+	gWorld.EnterWinState("assets/maps/"+tr.entProperties["level"]+".te3", cameraHandle)
 }
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
-	tr.world.Hud.VictoryScreen.SecretsFound++
-	tr.world.Hud.ShowMessage(settings.Localize("foundSecret"), 2.0, 50, color.Red)
+	gWorld.Hud.VictoryScreen.SecretsFound++
+	gWorld.Hud.ShowMessage(settings.Localize("foundSecret"), 2.0, 50, color.Red)
 	cache.GetSfx("assets/sounds/secret_chime.wav").Play()
-	tr.world.QueueRemoval(tr.id.Handle)
+	gWorld.QueueRemoval(tr.id.Handle)
 }
 
 func activateAction(tr *Trigger, handle scene.Handle) {
-	tr.world.ActivateLinks(tr)
+	gWorld.ActivateLinks(tr)
 }
 
 func messageAction(tr *Trigger, handle scene.Handle) {
@@ -291,7 +291,7 @@ func messageAction(tr *Trigger, handle scene.Handle) {
 		colr = color.White
 	}
 
-	tr.world.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), float32(time), int(priority), colr)
+	gWorld.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), float32(time), int(priority), colr)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

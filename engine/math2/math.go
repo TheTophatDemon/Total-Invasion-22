@@ -75,6 +75,14 @@ func Vec3Min(a, b mgl32.Vec3) mgl32.Vec3 {
 	}
 }
 
+// Returns a vector with the element-wise minimum value on each axis.
+func Vec2Min(a, b mgl32.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{
+		min(a[0], b[0]),
+		min(a[1], b[1]),
+	}
+}
+
 // Returns a vector with the element-wise maximum value on each axis.
 func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{
@@ -84,12 +92,24 @@ func Vec3Max(a, b mgl32.Vec3) mgl32.Vec3 {
 	}
 }
 
+// Returns a vector with the element-wise maximum value on each axis.
+func Vec2Max(a, b mgl32.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{
+		max(a[0], b[0]),
+		max(a[1], b[1]),
+	}
+}
+
 func Vec3WithY(vec mgl32.Vec3, newY float32) mgl32.Vec3 {
 	return mgl32.Vec3{vec.X(), newY, vec.Z()}
 }
 
 func Vec3Reflect(direction, normal mgl32.Vec3) mgl32.Vec3 {
 	return direction.Sub(normal.Mul(2 * direction.Dot(normal)))
+}
+
+func Vec3IsNan(vec mgl32.Vec3) bool {
+	return IsNan(vec[0]) || IsNan(vec[1]) || IsNan(vec[2])
 }
 
 // Returns a unit vector pointing in a random direction.
@@ -191,4 +211,8 @@ func Lerp[F Float](min, max, ratio F) F {
 		return min
 	}
 	return min + (max-min)*ratio
+}
+
+func Almost[F float32 | float64](number, equalTo F) bool {
+	return Abs(number-equalTo) < F(mgl32.Epsilon)
 }

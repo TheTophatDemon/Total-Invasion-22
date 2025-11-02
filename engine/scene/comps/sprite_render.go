@@ -13,57 +13,75 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type SpriteRender struct {
-	meshRender   MeshRender
-	DiffuseColor color.Color
-}
+type (
+	SpriteRender struct {
+		meshRender   MeshRender
+		DiffuseColor color.Color
+	}
+)
 
-func NewSpriteRender(texture *textures.Texture) SpriteRender {
-	return SpriteRender{
+func NewSpriteRender(
+	texture *textures.Texture, diffuseColor *color.Color, size *mgl32.Vec2,
+) SpriteRender {
+	sr := SpriteRender{
 		meshRender: NewMeshRender(
 			cache.QuadMesh,
 			shaders.SpriteShader,
 			texture,
 		),
-		DiffuseColor: color.White,
 	}
-}
 
-func NewSpriteRenderWithColor(texture *textures.Texture, diffuseColor color.Color) SpriteRender {
-	return SpriteRender{
-		meshRender: NewMeshRender(
-			cache.QuadMesh,
-			shaders.SpriteShader,
-			texture,
-		),
-		DiffuseColor: diffuseColor,
+	if size != nil {
+		sr.SetScale(size[0], size[1])
 	}
+
+	if diffuseColor != nil {
+		sr.DiffuseColor = *diffuseColor
+	} else {
+		sr.DiffuseColor = color.White
+	}
+
+	return sr
 }
 
 func (sr *SpriteRender) Texture() *textures.Texture {
 	return sr.meshRender.Texture
 }
 
+func (sr *SpriteRender) SetScale(scaleX, scaleY float32) {
+	if sr == nil {
+		return
+	}
+	sr.meshRender.LocalTransform.SetScale(scaleX, scaleY, 1.0)
+}
+
+func (sr SpriteRender) Scale() mgl32.Vec2 {
+	return sr.meshRender.LocalTransform.Scale().Vec2()
+}
+
 func (sr *SpriteRender) Render(
-	transform *Transform,
+	position mgl32.Vec3,
 	animPlayer *AnimationPlayer,
 	context *render.Context,
 	yawAngle float32,
 ) bool {
-	if !context.DrawingTransparent && !context.IsSphereVisible(transform.Position(), transform.Scale().X()) {
+	if sr.meshRender.Shader == nil {
 		return false
 	}
 
-	if transform == nil || sr.meshRender.Shader == nil {
+	if !context.DrawingTransparent && !context.IsSphereVisible(position, max(sr.Scale()[0], sr.Scale()[1])) {
 		return false
 	}
 
 	blendAdd := sr.Texture() != nil && sr.Texture().HasFlag(textures.FlagBlendAdd)
 
 	if (sr.DiffuseColor.A < 1.0 || blendAdd) && !context.DrawingTransparent {
+		//TODO: Optimize?
+		// Avoid making extra matrix
+		// Abstract render parameters into generic struct so that you can avoid closure captures
 		context.EnqueueTransparentRender(func(context *render.Context) {
-			sr.Render(transform, animPlayer, context, yawAngle)
-		}, context.DistanceFromScreen(transform.Matrix()))
+			sr.Render(position, animPlayer, context, yawAngle)
+		}, context.DistanceFromScreen(mgl32.Translate3D(position[0], position[1], position[2])))
 		return true
 	}
 
@@ -72,7 +90,7 @@ func (sr *SpriteRender) Render(
 	if sr.meshRender.Texture != nil && sr.meshRender.Texture.LayerCount() > 1 {
 		// Change animation layer based on angle to the camera
 		cameraPos := context.ViewInverse.Col(3).Vec3()
-		toCamera := cameraPos.Sub(transform.Position())
+		toCamera := cameraPos.Sub(position)
 		if toCamera.LenSqr() > mgl32.Epsilon {
 			toCamera = toCamera.Normalize()
 			ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(yawAngle).Mat4())
@@ -111,7 +129,7 @@ func (sr *SpriteRender) Render(
 		gl.BlendFunc(gl.ONE, gl.ONE)
 		defer gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	}
-	sr.meshRender.Render(transform, animPlayer, context)
+	sr.meshRender.Render(position, animPlayer, context)
 
 	context.DrawnSpriteCount++
 	return true

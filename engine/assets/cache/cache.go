@@ -2,8 +2,10 @@ package cache
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
@@ -11,16 +13,23 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
-type cache[T any] struct {
-	storage        map[string]T
-	fileExtensions []string
-	loadFunc       func(string) (T, error)
-	freeFunc       func(T)
-	resourceName   string
-}
+type (
+	cache[T any] struct {
+		storage        map[string]T
+		fileExtensions []string
+		loadFunc       func(string) (T, error)
+		freeFunc       func(T)
+		resourceName   string
+	}
+	shapePair struct {
+		mesh      *geom.Mesh
+		transform mgl32.Mat4
+	}
+)
 
 // This map caches the loadedTextures loaded from the filesystem by their paths.
 var loadedTextures cache[*textures.Texture]
@@ -28,11 +37,10 @@ var loadedTextures cache[*textures.Texture]
 // This caches the meshes loaded from the filesystem by their paths.
 var loadedMeshes cache[*geom.Mesh]
 
+var loadedShapes map[shapePair]collision.Shape
+
 // Cache of bitmap fonts, indexed by .fnt file path
 var loadedFonts cache[*fonts.Font]
-
-// The font that all new text objects will be initialized with.
-var DefaultFont *fonts.Font
 
 // Cache of sound effects, indexed by .wav file path
 var loadedSfx cache[tdaudio.SoundId]
@@ -55,6 +63,9 @@ func init() {
 		freeFunc:       (*geom.Mesh).Free,
 		resourceName:   "mesh",
 	}
+
+	loadedShapes = make(map[shapePair]collision.Shape)
+
 	loadedFonts = cache[*fonts.Font]{
 		storage:        make(map[string]*fonts.Font),
 		fileExtensions: []string{".fnt"},
@@ -135,6 +146,25 @@ func GetMesh(assetPath string) (*geom.Mesh, error) {
 	return mesh, err
 }
 
+func GetCollisionShape(assetPath string, transform mgl32.Mat4) (collision.Shape, error) {
+	mesh, err := GetMesh(assetPath)
+	if err != nil {
+		failure.LogErrWithLocation("%v", err)
+		return collision.Shape{}, err
+	}
+	pair := shapePair{mesh: mesh, transform: transform}
+	shape, ok := loadedShapes[pair]
+	if !ok {
+		log.Printf("Generating convex hull for %v...\n", assetPath)
+		shape = collision.NewShapeFromMesh(mesh, transform)
+		loadedShapes[pair] = shape
+		if shape == (collision.Shape{}) {
+			log.Printf("Warning: convex hull for %v did not generate correctly.\n", assetPath)
+		}
+	}
+	return shape, nil
+}
+
 // Retrieves a font from the game assets, loading it if it doesn't already exist.
 func GetFont(assetPath string) (*fonts.Font, error) {
 	fnt, err := loadedFonts.get(assetPath)
@@ -180,6 +210,7 @@ func Reset() {
 	clear(loadedTextures.storage)
 	loadedMeshes.freeAll()
 	clear(loadedMeshes.storage)
+	clear(loadedShapes)
 	loadedFonts.freeAll()
 	clear(loadedFonts.storage)
 }

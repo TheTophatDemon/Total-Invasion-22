@@ -73,7 +73,7 @@ func wraithAttackUpdate(enemy *Enemy, deltaTime float32) {
 	if enemy.AnimPlayer.HitATriggerFrame() {
 		if enemy.distToTarget >= wraithMeleeRange {
 			enemy.changeState(&enemy.chaseState)
-		} else if player, ok := enemy.world.CurrentPlayer.Get(); ok {
+		} else if player, ok := gWorld.CurrentPlayer.Get(); ok {
 			player.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
 		}
 	}
@@ -136,12 +136,12 @@ func fireWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 	enemy.stalk(deltaTime, 1.0)
 	enemy.attackTimer -= deltaTime
 	if enemy.attackTimer <= 0.0 {
-		hit, _ := enemy.world.Raycast(
+		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)
@@ -158,7 +158,7 @@ func fireWraithUpdateAttack(enemy *Enemy, deltaTime float32) {
 	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 	if enemy.AnimPlayer.HitTriggerFrame(0) {
 		enemy.faceTarget()
-		SpawnFireball(enemy.world, enemy.actor.Position(), mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0}, enemy.id.Handle)
+		SpawnFireball(enemy.actor.Position(), enemy.actor.FacingVec(), enemy.id.Handle)
 	}
 	if enemy.AnimPlayer.IsAtEnd() {
 		enemy.changeState(&enemy.chaseState)
@@ -224,9 +224,9 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 
 	// Switch periodically between shooting at the player and shooting to revive nearby enemies.
 	if rand.Float32() < 0.5 {
-		enemy.targetHandle = enemy.world.CurrentPlayer.Handle
+		enemy.targetHandle = gWorld.CurrentPlayer.Handle
 	} else {
-		nearbyEnemiesIter := enemy.world.Enemies.Iter()
+		nearbyEnemiesIter := gWorld.Enemies.Iter()
 		var nearestCorpseHandle scene.Handle
 		nearestCorpseDistance := float32(math.MaxFloat32)
 		for {
@@ -236,16 +236,16 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 			}
 
 			if corpse.actor.Health <= 0 {
-				diff := corpse.Body().Transform.Position().Sub(enemy.Body().Transform.Position())
+				diff := corpse.Body().Position.Sub(enemy.Body().Position)
 				distSq := diff.LenSqr()
 				if distSq < nearestCorpseDistance {
 					dist := math2.Sqrt(distSq)
-					hit, _ := enemy.world.Raycast(
+					hit, _ := gWorld.Raycast(
 						enemy.actor.Position(),
 						diff.Mul(1.0/dist),
 						ColLayerMap,
 						dist,
-						enemy,
+						enemy.Body(),
 					)
 					if !hit.Hit {
 						dist = nearestCorpseDistance
@@ -257,7 +257,7 @@ func motherWraithEnterChase(enemy *Enemy, oldState *enemyState) {
 		if !nearestCorpseHandle.IsNil() {
 			enemy.targetHandle = nearestCorpseHandle
 		} else {
-			enemy.targetHandle = enemy.world.CurrentPlayer.Handle
+			enemy.targetHandle = gWorld.CurrentPlayer.Handle
 		}
 	}
 }
@@ -266,18 +266,18 @@ func motherWraithUpdateChase(enemy *Enemy, deltaTime float32) {
 	enemy.stalk(deltaTime, 1.0)
 	enemy.attackTimer -= deltaTime
 	if enemy.attackTimer <= 0.0 {
-		hit, _ := enemy.world.Raycast(
+		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)
 		} else {
 			// Reset focus to the player when a corpse is out of reach that needs reviving.
-			enemy.targetHandle = enemy.world.CurrentPlayer.Handle
+			enemy.targetHandle = gWorld.CurrentPlayer.Handle
 		}
 	}
 }
@@ -291,7 +291,7 @@ func motherWraithUpdateAttack(enemy *Enemy, deltaTime float32) {
 	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 	if enemy.AnimPlayer.HitTriggerFrame(0) {
 		enemy.faceTarget()
-		SpawnBlessing(enemy.world, enemy.actor.Position(), mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0}, enemy.id.Handle)
+		SpawnBlessing(enemy.actor.Position(), enemy.actor.FacingVec(), enemy.id.Handle)
 	}
 	if enemy.AnimPlayer.IsAtEnd() {
 		enemy.changeState(&enemy.chaseState)
@@ -362,12 +362,12 @@ func dummkopfEnterChase(enemy *Enemy, oldState *enemyState) {
 func dummkopfUpdateChase(enemy *Enemy, deltaTime float32) {
 	enemy.attackTimer -= deltaTime
 	if enemy.attackTimer <= 0.0 {
-		hit, _ := enemy.world.Raycast(
+		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			enemy.dirToTarget,
 			ColLayerMap|ColLayerNPCs,
 			enemy.distToTarget,
-			enemy,
+			enemy.Body(),
 		)
 		if !hit.Hit {
 			enemy.changeState(&enemy.attackState)
@@ -393,11 +393,12 @@ func dummkopfUpdateAttack(enemy *Enemy, deltaTime float32) {
 			enemy.faceTarget()
 			enemy.voice = cache.GetSfx("assets/sounds/enemy/dummkopf/dummkopf_spit.wav").
 				PlayAttenuatedV(enemy.actor.Position())
-			SpawnPlasmaBall(enemy.world,
+			SpawnPlasmaBall(
 				enemy.actor.Position().Add(mgl32.Vec3{0.0, 0.25, 0.0}),
-				mgl32.Vec3{0.0, enemy.actor.YawAngle, 0.0},
+				enemy.actor.FacingVec(),
 				enemy.id.Handle,
-				true)
+				true,
+			)
 		}
 		if enemy.stateTimer > 1.6 {
 			enemy.AnimPlayer.PlayNewAnim(attackEndAnim)

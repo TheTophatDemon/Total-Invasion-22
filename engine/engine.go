@@ -2,7 +2,6 @@ package engine
 
 import (
 	"runtime"
-	"time"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -23,7 +22,7 @@ type App interface {
 }
 
 var measuredFps int
-var updateRate time.Duration = 16_666_667 // 60 FPS in nanoseconds
+var updateRate float64 = 1.0 / 60.0
 var debugMode bool
 var window *glfw.Window
 
@@ -32,7 +31,7 @@ func FPS() int {
 }
 
 func SetUpdateRate(fps int) {
-	updateRate = time.Duration(float64(time.Second) / float64(fps))
+	updateRate = 1.0 / float64(fps)
 }
 
 func InDebugMode() bool {
@@ -73,19 +72,20 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 }
 
 func Run(app App) {
-	previousTime := time.Now()
-	var accumulator time.Duration
+	previousTime := glfw.GetTime()
+	var accumulator float64
 
 	// FPS counters
 	var fpsTimer float64
 	var fpsTicks int
 	for !window.ShouldClose() {
 		// Update
-		now := time.Now()
-		deltaTime := now.Sub(previousTime)
+		now := glfw.GetTime()
+		deltaTime := now - previousTime
+		previousTime = now
 
 		// Calc FPS
-		fpsTimer += deltaTime.Seconds()
+		fpsTimer += deltaTime
 		fpsTicks++
 		if fpsTimer > 1.0 {
 			fpsTimer = 0.0
@@ -97,13 +97,12 @@ func Run(app App) {
 		if deltaTime > updateRate {
 			deltaTime = updateRate
 		}
-		previousTime = now
 
 		// Run updates by splitting the time since the last frame into fixed time steps.
 		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
 		updateCount := 0
 		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
-			app.Update(float32(updateRate.Seconds()))
+			app.Update(float32(updateRate))
 			input.Update()
 			tdaudio.Update()
 			updateCount++
@@ -125,10 +124,9 @@ func Run(app App) {
 		failure.CheckOpenGLError()
 
 		window.SwapBuffers()
-
 		glfw.PollEvents()
 
-		for time.Since(previousTime) < updateRate {
+		for glfw.GetTime()-previousTime < updateRate {
 			// Throttle the update rate if the game is running faster than max FPS
 			// Only necessary on Windows for some reason.
 		}

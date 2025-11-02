@@ -66,7 +66,14 @@ func TransformFromTE3Ent(ent te3.Ent, scaleByRadius, stayOnFloor bool) Transform
 	}
 }
 
-func (t *Transform) SetPosition(newPos mgl32.Vec3) {
+func (t *Transform) SetPosition(x, y, z float32) {
+	t.pos[0] = x
+	t.pos[1] = y
+	t.pos[2] = z
+	t.upToDate = false
+}
+
+func (t *Transform) SetPositionV(newPos mgl32.Vec3) {
 	t.pos = newPos
 	t.upToDate = false
 }
@@ -147,8 +154,15 @@ func (t *Transform) Rotate(pitch, yaw, roll float32) {
 }
 
 func (t *Transform) Matrix() mgl32.Mat4 {
+	if t == nil {
+		return mgl32.Mat4{}
+	}
 	if !t.upToDate {
-		t.matrix = mgl32.Scale3D(t.scale.X(), t.scale.Y(), t.scale.Z())
+		if t.scale[0] != 0 || t.scale[1] != 0 || t.scale[2] != 0 {
+			t.matrix = mgl32.Scale3D(t.scale[0], t.scale[1], t.scale[2])
+		} else {
+			t.matrix = mgl32.Ident4()
+		}
 		t.matrix = mgl32.HomogRotate3DZ(t.rot[2]).Mul4(t.matrix)
 		t.matrix = mgl32.HomogRotate3DX(t.rot[0]).Mul4(t.matrix)
 		t.matrix = mgl32.HomogRotate3DY(t.rot[1]).Mul4(t.matrix)

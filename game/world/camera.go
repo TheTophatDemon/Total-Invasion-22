@@ -11,7 +11,6 @@ import (
 
 type Camera struct {
 	comps.Camera
-	world               *World
 	id                  scene.Id[*Camera]
 	linkNumber          int
 	waitTimer, waitTime float32
@@ -19,12 +18,11 @@ type Camera struct {
 
 var _ Linkable = (*Camera)(nil)
 
-func SpawnCameraFromTE3(world *World, ent te3.Ent) (id scene.Id[*Camera], camera *Camera, err error) {
-	id, camera, err = SpawnCamera(world, comps.TransformFromTE3Ent(ent, false, false))
+func SpawnCameraFromTE3(ent te3.Ent) (id scene.Id[*Camera], camera *Camera, err error) {
+	id, camera, err = SpawnCamera(comps.TransformFromTE3Ent(ent, false, false))
 	if err != nil {
 		return
 	}
-	camera.world = world
 	camera.id = id
 	if linkStr, ok := ent.Properties["link"]; ok {
 		var linkNo int64
@@ -49,8 +47,8 @@ func SpawnCameraFromTE3(world *World, ent te3.Ent) (id scene.Id[*Camera], camera
 	return
 }
 
-func SpawnCamera(world *World, transform comps.Transform) (id scene.Id[*Camera], camera *Camera, err error) {
-	id, camera, err = world.Cameras.New()
+func SpawnCamera(transform comps.Transform) (id scene.Id[*Camera], camera *Camera, err error) {
+	id, camera, err = gWorld.Cameras.New()
 	if err != nil {
 		return
 	}
@@ -63,11 +61,11 @@ func SpawnCamera(world *World, transform comps.Transform) (id scene.Id[*Camera],
 }
 
 func (camera *Camera) Update(deltaTime float32) {
-	if camera.waitTime > 0.0 && camera.world.CurrentCamera.Equals(camera.id.Handle) {
+	if camera.waitTime > 0.0 && gWorld.CurrentCamera.Equals(camera.id.Handle) {
 		camera.waitTimer += deltaTime
 		if camera.waitTimer > camera.waitTime {
 			camera.waitTimer = 0.0
-			camera.world.ResetToPlayerCamera()
+			gWorld.ResetToPlayerCamera()
 		}
 	}
 }
@@ -77,12 +75,12 @@ func (camera *Camera) LinkNumber() int {
 }
 
 func (camera *Camera) OnLinkActivate(source Linkable) {
-	camera.world.CurrentCamera = camera.id
+	gWorld.CurrentCamera = camera.id
 }
 
 func (camera *Camera) OnLinkDeactivate(source Linkable) {
-	if camera.world.CurrentCamera.Equals(camera.id.Handle) {
-		camera.world.ResetToPlayerCamera()
+	if gWorld.CurrentCamera.Equals(camera.id.Handle) {
+		gWorld.ResetToPlayerCamera()
 	}
 }
 

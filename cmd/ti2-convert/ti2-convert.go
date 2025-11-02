@@ -235,17 +235,11 @@ func main() {
 						delete(ent.Properties, "link")
 					}
 				case 5: // Push walls
-					ent.Properties["direction"] = "backward"
-					ent.Properties["distance"] = "4.0"
-					ent.Properties["wait"] = "inf"
-					ent.Properties["activateSound"] = "secretwall.wav"
+					ent.Properties["type"] = "pushwall"
 					delete(ent.Properties, "link")
 				case 10: // Disappearing walls
 					ent.Properties["direction"] = "down"
-					ent.Properties["distance"] = "4.0"
-					ent.Properties["activateSound"] = ""
-					ent.Properties["blockUse"] = "true"
-					ent.Properties["wait"] = "inf"
+					ent.Properties["type"] = "pushwall"
 				}
 			case 3: // Switch
 				ent.Properties["type"] = "switch"

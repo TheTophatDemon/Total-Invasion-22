@@ -63,3 +63,15 @@ func Ceil[F Float](a F) F {
 func Round[F Float](a F) F {
 	return F(math.Round(float64(a)))
 }
+
+func NaN[F Float]() F {
+	return F(math.NaN())
+}
+
+func IsNan[F Float](a F) bool {
+	return math.IsNaN(float64(a))
+}
+
+func IsInf[F Float](a F, sign int) bool {
+	return math.IsInf(float64(a), sign)
+}

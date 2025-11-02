@@ -10,28 +10,27 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 const (
-	ATTR_INSTANCE_POS = iota + 8
-	ATTR_INSTANCE_COL
-	ATTR_INSTANCE_SIZE
-	ATTR_INSTANCE_SRC_RECT
+	AttrInstancePos = iota + 8
+	AttrInstanceCol
+	AttrInstanceSize
+	AttrInstanceSrcRect
 )
 
 const (
-	PARTICLE_POSITION_BYTE_LEN = int32(unsafe.Sizeof(mgl32.Vec3{}))
-	PARTICLE_POSITION_BYTE_OFS = unsafe.Offsetof(ParticleForm{}.Position)
-	PARTICLE_COLOR_BYTE_LEN    = int32(unsafe.Sizeof(mgl32.Vec4{}))
-	PARTICLE_COLOR_BYTE_OFS    = unsafe.Offsetof(ParticleForm{}.Color)
-	PARTICLE_SIZE_BYTE_LEN     = int32(unsafe.Sizeof(mgl32.Vec2{}))
-	PARTICLE_SIZE_BYTE_OFS     = unsafe.Offsetof(ParticleForm{}.Size)
-	PARTICLE_SRC_RECT_BYTE_LEN = int32(unsafe.Sizeof(mgl32.Vec4{}))
-	PARTICLE_SRC_RECT_BYTE_OFS = unsafe.Offsetof(ParticleForm{}.SrcRect)
-	PARTICLE_BUFFER_STRIDE     = int32(unsafe.Sizeof(ParticleForm{}))
+	ParticlePositionByteLen = int32(unsafe.Sizeof(mgl32.Vec3{}))
+	ParticlePositionByteOfs = unsafe.Offsetof(ParticleForm{}.Position)
+	ParticleColorByteLen    = int32(unsafe.Sizeof(mgl32.Vec4{}))
+	ParticleColorByteOfs    = unsafe.Offsetof(ParticleForm{}.Color)
+	ParticleSizeByteLen     = int32(unsafe.Sizeof(mgl32.Vec2{}))
+	ParticleSizeByteOfs     = unsafe.Offsetof(ParticleForm{}.Size)
+	ParticleSrcRectByteLen  = int32(unsafe.Sizeof(mgl32.Vec4{}))
+	ParticleSrcRectByteOfs  = unsafe.Offsetof(ParticleForm{}.SrcRect)
+	ParticleBufferStride    = int32(unsafe.Sizeof(ParticleForm{}))
 )
 
 // Describes the appearance of the particle. Stored in a separate buffer and sent to the GPU.
@@ -52,13 +51,14 @@ type ParticleInfo struct {
 type ParticleRender struct {
 	Mesh                *geom.Mesh
 	Texture             *textures.Texture
-	EmissionTimer       float32 // Number of seconds before emission stops. Set this to >0 to start emitting particles.
-	SpawnRadius         float32 // The spherical radius within which particles will be spawned.
-	SpawnRate           float32 // The rate at which new particles will be spawned, in seconds per particle.
-	BurstCount          int     // Each time a particle is spawned, spawn this many particles.
-	VisibilityRadius    float32 // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
-	LocalSpaceParticles bool    // If true, then particle positions will be in the space of the transform passed to the render method.
-	MaxCount            int     // Maxmimum number of particles to render at one time
+	LocalTransform      Transform // Transform relative to the position it is rendered at.
+	EmissionTimer       float32   // Number of seconds before emission stops. Set this to >0 to start emitting particles.
+	SpawnRadius         float32   // The spherical radius within which particles will be spawned.
+	SpawnRate           float32   // The rate at which new particles will be spawned, in seconds per particle.
+	BurstCount          int       // Each time a particle is spawned, spawn this many particles.
+	VisibilityRadius    float32   // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
+	LocalSpaceParticles bool      // If true, then particle positions will be in the space of the transform passed to the render method.
+	MaxCount            int       // Maxmimum number of particles to render at one time
 
 	// Called every frame to move and animate the particles. Velocity and acceleration will be applied later.
 	UpdateFunc func(
@@ -109,17 +109,12 @@ func (parts *ParticleRender) Init() {
 	gl.GenBuffers(1, &parts.particleBuffer)
 	gl.BindBuffer(gl.ARRAY_BUFFER, parts.particleBuffer)
 	gl.BufferData(gl.ARRAY_BUFFER,
-		cap(parts.particleForms)*int(PARTICLE_BUFFER_STRIDE),
+		cap(parts.particleForms)*int(ParticleBufferStride),
 		nil, gl.STREAM_DRAW)
 }
 
-// Updates the particle emitter. The transform argument should not be nil.
-func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
-	if transform == nil {
-		failure.LogErrWithLocation("Update must be passed a non-nil transform!")
-		return
-	}
-
+// Updates the particle emitter.
+func (parts *ParticleRender) Update(deltaTime float32, spawnPosition mgl32.Vec3) {
 	// Update existing particles
 	for i := range parts.particleInfos {
 		form := &parts.particleForms[i]
@@ -148,6 +143,11 @@ func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
 	parts.particleForms = parts.particleForms[:newLen]
 	parts.particleInfos = parts.particleInfos[:newLen]
 
+	var worldTransform mgl32.Mat4
+	if !parts.LocalSpaceParticles {
+		worldTransform = mgl32.Translate3D(spawnPosition[0], spawnPosition[1], spawnPosition[2]).Mul4(parts.LocalTransform.Matrix())
+	}
+
 	// Spawn new particles
 	if parts.EmissionTimer > 0.0 {
 		parts.spawnTimer += deltaTime
@@ -158,8 +158,8 @@ func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
 				dir := math2.RandomDir()
 				position := dir.Mul(parts.SpawnRadius)
 				if !parts.LocalSpaceParticles {
-					position = mgl32.TransformCoordinate(position, transform.Matrix())
-					dir = mgl32.TransformNormal(dir, transform.Matrix())
+					position = mgl32.TransformCoordinate(position, worldTransform)
+					dir = mgl32.TransformNormal(dir, worldTransform)
 				}
 
 				form := ParticleForm{
@@ -189,11 +189,10 @@ func (parts *ParticleRender) Update(deltaTime float32, transform *Transform) {
 	}
 }
 
-func (parts *ParticleRender) Render(
-	transform *Transform,
-	context *render.Context,
-) {
-	if parts.Mesh == nil || len(parts.particleInfos) == 0 || !context.IsSphereVisible(transform.Position(), parts.VisibilityRadius) {
+func (parts *ParticleRender) Render(position mgl32.Vec3, context *render.Context) {
+	worldTransform := mgl32.Translate3D(position[0], position[1], position[2]).Mul4(parts.LocalTransform.Matrix())
+	worldPosition := worldTransform.Col(3).Vec3()
+	if parts.Mesh == nil || len(parts.particleInfos) == 0 || !context.IsSphereVisible(worldPosition, parts.VisibilityRadius) {
 		return
 	}
 
@@ -206,7 +205,7 @@ func (parts *ParticleRender) Render(
 	_ = shader.SetUniformInt(shaders.UniformTex, 0)
 
 	if parts.LocalSpaceParticles {
-		_ = shader.SetUniformMatrix(shaders.UniformModelMatrix, transform.Matrix())
+		_ = shader.SetUniformMatrix(shaders.UniformModelMatrix, worldTransform)
 	} else {
 		_ = shader.SetUniformMatrix(shaders.UniformModelMatrix, mgl32.Ident4())
 	}
@@ -240,22 +239,22 @@ func (parts *ParticleRender) Free() {
 }
 
 func (parts *ParticleRender) bind() {
-	gl.EnableVertexAttribArray(ATTR_INSTANCE_POS)
-	gl.EnableVertexAttribArray(ATTR_INSTANCE_COL)
-	gl.EnableVertexAttribArray(ATTR_INSTANCE_SIZE)
-	gl.EnableVertexAttribArray(ATTR_INSTANCE_SRC_RECT)
+	gl.EnableVertexAttribArray(AttrInstancePos)
+	gl.EnableVertexAttribArray(AttrInstanceCol)
+	gl.EnableVertexAttribArray(AttrInstanceSize)
+	gl.EnableVertexAttribArray(AttrInstanceSrcRect)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, parts.particleBuffer)
 
-	gl.VertexAttribPointerWithOffset(ATTR_INSTANCE_POS, 3, gl.FLOAT, false, PARTICLE_BUFFER_STRIDE, PARTICLE_POSITION_BYTE_OFS)
-	gl.VertexAttribPointerWithOffset(ATTR_INSTANCE_COL, 4, gl.FLOAT, false, PARTICLE_BUFFER_STRIDE, PARTICLE_COLOR_BYTE_OFS)
-	gl.VertexAttribPointerWithOffset(ATTR_INSTANCE_SIZE, 2, gl.FLOAT, false, PARTICLE_BUFFER_STRIDE, PARTICLE_SIZE_BYTE_OFS)
-	gl.VertexAttribPointerWithOffset(ATTR_INSTANCE_SRC_RECT, 4, gl.FLOAT, false, PARTICLE_BUFFER_STRIDE, PARTICLE_SRC_RECT_BYTE_OFS)
+	gl.VertexAttribPointerWithOffset(AttrInstancePos, 3, gl.FLOAT, false, ParticleBufferStride, ParticlePositionByteOfs)
+	gl.VertexAttribPointerWithOffset(AttrInstanceCol, 4, gl.FLOAT, false, ParticleBufferStride, ParticleColorByteOfs)
+	gl.VertexAttribPointerWithOffset(AttrInstanceSize, 2, gl.FLOAT, false, ParticleBufferStride, ParticleSizeByteOfs)
+	gl.VertexAttribPointerWithOffset(AttrInstanceSrcRect, 4, gl.FLOAT, false, ParticleBufferStride, ParticleSrcRectByteOfs)
 
-	gl.VertexAttribDivisorARB(ATTR_INSTANCE_POS, 1)
-	gl.VertexAttribDivisorARB(ATTR_INSTANCE_COL, 1)
-	gl.VertexAttribDivisorARB(ATTR_INSTANCE_SIZE, 1)
-	gl.VertexAttribDivisorARB(ATTR_INSTANCE_SRC_RECT, 1)
+	gl.VertexAttribDivisorARB(AttrInstancePos, 1)
+	gl.VertexAttribDivisorARB(AttrInstanceCol, 1)
+	gl.VertexAttribDivisorARB(AttrInstanceSize, 1)
+	gl.VertexAttribDivisorARB(AttrInstanceSrcRect, 1)
 }
 
 func (parts *ParticleRender) updateBuffers() {
@@ -265,6 +264,6 @@ func (parts *ParticleRender) updateBuffers() {
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, parts.particleBuffer)
 	gl.BufferSubData(gl.ARRAY_BUFFER, 0,
-		len(parts.particleForms)*int(PARTICLE_BUFFER_STRIDE),
+		len(parts.particleForms)*int(ParticleBufferStride),
 		gl.Ptr(parts.particleForms))
 }
