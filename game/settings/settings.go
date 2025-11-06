@@ -53,6 +53,7 @@ const (
 	ActionDie          input.Action = "die"
 	ActionKillEnemies  input.Action = "killEnemies"
 	ActionCastBlessing input.Action = "castBlessing"
+	ActionLaunchEditor input.Action = "launchEditor"
 )
 
 const settingsFilePath = "game_settings.toml"

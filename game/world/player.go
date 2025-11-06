@@ -3,11 +3,13 @@ package world
 import (
 	"math"
 	"math/rand"
+	"os/exec"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -281,6 +283,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 	}
 
+	// God mode
 	if input.IsActionJustPressed(settings.ActionGodMode) {
 		if !player.godMode {
 			player.actor.Health = player.actor.MaxHealth
@@ -295,6 +298,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
 	}
 
+	// Mary sue mode
 	if input.IsActionJustPressed(settings.ActionMarySue) {
 		hudPtr.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
 		for i := range game.WeaponCount - 1 {
@@ -306,12 +310,31 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.keys = game.KeysAll
 	}
 
+	// Unalive
 	if input.IsActionJustPressed(settings.ActionDie) {
 		player.actor.Health = 0
 	}
 
+	// Cast blessing
 	if input.IsActionJustPressed(settings.ActionCastBlessing) {
 		SpawnBlessing(player.actor.Position(), player.actor.FacingVec(), player.id.Handle)
+	}
+
+	// Launch editor
+	if input.IsActionJustPressed(settings.ActionLaunchEditor) {
+		cmd := exec.Command("./Total Editor 3.exe", gWorld.GameMap.Name)
+		err := cmd.Run()
+		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
+			gWorld.app.ProcessSignal(game.MapChangeSignal{
+				NextMapPath:     gWorld.GameMap.Name,
+				GiveAmmo:        player.ammo,
+				GiveArmor:       player.armorType,
+				ArmorAmount:     player.armorAmount,
+				EquippedWeapons: hudPtr.Weapons.ListEquipped(),
+			})
+		} else if err != nil {
+			failure.LogErrWithLocation("failed to launch editor: %v", err)
+		}
 	}
 
 	// Use key
