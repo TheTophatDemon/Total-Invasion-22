@@ -32,7 +32,9 @@ type Projectile struct {
 	voices                                         [4]tdaudio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
-	onCollide                                      func(
+
+	mapCollisionFilters collision.Mask // Layers needed to collide with map tiles. If left 0, defaults will be used.
+	onCollide           func(
 		movement mgl32.Vec3,
 		collidingEntity any,
 		mask collision.Mask,
@@ -102,11 +104,15 @@ func (proj *Projectile) Update(deltaTime float32) {
 		}
 
 		// Detect intersection with the map
-		mapRes := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, movement, shrunkenShape)
+		filters := proj.mapCollisionFilters
+		if filters == 0 {
+			filters = ColLayerMap | ColLayerKillzone
+		}
+		mapRes, layer := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, proj.body.Position, movement, shrunkenShape, filters)
 		if mapRes.Hit && mapRes.Distance < minRes.Distance {
 			minRes = mapRes
 			minEnt = gWorld.GameMap
-			minLayers = gWorld.GameMap.Layer
+			minLayers = layer
 		}
 
 		if minRes.Hit {

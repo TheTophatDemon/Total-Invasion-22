@@ -337,6 +337,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 	}
 
+	// Spawn chicken
+	if input.IsActionJustPressed(settings.ActionSpawnChicken) {
+		SpawnChicken(player.Body().Position.Add(player.actor.FacingVec()), mgl32.Vec3{})
+	}
+
 	// Use key
 	if input.IsActionJustPressed(settings.ActionUse) {
 		const useDist float32 = 3.0

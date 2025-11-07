@@ -159,14 +159,9 @@ func NewShapeFromMesh(mesh *geom.Mesh, matrix mgl32.Mat4) Shape {
 
 	// Smush all of the vertices into a convex hull
 	hullVerts := make([]mgl32.Vec2, 0, len(mesh.Verts().Pos))
-	minY := float32(math.MaxFloat32)
-	maxY := -minY
-
 meshLoop:
 	for _, pos := range mesh.Verts().Pos {
 		pos = mgl32.TransformCoordinate(pos, matrix)
-		minY = min(minY, pos[1])
-		maxY = max(maxY, pos[1])
 		pos2d := mgl32.Vec2{pos[0], pos[2]}
 
 		// Skip over duplicate vertices
@@ -179,7 +174,7 @@ meshLoop:
 		hullVerts = append(hullVerts, pos2d)
 	}
 
-	return NewShapeHull(maxY-minY, hullVerts...)
+	return NewShapeHull(2.0, hullVerts...)
 }
 
 func (shape Shape) Extents() math2.Box {

@@ -13,7 +13,6 @@ import (
 // Rendering geometry is optional.
 type MapLayer struct {
 	GridShape      collision.Grid
-	Layer          collision.Mask
 	Name           string
 	tileAnims      []AnimationPlayer // Animates each texture group of tiles
 	groupRenderers []MeshRender      // Renders each texture group of tiles
@@ -22,14 +21,18 @@ type MapLayer struct {
 // Creates a map layer that renders geometry.
 // `collisionLayer` is assigned to the map's GridShape.
 // `excludeFlags` specifies texture flags that will be invisible.
-func NewMainMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, excludeFlags []string) (MapLayer, error) {
+func NewMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, excludeFlags []string) (MapLayer, error) {
 	mesh, err := te3File.BuildMesh(excludeFlags)
 	if err != nil {
 		return MapLayer{}, err
 	}
 	cache.TakeMesh(te3File.FilePath(), mesh)
 
-	gameMap := NewExtraMapLayer(te3File, collisionLayer)
+	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3.GridSpacing)
+	gameMap := MapLayer{
+		Name:      te3File.FilePath(),
+		GridShape: gridShape,
+	}
 	gameMap.tileAnims = make([]AnimationPlayer, mesh.GroupCount())
 	gameMap.groupRenderers = make([]MeshRender, mesh.GroupCount())
 
@@ -46,17 +49,6 @@ func NewMainMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, exclud
 	}
 
 	return gameMap, nil
-}
-
-// Creates a map layer that doesn't render geometry.
-func NewExtraMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask) MapLayer {
-	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3.GridSpacing)
-
-	return MapLayer{
-		Name:      te3File.FilePath(),
-		Layer:     collisionLayer,
-		GridShape: gridShape,
-	}
 }
 
 func (gm *MapLayer) Update(deltaTime float32) {

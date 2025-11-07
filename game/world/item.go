@@ -112,7 +112,7 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 	}
 
 	// Put the item on the floor using a raycast
-	cast := gWorld.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0)
+	cast := gWorld.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0, ColLayerMap)
 	if cast.Hit {
 		item.body.Position = math2.Vec3WithY(cast.Position, cast.Position.Y()+item.spriteRender.Scale()[1])
 		item.onGround = true
@@ -312,7 +312,9 @@ func (item *Item) Update(deltaTime float32) {
 		cast := gWorld.GameMap.GridShape.Raycast(
 			item.body.Position,
 			math2.Vec3Down(),
-			height+(deltaTime*item.fallSpeed))
+			height+(deltaTime*item.fallSpeed),
+			ColLayerMap,
+		)
 		if cast.Hit {
 			item.body.Position = math2.Vec3WithY(cast.Position, cast.Position[1]+height)
 			item.onGround = true

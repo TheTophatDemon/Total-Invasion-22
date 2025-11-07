@@ -1,7 +1,6 @@
 package world
 
 import (
-	"errors"
 	"log"
 	"math"
 	"path"
@@ -54,7 +53,6 @@ type World struct {
 	MapLayers      scene.Storage[comps.MapLayer]
 	Props          scene.Storage[Prop]
 	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
-	InvisibleLayer *comps.MapLayer // Pointer to the map layer for invisible walls
 	CurrentPlayer  scene.Id[*Player]
 	CurrentCamera  scene.Id[*Camera]
 	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
@@ -92,22 +90,16 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		return nil, err
 	}
 
-	var err2 error
 	_, gWorld.GameMap, err = gWorld.MapLayers.New()
-	_, gWorld.InvisibleLayer, err2 = gWorld.MapLayers.New()
-	_, killLayer, err3 := gWorld.MapLayers.New()
-	if err = errors.Join(err, err2, err3); err != nil {
-		return nil, err
-	}
-
-	const texFlagInvisible = "invisible"
-	*gWorld.GameMap, err = comps.NewMainMapLayer(te3File, ColLayerMap, []string{texFlagInvisible})
 	if err != nil {
 		return nil, err
 	}
 
-	*gWorld.InvisibleLayer = comps.NewExtraMapLayer(te3File, ColLayerInvisible)
-	*killLayer = comps.NewExtraMapLayer(te3File, ColLayerKillzone)
+	const texFlagInvisible = "invisible"
+	*gWorld.GameMap, err = comps.NewMapLayer(te3File, ColLayerMap, []string{texFlagInvisible})
+	if err != nil {
+		return nil, err
+	}
 
 	// Process tiles after mesh is generated.
 	for id, tile := range te3File.Tiles.Data {
@@ -117,23 +109,24 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 
 		primaryTexture := cache.GetTexture(te3File.Tiles.Textures[tile.TextureIDs[0]])
 
-		mapLayer := gWorld.GameMap
+		layer := ColLayerMap
 		if primaryTexture.HasFlag(texFlagInvisible) {
-			mapLayer = gWorld.InvisibleLayer
+			layer = ColLayerInvisible
 		} else if primaryTexture.HasFlag("killzone") {
-			mapLayer = killLayer
+			layer = ColLayerKillzone
 		} else if primaryTexture.HasFlag("liquid") {
 			// Remove collision from liquid tiles.
 			continue
 		}
 
 		// Set collision shapes
-		shape, err := cache.GetCollisionShape(te3File.Tiles.Shapes[tile.ShapeID], tile.GetRotationMatrix())
+		shapeName := te3File.Tiles.Shapes[tile.ShapeID]
+		shape, err := cache.GetCollisionShape(shapeName, tile.GetRotationMatrix())
 		if err != nil {
 			continue
 		}
 
-		mapLayer.GridShape.SetShapeAtFlatIndex(id, shape)
+		gWorld.GameMap.GridShape.SetShapeAtFlatIndex(id, shape, layer)
 	}
 
 	if levelFileName := path.Base(mapPath); len(levelFileName) >= 4 &&
@@ -242,17 +235,6 @@ func (world *World) Update(deltaTime float32) {
 
 func (world *World) UpdateMapLayer(layer *comps.MapLayer, deltaTime float32) {
 	layer.Update(deltaTime)
-
-	// Damage any actors touching the killzone layer
-	if layer.Layer == ColLayerKillzone {
-		actorsIter := world.IterActors()
-		for ent, _ := actorsIter.Next(); ent != nil; ent, _ = actorsIter.Next() {
-			actor := ent.Actor()
-			if layer.GridShape.OtherBodyTouches(mgl32.Vec3{}, actor.body.Position, actor.body.Shape) {
-				ent.OnDamage(layer, math2.Inf32())
-			}
-		}
-	}
 }
 
 func (world *World) ResolveMapCollisions(
@@ -269,10 +251,8 @@ func (world *World) ResolveMapCollisions(
 	push := mgl32.Vec3{}
 	for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
 		nextPos := body.Position.Add(movement).Add(push)
-		if (layer.Layer & filter) != 0 {
-			pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, nextPos, body.Shape)
-			push = push.Add(pushVec)
-		}
+		pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, nextPos, body.Shape, filter)
+		push = push.Add(pushVec)
 	}
 	if lockY {
 		push[1] = 0.0
@@ -380,10 +360,7 @@ func (world *World) Raycast(
 	// Check map layers
 	layerIt := world.MapLayers.Iter()
 	for layer, layerId := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-		if !layer.Layer.On(filter) {
-			continue
-		}
-		mapHit := layer.GridShape.Raycast(rayOrigin, rayDir, maxDist)
+		mapHit := layer.GridShape.Raycast(rayOrigin, rayDir, maxDist, filter)
 		if mapHit.Hit && mapHit.Distance < closestHit.Distance {
 			closestHit = mapHit
 			closestEnt = layerId

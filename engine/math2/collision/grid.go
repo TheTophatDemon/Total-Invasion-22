@@ -8,9 +8,15 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
+type GridCell struct {
+	ShapeId int  // Index into the shapes array
+	Layer   Mask // Collision layer. Will be 0 for an empty tile.
+}
+
 type Grid struct {
 	extents               math2.Box
-	cels                  []Shape
+	shapes                []Shape
+	cells                 []GridCell
 	width, height, length int
 	spacing               float32
 	celsChecked           map[[3]int]bool // Pre-allocated map for tracking cels visited when walking the grid.
@@ -27,7 +33,8 @@ func NewGrid(width, height, length int, spacing float32) Grid {
 				spacing + float32(length)*spacing,
 			},
 		},
-		cels:        make([]Shape, width*height*length),
+		cells:       make([]GridCell, width*height*length),
+		shapes:      make([]Shape, 0, 32),
 		spacing:     spacing,
 		width:       width,
 		height:      height,
@@ -62,24 +69,36 @@ func (grid *Grid) AreCoordsValid(x, y, z int) bool {
 		x < grid.width && y < grid.height && z < grid.length
 }
 
-func (grid *Grid) SetShapeAt(x, y, z int, shape Shape) {
+func (grid *Grid) ShapeIndex(shape Shape) int {
+	i := 0
+	for ; i < len(grid.shapes); i++ {
+		if grid.shapes[i] == shape {
+			return i
+		}
+	}
+	if i == len(grid.shapes) {
+		grid.shapes = append(grid.shapes, shape)
+	}
+	return i
+}
+
+func (grid *Grid) SetShapeAt(x, y, z int, shape Shape, layer Mask) {
 	if !grid.AreCoordsValid(x, y, z) {
 		return
 	}
-	grid.cels[grid.FlattenGridPos(x, y, z)] = shape
-}
-
-func (grid *Grid) SetShapeAtFlatIndex(index int, shape Shape) {
-	if index > 0 && index < len(grid.cels) {
-		grid.cels[index] = shape
+	grid.cells[grid.FlattenGridPos(x, y, z)] = GridCell{
+		ShapeId: grid.ShapeIndex(shape),
+		Layer:   layer,
 	}
 }
 
-func (grid *Grid) ShapeAt(x, y, z int) (Shape, bool) {
-	if !grid.AreCoordsValid(x, y, z) {
-		return Shape{}, false
+func (grid *Grid) SetShapeAtFlatIndex(index int, shape Shape, layer Mask) {
+	if index > 0 && index < len(grid.cells) {
+		grid.cells[index] = GridCell{
+			ShapeId: grid.ShapeIndex(shape),
+			Layer:   layer,
+		}
 	}
-	return grid.cels[grid.FlattenGridPos(x, y, z)], true
 }
 
 func (grid *Grid) UnflattenGridPos(index int) (int, int, int) {
@@ -113,7 +132,7 @@ func (grid *Grid) GridToWorldPos(i, j, k int, center bool) mgl32.Vec3 {
 	return out
 }
 
-func (grid Grid) Raycast(rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
+func (grid Grid) Raycast(rayOrigin, rayDir mgl32.Vec3, maxDist float32, filter Mask) Result {
 	if lenSqr := rayDir.LenSqr(); lenSqr == 0.0 {
 		return Result{}
 	} else if lenSqr != 1.0 {
@@ -135,9 +154,9 @@ func (grid Grid) Raycast(rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
 	for {
 		// Respond to hit tile
 		tileIndex := grid.FlattenGridPos(i, j, k)
-		if tileShape := grid.cels[tileIndex]; !tileShape.IsNil() {
+		if cell := grid.cells[tileIndex]; cell.Layer.On(filter) {
 			tileCenter := grid.GridToWorldPos(i, j, k, true)
-			if cast := tileShape.Raycast(tileCenter, rayOrigin, rayDir, maxDist); cast.Hit {
+			if cast := grid.shapes[cell.ShapeId].Raycast(tileCenter, rayOrigin, rayDir, maxDist); cast.Hit {
 				if cast.Distance*cast.Distance <= maxDistSqr {
 					return Result{
 						Hit:      true,
@@ -244,7 +263,7 @@ func (grid Grid) Raycast(rayOrigin, rayDir mgl32.Vec3, maxDist float32) Result {
 }
 
 // Call this to resolve collisions another body has with the grid using an optimized grid-walking method.
-func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape) Result {
+func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Vec3, theirShape Shape, filters Mask) (Result, Mask) {
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
 
 	// Iterate over the subset of tiles that the body occupies
@@ -258,12 +277,13 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 		return Result{
 			Position: theirPosition.Add(theirMovement),
 			Distance: theirMovement.Len(),
-		}
+		}, 0
 	}
 
 	minResult := Result{
 		Distance: theirMovement.Len(),
 	}
+	var minMask Mask
 
 	for x := minX; x <= maxX; x++ {
 		for y := minY; y <= maxY; y++ {
@@ -271,14 +291,15 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 				if !grid.AreCoordsValid(x, y, z) {
 					continue
 				}
-				if t := grid.FlattenGridPos(x, y, z); !grid.cels[t].IsNil() {
+				if t := grid.FlattenGridPos(x, y, z); grid.cells[t].Layer.On(filters) {
 					// Resolve collision against this tile
 					tileCenter := grid.GridToWorldPos(x, y, z, true)
-					tileShape := grid.cels[t]
+					tileShape := grid.shapes[grid.cells[t].ShapeId]
 
 					res := theirShape.Sweep(theirPositionRelative, theirMovement, tileCenter, tileShape)
 					if res.Hit && res.Distance < minResult.Distance {
 						minResult = res
+						minMask = grid.cells[t].Layer
 					}
 				}
 			}
@@ -288,10 +309,10 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 	if minResult.Hit {
 		minResult.Position = minResult.Position.Add(myPosition)
 	}
-	return minResult
+	return minResult, minMask
 }
 
-func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape) mgl32.Vec3 {
+func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape, filter Mask) mgl32.Vec3 {
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
 
 	// Iterate over the subset of tiles that the body occupies
@@ -320,10 +341,10 @@ func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape
 
 	for pos, empty := visitQueue.Dequeue(); !empty; pos, empty = visitQueue.Dequeue() {
 		if grid.AreCoordsValid(pos[0], pos[1], pos[2]) {
-			if t := grid.FlattenGridPos(pos[0], pos[1], pos[2]); !grid.cels[t].IsNil() {
+			if t := grid.FlattenGridPos(pos[0], pos[1], pos[2]); grid.cells[t].Layer.On(filter) {
 				// Resolve collision against this tile
 				tileCenter := grid.GridToWorldPos(pos[0], pos[1], pos[2], true)
-				tileShape := grid.cels[t]
+				tileShape := grid.shapes[grid.cells[t].ShapeId]
 
 				hit, pushVec := theirShape.PushOutOf(theirPositionRelative.Add(push), tileCenter, tileShape)
 				if hit {
@@ -357,7 +378,7 @@ func (grid *Grid) PushOut(myPosition, theirPosition mgl32.Vec3, theirShape Shape
 }
 
 // Returns true if the other body touches a tile in the grid.
-func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirShape Shape) bool {
+func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirShape Shape, filter Mask) bool {
 	var theirPositionRelative mgl32.Vec3 = theirPosition.Sub(myPosition)
 
 	// Iterate over the subset of tiles that the body occupies
@@ -373,10 +394,10 @@ func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirSh
 	for y := minY; y <= maxY; y++ {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
-				if tileShape := grid.cels[grid.FlattenGridPos(x, y, z)]; !tileShape.IsNil() {
+				if cell := grid.cells[grid.FlattenGridPos(x, y, z)]; cell.Layer.On(filter) {
 					// Resolve collision against this tile
 					tileCenter := grid.GridToWorldPos(x, y, z, true)
-					if theirShape.Touches(theirPositionRelative, tileCenter, tileShape) {
+					if theirShape.Touches(theirPositionRelative, tileCenter, grid.shapes[cell.ShapeId]) {
 						return true
 					}
 				}

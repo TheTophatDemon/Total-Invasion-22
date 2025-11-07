@@ -225,7 +225,7 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 			// Pushwalls set a map tile at their origin so that players don't get caught sliding along adjacent walls.
 			wall.body.ExcludeLayers(ColLayerMap)
 			gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
-			gWorld.GameMap.GridShape.SetShapeAt(gridX, gridY, gridZ, wall.body.Shape)
+			gWorld.GameMap.GridShape.SetShapeAt(gridX, gridY, gridZ, wall.body.Shape, ColLayerMap)
 		}
 	} else {
 		wall.Destination = wall.Origin
@@ -458,7 +458,7 @@ func (wall *Wall) Open() {
 		wall.body.RestoreLayers()
 		// Clear out any map cells that may be blocking the wall's area.
 		gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
-		gWorld.GameMap.GridShape.SetShapeAt(gridX, gridY, gridZ, collision.Shape{})
+		gWorld.GameMap.GridShape.SetShapeAt(gridX, gridY, gridZ, collision.Shape{}, 0)
 	}
 }
 

@@ -42,8 +42,8 @@ func (chk *Chicken) Body() *comps.Body {
 	return &chk.actor.body
 }
 
-func SpawnChicken(world *World, position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chicken, err error) {
-	id, chk, err = world.Chickens.New()
+func SpawnChicken(position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chicken, err error) {
+	id, chk, err = gWorld.Chickens.New()
 	if err != nil {
 		return
 	}
@@ -103,6 +103,11 @@ func (chk *Chicken) Update(deltaTime float32) {
 	chkDir := chk.actor.FacingVec()
 	if chk.voice.IsValid() {
 		chk.voice.SetPositionV(chkPos)
+	}
+
+	// Die in lava
+	if gWorld.GameMap.GridShape.OtherBodyTouches(mgl32.Vec3{}, chkPos, body.Shape, ColLayerKillzone) {
+		chk.OnDamage(gWorld.GameMap, 999999)
 	}
 
 	if chk.actor.Health > 0 {
