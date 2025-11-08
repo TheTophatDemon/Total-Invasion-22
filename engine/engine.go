@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/clock"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
@@ -21,17 +22,15 @@ type App interface {
 	Render()
 }
 
-var measuredFps int
-var updateRate float64 = 1.0 / 60.0
 var debugMode bool
 var window *glfw.Window
 
 func FPS() int {
-	return measuredFps
+	return int(clock.ActualTPS())
 }
 
 func SetUpdateRate(fps int) {
-	updateRate = 1.0 / float64(fps)
+	clock.SetTPS(fps)
 }
 
 func InDebugMode() bool {
@@ -72,63 +71,33 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 }
 
 func Run(app App) {
-	previousTime := glfw.GetTime()
-	var accumulator float64
 
-	// FPS counters
-	var fpsTimer float64
-	var fpsTicks int
 	for !window.ShouldClose() {
-		// Update
-		now := glfw.GetTime()
-		deltaTime := now - previousTime
-		previousTime = now
-
-		// Calc FPS
-		fpsTimer += deltaTime
-		fpsTicks++
-		if fpsTimer > 1.0 {
-			fpsTimer = 0.0
-			measuredFps = fpsTicks
-			fpsTicks = 0
-		}
-
-		// Prevents window moving events from causing the game to skip large portions of time.
-		if deltaTime > updateRate {
-			deltaTime = updateRate
-		}
-
-		// Run updates by splitting the time since the last frame into fixed time steps.
-		// There is an upper limit to the number of timesteps ran per frame to prevent lag from spiralling until the game stops completely.
-		updateCount := 0
-		for accumulator += deltaTime; accumulator >= updateRate && updateCount < 5; accumulator -= updateRate {
-			app.Update(float32(updateRate))
+		numUpdates := clock.UpdateFrame()
+		for range numUpdates {
+			app.Update(1.0 / float32(clock.TPS()))
 			input.Update()
 			tdaudio.Update()
-			updateCount++
 		}
 
-		// OpenGL settings
-		gl.Enable(gl.DEPTH_TEST)
-		gl.Enable(gl.CULL_FACE)
-		gl.Enable(gl.BLEND)
-		gl.DepthFunc(gl.LESS)
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+		if numUpdates > 0 {
+			// OpenGL settings
+			gl.Enable(gl.DEPTH_TEST)
+			gl.Enable(gl.CULL_FACE)
+			gl.Enable(gl.BLEND)
+			gl.DepthFunc(gl.LESS)
+			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-		gl.CullFace(gl.BACK)
-		gl.ClearColor(0.0, 0.0, 0.2, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			gl.CullFace(gl.BACK)
+			gl.ClearColor(0.0, 0.0, 0.2, 1.0)
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		app.Render()
+			app.Render()
 
-		failure.CheckOpenGLError()
+			failure.CheckOpenGLError()
 
-		window.SwapBuffers()
-		glfw.PollEvents()
-
-		for glfw.GetTime()-previousTime < updateRate {
-			// Throttle the update rate if the game is running faster than max FPS
-			// Only necessary on Windows for some reason.
+			window.SwapBuffers()
+			glfw.PollEvents()
 		}
 	}
 }

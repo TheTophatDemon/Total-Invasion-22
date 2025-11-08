@@ -1,6 +1,4 @@
 # TODO
-- Make game tick speed more stable
-- Add bars end shape to smooth out collision
 - Optimize memory usage of particle effects
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages
