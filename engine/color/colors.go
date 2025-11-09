@@ -12,6 +12,7 @@ var (
 	Blue        = Color{B: 1.0, A: 1.0}
 	Magenta     = Color{R: 1.0, B: 1.0, A: 1.0}
 	White       = Color{R: 1.0, G: 1.0, B: 1.0, A: 1.0}
+	Yellow      = Color{R: 1.0, G: 1.0, B: 0.0, A: 1.0}
 	Black       = Color{A: 1.0}
 	Transparent = Color{}
 )

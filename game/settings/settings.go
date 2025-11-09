@@ -21,6 +21,13 @@ const (
 )
 
 const (
+	// Menu actions
+	ActionMenuDown    input.Action = "menuDown"
+	ActionMenuUp      input.Action = "menuUp"
+	ActionMenuConfirm input.Action = "menuConfirm"
+	ActionMenuCancel  input.Action = "menuCancel"
+
+	// In game actions
 	ActionForward   input.Action = "moveForward"
 	ActionBack      input.Action = "moveBack"
 	ActionLeft      input.Action = "moveLeft"
