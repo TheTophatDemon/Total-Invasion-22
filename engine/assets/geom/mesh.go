@@ -10,6 +10,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -227,6 +228,7 @@ func (m *Mesh) Bind() {
 		gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idxBuffer)
 		m.verts.BindAttributes()
+		failure.CheckOpenGLError()
 	}
 }
 
@@ -246,6 +248,7 @@ func (m *Mesh) Upload() {
 		//Create VAO
 		gl.GenVertexArrays(1, &m.vertArray)
 		gl.BindVertexArray(m.vertArray)
+		failure.CheckOpenGLError()
 
 		//Create buffers
 
@@ -253,6 +256,7 @@ func (m *Mesh) Upload() {
 		gl.GenBuffers(1, &m.vertBuffer)
 		gl.BindBuffer(gl.ARRAY_BUFFER, m.vertBuffer)
 		gl.BufferData(gl.ARRAY_BUFFER, len(data)*int(unsafe.Sizeof(data[0])), gl.Ptr(data), gl.STATIC_DRAW)
+		failure.CheckOpenGLError()
 
 		//Index buffer
 		gl.GenBuffers(1, &m.idxBuffer)
@@ -261,6 +265,7 @@ func (m *Mesh) Upload() {
 			len(m.inds)*int(unsafe.Sizeof(m.inds[0])), //Size in bytes of buffer data
 			gl.Ptr(m.inds),
 			gl.STATIC_DRAW)
+		failure.CheckOpenGLError()
 	}
 
 	m.uploaded = true
@@ -272,6 +277,7 @@ func (m *Mesh) DrawAll() {
 	}
 	if len(m.inds) > 0 {
 		gl.DrawElementsWithOffset(m.primitiveType, int32(len(m.inds)), gl.UNSIGNED_INT, 0)
+		failure.CheckOpenGLError()
 	}
 }
 
@@ -281,6 +287,7 @@ func (m *Mesh) DrawGroup(name string) error {
 		return fmt.Errorf("Group not found")
 	}
 	gl.DrawElementsWithOffset(m.primitiveType, int32(group.Length), gl.UNSIGNED_INT, uintptr(group.Offset)*unsafe.Sizeof(m.inds[0]))
+	failure.CheckOpenGLError()
 	return nil
 }
 

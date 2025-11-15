@@ -18,6 +18,8 @@ type (
 	Float interface {
 		float32 | float64
 	}
+
+	Radians float32
 )
 
 func Clamp[N Number](val, min, max N) N {

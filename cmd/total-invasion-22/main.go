@@ -21,12 +21,15 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
+	"tophatdemon.com/total-invasion-ii/game/screens"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world"
 )
 
 type App struct {
 	world        *world.World
+	renderQueue  ui.RenderQueue
+	screen       *screens.Screen
 	loadingMap   game.MapChangeSignal
 	loadingTimer timer.Timer // Waits until the loading screen renders to load the map
 }
@@ -36,17 +39,28 @@ func (app *App) Update(deltaTime float32) {
 	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
 	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
-	if app.world != nil {
+	switch true {
+	case app.screen != nil:
+		app.screen.Layout(&app.renderQueue, deltaTime)
+	case app.world != nil:
 		app.world.Update(deltaTime)
-	} else if app.loadingTimer.Update(deltaTime) {
+	case app.loadingTimer.Update(deltaTime):
 		app.LoadGame(app.loadingMap)
 	}
 }
 
 func (app *App) Render() {
-	if app.world != nil {
+	switch true {
+	case app.screen != nil:
+		// Setup 2D render context
+		renderContext := render.Context{
+			View:       mgl32.Ident4(),
+			Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
+		}
+		app.renderQueue.Render(&renderContext)
+	case app.world != nil:
 		app.world.Render()
-	} else {
+	default:
 		// Draw the loading screen
 		renderContext := render.Context{
 			View:       mgl32.Ident4(),
@@ -54,10 +68,15 @@ func (app *App) Render() {
 		}
 		loadingScreenTex := cache.GetTexture("assets/textures/ui/loading_screen_" + settings.Current.Locale + ".png")
 		gl.CullFace(gl.FRONT)
-		box := ui.NewBoxFull(math2.Rect{
-			Width:  settings.UIWidth(),
-			Height: settings.UIHeight(),
-		}, loadingScreenTex, color.White, 1.0)
+		box := ui.NewBoxFull(
+			math2.Rect{
+				Width:  settings.UIWidth(),
+				Height: settings.UIHeight(),
+			},
+			loadingScreenTex,
+			color.White,
+			10.0,
+		)
 		box.Render(&renderContext)
 	}
 }
@@ -81,7 +100,6 @@ func (app *App) LoadGame(sig game.MapChangeSignal) {
 	log.Println("Loading game at map ", sig.NextMapPath)
 
 	cache.Reset()
-	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	world, err := world.NewWorld(app, sig.NextMapPath, sig)
 	if err != nil {
@@ -152,15 +170,26 @@ func main() {
 	input.BindActionCharSequence(settings.ActionLaunchEditor, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT})                         //TDJOMT
 	input.BindActionCharSequence(settings.ActionSpawnChicken, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC})                                    //TDKFC
 
-	mapName := settings.Current.Debug.StartMap
-	if len(mapName) == 0 {
-		mapName = "assets/maps/e1m1-genocide-carnival.te3"
-	}
+	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
+	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
+	input.BindActionKey(settings.ActionMenuConfirm, glfw.KeyEnter)
+	input.BindActionKey(settings.ActionMenuCancel, glfw.KeyEscape)
 
-	app := &App{}
-	app.ProcessSignal(game.MapChangeSignal{
-		NextMapPath: mapName,
-	})
+	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
+
+	titleScreen := screens.Screen{}
+	titleScreen.InitTitleScreen(mgl32.Vec2{32.0, 32.0}, false)
+
+	app := &App{
+		screen: &titleScreen,
+	}
+	// mapName := settings.Current.Debug.StartMap
+	// if len(mapName) == 0 {
+	// 	mapName = "assets/maps/e1m1-genocide-carnival.te3"
+	// }
+	// app.ProcessSignal(game.MapChangeSignal{
+	// 	NextMapPath: mapName,
+	// })
 	engine.Run(app)
 
 	// memProf, err := os.Create("memory_profile.pprof")

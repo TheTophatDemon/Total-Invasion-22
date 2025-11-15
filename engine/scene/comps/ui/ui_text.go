@@ -243,6 +243,8 @@ func (txt *Text) Mesh() (*geom.Mesh, bool) {
 		if len(boxes) != len(chars) {
 			failure.LogErrWithLocation("boxes(%v) and chars(%v) arrays mismatch for \"%v\"", len(boxes), len(chars), txt.Text())
 			return nil, false
+		} else if len(boxes) == 0 && txt.Settings.Text != "" {
+			failure.LogWarningWithLocation("non-empty text element could not generate any vertices")
 		}
 
 		// Regenerate text mesh

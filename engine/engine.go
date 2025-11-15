@@ -37,6 +37,11 @@ func InDebugMode() bool {
 	return debugMode
 }
 
+func ScreenSize() (width, height int) {
+	width, height = window.GetFramebufferSize()
+	return
+}
+
 func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) error {
 	err := glfw.Init()
 	if err != nil {
