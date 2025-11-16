@@ -12,11 +12,9 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -68,14 +66,12 @@ func (app *App) Render() {
 		}
 		loadingScreenTex := cache.GetTexture("assets/textures/ui/loading_screen_" + settings.Current.Locale + ".png")
 		gl.CullFace(gl.FRONT)
-		box := ui.NewBoxFull(
-			math2.Rect{
-				Width:  settings.UIWidth(),
-				Height: settings.UIHeight(),
+		box := ui.NewBox(
+			ui.Transform{
+				Size:  mgl32.Vec2{settings.UIWidth(), settings.UIHeight()},
+				Depth: 10.0,
 			},
 			loadingScreenTex,
-			color.White,
-			10.0,
 		)
 		box.Render(&renderContext)
 	}

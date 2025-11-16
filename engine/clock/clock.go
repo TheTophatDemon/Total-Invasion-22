@@ -1,3 +1,5 @@
+// Modified by The Tophat Demon 2025
+
 // Copyright 2017 The Ebiten Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +43,8 @@ var (
 	lastUpdated int64
 	fpsCount    = 0
 	tpsCount    = 0
+
+	globalTickCount int64
 
 	m sync.Mutex
 )
@@ -152,6 +156,8 @@ func UpdateFrame() int {
 	}
 	updateFPSAndTPS(n, c)
 
+	globalTickCount += int64(c)
+
 	return c
 }
 
@@ -165,4 +171,9 @@ func TPS() int {
 	m.Lock()
 	defer m.Unlock()
 	return tps
+}
+
+// Returns the number of updates that have occured since the start of the application
+func GlobalTickCount() int64 {
+	return globalTickCount
 }

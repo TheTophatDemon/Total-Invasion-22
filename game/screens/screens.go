@@ -8,46 +8,48 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type Screen struct {
 	position      mgl32.Vec2
 	menuSelection int
-	menuTexts     []ui.Text
+	menuTexts     []ui.Element
 	menuSpacing   float32
-	cursor        ui.Box
+	cursor        ui.Element
 	onSelect      func(item string)
 }
 
 func (scr *Screen) init(position mgl32.Vec2, menuItems []string) {
 	*scr = Screen{
 		position:  position,
-		menuTexts: make([]ui.Text, len(menuItems)),
+		menuTexts: make([]ui.Element, len(menuItems)),
 	}
 
 	scr.menuSpacing = 24 * settings.UIScale()
 
-	scr.cursor = ui.NewBoxFull(math2.Rect{
-		Width: 16, Height: 16,
-	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"), color.White, 10.0)
+	scr.cursor = ui.NewBox(ui.Transform{
+		Size:   mgl32.Vec2{16.0, 16.0},
+		Origin: ui.Ratios{0.5, 0.5},
+		Depth:  10,
+	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
 	for i, text := range menuItems {
-		scr.menuTexts[i] = ui.Text{
+		scr.menuTexts[i] = ui.Element{
 			Transform: ui.Transform{
-				Dest: math2.Rect{
-					X:      position[0] + (24.0 * settings.UIScale()),
-					Y:      position[1] + (scr.menuSpacing * float32(i)),
-					Width:  (settings.UIWidth() - position[0] - 24.0),
-					Height: scr.menuSpacing,
+				Position: mgl32.Vec2{
+					position[0] + (24.0 * settings.UIScale()),
+					position[1] + (scr.menuSpacing * float32(i)),
 				},
+				Size: mgl32.Vec2{
+					(settings.UIWidth() - position[0] - 24.0),
+					24.0,
+				},
+				Origin: ui.Ratios{0.0, 0.5},
 			},
-			Settings: ui.TextSettings{
-				Text:         text,
-				ShadowColor:  color.Black,
-				ShadowOffset: mgl32.Vec2{4.0, 4.0},
-			},
+			ShadowColor:  color.Black,
+			ShadowOffset: mgl32.Vec2{4.0, 4.0},
 		}
 		scr.menuTexts[i].SetText(text)
 	}
@@ -75,10 +77,10 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	// Draw cursor in front of menu items
-	scr.cursor.SetDestPosition(mgl32.Vec2{
+	scr.cursor.Position = mgl32.Vec2{
 		scr.position[0],
-		scr.position[1] + (scr.menuSpacing * float32(scr.menuSelection)) + (5.0 * settings.UIScale()),
-	})
-	scr.cursor.Transform.Rotation -= deltaTime * math.Pi * 4.0
+		scr.position[1] + (scr.menuSpacing * float32(scr.menuSelection)),
+	}
+	scr.cursor.Rotation -= math2.Radians(deltaTime * math.Pi * 4.0)
 	queue.Add(&scr.cursor)
 }

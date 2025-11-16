@@ -20,7 +20,16 @@ type (
 	}
 
 	Radians float32
+	Degrees float32
 )
+
+func ToRadians(deg Degrees) Radians {
+	return Radians(float32(deg) * math.Pi / 180.0)
+}
+
+func ToDegrees(rad Radians) Degrees {
+	return Degrees(float32(rad) * 180.0 / math.Pi)
+}
 
 func Clamp[N Number](val, min, max N) N {
 	if val < min {
@@ -99,6 +108,23 @@ func Vec2Max(a, b mgl32.Vec2) mgl32.Vec2 {
 	return mgl32.Vec2{
 		max(a[0], b[0]),
 		max(a[1], b[1]),
+	}
+}
+
+// Element wise multiplication for Vec2
+func ElemMul2(a, b mgl32.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{
+		a[0] * b[0],
+		a[1] * b[1],
+	}
+}
+
+// Element wise multiplication for Vec3
+func ElemMul3(a, b mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		a[0] * b[0],
+		a[1] * b[1],
+		a[2] * b[2],
 	}
 }
 

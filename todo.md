@@ -1,10 +1,13 @@
 # TODO
+- Title screen
+  - Mouse controls
+  - Debug drawing bounding boxes for text
+  - Main menu actions
+  - Background image
 - Optimize memory usage of particle effects
 - Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
-- Title screen
-  - Background image
 - Modify loading screen graphic to be more on-model
 - Player hit noise
 - Chicken cannon secondary attack
