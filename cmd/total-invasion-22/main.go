@@ -169,6 +169,7 @@ func main() {
 	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
 	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
 	input.BindActionKey(settings.ActionMenuConfirm, glfw.KeyEnter)
+	// input.BindActionMouseButton(settings.ActionMenuConfirm, glfw.MouseButton1)
 	input.BindActionKey(settings.ActionMenuCancel, glfw.KeyEscape)
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")

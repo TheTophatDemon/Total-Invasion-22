@@ -83,6 +83,10 @@ func (r Rect) Vec4() mgl32.Vec4 {
 	return mgl32.Vec4{r.X, r.Y, r.Width, r.Height}
 }
 
+func (r Rect) ContainsPoint(point mgl32.Vec2) bool {
+	return point[0] >= r.X && point[1] >= r.Y && point[0] < r.X+r.Width && point[1] < r.Y+r.Height
+}
+
 func (tri Triangle) Plane() Plane {
 	normal := tri[1].Sub(tri[0]).Cross(tri[2].Sub(tri[0])).Normalize()
 	return Plane{

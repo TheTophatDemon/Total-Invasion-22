@@ -18,18 +18,21 @@ const (
 	MouseDeadZone           = 0.05
 )
 
+// Maximum number of bindings allowed per action.
+const MaxBindCount = 2
+
 const (
 	txtNoAction string = "WARNING: Action %v not bound.\n"
 )
 
-var bindings map[Action]Binding
+var bindingMap map[Action][MaxBindCount]Binding
 var bindingsWerePressed map[Action]bool
 
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 
 func init() {
-	bindings = make(map[Action]Binding)
+	bindingMap = make(map[Action][MaxBindCount]Binding)
 	bindingsWerePressed = make(map[Action]bool)
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
 }
@@ -46,8 +49,15 @@ func Update() {
 	}
 	mousePrevX, mousePrevY = mousePosX, mousePosY
 
-	for action, binding := range bindings {
-		bindingsWerePressed[action] = binding.IsPressed()
+	for action, bindings := range bindingMap {
+		anyPressed := false
+		for _, binding := range bindings {
+			if binding.IsPressed() {
+				anyPressed = true
+				break
+			}
+		}
+		bindingsWerePressed[action] = anyPressed
 	}
 }
 
@@ -68,6 +78,10 @@ func MousePosition() mgl32.Vec2 {
 	return mgl32.Vec2{float32(x), float32(y)}
 }
 
+func MouseDelta() mgl32.Vec2 {
+	return mgl32.Vec2{float32(mouseDeltaX), float32(mouseDeltaY)}
+}
+
 func SetMousePosition(x, y float32) {
 	mousePrevX = float64(x)
 	mousePrevY = float64(y)
@@ -76,89 +90,128 @@ func SetMousePosition(x, y float32) {
 }
 
 func BindActionKey(action Action, key glfw.Key) {
-	bindings[action] = &KeyBinding{key}
+	appendBinding(action, &KeyBinding{key})
 	bindingsWerePressed[action] = false
 }
 
 func BindActionMouseButton(action Action, button glfw.MouseButton) {
-	bindings[action] = &MouseButtonBinding{button}
+	appendBinding(action, &MouseButtonBinding{button})
 	bindingsWerePressed[action] = false
 }
 
 func BindActionMouseMove(action Action, axis MouseAxis, sensitivity float32) {
-	bindings[action] = &MouseMovementBinding{axis, sensitivity}
+	appendBinding(action, &MouseMovementBinding{axis, sensitivity})
 	bindingsWerePressed[action] = false
 }
 
 func BindActionCharSequence(action Action, sequence []glfw.Key) {
-	bindings[action] = &CharSequenceBinding{sequence: sequence, progress: 0}
+	appendBinding(action, &CharSequenceBinding{sequence: sequence, progress: 0})
 	bindingsWerePressed[action] = false
 }
 
 // Returns booleans indicating if the action was just pressed, just released, or is otherwise being held down.
 func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) {
-	bind, ok := bindings[action]
-	wasPressed, ok2 := bindingsWerePressed[action]
-	if !ok || !ok2 {
+	wasPressed, ok := bindingsWerePressed[action]
+	if !ok {
 		log.Printf(txtNoAction, action)
 		return
 	}
-	pressed = bind.IsPressed()
+	pressed = IsActionPressed(action)
 	justPressed = pressed && !wasPressed
 	justReleased = !pressed && wasPressed
 	return
 }
 
 func IsActionPressed(action Action) bool {
-	bind, ok := bindings[action]
+	bindings, ok := bindingMap[action]
 	if !ok {
 		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
-	return bind.IsPressed()
+	for _, bind := range bindings {
+		if bind.IsPressed() {
+			return true
+		}
+	}
+	return false
 }
 
 func IsActionJustPressed(action Action) bool {
-	bind, ok := bindings[action]
+	bindings, ok := bindingMap[action]
 	wasPressed, ok2 := bindingsWerePressed[action]
 	if !ok || !ok2 {
 		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
-	return bind.IsPressed() && !wasPressed
+	anyPressed := false
+	for _, bind := range bindings {
+		if bind.IsPressed() {
+			anyPressed = true
+			break
+		}
+	}
+	return anyPressed && !wasPressed
 }
 
 func IsActionJustReleased(action Action) bool {
-	bind, ok := bindings[action]
+	bindings, ok := bindingMap[action]
 	wasPressed, ok2 := bindingsWerePressed[action]
 	if !ok || !ok2 {
 		failure.LogErrWithLocation(txtNoAction, action)
 		return false
 	}
-	return !bind.IsPressed() && wasPressed
+	anyPressed := false
+	for _, bind := range bindings {
+		if bind.IsPressed() {
+			anyPressed = true
+			break
+		}
+	}
+	return !anyPressed && wasPressed
 }
 
 func ActionAxis(action Action) float32 {
-	bind, ok := bindings[action]
+	bindings, ok := bindingMap[action]
 	if !ok {
 		failure.LogErrWithLocation(txtNoAction, action)
 		return 0.0
 	}
-	return bind.Axis()
+	for _, bind := range bindings {
+		if axis := bind.Axis(); axis != 0.0 {
+			return axis
+		}
+	}
+	return 0.0
 }
 
-func ActionBinding(action Action) (Binding, bool) {
-	bind, ok := bindings[action]
-	return bind, ok
+func ActionBindings(action Action) ([MaxBindCount]Binding, bool) {
+	binds, ok := bindingMap[action]
+	return binds, ok
+}
+
+func IsMouseButtonDown(button glfw.MouseButton) bool {
+	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press {
-		for _, binding := range bindings {
-			csb, isCSB := binding.(*CharSequenceBinding)
-			if isCSB {
-				csb.OnKeyPress(key)
+		for _, bindings := range bindingMap {
+			for _, binding := range bindings {
+				csb, isCSB := binding.(*CharSequenceBinding)
+				if isCSB {
+					csb.OnKeyPress(key)
+				}
 			}
 		}
 	}
+}
+
+func appendBinding(action Action, newBinding Binding) {
+	bindings := bindingMap[action]
+	for b, binding := range bindings {
+		if binding == nil || b == len(bindings)-1 {
+			bindings[b] = newBinding
+		}
+	}
+	bindingMap[action] = bindings
 }

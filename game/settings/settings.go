@@ -165,11 +165,18 @@ func Localize(key string) string {
 	templ, err := template.New(key).
 		Funcs(template.FuncMap{
 			"binding": func(actionName string) string {
-				binding, ok := input.ActionBinding(input.Action(actionName))
-				if !ok || binding == nil {
+				bindings, ok := input.ActionBindings(input.Action(actionName))
+				if !ok {
 					return "UNKNOWN"
 				}
-				return binding.Name()
+				var name strings.Builder
+				for _, bind := range bindings {
+					if bind != nil {
+						name.WriteString(bind.Name())
+						name.WriteRune('/')
+					}
+				}
+				return name.String()
 			},
 		}).
 		Parse(localizedText)

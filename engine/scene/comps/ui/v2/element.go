@@ -84,6 +84,34 @@ func (el *Element) SetTextWithFont(text string, font *fonts.Font) {
 	el.font = font
 }
 
+func (el *Element) ShrinkToFitText() {
+	if el.Mesh == nil || !el.IsText() {
+		return
+	}
+	el.Size = el.Mesh.BoundingBox().Size().Vec2()
+}
+
+// Gets a displacement vector that goes from the element's origin to the mesh's origin
+func (el *Element) getDisplacement() mgl32.Vec2 {
+	if !el.IsText() {
+		bbox := el.Mesh.BoundingBox()
+		return bbox.Min.Vec2().Add(math2.ElemMul2(bbox.Size().Vec2(), mgl32.Vec2(el.Origin))).Mul(-1.0)
+	} else {
+		return math2.ElemMul2(el.Size, mgl32.Vec2(el.Origin)).Mul(-1.0)
+	}
+}
+
+// Returns the rectangle that the element occupies on the screen
+func (el *Element) OnScreenBox() math2.Rect {
+	min := el.Position.Add(el.getDisplacement())
+	return math2.Rect{
+		X:      min[0],
+		Y:      min[1],
+		Width:  el.Size[0],
+		Height: el.Size[1],
+	}
+}
+
 func (el *Element) Render(context *render.Context) {
 	if el.Mesh == nil {
 		failure.LogWarningWithLocation("UI element rendering without mesh")
@@ -119,14 +147,7 @@ func (el *Element) Render(context *render.Context) {
 		el.oldTransform = el.Transform
 
 		// Displace by origin
-		var displacement mgl32.Vec2
-		if !el.IsText() {
-			bbox := el.Mesh.BoundingBox()
-			displacement = bbox.Min.Vec2().Add(math2.ElemMul2(bbox.Size().Vec2(), mgl32.Vec2(el.Origin))).Mul(-1.0)
-		} else {
-			// Need to put the actual mesh in the middle of the bounding box somehow...
-			displacement = math2.ElemMul2(el.Size, mgl32.Vec2(el.Origin)).Mul(-1.0)
-		}
+		displacement := el.getDisplacement()
 		el.matrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
 
 		// Rotate

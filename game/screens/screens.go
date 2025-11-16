@@ -3,6 +3,7 @@ package screens
 import (
 	"math"
 
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -23,8 +24,9 @@ type Screen struct {
 
 func (scr *Screen) init(position mgl32.Vec2, menuItems []string) {
 	*scr = Screen{
-		position:  position,
-		menuTexts: make([]ui.Element, len(menuItems)),
+		position:      position,
+		menuTexts:     make([]ui.Element, len(menuItems)),
+		menuSelection: -1,
 	}
 
 	scr.menuSpacing = 24 * settings.UIScale()
@@ -52,6 +54,7 @@ func (scr *Screen) init(position mgl32.Vec2, menuItems []string) {
 			ShadowOffset: mgl32.Vec2{4.0, 4.0},
 		}
 		scr.menuTexts[i].SetText(text)
+		scr.menuTexts[i].ShrinkToFitText()
 	}
 }
 
@@ -62,12 +65,22 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		scr.menuSelection = (scr.menuSelection + len(scr.menuTexts) - 1) % len(scr.menuTexts)
 	}
 
-	if scr.onSelect != nil && input.IsActionJustPressed(settings.ActionMenuConfirm) {
+	if scr.onSelect != nil && scr.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
 		scr.onSelect(scr.menuTexts[scr.menuSelection].Text())
+	}
+
+	if input.MouseDelta().LenSqr() > 0.1 {
+		scr.menuSelection = -1
 	}
 
 	for i := range scr.menuTexts {
 		elem := &scr.menuTexts[i]
+		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
+			scr.menuSelection = i
+			if scr.onSelect != nil && (input.IsMouseButtonDown(glfw.MouseButton1) || input.IsMouseButtonDown(glfw.MouseButton2)) {
+				scr.onSelect(elem.Text())
+			}
+		}
 		if scr.menuSelection == i {
 			elem.Color = color.Yellow
 		} else {
@@ -76,11 +89,13 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		queue.Add(elem)
 	}
 
-	// Draw cursor in front of menu items
-	scr.cursor.Position = mgl32.Vec2{
-		scr.position[0],
-		scr.position[1] + (scr.menuSpacing * float32(scr.menuSelection)),
+	if scr.menuSelection >= 0 {
+		// Draw cursor in front of menu items
+		scr.cursor.Position = mgl32.Vec2{
+			scr.position[0],
+			scr.position[1] + (scr.menuSpacing * float32(scr.menuSelection)),
+		}
+		scr.cursor.Rotation -= math2.Radians(deltaTime * math.Pi * 4.0)
+		queue.Add(&scr.cursor)
 	}
-	scr.cursor.Rotation -= math2.Radians(deltaTime * math.Pi * 4.0)
-	queue.Add(&scr.cursor)
 }

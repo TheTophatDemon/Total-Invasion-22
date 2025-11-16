@@ -1,6 +1,5 @@
 # TODO
 - Title screen
-  - Mouse controls
   - Debug drawing bounding boxes for text
   - Main menu actions
   - Background image
