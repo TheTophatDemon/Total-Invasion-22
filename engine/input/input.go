@@ -52,7 +52,7 @@ func Update() {
 	for action, bindings := range bindingMap {
 		anyPressed := false
 		for _, binding := range bindings {
-			if binding.IsPressed() {
+			if binding != nil && binding.IsPressed() {
 				anyPressed = true
 				break
 			}
@@ -129,7 +129,7 @@ func IsActionPressed(action Action) bool {
 		return false
 	}
 	for _, bind := range bindings {
-		if bind.IsPressed() {
+		if bind != nil && bind.IsPressed() {
 			return true
 		}
 	}
@@ -145,7 +145,7 @@ func IsActionJustPressed(action Action) bool {
 	}
 	anyPressed := false
 	for _, bind := range bindings {
-		if bind.IsPressed() {
+		if bind != nil && bind.IsPressed() {
 			anyPressed = true
 			break
 		}
@@ -162,7 +162,7 @@ func IsActionJustReleased(action Action) bool {
 	}
 	anyPressed := false
 	for _, bind := range bindings {
-		if bind.IsPressed() {
+		if bind != nil && bind.IsPressed() {
 			anyPressed = true
 			break
 		}
@@ -177,6 +177,9 @@ func ActionAxis(action Action) float32 {
 		return 0.0
 	}
 	for _, bind := range bindings {
+		if bind == nil {
+			continue
+		}
 		if axis := bind.Axis(); axis != 0.0 {
 			return axis
 		}
@@ -211,6 +214,7 @@ func appendBinding(action Action, newBinding Binding) {
 	for b, binding := range bindings {
 		if binding == nil || b == len(bindings)-1 {
 			bindings[b] = newBinding
+			break
 		}
 	}
 	bindingMap[action] = bindings

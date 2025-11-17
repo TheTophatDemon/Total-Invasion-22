@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -19,14 +20,16 @@ type Screen struct {
 	menuTexts     []ui.Element
 	menuSpacing   float32
 	cursor        ui.Element
-	onSelect      func(item string)
+	onSelect      func(item string) bool
+	app           engine.Observer
 }
 
-func (scr *Screen) init(position mgl32.Vec2, menuItems []string) {
+func (scr *Screen) init(app engine.Observer, position mgl32.Vec2, menuItems []string) {
 	*scr = Screen{
 		position:      position,
 		menuTexts:     make([]ui.Element, len(menuItems)),
 		menuSelection: -1,
+		app:           app,
 	}
 
 	scr.menuSpacing = 24 * settings.UIScale()
@@ -58,7 +61,7 @@ func (scr *Screen) init(position mgl32.Vec2, menuItems []string) {
 	}
 }
 
-func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
+func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) bool {
 	if input.IsActionJustPressed(settings.ActionMenuDown) {
 		scr.menuSelection = (scr.menuSelection + 1) % len(scr.menuTexts)
 	} else if input.IsActionJustPressed(settings.ActionMenuUp) {
@@ -66,7 +69,7 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	if scr.onSelect != nil && scr.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
-		scr.onSelect(scr.menuTexts[scr.menuSelection].Text())
+		return scr.onSelect(scr.menuTexts[scr.menuSelection].Text())
 	}
 
 	if input.MouseDelta().LenSqr() > 0.1 {
@@ -78,7 +81,7 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			scr.menuSelection = i
 			if scr.onSelect != nil && (input.IsMouseButtonDown(glfw.MouseButton1) || input.IsMouseButtonDown(glfw.MouseButton2)) {
-				scr.onSelect(elem.Text())
+				return scr.onSelect(elem.Text())
 			}
 		}
 		if scr.menuSelection == i {
@@ -98,4 +101,6 @@ func (scr *Screen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		scr.cursor.Rotation -= math2.Radians(deltaTime * math.Pi * 4.0)
 		queue.Add(&scr.cursor)
 	}
+
+	return true
 }

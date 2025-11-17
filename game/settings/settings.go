@@ -170,12 +170,17 @@ func Localize(key string) string {
 					return "UNKNOWN"
 				}
 				var name strings.Builder
+				count := 0
 				for _, bind := range bindings {
 					if bind != nil {
+						if count > 0 {
+							name.WriteRune('/')
+						}
 						name.WriteString(bind.Name())
-						name.WriteRune('/')
+						count++
 					}
 				}
+
 				return name.String()
 			},
 		}).

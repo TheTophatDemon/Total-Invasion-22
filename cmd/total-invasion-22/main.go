@@ -39,7 +39,9 @@ func (app *App) Update(deltaTime float32) {
 
 	switch true {
 	case app.screen != nil:
-		app.screen.Layout(&app.renderQueue, deltaTime)
+		if !app.screen.Layout(&app.renderQueue, deltaTime) {
+			app.screen = nil
+		}
 	case app.world != nil:
 		app.world.Update(deltaTime)
 	case app.loadingTimer.Update(deltaTime):
@@ -174,12 +176,11 @@ func main() {
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
+	app := &App{}
 	titleScreen := screens.Screen{}
-	titleScreen.InitTitleScreen(mgl32.Vec2{32.0, 32.0}, false)
+	titleScreen.InitTitleScreen(app, mgl32.Vec2{32.0, 32.0}, false)
 
-	app := &App{
-		screen: &titleScreen,
-	}
+	app.screen = &titleScreen
 	// mapName := settings.Current.Debug.StartMap
 	// if len(mapName) == 0 {
 	// 	mapName = "assets/maps/e1m1-genocide-carnival.te3"
