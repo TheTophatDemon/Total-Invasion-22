@@ -157,7 +157,8 @@ func (el *Element) Render(context *render.Context) {
 
 		if !el.IsText() {
 			// Scale
-			el.matrix = mgl32.Scale3D(el.Size[0], el.Size[1], 1.0).Mul4(el.matrix)
+			boxSize := el.Mesh.BoundingBox().Size()
+			el.matrix = mgl32.Scale3D(el.Size[0]/boxSize[0], el.Size[1]/boxSize[1], 1.0).Mul4(el.matrix)
 		}
 
 		// Apply shear

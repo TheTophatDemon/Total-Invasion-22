@@ -35,7 +35,7 @@ func (scr *Screen) init(app engine.Observer, position mgl32.Vec2, menuItems []st
 	scr.menuSpacing = 24 * settings.UIScale()
 
 	scr.cursor = ui.NewBox(ui.Transform{
-		Size:   mgl32.Vec2{16.0, 16.0},
+		Size:   mgl32.Vec2{32.0, 32.0},
 		Origin: ui.Ratios{0.5, 0.5},
 		Depth:  10,
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
