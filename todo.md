@@ -1,5 +1,4 @@
 # TODO
-- Upgrade Go & go-gl
 - Title screen
   - Intro
   - Music
