@@ -19,17 +19,18 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
-	"tophatdemon.com/total-invasion-ii/game/screens"
+	"tophatdemon.com/total-invasion-ii/game/menus"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world"
 )
 
 type App struct {
-	world        *world.World
-	renderQueue  ui.RenderQueue
-	screen       *screens.Screen
-	loadingMap   game.MapChangeSignal
-	loadingTimer timer.Timer // Waits until the loading screen renders to load the map
+	world                 *world.World
+	renderQueue           ui.RenderQueue
+	menu                  *menus.Menu
+	loadingMap            game.MapChangeSignal
+	loadingTimer          timer.Timer // Waits until the loading screen renders to load the map
+	titleScreenBackground ui.Element
 }
 
 func (app *App) Update(deltaTime float32) {
@@ -38,12 +39,24 @@ func (app *App) Update(deltaTime float32) {
 	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
 	switch true {
-	case app.screen != nil:
-		if !app.screen.Layout(&app.renderQueue, deltaTime) {
-			app.screen = nil
+	case app.menu != nil:
+		// Render title screen graphic
+		app.titleScreenBackground = ui.NewBox(
+			ui.Transform{Size: mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)}},
+			cache.GetTexture("assets/textures/ui/title_screen.png"),
+		)
+		app.renderQueue.Add(&app.titleScreenBackground)
+		app.menu.Layout(&app.renderQueue, deltaTime)
+		if app.world != nil && input.IsActionJustPressed(settings.ActionMenuCancel) {
+			input.TrapMouse()
+			app.menu = nil
 		}
 	case app.world != nil:
 		app.world.Update(deltaTime)
+		if input.IsActionJustPressed(settings.ActionMenuCancel) {
+			input.UntrapMouse()
+			app.menu = menus.NewTitleMenu(app, true)
+		}
 	case app.loadingTimer.Update(deltaTime):
 		app.LoadGame(app.loadingMap)
 	}
@@ -51,7 +64,7 @@ func (app *App) Update(deltaTime float32) {
 
 func (app *App) Render() {
 	switch true {
-	case app.screen != nil:
+	case app.menu != nil:
 		// Setup 2D render context
 		renderContext := render.Context{
 			View:       mgl32.Ident4(),
@@ -81,11 +94,17 @@ func (app *App) Render() {
 
 func (app *App) ProcessSignal(signal any) {
 	switch msg := signal.(type) {
+	case game.ResumeGameSignal:
+		if app.world != nil {
+			app.menu = nil
+			input.TrapMouse()
+		}
 	case game.MapChangeSignal:
 		if app.world != nil {
 			app.world.TearDown()
 		}
 		app.world = nil
+		app.menu = nil
 		app.loadingMap = msg
 		app.loadingTimer = timer.Timer{
 			Interval: 0.5, // Make the player wait at least a bit to look at my amazing artwork ;-)
@@ -144,7 +163,6 @@ func main() {
 	input.BindActionKey(settings.ActionLeft, glfw.KeyA)
 	input.BindActionKey(settings.ActionRight, glfw.KeyD)
 	input.BindActionKey(settings.ActionSlow, glfw.KeyLeftShift)
-	input.BindActionKey(settings.ActionTrapMouse, glfw.KeyEscape)
 	input.BindActionKey(settings.ActionUse, glfw.KeyE)
 	input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, settings.Current.MouseSensitivity)
 	input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, settings.Current.MouseSensitivity)
@@ -171,16 +189,14 @@ func main() {
 	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
 	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
 	input.BindActionKey(settings.ActionMenuConfirm, glfw.KeyEnter)
-	// input.BindActionMouseButton(settings.ActionMenuConfirm, glfw.MouseButton1)
+	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton1)
+	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton2)
 	input.BindActionKey(settings.ActionMenuCancel, glfw.KeyEscape)
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	app := &App{}
-	titleScreen := screens.Screen{}
-	titleScreen.InitTitleScreen(app, mgl32.Vec2{32.0, 32.0}, false)
-
-	app.screen = &titleScreen
+	app.menu = menus.NewTitleMenu(app, false)
 	// mapName := settings.Current.Debug.StartMap
 	// if len(mapName) == 0 {
 	// 	mapName = "assets/maps/e1m1-genocide-carnival.te3"

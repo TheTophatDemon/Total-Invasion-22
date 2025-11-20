@@ -12,7 +12,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -201,20 +200,9 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 func (world *World) Update(deltaTime float32) {
 	world.removalQueue = world.removalQueue[0:0]
 
-	// Free mouse
-	if input.IsActionJustPressed(settings.ActionTrapMouse) {
-		if input.IsMouseTrapped() {
-			input.UntrapMouse()
-		} else {
-			input.TrapMouse()
-		}
-	}
-
 	// Create BSP tree
-	{
-		it := world.IterBodies()
-		world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
-	}
+	it := world.IterBodies()
+	world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
 
 	// Update entities
 	world.UpdateStores(deltaTime)

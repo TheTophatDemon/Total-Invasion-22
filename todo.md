@@ -1,24 +1,24 @@
 # TODO
+- Upgrade Go & go-gl
 - Title screen
-  - Debug drawing bounding boxes for text
-  - Main menu actions
-  - Background image
+  - Intro
+  - Music
+  - Increase font size
+  - Settings menu
+  - Modify loading screen graphic to be more on-model
 - Optimize memory usage of particle effects
-- Allow maps to be loaded just by their numbered codes
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
-- Modify loading screen graphic to be more on-model
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
 - Dialog Cutscene
   - Song
 - Demo end screen
-- Settings menu
-- Gamepad support (for Steam Deck)
 - Saving / checkpoints
 - Re-record enemy voices
 - Make enemies able to hear player behind walls as long as space is connected.
+- Gamepad support (for Steam Deck)
 - Fix flickering artifacts on walls. Consider greedy meshing.
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize world raycasts using the bsp tree

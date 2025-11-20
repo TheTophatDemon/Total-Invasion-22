@@ -55,7 +55,11 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
+	if debugMode {
+		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
+	} else {
+		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.False)
+	}
 	window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
 	if err != nil {
 		return err

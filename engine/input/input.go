@@ -63,10 +63,11 @@ func Update() {
 
 func TrapMouse() {
 	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	mousePrevX, mousePrevY = glfw.GetCurrentContext().GetCursorPos()
 }
 
 func UntrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 }
 
 func IsMouseTrapped() bool {

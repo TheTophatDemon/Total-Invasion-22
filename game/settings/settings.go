@@ -25,18 +25,18 @@ const (
 	ActionMenuDown    input.Action = "menuDown"
 	ActionMenuUp      input.Action = "menuUp"
 	ActionMenuConfirm input.Action = "menuConfirm"
+	ActionMenuClick   input.Action = "menuClick"
 	ActionMenuCancel  input.Action = "menuCancel"
 
 	// In game actions
-	ActionForward   input.Action = "moveForward"
-	ActionBack      input.Action = "moveBack"
-	ActionLeft      input.Action = "moveLeft"
-	ActionRight     input.Action = "moveRight"
-	ActionSlow      input.Action = "slowDown"
-	ActionLookHorz  input.Action = "lookHorz"
-	ActionLookVert  input.Action = "lookVert"
-	ActionTrapMouse input.Action = "trapMouse"
-	ActionFire      input.Action = "fire"
+	ActionForward  input.Action = "moveForward"
+	ActionBack     input.Action = "moveBack"
+	ActionLeft     input.Action = "moveLeft"
+	ActionRight    input.Action = "moveRight"
+	ActionSlow     input.Action = "slowDown"
+	ActionLookHorz input.Action = "lookHorz"
+	ActionLookVert input.Action = "lookVert"
+	ActionFire     input.Action = "fire"
 
 	// Weapon selection actions should be in the same order as
 	// the WeaponType constants.
@@ -201,13 +201,14 @@ func Localize(key string) string {
 	return finalText.String()
 }
 
+// Deprecated: UI Elements should not normally be scaled with the screen size.
 func UIScale() float32 {
 	return float32(Current.WindowHeight) / 480
 }
 
 // Returns the size the sprites on the HUD should be scaled to.
 func SpriteScale() float32 {
-	return UIScale() * 2.0
+	return float32(Current.WindowHeight) / 240
 }
 
 func UIWidth() float32 {

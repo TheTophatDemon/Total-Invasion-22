@@ -8,5 +8,6 @@ type (
 		ArmorAmount     float32
 		EquippedWeapons [WeaponCount]bool
 	}
+	ResumeGameSignal    struct{}
 	TeleportationSignal struct{}
 )
