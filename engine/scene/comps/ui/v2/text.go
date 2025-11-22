@@ -9,9 +9,21 @@ import (
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
+
+func NewText(transform Transform, text string, colr color.Color) Element {
+	elem := Element{
+		Transform:    transform,
+		ShadowColor:  color.Black,
+		ShadowOffset: mgl32.Vec2{4.0, 4.0},
+		Color:        colr,
+	}
+	elem.SetText(text)
+	return elem
+}
 
 // Calculates positions for each character's rectangle
 func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {

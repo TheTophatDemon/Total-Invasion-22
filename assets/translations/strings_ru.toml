@@ -1,3 +1,12 @@
+# Title Screen
+startPrompt = "Нажмите любую кнопку"
+resumeGame = "Продолжить Игру"
+newGame = "Новая Игра"
+loadGame = "Загрузить Игру"
+saveGame = "Сохранить Игру"
+options = "Настройки"
+exit = "Выйти"
+
 # Doors
 doorStuck = "Дверь не движется..."
 doorSwitch = "Дверь открывается не отсюда..."

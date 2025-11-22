@@ -27,6 +27,7 @@ const (
 
 var bindingMap map[Action][MaxBindCount]Binding
 var bindingsWerePressed map[Action]bool
+var anythingPressed bool
 
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
@@ -39,9 +40,11 @@ func init() {
 
 func Init() {
 	glfw.GetCurrentContext().SetKeyCallback(keyCallback)
+	glfw.GetCurrentContext().SetMouseButtonCallback(mouseCallback)
 }
 
 func Update() {
+	anythingPressed = false
 	mousePosX, mousePosY := glfw.GetCurrentContext().GetCursorPos()
 	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
 		mouseDeltaX = mousePosX - mousePrevX
@@ -197,8 +200,13 @@ func IsMouseButtonDown(button glfw.MouseButton) bool {
 	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press
 }
 
+func IsAnythingPressed() bool {
+	return anythingPressed
+}
+
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press {
+		anythingPressed = true
 		for _, bindings := range bindingMap {
 			for _, binding := range bindings {
 				csb, isCSB := binding.(*CharSequenceBinding)
@@ -207,6 +215,12 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 				}
 			}
 		}
+	}
+}
+
+func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+	if action == glfw.Press {
+		anythingPressed = true
 	}
 }
 

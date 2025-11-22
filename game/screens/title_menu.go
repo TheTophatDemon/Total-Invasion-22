@@ -1,4 +1,4 @@
-package menus
+package screens
 
 import (
 	"os"
@@ -10,12 +10,12 @@ import (
 )
 
 var titleScreenMenus = [...]string{
-	"Resume Game",
-	"New Game",
-	"Load Game",
-	"Save Game",
-	"Options",
-	"Exit",
+	"resumeGame",
+	"newGame",
+	"loadGame",
+	"saveGame",
+	"options",
+	"exit",
 }
 
 func NewTitleMenu(app engine.Observer, inGame bool) *Menu {
@@ -29,19 +29,22 @@ func NewTitleMenu(app engine.Observer, inGame bool) *Menu {
 		pos[1] -= 36.0
 	}
 	menu := newMenu(app, pos, menuItems)
+	if inGame {
+		menu.menuSelection = 0
+	}
 	menu.onSelect = menu.onTitleScreenSelect
 	return menu
 }
 
-func (menu *Menu) onTitleScreenSelect(item string) {
-	switch item {
-	case titleScreenMenus[0]:
+func (menu *Menu) onTitleScreenSelect(itemIndex int) {
+	switch menu.menuTexts[itemIndex].Text() {
+	case settings.Localize("resumeGame"):
 		menu.app.ProcessSignal(game.ResumeGameSignal{})
-	case titleScreenMenus[1]:
+	case settings.Localize("newGame"):
 		menu.app.ProcessSignal(game.MapChangeSignal{
 			NextMapPath: "assets/maps/e1m1.te3",
 		})
-	case titleScreenMenus[5]:
+	case settings.Localize("exit"):
 		os.Exit(0)
 	}
 }

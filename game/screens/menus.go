@@ -1,4 +1,4 @@
-package menus
+package screens
 
 import (
 	"math"
@@ -20,7 +20,7 @@ type Menu struct {
 	menuSpacing   float32
 	cursor        ui.Element
 	title, fade   ui.Element
-	onSelect      func(item string)
+	onSelect      func(itemIndex int)
 	app           engine.Observer
 }
 
@@ -40,8 +40,8 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
 	for i, text := range menuItems {
-		menu.menuTexts[i] = ui.Element{
-			Transform: ui.Transform{
+		menu.menuTexts[i] = ui.NewText(
+			ui.Transform{
 				Position: mgl32.Vec2{
 					position[0] + (36),
 					position[1] + (menu.menuSpacing * float32(i)),
@@ -53,10 +53,9 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 				Origin: ui.Ratios{0.0, 0.5},
 				Depth:  10,
 			},
-			ShadowColor:  color.Black,
-			ShadowOffset: mgl32.Vec2{4.0, 4.0},
-		}
-		menu.menuTexts[i].SetText(text)
+			settings.Localize(text),
+			color.White,
+		)
 		menu.menuTexts[i].ShrinkToFitText()
 	}
 
@@ -86,7 +85,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	if menu.onSelect != nil && menu.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
-		menu.onSelect(menu.menuTexts[menu.menuSelection].Text())
+		menu.onSelect(menu.menuSelection)
 	}
 
 	if input.MouseDelta().LenSqr() > 0.1 {
@@ -98,7 +97,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.menuSelection = i
 			if menu.onSelect != nil && input.IsActionJustReleased(settings.ActionMenuClick) {
-				menu.onSelect(elem.Text())
+				menu.onSelect(i)
 			}
 		}
 		if menu.menuSelection == i {

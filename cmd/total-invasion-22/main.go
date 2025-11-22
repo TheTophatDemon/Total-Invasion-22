@@ -19,7 +19,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
-	"tophatdemon.com/total-invasion-ii/game/menus"
+	"tophatdemon.com/total-invasion-ii/game/screens"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 	"tophatdemon.com/total-invasion-ii/game/world"
 )
@@ -27,10 +27,11 @@ import (
 type App struct {
 	world                 *world.World
 	renderQueue           ui.RenderQueue
-	menu                  *menus.Menu
+	screen                ui.Screen
 	loadingMap            game.MapChangeSignal
 	loadingTimer          timer.Timer // Waits until the loading screen renders to load the map
 	titleScreenBackground ui.Element
+	signalQueue           []any
 }
 
 func (app *App) Update(deltaTime float32) {
@@ -39,32 +40,40 @@ func (app *App) Update(deltaTime float32) {
 	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
 	switch true {
-	case app.menu != nil:
+	case app.screen != nil:
 		// Render title screen graphic
 		app.titleScreenBackground = ui.NewBox(
 			ui.Transform{Size: mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)}},
 			cache.GetTexture("assets/textures/ui/title_screen.png"),
 		)
 		app.renderQueue.Add(&app.titleScreenBackground)
-		app.menu.Layout(&app.renderQueue, deltaTime)
+		app.screen.Layout(&app.renderQueue, deltaTime)
 		if app.world != nil && input.IsActionJustPressed(settings.ActionMenuCancel) {
 			input.TrapMouse()
-			app.menu = nil
+			app.screen = nil
 		}
 	case app.world != nil:
 		app.world.Update(deltaTime)
 		if input.IsActionJustPressed(settings.ActionMenuCancel) {
 			input.UntrapMouse()
-			app.menu = menus.NewTitleMenu(app, true)
+			app.screen = screens.NewTitleMenu(app, true)
 		}
 	case app.loadingTimer.Update(deltaTime):
 		app.LoadGame(app.loadingMap)
+	}
+
+	// Process signals
+	for len(app.signalQueue) > 0 {
+		lastIdx := len(app.signalQueue) - 1
+		signal := app.signalQueue[lastIdx]
+		app.signalQueue = app.signalQueue[:lastIdx]
+		app.executeSignal(signal)
 	}
 }
 
 func (app *App) Render() {
 	switch true {
-	case app.menu != nil:
+	case app.screen != nil:
 		// Setup 2D render context
 		renderContext := render.Context{
 			View:       mgl32.Ident4(),
@@ -93,10 +102,14 @@ func (app *App) Render() {
 }
 
 func (app *App) ProcessSignal(signal any) {
+	app.signalQueue = append(app.signalQueue, signal)
+}
+
+func (app *App) executeSignal(signal any) {
 	switch msg := signal.(type) {
 	case game.ResumeGameSignal:
 		if app.world != nil {
-			app.menu = nil
+			app.screen = nil
 			input.TrapMouse()
 		}
 	case game.MapChangeSignal:
@@ -104,12 +117,14 @@ func (app *App) ProcessSignal(signal any) {
 			app.world.TearDown()
 		}
 		app.world = nil
-		app.menu = nil
+		app.screen = nil
 		app.loadingMap = msg
 		app.loadingTimer = timer.Timer{
 			Interval: 0.5, // Make the player wait at least a bit to look at my amazing artwork ;-)
 			MaxTicks: 1,
 		}
+	case game.ChangeScreenSignal:
+		app.screen = msg.Screen
 	}
 }
 
@@ -196,14 +211,14 @@ func main() {
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	app := &App{}
-	app.menu = menus.NewTitleMenu(app, false)
-	// mapName := settings.Current.Debug.StartMap
-	// if len(mapName) == 0 {
-	// 	mapName = "assets/maps/e1m1-genocide-carnival.te3"
-	// }
-	// app.ProcessSignal(game.MapChangeSignal{
-	// 	NextMapPath: mapName,
-	// })
+	mapName := settings.Current.Debug.StartMap
+	if len(mapName) == 0 {
+		app.screen = screens.NewIntroScreen(app)
+	} else {
+		app.executeSignal(game.MapChangeSignal{
+			NextMapPath: mapName,
+		})
+	}
 	engine.Run(app)
 
 	// memProf, err := os.Create("memory_profile.pprof")
