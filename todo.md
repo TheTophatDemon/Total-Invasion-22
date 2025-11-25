@@ -6,8 +6,6 @@
   - Add back text shadow
   - Settings menu
   - Modify loading screen graphic to be more on-model
-- Fix the weird framerate jittering
-  - I suspect it has to do with GLFW event handling
 - Optimize memory usage of particle effects
 - Eyeball messages
   - Drop some lore in the secret room on E1M2

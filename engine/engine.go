@@ -66,6 +66,8 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 	}
 
 	window.MakeContextCurrent()
+	glfw.SwapInterval(1)
+
 	input.Init()
 
 	tdaudio.Init()
@@ -106,8 +108,8 @@ func Run(app App) {
 			failure.CheckOpenGLError()
 
 			window.SwapBuffers()
-			glfw.PollEvents()
 		}
+		glfw.PollEvents()
 	}
 }
 
