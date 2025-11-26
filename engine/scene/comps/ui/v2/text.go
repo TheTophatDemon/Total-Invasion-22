@@ -8,25 +8,37 @@ import (
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-func NewText(transform Transform, text string, colr color.Color) Element {
+type TextConfig struct {
+	Align        TextAlign
+	Color        maybe.T[color.Color]
+	ShadowColor  maybe.T[color.Color] // Color of the drop shadow. Set to transparent to disable.
+	ShadowOffset maybe.T[mgl32.Vec2]
+	WrapWords    bool
+	Font         *fonts.Font
+}
+
+func NewText(transform Transform, text string, config TextConfig) Element {
 	elem := Element{
 		Transform:    transform,
-		ShadowColor:  color.Black,
-		ShadowOffset: mgl32.Vec2{4.0, 4.0},
-		Color:        colr,
+		ShadowColor:  config.ShadowColor.Or(settings.Current.TextShadowColor),
+		ShadowOffset: config.ShadowOffset.Or(mgl32.Vec2{4.0, 4.0}),
+		Color:        config.Color.Or(color.White),
 	}
-	elem.SetText(text)
+	elem.SetText(text, config)
 	return elem
 }
 
 // Calculates positions for each character's rectangle
-func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
+func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont.Char) {
 	var cursorX, cursorY float32
 	var prevRune rune = scanner.EOF
 
@@ -50,12 +62,12 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 		cursorX = 0.0
 		cursorY += float32(txt.font.Common.LineHeight)
 
-		if (txt.TextAlignment&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
+		if (config.Align&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
-			shiftAmount := (txt.Size[0] - (lastBox.X + lastBox.Width - 0.0)) // Amount of remaining space within the text's bounds
-			if (txt.TextAlignment & TextAlignCenterH) != 0 {
+			shiftAmount := (txt.Size[0] - (lastBox.X + lastBox.Width)) // Amount of remaining space within the text's bounds
+			if (config.Align & TextAlignCenterH) != 0 {
 				shiftAmount *= 0.5
 			}
 
@@ -109,14 +121,14 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 				break
 			}
 
-			if i == len(word)-runeWidth || !txt.WrapWords {
+			if i == len(word)-runeWidth || !config.WrapWords {
 				// Determine if the word should go on a new line
 				overflowsBounds := (charRect.X+charRect.Width >= txt.Size[0])
 				firstWordOnLine := (firstBox.X == 0.0)
 
 				if overflowsBounds && !firstWordOnLine {
 					// Remove the previous letters in this word
-					if txt.WrapWords {
+					if config.WrapWords {
 						boxes = boxes[:len(boxes)-runeIndex]
 						chars = chars[:len(chars)-runeIndex]
 						numCharsInLine -= runeIndex
@@ -154,7 +166,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	// `cursorY`` now defines the overall height of the text.
 
 	// Apply vertical alignment
-	if (txt.TextAlignment&TextAlignCenterV) != 0 && cursorY < txt.Size[1] {
+	if (config.Align&TextAlignCenterV) != 0 && cursorY < txt.Size[1] {
 		shift := txt.Size[1] - (cursorY / 2.0)
 		for i := range boxes {
 			boxes[i].Y += shift
@@ -166,7 +178,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 // Returns false and logs error if there is a failure.
-func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
+func (txt *Element) generateTextMesh(config TextConfig) (*geom.Mesh, bool) {
 	if txt.font == nil {
 		return nil, false
 	}
@@ -175,7 +187,7 @@ func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
 		txt.Mesh.Free()
 	}
 
-	boxes, chars := txt.generateTextBoxes()
+	boxes, chars := txt.generateTextBoxes(config)
 	if len(boxes) != len(chars) {
 		failure.LogErrWithLocation("boxes(%v) and chars(%v) arrays mismatch for \"%v\"", len(boxes), len(chars), txt.text)
 		return nil, false

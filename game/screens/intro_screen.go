@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -24,10 +25,11 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 	scr := &IntroScreen{
 		app: app,
 		title: ui.NewBox(ui.Transform{
-			Size:   mgl32.Vec2{960.0, 256.0},
-			Anchor: ui.Ratios{0.5, 0.0},
-			Origin: ui.Ratios{0.5, 1.0},
-			Depth:  50,
+			Size:     mgl32.Vec2{960.0, 256.0},
+			Anchor:   ui.Ratios{0.5, 0.0},
+			Origin:   ui.Ratios{0.5, 1.0},
+			Position: mgl32.Vec2{32.0, 0.0},
+			Depth:    50,
 		}, cache.GetTexture("assets/textures/ui/title.png")),
 		flash: ui.NewBox(ui.Transform{
 			Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
@@ -38,9 +40,8 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 			Anchor:   ui.Ratios{0.5, 1.0},
 			Origin:   ui.Ratios{0.5, 1.0},
 			Position: mgl32.Vec2{0.0, -48.0},
-		}, settings.Localize("startPrompt"), color.Yellow),
+		}, settings.Localize("startPrompt"), ui.TextConfig{Align: ui.TextAlignCenterH, Color: maybe.Some(color.Yellow)}),
 	}
-	scr.prompt.TextAlignment = ui.TextAlignCenterH
 	scr.flash.Color = color.White.WithAlpha(0.0)
 	scr.titleAnim = *gween.New(0.0, scr.title.Size[1], 1.0, ease.Linear) // Move title in from off screen
 	scr.flashAnim = *gween.NewSequence(

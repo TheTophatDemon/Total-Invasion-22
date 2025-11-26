@@ -2,8 +2,6 @@
 - Title screen
   - Music
   - Increase font size
-  - Fix text alignment
-  - Add back text shadow
   - Settings menu
   - Modify loading screen graphic to be more on-model
 - Optimize memory usage of particle effects

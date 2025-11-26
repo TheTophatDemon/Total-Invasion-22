@@ -43,7 +43,7 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 		menu.menuTexts[i] = ui.NewText(
 			ui.Transform{
 				Position: mgl32.Vec2{
-					position[0] + (36),
+					position[0] + 36,
 					position[1] + (menu.menuSpacing * float32(i)),
 				},
 				Size: mgl32.Vec2{
@@ -54,7 +54,7 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 				Depth:  10,
 			},
 			settings.Localize(text),
-			color.White,
+			ui.TextConfig{},
 		)
 		menu.menuTexts[i].ShrinkToFitText()
 	}

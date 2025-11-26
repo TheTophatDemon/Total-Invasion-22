@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -10,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
+	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -37,18 +39,16 @@ type Transform struct {
 
 type Element struct {
 	Transform
-	Color         color.Color
-	AnimPlayer    comps.AnimationPlayer
-	TextAlignment TextAlign
-	ShadowColor   color.Color // Color of the drop shadow. Set to transparent to disable.
-	ShadowOffset  mgl32.Vec2
-	WrapWords     bool // Whether text wrapping around the boundary is done by word instead of by character
-	Mesh          *geom.Mesh
-	Texture       *textures.Texture
-	font          *fonts.Font
-	text          string
-	matrix        mgl32.Mat4
-	oldTransform  Transform
+	Color        color.Color
+	AnimPlayer   comps.AnimationPlayer
+	ShadowColor  color.Color // Color of the drop shadow. Set to transparent to disable.
+	ShadowOffset mgl32.Vec2
+	Mesh         *geom.Mesh
+	Texture      *textures.Texture
+	font         *fonts.Font
+	text         string
+	matrix       mgl32.Mat4
+	oldTransform Transform
 }
 
 func NewBox(transform Transform, texture *textures.Texture) Element {
@@ -63,25 +63,20 @@ func (el *Element) IsText() bool {
 	return el.font != nil
 }
 
-func (el *Element) SetText(text string) {
-	el.SetTextWithFont(text, cache.DefaultFont)
+func (el *Element) SetText(text string, config TextConfig) {
+	if config.Font == nil {
+		el.font = cache.DefaultFont
+		el.Mesh = nil // Prevents previous mesh from getting freed by generateTextMesh()
+	}
+	el.Texture = cache.GetTexture(el.font.TexturePath())
+	if el.text != text {
+		defer el.generateTextMesh(config)
+	}
+	el.text = text
 }
 
 func (el *Element) Text() string {
 	return el.text
-}
-
-func (el *Element) SetTextWithFont(text string, font *fonts.Font) {
-	if font == nil {
-		font = cache.DefaultFont
-		el.Mesh = nil // Prevents previous mesh from getting freed by generateTextMesh()
-	}
-	el.Texture = cache.GetTexture(font.TexturePath())
-	if el.text != text {
-		defer el.generateTextMesh()
-	}
-	el.text = text
-	el.font = font
 }
 
 func (el *Element) ShrinkToFitText() {
@@ -127,13 +122,6 @@ func (el *Element) Render(context *render.Context) {
 	_ = shaders.UIShader.SetUniformInt(shaders.UniformTex, 0)
 	failure.CheckOpenGLError()
 
-	if el.Color == (color.Color{}) {
-		// Set default color if unset
-		el.Color = color.White
-	}
-	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.Color.Vector())
-	failure.CheckOpenGLError()
-
 	if el.Texture != nil {
 		el.Texture.Bind()
 		_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
@@ -176,14 +164,65 @@ func (el *Element) Render(context *render.Context) {
 		).Mul4(el.matrix)
 	}
 
+	el.Mesh.Bind()
+
+	// Draw drop shadow
+	if el.ShadowColor.A > 0.0 {
+		shadowMatrix := mgl32.Translate3D(el.ShadowOffset[0], el.ShadowOffset[1], 0.0).Mul4(el.matrix)
+		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
+		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.ShadowColor.Vector())
+		failure.CheckOpenGLError()
+		el.Mesh.DrawAll()
+	}
+
+	if el.Color == (color.Color{}) {
+		// Set default color if unset
+		el.Color = color.White
+	}
+	_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.Color.Vector())
+	failure.CheckOpenGLError()
+
 	_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.matrix)
 	failure.CheckOpenGLError()
 
-	el.Mesh.Bind()
 	el.Mesh.DrawAll()
 	failure.CheckOpenGLError()
 
-	// TODO: Generate drop shadow
+	if engine.InDebugMode() && input.IsMouseButtonDown(glfw.MouseButton3) {
+		var pozzy []mgl32.Vec3
 
+		if el.IsText() {
+			pozzy = []mgl32.Vec3{
+				{0.0, 0.0, 0.0},
+				{el.Size[0], 0.0, 0.0},
+				{el.Size[0], el.Size[1], 0.0},
+				{0.0, el.Size[1], 0.0},
+			}
+		} else {
+			pozzy = []mgl32.Vec3{
+				{-1.0, -1.0, 0.0},
+				{1.0, -1.0, 0.0},
+				{1.0, 1.0, 0.0},
+				{-1.0, 1.0, 0.0},
+			}
+		}
+		wireMesh := geom.CreateWireMesh(geom.Vertices{
+			Pos: pozzy,
+			Color: []mgl32.Vec4{
+				{1.0, 1.0, 1.0, 1.0},
+				{1.0, 1.0, 1.0, 1.0},
+				{1.0, 1.0, 1.0, 1.0},
+				{1.0, 1.0, 1.0, 1.0},
+			},
+		}, []uint32{0, 1, 1, 2, 2, 3, 3, 0})
+		shaders.DebugShader.Use()
+		wireMesh.Bind()
+		failure.CheckOpenGLError()
+		_ = context.SetUniforms(shaders.DebugShader)
+		_ = shaders.DebugShader.SetUniformMatrix(shaders.UniformModelMatrix, el.matrix)
+		failure.CheckOpenGLError()
+		wireMesh.DrawAll()
+		wireMesh.Free()
+	}
 	failure.CheckOpenGLError()
 }

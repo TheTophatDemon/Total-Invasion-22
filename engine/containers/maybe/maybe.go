@@ -27,6 +27,13 @@ func (m *T[Inner]) Get() (*Inner, bool) {
 	return nil, false
 }
 
+func (m *T[Inner]) Or(defaultItem Inner) Inner {
+	if m.present {
+		return m.value
+	}
+	return defaultItem
+}
+
 func (m *T[Inner]) Unwrap() *Inner {
 	if !m.present {
 		panic("unwrapped Maybe with no value")
