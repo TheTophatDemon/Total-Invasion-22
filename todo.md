@@ -1,10 +1,14 @@
 # TODO
 - Title screen
-  - Music
   - Increase font size
   - Settings menu
+  - Sound effects
   - Modify loading screen graphic to be more on-model
 - Optimize memory usage of particle effects
+- Physics fixes
+  - Plasma gun pushes enemies through walls
+  - Squeezing through adjacent props
+  - Hitching on consecutive sloped walls
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Player hit noise

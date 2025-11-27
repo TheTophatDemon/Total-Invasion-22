@@ -214,6 +214,7 @@ func main() {
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {
 		app.screen = screens.NewIntroScreen(app)
+		tdaudio.QueueSong("assets/music/back_in_vasion.ogg", true, 0)
 	} else {
 		app.executeSignal(game.MapChangeSignal{
 			NextMapPath: mapName,

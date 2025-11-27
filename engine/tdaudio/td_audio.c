@@ -1,6 +1,7 @@
 #include "./td_audio.h"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #define STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
@@ -12,6 +13,7 @@
 #include "miniaudio.h"
 
 #define MAX($a, $b) (($a > $b) ? $a : $b)
+#define MIN($a, $b) (($a < $b) ? $b : $a)
 
 #define ARRAY_PUSH($array, $type, $item) do {                                                        \
     ++$array.length;                                                                                 \
@@ -25,6 +27,9 @@
 #define LOG_ERR($message, ...) fprintf(stderr, "error occurred in " __FILE__ ":%s:%d " $message "\n", __func__, __LINE__, __VA_ARGS__)
 
 #define SONG_QUEUE_MAX 2
+
+#define LOOP_START_TAG "LOOPSTART="
+#define LOOP_LENGTH_TAG "LOOPLENGTH="
 
 typedef struct td_voice {
     ma_sound sound;
@@ -326,14 +331,48 @@ bool td_audio_queue_song(const char *path, bool looping, uint64_t fadeout_millis
         ma_result result = ma_sound_init_from_file(&g_engine, path, flags, &g_music_group, NULL, g_next_song);
         if (result != MA_SUCCESS) {
             LOG_ERR("failed to load song at %s, code %d", path, result);
-            g_next_song = NULL;
-            return false;
+            goto abort;
         }
+
+        // Read the OGG metadata to find the looping points
+        int vorb_error = 0;
+        stb_vorbis *vorb = stb_vorbis_open_filename(path, &vorb_error, NULL);
+        if (vorb_error) {
+            LOG_ERR("failed to read song metadata at %s, code %s", path, vorb_error);
+            goto abort;
+        }
+        stb_vorbis_comment comments = stb_vorbis_get_comment(vorb);
+        ma_uint64 loop_start = 0, loop_length = 0;
+        for (int i = 0; i < comments.comment_list_length; ++i) {
+            const char *comment = comments.comment_list[i];
+            if (comment == NULL) continue;
+            size_t comment_len = strlen(comment);
+            const size_t start_tag_len = sizeof(LOOP_START_TAG) - 1;
+            if (comment_len > start_tag_len && strncmp(comment, LOOP_START_TAG, start_tag_len) == 0) {
+                loop_start = (ma_uint64)atol(comment + start_tag_len);
+            }
+            const size_t length_tag_len = sizeof(LOOP_LENGTH_TAG) - 1;
+            if (comment_len > length_tag_len && strncmp(comment, LOOP_LENGTH_TAG, length_tag_len) == 0) {
+                loop_length = (ma_uint64)atol(comment + length_tag_len);
+            }
+        }
+        if (loop_length > 0) {
+            result = ma_data_source_set_loop_point_in_pcm_frames(g_next_song->pDataSource, loop_start, loop_start + loop_length);
+            if (result != MA_SUCCESS) {
+                LOG_ERR("failed to set loop point of song at %s, code %d", path, result);
+                goto abort;
+            }
+        }
+        stb_vorbis_close(vorb);
+        
         ma_sound_set_looping(g_next_song, looping);
     } else {
         g_next_song = NULL;
     }
     return true;
+abort:
+    g_next_song = NULL;
+    return false;
 }
 
 void td_audio_update() {
