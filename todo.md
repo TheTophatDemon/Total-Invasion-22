@@ -1,14 +1,16 @@
 # TODO
 - Title screen
-  - Increase font size
   - Settings menu
+  - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
-- Optimize memory usage of particle effects
+- Change map layouts to not need 3D collisions
 - Physics fixes
   - Plasma gun pushes enemies through walls
   - Squeezing through adjacent props
   - Hitching on consecutive sloped walls
+- Optimize memory usage of particle effects
+  - Redo map collisions to be based on sweeping against 2D line segments
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Player hit noise

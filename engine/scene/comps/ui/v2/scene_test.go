@@ -17,8 +17,8 @@ func TestElementSorting(t *testing.T) {
 	}
 
 	for i, expectedDepth := range []float32{1.0, 2.0, 3.0, 3.0, 4.0} {
-		if q[i].Depth != expectedDepth {
-			t.Errorf("expected depth %v at slot %v but got %v", expectedDepth, i, q[i].Depth)
+		if q[i].Depth() != expectedDepth {
+			t.Errorf("expected depth %v at slot %v but got %v", expectedDepth, i, q[i].Depth())
 		}
 	}
 }

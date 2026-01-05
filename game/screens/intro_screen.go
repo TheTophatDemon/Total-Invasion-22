@@ -43,7 +43,7 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 		}, settings.Localize("startPrompt"), ui.TextConfig{Align: ui.TextAlignCenterH, Color: maybe.Some(color.Yellow)}),
 	}
 	scr.flash.Color = color.White.WithAlpha(0.0)
-	scr.titleAnim = *gween.New(0.0, scr.title.Size[1], 1.0, ease.Linear) // Move title in from off screen
+	scr.titleAnim = *gween.New(0.0, scr.title.Size()[1], 1.0, ease.Linear) // Move title in from off screen
 	scr.flashAnim = *gween.NewSequence(
 		gween.New(0.0, 0.0, 0.5, ease.Linear),   // Wait
 		gween.New(0.0, 1.0, 0.5, ease.InCubic),  // Flash in
@@ -59,7 +59,8 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 }
 
 func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	scr.title.Position[1], _ = scr.titleAnim.Update(deltaTime)
+	newY, _ := scr.titleAnim.Update(deltaTime)
+	scr.title.SetY(newY)
 	var complete bool
 	scr.flash.Color.A, _, complete = scr.flashAnim.Update(deltaTime)
 	queue.Add(&scr.flash)

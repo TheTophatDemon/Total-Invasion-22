@@ -14,7 +14,7 @@ func (renderQ *RenderQueue) Add(elems ...*Element) {
 		var displacedElem *Element
 
 		for i := range newQ {
-			if newQ[i].Depth > elem.Depth || i == len(newQ)-1 {
+			if newQ[i].Depth() > elem.Depth() || i == len(newQ)-1 {
 				if displacedElem == nil {
 					displacedElem = newQ[i]
 					newQ[i] = elem

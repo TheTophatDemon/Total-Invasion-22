@@ -13,21 +13,26 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type Menu struct {
-	position      mgl32.Vec2
-	menuSelection int
-	menuTexts     []ui.Element
-	menuSpacing   float32
-	cursor        ui.Element
-	title, fade   ui.Element
-	onSelect      func(itemIndex int)
-	app           engine.Observer
-}
+type (
+	MenuItem struct {
+		Element  ui.Element
+		OnSelect func(menu *Menu)
+	}
+	Menu struct {
+		position      mgl32.Vec2
+		menuSelection int
+		menuItems     []MenuItem
+		menuSpacing   float32
+		cursor        ui.Element
+		title, fade   ui.Element
+		app           engine.Observer
+	}
+)
 
-func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu {
+func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Menu {
 	menu := Menu{
 		position:      position,
-		menuTexts:     make([]ui.Element, len(menuItems)),
+		menuItems:     menuItems,
 		menuSelection: -1,
 		app:           app,
 	}
@@ -39,8 +44,8 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 		Depth:  10,
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
-	for i, text := range menuItems {
-		menu.menuTexts[i] = ui.NewText(
+	for i := range menuItems {
+		menu.menuItems[i].Element.SetTransform(
 			ui.Transform{
 				Position: mgl32.Vec2{
 					position[0] + 36,
@@ -52,11 +57,8 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []string) *Menu
 				},
 				Origin: ui.Ratios{0.0, 0.5},
 				Depth:  10,
-			},
-			settings.Localize(text),
-			ui.TextConfig{},
-		)
-		menu.menuTexts[i].ShrinkToFitText()
+			})
+		menu.menuItems[i].Element.ShrinkToFitText()
 	}
 
 	menu.title = ui.NewBox(ui.Transform{
@@ -79,42 +81,45 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
 
 	if input.IsActionJustPressed(settings.ActionMenuDown) {
-		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuTexts)
+		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
 	} else if input.IsActionJustPressed(settings.ActionMenuUp) {
-		menu.menuSelection = (menu.menuSelection + len(menu.menuTexts) - 1) % len(menu.menuTexts)
+		menu.menuSelection = (menu.menuSelection + len(menu.menuItems) - 1) % len(menu.menuItems)
 	}
 
-	if menu.onSelect != nil && menu.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
-		menu.onSelect(menu.menuSelection)
+	if menu.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
+		item := &menu.menuItems[menu.menuSelection]
+		if item.OnSelect != nil {
+			item.OnSelect(menu)
+		}
 	}
 
 	if input.MouseDelta().LenSqr() > 0.1 {
 		menu.menuSelection = -1
 	}
 
-	for i := range menu.menuTexts {
-		elem := &menu.menuTexts[i]
-		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
+	for i := range menu.menuItems {
+		item := &menu.menuItems[i]
+		if item.Element.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.menuSelection = i
-			if menu.onSelect != nil && input.IsActionJustReleased(settings.ActionMenuClick) {
-				menu.onSelect(i)
+			if item.OnSelect != nil && input.IsActionJustReleased(settings.ActionMenuClick) {
+				item.OnSelect(menu)
 			}
 		}
 		if menu.menuSelection == i {
-			elem.Color = color.Yellow
+			item.Element.Color = color.Yellow
 		} else {
-			elem.Color = color.White
+			item.Element.Color = color.White
 		}
-		queue.Add(elem)
+		queue.Add(&item.Element)
 	}
 
 	if menu.menuSelection >= 0 {
 		// Draw cursor in front of menu items
-		menu.cursor.Position = mgl32.Vec2{
+		menu.cursor.SetPosition(mgl32.Vec2{
 			menu.position[0],
 			menu.position[1] + (menu.menuSpacing * float32(menu.menuSelection)),
-		}
-		menu.cursor.Rotation -= math2.Radians(deltaTime * math.Pi * 4.0)
+		})
+		menu.cursor.Rotate(-math2.Radians(deltaTime * math.Pi * 4.0))
 		queue.Add(&menu.cursor)
 	}
 

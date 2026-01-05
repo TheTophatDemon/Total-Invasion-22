@@ -120,6 +120,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 
 		// Set collision shapes
 		shapeName := te3File.Tiles.Shapes[tile.ShapeID]
+
 		shape, err := cache.GetCollisionShape(shapeName, tile.GetRotationMatrix())
 		if err != nil {
 			continue

@@ -28,7 +28,7 @@ type TextConfig struct {
 
 func NewText(transform Transform, text string, config TextConfig) Element {
 	elem := Element{
-		Transform:    transform,
+		transform:    transform,
 		ShadowColor:  config.ShadowColor.Or(settings.Current.TextShadowColor),
 		ShadowOffset: config.ShadowOffset.Or(mgl32.Vec2{4.0, 4.0}),
 		Color:        config.Color.Or(color.White),
@@ -66,7 +66,7 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
-			shiftAmount := (txt.Size[0] - (lastBox.X + lastBox.Width)) // Amount of remaining space within the text's bounds
+			shiftAmount := (txt.Size()[0] - (lastBox.X + lastBox.Width)) // Amount of remaining space within the text's bounds
 			if (config.Align & TextAlignCenterH) != 0 {
 				shiftAmount *= 0.5
 			}
@@ -117,13 +117,13 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 			}
 
 			// Stop drawing when out of bounds
-			if charRect.Y+charRect.Height > txt.Size[1] {
+			if charRect.Y+charRect.Height > txt.Size()[1] {
 				break
 			}
 
 			if i == len(word)-runeWidth || !config.WrapWords {
 				// Determine if the word should go on a new line
-				overflowsBounds := (charRect.X+charRect.Width >= txt.Size[0])
+				overflowsBounds := (charRect.X+charRect.Width >= txt.Size()[0])
 				firstWordOnLine := (firstBox.X == 0.0)
 
 				if overflowsBounds && !firstWordOnLine {
@@ -166,8 +166,8 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 	// `cursorY`` now defines the overall height of the text.
 
 	// Apply vertical alignment
-	if (config.Align&TextAlignCenterV) != 0 && cursorY < txt.Size[1] {
-		shift := txt.Size[1] - (cursorY / 2.0)
+	if (config.Align&TextAlignCenterV) != 0 && cursorY < txt.Size()[1] {
+		shift := txt.Size()[1] - (cursorY / 2.0)
 		for i := range boxes {
 			boxes[i].Y += shift
 		}
