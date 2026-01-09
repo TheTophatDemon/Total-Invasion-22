@@ -35,14 +35,21 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 			Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
 			Depth: 1,
 		}, nil),
-		prompt: ui.NewText(ui.Transform{
-			Size:     mgl32.Vec2{512.0, 64.0},
-			Anchor:   ui.Ratios{0.5, 1.0},
-			Origin:   ui.Ratios{0.5, 1.0},
-			Position: mgl32.Vec2{0.0, -48.0},
-		}, settings.Localize("startPrompt"), ui.TextConfig{Align: ui.TextAlignCenterH, Color: maybe.Some(color.Yellow)}),
+		prompt: ui.NewText(
+			ui.Transform{
+				Size:     mgl32.Vec2{512.0, 64.0},
+				Anchor:   ui.Ratios{0.5, 1.0},
+				Origin:   ui.Ratios{0.5, 1.0},
+				Position: mgl32.Vec2{0.0, -48.0},
+			},
+			settings.Localize("startPrompt"),
+			ui.TextConfig{
+				Align: ui.TextAlignCenterH,
+				Color: maybe.Some(color.Yellow),
+			},
+		),
 	}
-	scr.flash.Color = color.White.WithAlpha(0.0)
+	scr.flash.BgColor = maybe.Some(color.White.WithAlpha(0.0))
 	scr.titleAnim = *gween.New(0.0, scr.title.Size()[1], 1.0, ease.Linear) // Move title in from off screen
 	scr.flashAnim = *gween.NewSequence(
 		gween.New(0.0, 0.0, 0.5, ease.Linear),   // Wait
@@ -62,7 +69,7 @@ func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	newY, _ := scr.titleAnim.Update(deltaTime)
 	scr.title.SetY(newY)
 	var complete bool
-	scr.flash.Color.A, _, complete = scr.flashAnim.Update(deltaTime)
+	scr.flash.BgColor.Unwrap().A, _, complete = scr.flashAnim.Update(deltaTime)
 	queue.Add(&scr.flash)
 	queue.Add(&scr.title)
 	if complete {

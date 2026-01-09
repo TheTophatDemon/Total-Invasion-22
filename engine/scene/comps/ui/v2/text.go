@@ -8,6 +8,7 @@ import (
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -28,25 +29,31 @@ type TextConfig struct {
 
 func NewText(transform Transform, text string, config TextConfig) Element {
 	elem := Element{
-		transform:    transform,
 		ShadowColor:  config.ShadowColor.Or(settings.Current.TextShadowColor),
 		ShadowOffset: config.ShadowOffset.Or(mgl32.Vec2{4.0, 4.0}),
-		Color:        config.Color.Or(color.White),
+		transform:    transform,
+		textConfig:   maybe.Some(config),
 	}
-	elem.SetText(text, config)
+	elem.SetText(text)
 	return elem
 }
 
 // Calculates positions for each character's rectangle
-func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont.Char) {
+func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	var cursorX, cursorY float32
 	var prevRune rune = scanner.EOF
 
 	boxes := make([]math2.Rect, 0, len(txt.text))
 	chars := make([]bmfont.Char, 0, cap(boxes))
 
-	if txt.font == nil || txt.text == "" {
+	config, hasConfig := txt.textConfig.Get()
+	if txt.text == "" || !hasConfig {
 		return boxes, chars
+	}
+
+	font := config.Font
+	if font == nil {
+		font = cache.DefaultFont
 	}
 
 	var scan scanner.Scanner
@@ -60,7 +67,7 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 	newLine := func() {
 		// Set cursor to next line position
 		cursorX = 0.0
-		cursorY += float32(txt.font.Common.LineHeight)
+		cursorY += float32(font.Common.LineHeight)
 
 		if (config.Align&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
 			// This will be the last box added to this line.
@@ -97,7 +104,7 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 		for i, runeWidth := 0, 0; i < len(word); i += runeWidth {
 			var rn rune
 			rn, runeWidth = utf8.DecodeRuneInString(word[i:])
-			char, ok := txt.font.Chars[rn]
+			char, ok := font.Chars[rn]
 
 			if !ok {
 				// Add blank space for unknown character
@@ -108,7 +115,7 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 			// Find character position
 			charRect := math2.Rect{
 				X:      cursorX + float32(char.XOffset),
-				Y:      cursorY - float32(txt.font.Common.Base+char.YOffset),
+				Y:      cursorY - float32(font.Common.Base+char.YOffset),
 				Width:  float32(char.Size().X),
 				Height: float32(char.Size().Y),
 			}
@@ -150,7 +157,7 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 			// Add kerning
 			if prevRune != scanner.EOF {
 				pair := bmfont.CharPair{First: prevRune, Second: rn}
-				kerning, ok := txt.font.Kerning[pair]
+				kerning, ok := font.Kerning[pair]
 				if ok {
 					cursorX += float32(kerning.Amount)
 				}
@@ -178,16 +185,20 @@ func (txt *Element) generateTextBoxes(config TextConfig) ([]math2.Rect, []bmfont
 
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 // Returns false and logs error if there is a failure.
-func (txt *Element) generateTextMesh(config TextConfig) (*geom.Mesh, bool) {
-	if txt.font == nil {
+func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
+	config, hasConfig := txt.textConfig.Get()
+	if !hasConfig {
 		return nil, false
 	}
-
-	if txt.Mesh != nil {
-		txt.Mesh.Free()
+	if config.Font == nil {
+		config.Font = cache.DefaultFont
 	}
 
-	boxes, chars := txt.generateTextBoxes(config)
+	if txt.textMesh != nil {
+		txt.textMesh.Free()
+	}
+
+	boxes, chars := txt.generateTextBoxes()
 	if len(boxes) != len(chars) {
 		failure.LogErrWithLocation("boxes(%v) and chars(%v) arrays mismatch for \"%v\"", len(boxes), len(chars), txt.text)
 		return nil, false
@@ -218,7 +229,7 @@ func (txt *Element) generateTextMesh(config TextConfig) (*geom.Mesh, bool) {
 			mgl32.Vec3{charRect.X + charRect.Width, charRect.Y, 0.0},
 		)
 
-		pageW, pageH := float32(txt.font.Common.ScaleW), float32(txt.font.Common.ScaleH)
+		pageW, pageH := float32(config.Font.Common.ScaleW), float32(config.Font.Common.ScaleH)
 
 		srcRect := math2.Rect{
 			X:      float32(chars[b].X+chars[b].Width) / pageW,
@@ -244,6 +255,6 @@ func (txt *Element) generateTextMesh(config TextConfig) (*geom.Mesh, bool) {
 		inds = append(inds, indexBase+0, indexBase+2, indexBase+1, indexBase+2, indexBase+3, indexBase+1)
 	}
 
-	txt.Mesh = geom.CreateMesh(verts, inds)
-	return txt.Mesh, true
+	txt.textMesh = geom.CreateMesh(verts, inds)
+	return txt.textMesh, true
 }

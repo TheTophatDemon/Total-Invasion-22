@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
@@ -62,17 +63,18 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Me
 	}
 
 	menu.title = ui.NewBox(ui.Transform{
-		Size:   mgl32.Vec2{960.0, 256.0},
-		Anchor: ui.Ratios{0.5, 0.0},
-		Origin: ui.Ratios{0.5, 0.0},
-		Depth:  50,
+		Size:     mgl32.Vec2{960.0, 256.0},
+		Anchor:   ui.Ratios{0.5, 0.0},
+		Origin:   ui.Ratios{0.5, 0.0},
+		Position: mgl32.Vec2{32.0, 0.0},
+		Depth:    50,
 	}, cache.GetTexture("assets/textures/ui/title.png"))
 
 	menu.fade = ui.NewBox(ui.Transform{
 		Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
 		Depth: 1,
 	}, nil)
-	menu.fade.Color = color.Black.WithAlpha(0.25)
+	menu.fade.BgColor = maybe.Some(color.Black.WithAlpha(0.25))
 
 	return &menu
 }
@@ -106,9 +108,9 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			}
 		}
 		if menu.menuSelection == i {
-			item.Element.Color = color.Yellow
+			item.Element.BgColor = maybe.Some(color.Yellow)
 		} else {
-			item.Element.Color = color.White
+			item.Element.BgColor = maybe.Some(color.White)
 		}
 		queue.Add(&item.Element)
 	}
