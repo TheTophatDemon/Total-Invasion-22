@@ -7,6 +7,21 @@ saveGame = "Save Game"
 options = "Options"
 exit = "Exit"
 
+# Options screen
+return = "Return"
+screenResolution = "Screen Resolution"
+gfxResolution = "Graphics Resolution"
+mouseSensitivity = "Mouse Sensitivity"
+vsync = "Vertical Sync"
+sfxVolume = "Sound Volume"
+musVolume = "Music Volume"
+language = "Language"
+fov = "FOV"
+textShadow = "Text Shadow Transparency"
+harmChickens = "Enable Harm to Chickens"
+on = "On"
+off = "Off"
+
 # Cheats
 noclipActivate = "Noclip activated"
 noclipDeactivate = "Noclip deactivated"

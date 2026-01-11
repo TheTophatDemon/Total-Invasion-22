@@ -203,6 +203,8 @@ func main() {
 
 	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
 	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
+	input.BindActionKey(settings.ActionMenuIncrement, glfw.KeyRight)
+	input.BindActionKey(settings.ActionMenuDecrement, glfw.KeyLeft)
 	input.BindActionKey(settings.ActionMenuConfirm, glfw.KeyEnter)
 	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton1)
 	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton2)

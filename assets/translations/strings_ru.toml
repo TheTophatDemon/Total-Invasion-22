@@ -7,6 +7,21 @@ saveGame = "Сохранить Игру"
 options = "Настройки"
 exit = "Выйти"
 
+# Options Screen
+return = "Назад"
+screenResolution = "Разрешение Экрана"
+gfxResolution = "Разрешение Графики"
+mouseSensitivity = "Чувствительность Мыши"
+vsync = "Вертикальная Синхронизация"
+sfxVolume = "Громкость Звуков"
+musVolume = "Громкость Музыки"
+language = "Язык"
+fov = "Поле Зрения"
+textShadow = "Прозрачность Теней Текста"
+harmChickens = "Допустить Причинение Вреда Курицам"
+on = "Вклч."
+off = "Выклч."
+
 # Doors
 doorStuck = "Дверь не движется..."
 doorSwitch = "Дверь открывается не отсюда..."

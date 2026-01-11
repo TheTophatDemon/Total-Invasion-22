@@ -15,22 +15,30 @@ import (
 )
 
 type (
-	MenuItem struct {
-		Element  ui.Element
-		OnSelect func(menu *Menu)
+	MenuEvents interface {
+		Element() *ui.Element
+		Focus()
+		Blur()
+		Input(action input.Action)
+		Layout(queue *ui.RenderQueue, deltaTime float32)
 	}
 	Menu struct {
 		position      mgl32.Vec2
 		menuSelection int
-		menuItems     []MenuItem
+		menuItems     []MenuEvents
 		menuSpacing   float32
 		cursor        ui.Element
 		title, fade   ui.Element
 		app           engine.Observer
 	}
+	MenuItem struct {
+		OnInput      func(action input.Action)
+		element      ui.Element
+		restoreColor maybe.T[color.Color]
+	}
 )
 
-func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Menu {
+func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents) Menu {
 	menu := Menu{
 		position:      position,
 		menuItems:     menuItems,
@@ -46,7 +54,11 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Me
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
 	for i := range menuItems {
-		menu.menuItems[i].Element.SetTransform(
+		elem := menu.menuItems[i].Element()
+		if elem == nil {
+			continue
+		}
+		elem.SetTransform(
 			ui.Transform{
 				Position: mgl32.Vec2{
 					position[0] + 36,
@@ -59,7 +71,7 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Me
 				Origin: ui.Ratios{0.0, 0.5},
 				Depth:  10,
 			})
-		menu.menuItems[i].Element.ShrinkToFitText()
+		elem.ShrinkToFitText()
 	}
 
 	menu.title = ui.NewBox(ui.Transform{
@@ -76,11 +88,13 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuItem) *Me
 	}, nil)
 	menu.fade.BgColor = maybe.Some(color.Black.WithAlpha(0.25))
 
-	return &menu
+	return menu
 }
 
 func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
+
+	prevSelection := menu.menuSelection
 
 	if input.IsActionJustPressed(settings.ActionMenuDown) {
 		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
@@ -88,10 +102,14 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.menuSelection = (menu.menuSelection + len(menu.menuItems) - 1) % len(menu.menuItems)
 	}
 
-	if menu.menuSelection >= 0 && input.IsActionJustPressed(settings.ActionMenuConfirm) {
-		item := &menu.menuItems[menu.menuSelection]
-		if item.OnSelect != nil {
-			item.OnSelect(menu)
+	if menu.menuSelection >= 0 {
+		item := menu.menuItems[menu.menuSelection]
+		if input.IsActionJustPressed(settings.ActionMenuConfirm) {
+			item.Input(settings.ActionMenuConfirm)
+		} else if input.IsActionJustPressed(settings.ActionMenuIncrement) {
+			item.Input(settings.ActionMenuIncrement)
+		} else if input.IsActionJustPressed(settings.ActionMenuDecrement) {
+			item.Input(settings.ActionMenuDecrement)
 		}
 	}
 
@@ -100,19 +118,19 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	for i := range menu.menuItems {
-		item := &menu.menuItems[i]
-		if item.Element.OnScreenBox().ContainsPoint(input.MousePosition()) {
+		item := menu.menuItems[i]
+		if elem := item.Element(); elem != nil && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.menuSelection = i
-			if item.OnSelect != nil && input.IsActionJustReleased(settings.ActionMenuClick) {
-				item.OnSelect(menu)
+			if input.IsActionJustReleased(settings.ActionMenuClick) {
+				item.Input(settings.ActionMenuClick)
 			}
 		}
-		if menu.menuSelection == i {
-			item.Element.BgColor = maybe.Some(color.Yellow)
-		} else {
-			item.Element.BgColor = maybe.Some(color.White)
+		if menu.menuSelection == i && prevSelection != i {
+			item.Focus()
+		} else if menu.menuSelection != i && prevSelection == i {
+			item.Blur()
 		}
-		queue.Add(&item.Element)
+		item.Layout(queue, deltaTime)
 	}
 
 	if menu.menuSelection >= 0 {
@@ -126,4 +144,42 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	queue.Add(&menu.title)
+}
+
+func (item *MenuItem) Init(stringKey string, callback func(input.Action)) *MenuItem {
+	if item == nil {
+		return nil
+	}
+	item.element = ui.NewText(ui.Transform{}, settings.Localize(stringKey), ui.TextConfig{})
+	item.OnInput = callback
+	return item
+}
+
+func (item *MenuItem) Element() *ui.Element {
+	return &item.element
+}
+
+func (item *MenuItem) Focus() {
+	configMaybe := item.element.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		item.restoreColor = config.Color
+		config.Color = maybe.Some(color.Yellow)
+	}
+}
+
+func (item *MenuItem) Blur() {
+	configMaybe := item.element.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		config.Color = item.restoreColor
+	}
+}
+
+func (item *MenuItem) Input(action input.Action) {
+	if (action == settings.ActionMenuConfirm || action == settings.ActionMenuClick) && item.OnInput != nil {
+		item.OnInput(action)
+	}
+}
+
+func (item *MenuItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	queue.Add(&item.element)
 }

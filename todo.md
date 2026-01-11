@@ -1,6 +1,10 @@
 # TODO
 - Title screen
   - Settings menu
+    - Fix hitboxes on text
+    - Fix lag on chooser
+    - Apply resolution changes
+    - Fullscreen
   - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
@@ -11,6 +15,7 @@
   - Hitching on consecutive sloped walls
 - Optimize memory usage of particle effects
   - Redo map collisions to be based on sweeping against 2D line segments
+- Optimize pauses by pre loaded textures for entities
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Player hit noise
