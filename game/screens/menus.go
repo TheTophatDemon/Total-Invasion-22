@@ -31,9 +31,10 @@ type (
 		title, fade   ui.Element
 		app           engine.Observer
 	}
+	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
+		element
 		OnInput      func(action input.Action)
-		element      ui.Element
 		restoreColor maybe.T[color.Color]
 	}
 )

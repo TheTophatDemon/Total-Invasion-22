@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"math"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -112,14 +114,115 @@ func (el *Element) getTextDisplacement() mgl32.Vec2 {
 	return math2.ElemMul2(el.transform.Size, mgl32.Vec2(el.transform.Origin)).Mul(-1.0)
 }
 
+func (el *Element) BgMatrix() mgl32.Mat4 {
+	if !el.transformClean {
+		// Calculate bg matrix
+		{
+			// Displace by origin
+			displacement := el.getBoxDisplacement()
+			el.boxMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
+
+			// Rotate
+			if el.Rotation() != 0 {
+				el.boxMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.boxMatrix)
+			}
+
+			// Scale
+			if el.BgMesh != nil {
+				boxSize := el.BgMesh.BoundingBox().Size()
+				el.boxMatrix = mgl32.Scale3D(el.Size()[0]/boxSize[0], el.Size()[1]/boxSize[1], 1.0).Mul4(el.boxMatrix)
+			}
+
+			// Apply shear
+			if el.Shear() != (mgl32.Vec2{}) {
+				el.boxMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.boxMatrix)
+			}
+
+			// Translate
+			screenW, screenH := engine.ScreenSize()
+			fWidth, fHeight := float32(screenW), float32(screenH)
+			el.boxMatrix = mgl32.Translate3D(
+				el.Position()[0]+(el.Anchor()[0]*fWidth),
+				el.Position()[1]+(el.Anchor()[1]*fHeight),
+				el.Depth(),
+			).Mul4(el.boxMatrix)
+		}
+
+		// Calculate text matrix
+		{
+			// Displace by origin
+			displacement := el.getTextDisplacement()
+			el.textMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
+
+			// Rotate
+			if el.Rotation() != 0 {
+				el.textMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.textMatrix)
+			}
+
+			// Apply shear
+			if el.Shear() != (mgl32.Vec2{}) {
+				el.textMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.textMatrix)
+			}
+
+			// Translate
+			screenW, screenH := engine.ScreenSize()
+			fWidth, fHeight := float32(screenW), float32(screenH)
+			el.textMatrix = mgl32.Translate3D(
+				el.Position()[0]+(el.Anchor()[0]*fWidth),
+				el.Position()[1]+(el.Anchor()[1]*fHeight),
+				el.Depth(),
+			).Mul4(el.textMatrix)
+		}
+
+		el.transformClean = true
+	}
+	return el.boxMatrix
+}
+
+func (el *Element) TextMatrix() mgl32.Mat4 {
+	el.BgMatrix()
+	return el.textMatrix
+}
+
+func (el *Element) TextMesh() *geom.Mesh {
+	_, hasTextConfig := el.textConfig.Get()
+	if hasTextConfig && (!el.transformClean || !el.textClean) {
+		el.BgMatrix()
+		el.generateTextMesh()
+		el.textClean = true
+	}
+	return el.textMesh
+}
+
 // Returns the rectangle that the element occupies on the screen
 func (el *Element) OnScreenBox() math2.Rect {
-	min := el.transform.Position.Add(el.getBoxDisplacement())
+	minX := float32(math.MaxFloat32)
+	minY := float32(math.MaxFloat32)
+	maxX := float32(-math.MaxFloat32)
+	maxY := float32(-math.MaxFloat32)
+	if el.BgMesh != nil {
+		for _, pos := range el.BgMesh.Verts().Pos {
+			pos = mgl32.TransformCoordinate(pos, el.BgMatrix())
+			minX = min(pos[0], minX)
+			minY = min(pos[1], minY)
+			maxX = max(pos[0], maxX)
+			maxY = max(pos[1], maxY)
+		}
+	}
+	if textMesh := el.TextMesh(); textMesh != nil {
+		for _, pos := range textMesh.Verts().Pos {
+			pos = mgl32.TransformCoordinate(pos, el.TextMatrix())
+			minX = min(pos[0], minX)
+			minY = min(pos[1], minY)
+			maxX = max(pos[0], maxX)
+			maxY = max(pos[1], maxY)
+		}
+	}
 	return math2.Rect{
-		X:      min[0],
-		Y:      min[1],
-		Width:  el.transform.Size[0],
-		Height: el.transform.Size[1],
+		X:      minX,
+		Y:      minY,
+		Width:  maxX - minX,
+		Height: maxY - minY,
 	}
 }
 
@@ -238,68 +341,6 @@ func (el *Element) Render(context *render.Context) {
 	_ = shaders.UIShader.SetUniformInt(shaders.UniformTex, 0)
 	failure.CheckOpenGLError()
 
-	if !el.transformClean {
-		// Calculate bg matrix
-		{
-			// Displace by origin
-			displacement := el.getBoxDisplacement()
-			el.boxMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
-
-			// Rotate
-			if el.Rotation() != 0 {
-				el.boxMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.boxMatrix)
-			}
-
-			// Scale
-			if el.BgMesh != nil {
-				boxSize := el.BgMesh.BoundingBox().Size()
-				el.boxMatrix = mgl32.Scale3D(el.Size()[0]/boxSize[0], el.Size()[1]/boxSize[1], 1.0).Mul4(el.boxMatrix)
-			}
-
-			// Apply shear
-			if el.Shear() != (mgl32.Vec2{}) {
-				el.boxMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.boxMatrix)
-			}
-
-			// Translate
-			screenW, screenH := engine.ScreenSize()
-			fWidth, fHeight := float32(screenW), float32(screenH)
-			el.boxMatrix = mgl32.Translate3D(
-				el.Position()[0]+(el.Anchor()[0]*fWidth),
-				el.Position()[1]+(el.Anchor()[1]*fHeight),
-				el.Depth(),
-			).Mul4(el.boxMatrix)
-		}
-
-		// Calculate text matrix
-		{
-			// Displace by origin
-			displacement := el.getTextDisplacement()
-			el.textMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
-
-			// Rotate
-			if el.Rotation() != 0 {
-				el.textMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.textMatrix)
-			}
-
-			// Apply shear
-			if el.Shear() != (mgl32.Vec2{}) {
-				el.textMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.textMatrix)
-			}
-
-			// Translate
-			screenW, screenH := engine.ScreenSize()
-			fWidth, fHeight := float32(screenW), float32(screenH)
-			el.textMatrix = mgl32.Translate3D(
-				el.Position()[0]+(el.Anchor()[0]*fWidth),
-				el.Position()[1]+(el.Anchor()[1]*fHeight),
-				el.Depth(),
-			).Mul4(el.textMatrix)
-		}
-
-		el.transformClean = true
-	}
-
 	if el.BgMesh != nil {
 		if el.BgTexture != nil {
 			el.BgTexture.Bind()
@@ -315,7 +356,7 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.BgColor.Or(color.White).Vector())
 		failure.CheckOpenGLError()
 
-		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.boxMatrix)
+		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.BgMatrix())
 		failure.CheckOpenGLError()
 
 		el.BgMesh.DrawAll()
@@ -331,9 +372,11 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, el.AnimPlayer.FrameUV().Vec4())
 		failure.CheckOpenGLError()
 
+		textMatrix := el.TextMatrix()
+
 		// Draw drop shadow
 		if el.ShadowColor.A > 0.0 {
-			shadowMatrix := mgl32.Translate3D(el.ShadowOffset[0], el.ShadowOffset[1], 0.0).Mul4(el.textMatrix)
+			shadowMatrix := mgl32.Translate3D(el.ShadowOffset[0], el.ShadowOffset[1], 0.0).Mul4(textMatrix)
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
 			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.ShadowColor.Vector())
 			failure.CheckOpenGLError()
@@ -343,7 +386,7 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textConfig.Color.Or(color.White).Vector())
 		failure.CheckOpenGLError()
 
-		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.textMatrix)
+		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, textMatrix)
 		failure.CheckOpenGLError()
 
 		el.textMesh.DrawAll()
@@ -351,14 +394,14 @@ func (el *Element) Render(context *render.Context) {
 	}
 
 	if engine.InDebugMode() && input.IsMouseButtonDown(glfw.MouseButton3) {
-		pozzy := []mgl32.Vec3{
-			{-1.0, -1.0, 0.0},
-			{1.0, -1.0, 0.0},
-			{1.0, 1.0, 0.0},
-			{-1.0, 1.0, 0.0},
-		}
+		screenRect := el.OnScreenBox()
 		wireMesh := geom.CreateWireMesh(geom.Vertices{
-			Pos: pozzy,
+			Pos: []mgl32.Vec3{
+				{screenRect.X, screenRect.Y, 0.0},
+				{screenRect.X + screenRect.Width, screenRect.Y, 0.0},
+				{screenRect.X + screenRect.Width, screenRect.Y + screenRect.Height, 0.0},
+				{screenRect.X, screenRect.Y + screenRect.Height, 0.0},
+			},
 			Color: []mgl32.Vec4{
 				{1.0, 1.0, 1.0, 1.0},
 				{1.0, 1.0, 1.0, 1.0},
@@ -370,7 +413,7 @@ func (el *Element) Render(context *render.Context) {
 		wireMesh.Bind()
 		failure.CheckOpenGLError()
 		_ = context.SetUniforms(shaders.DebugShader)
-		_ = shaders.DebugShader.SetUniformMatrix(shaders.UniformModelMatrix, el.boxMatrix)
+		_ = shaders.DebugShader.SetUniformMatrix(shaders.UniformModelMatrix, mgl32.Ident4())
 		failure.CheckOpenGLError()
 		wireMesh.DrawAll()
 		wireMesh.Free()
