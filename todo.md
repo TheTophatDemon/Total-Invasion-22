@@ -1,14 +1,13 @@
 # TODO
 - Title screen
   - Settings menu
-    - Fix hitboxes on text
-    - Fix lag on chooser
+    - What is that stupid flickering!?
     - Apply resolution changes
     - Fullscreen
   - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
-- Change map layouts to not need 3D collisions
+- Change map layouts to not need 3D collisions?
 - Physics fixes
   - Plasma gun pushes enemies through walls
   - Squeezing through adjacent props

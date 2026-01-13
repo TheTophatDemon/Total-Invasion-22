@@ -93,19 +93,13 @@ func (el *Element) SetTextConfig(config TextConfig) {
 	}
 }
 
-func (el *Element) ShrinkToFitText() {
-	if el.textMesh == nil || !el.HasText() {
-		return
-	}
-	el.transform.Size = el.textMesh.BoundingBox().Size().Vec2()
-}
-
 // Gets a displacement vector that goes from the element's origin to the BgMesh's origin
 func (el *Element) getBoxDisplacement() mgl32.Vec2 {
-	if el.BgMesh == nil {
-		return mgl32.Vec2{}
+	var mesh = el.BgMesh
+	if mesh == nil {
+		mesh = cache.QuadMesh
 	}
-	bbox := el.BgMesh.BoundingBox()
+	bbox := mesh.BoundingBox()
 	return bbox.Min.Vec2().Add(math2.ElemMul2(bbox.Size().Vec2(), mgl32.Vec2(el.transform.Origin))).Mul(-1.0)
 }
 
@@ -128,10 +122,12 @@ func (el *Element) BgMatrix() mgl32.Mat4 {
 			}
 
 			// Scale
-			if el.BgMesh != nil {
-				boxSize := el.BgMesh.BoundingBox().Size()
-				el.boxMatrix = mgl32.Scale3D(el.Size()[0]/boxSize[0], el.Size()[1]/boxSize[1], 1.0).Mul4(el.boxMatrix)
+			mesh := el.BgMesh
+			if mesh == nil {
+				mesh = cache.QuadMesh
 			}
+			boxSize := mesh.BoundingBox().Size()
+			el.boxMatrix = mgl32.Scale3D(el.Size()[0]/boxSize[0], el.Size()[1]/boxSize[1], 1.0).Mul4(el.boxMatrix)
 
 			// Apply shear
 			if el.Shear() != (mgl32.Vec2{}) {
@@ -187,7 +183,6 @@ func (el *Element) TextMatrix() mgl32.Mat4 {
 func (el *Element) TextMesh() *geom.Mesh {
 	_, hasTextConfig := el.textConfig.Get()
 	if hasTextConfig && (!el.transformClean || !el.textClean) {
-		el.BgMatrix()
 		el.generateTextMesh()
 		el.textClean = true
 	}
@@ -200,23 +195,12 @@ func (el *Element) OnScreenBox() math2.Rect {
 	minY := float32(math.MaxFloat32)
 	maxX := float32(-math.MaxFloat32)
 	maxY := float32(-math.MaxFloat32)
-	if el.BgMesh != nil {
-		for _, pos := range el.BgMesh.Verts().Pos {
-			pos = mgl32.TransformCoordinate(pos, el.BgMatrix())
-			minX = min(pos[0], minX)
-			minY = min(pos[1], minY)
-			maxX = max(pos[0], maxX)
-			maxY = max(pos[1], maxY)
-		}
-	}
-	if textMesh := el.TextMesh(); textMesh != nil {
-		for _, pos := range textMesh.Verts().Pos {
-			pos = mgl32.TransformCoordinate(pos, el.TextMatrix())
-			minX = min(pos[0], minX)
-			minY = min(pos[1], minY)
-			maxX = max(pos[0], maxX)
-			maxY = max(pos[1], maxY)
-		}
+	for _, pos := range cache.QuadMesh.Verts().Pos {
+		pos = mgl32.TransformCoordinate(pos, el.BgMatrix())
+		minX = min(pos[0], minX)
+		minY = min(pos[1], minY)
+		maxX = max(pos[0], maxX)
+		maxY = max(pos[1], maxY)
 	}
 	return math2.Rect{
 		X:      minX,
@@ -232,6 +216,9 @@ func (el *Element) Transform() Transform {
 
 func (el *Element) SetTransform(trans Transform) {
 	if el.transform != trans {
+		if el.Size() != trans.Size {
+			el.textClean = false
+		}
 		el.transform = trans
 		el.transformClean = false
 	}
@@ -298,6 +285,7 @@ func (el *Element) Rotate(amount math2.Radians) {
 func (el *Element) SetSize(value mgl32.Vec2) {
 	el.transform.Size = value
 	el.transformClean = false
+	el.textClean = false
 }
 
 func (el *Element) SetAnchor(value Ratios) {
@@ -321,13 +309,7 @@ func (el *Element) SetDepth(value float32) {
 }
 
 func (el *Element) Render(context *render.Context) {
-	textConfig, hasTextConfig := el.textConfig.Get()
-	if hasTextConfig && (!el.transformClean || !el.textClean) {
-		el.generateTextMesh()
-		el.textClean = true
-	}
-
-	if el.BgMesh == nil && el.textMesh == nil {
+	if el.BgMesh == nil && el.TextMesh() == nil {
 		failure.LogWarningWithLocation("UI element rendering without mesh")
 		return
 	}
@@ -363,8 +345,9 @@ func (el *Element) Render(context *render.Context) {
 		failure.CheckOpenGLError()
 	}
 
-	if el.textMesh != nil && hasTextConfig && textConfig.Font != nil {
-		el.textMesh.Bind()
+	textConfig, hasTextConfig := el.textConfig.Get()
+	if el.TextMesh() != nil && hasTextConfig && textConfig.Font != nil {
+		el.TextMesh().Bind()
 		failure.CheckOpenGLError()
 
 		cache.GetTexture(textConfig.Font.TexturePath()).Bind()
@@ -380,7 +363,7 @@ func (el *Element) Render(context *render.Context) {
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
 			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.ShadowColor.Vector())
 			failure.CheckOpenGLError()
-			el.textMesh.DrawAll()
+			el.TextMesh().DrawAll()
 		}
 
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textConfig.Color.Or(color.White).Vector())
@@ -389,7 +372,7 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, textMatrix)
 		failure.CheckOpenGLError()
 
-		el.textMesh.DrawAll()
+		el.TextMesh().DrawAll()
 		failure.CheckOpenGLError()
 	}
 

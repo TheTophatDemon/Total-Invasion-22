@@ -72,7 +72,7 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents) M
 				Origin: ui.Ratios{0.0, 0.5},
 				Depth:  10,
 			})
-		elem.ShrinkToFitText()
+		elem.FitText()
 	}
 
 	menu.title = ui.NewBox(ui.Transform{

@@ -190,7 +190,7 @@ func (iter *MeshTriangleIter) Count() int {
 }
 
 func (m *Mesh) BoundingBox() math2.Box {
-	if m.bbox.Size().LenSqr() < mgl32.Epsilon {
+	if len(m.verts.Pos) > 0 && m.bbox.Size().LenSqr() < mgl32.Epsilon {
 		// Calculate the bounding box if it hasn't been calculated already.
 		m.bbox.Max = mgl32.Vec3{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32}
 		m.bbox.Min = mgl32.Vec3{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32}

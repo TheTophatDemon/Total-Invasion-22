@@ -130,7 +130,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 
 			if i == len(word)-runeWidth || !config.WrapWords {
 				// Determine if the word should go on a new line
-				overflowsBounds := (charRect.X+charRect.Width >= txt.Size()[0])
+				overflowsBounds := (charRect.X+charRect.Width > txt.Size()[0])
 				firstWordOnLine := (firstBox.X == 0.0)
 
 				if overflowsBounds && !firstWordOnLine {
@@ -257,4 +257,13 @@ func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
 
 	txt.textMesh = geom.CreateMesh(verts, inds)
 	return txt.textMesh, true
+}
+
+func (el *Element) FitText() {
+	if el.TextMesh() == nil || !el.HasText() {
+		return
+	}
+	// Expand the box first to fit all of the text in one line
+	el.SetSize(mgl32.Vec2{math2.Inf32(), math2.Inf32()})
+	el.SetSize(el.TextMesh().BoundingBox().Size().Vec2())
 }
