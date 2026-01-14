@@ -8,6 +8,7 @@ import (
 
 	"github.com/fzipp/bmfont"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
@@ -264,6 +265,10 @@ func (el *Element) FitText() {
 		return
 	}
 	// Expand the box first to fit all of the text in one line
-	el.SetSize(mgl32.Vec2{math2.Inf32(), math2.Inf32()})
+	scrW, scrH := engine.ScreenSize()
+	el.SetSize(mgl32.Vec2{
+		float32(len(el.Text()) * scrW),
+		float32(len(el.Text()) * scrH),
+	})
 	el.SetSize(el.TextMesh().BoundingBox().Size().Vec2())
 }

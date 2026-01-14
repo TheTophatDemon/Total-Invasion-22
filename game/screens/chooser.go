@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/timer"
@@ -28,7 +30,9 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{16, 24},
-	}, "<", ui.TextConfig{})
+	}, "<", ui.TextConfig{
+		Color: maybe.Some(color.Yellow),
+	})
 
 	longestChoiceStr := choices[0].String()
 	for _, choice := range choices {
@@ -41,7 +45,9 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 	ch.txtValue = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, longestChoiceStr, ui.TextConfig{}) //TODO: TextAlignH breaks it??
+	}, longestChoiceStr, ui.TextConfig{
+		Align: ui.TextAlignCenterH,
+	})
 	ch.txtValue.FitText()
 	ch.txtValue.SetText(choices[choice].String())
 
@@ -49,7 +55,9 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{16, 24},
-	}, ">", ui.TextConfig{})
+	}, ">", ui.TextConfig{
+		Color: maybe.Some(color.Yellow),
+	})
 	ch.labelWidth = ch.OnScreenBox().Width
 	ch.choices = choices
 	ch.choice = choice
