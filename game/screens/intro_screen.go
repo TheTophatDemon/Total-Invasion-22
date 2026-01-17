@@ -65,6 +65,9 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 	return scr
 }
 
+func (scr *IntroScreen) Enter() {}
+func (scr *IntroScreen) Exit()  {}
+
 func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	newY, _ := scr.titleAnim.Update(deltaTime)
 	scr.title.SetY(newY)

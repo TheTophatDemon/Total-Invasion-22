@@ -52,7 +52,7 @@ func NewTitleMenu(app engine.Observer, inGame bool) *TitleMenu {
 	} else {
 		menuItems = menuItems[1:]
 	}
-	titleMenu.Menu = newMenu(app, pos, menuItems)
+	titleMenu.Menu = newMenu(app, pos, menuItems, nil)
 	if inGame {
 		titleMenu.menuSelection = 0
 	}

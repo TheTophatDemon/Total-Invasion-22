@@ -48,6 +48,7 @@ func (app *App) Update(deltaTime float32) {
 		)
 		app.renderQueue.Add(&app.titleScreenBackground)
 		app.screen.Layout(&app.renderQueue, deltaTime)
+		//TODO: Only do this if you aren't in a submenu
 		if app.world != nil && input.IsActionJustPressed(settings.ActionMenuCancel) {
 			input.TrapMouse()
 			app.screen = nil
@@ -124,7 +125,13 @@ func (app *App) executeSignal(signal any) {
 			MaxTicks: 1,
 		}
 	case game.ChangeScreenSignal:
+		if app.screen != nil {
+			app.screen.Exit()
+		}
 		app.screen = msg.Screen
+		if msg.Screen != nil {
+			msg.Screen.Enter()
+		}
 	}
 }
 
@@ -145,7 +152,6 @@ func (app *App) LoadGame(sig game.MapChangeSignal) {
 }
 
 func main() {
-	var err error
 	// cpuProfile, err := os.Create("cpuProfile.pprof")
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -158,16 +164,13 @@ func main() {
 
 	settings.LoadOrInit()
 
-	err = engine.Init(
+	engine.Init(
 		int(settings.Current.WindowWidth),
 		int(settings.Current.WindowHeight),
 		"Total Invasion 22",
 		slices.Contains(os.Args[1:], "debug"),
 	)
 	defer engine.DeInit()
-	if err != nil {
-		panic(err)
-	}
 
 	// The first sound loaded is used as the error sound
 	cache.GetSfx("assets/sounds/error.wav")

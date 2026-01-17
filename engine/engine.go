@@ -42,10 +42,23 @@ func ScreenSize() (width, height int) {
 	return
 }
 
-func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) error {
+func SetScreenSize(width, height int) {
+	window.SetSize(width, height)
+	gl.Viewport(0, 0, int32(width), int32(height))
+	CenterWindow()
+}
+
+func CenterWindow() {
+	_, _, monitorW, monitorH := glfw.GetPrimaryMonitor().GetWorkarea()
+	winWidth, winHeight := window.GetSize()
+	// This isn't _exactly_ the center, but who cares?
+	window.SetPos((monitorW/2)-(winWidth/2), (monitorH/2)-(winHeight/2))
+}
+
+func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) {
 	err := glfw.Init()
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	debugMode = enableDebug
@@ -62,23 +75,20 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) e
 	}
 	window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
 	if err != nil {
-		return err
+		panic(err)
 	}
-
+	CenterWindow()
 	window.MakeContextCurrent()
 	glfw.SwapInterval(1)
+	if err := gl.Init(); err != nil {
+		panic(err)
+	}
 
 	input.Init()
 
 	tdaudio.Init()
 
-	if err := gl.Init(); err != nil {
-		return err
-	}
-
 	cache.InitBuiltInAssets()
-
-	return nil
 }
 
 func Run(app App) {

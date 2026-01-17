@@ -11,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -30,6 +31,7 @@ type (
 		cursor        ui.Element
 		title, fade   ui.Element
 		app           engine.Observer
+		parent        ui.Screen
 	}
 	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
@@ -39,12 +41,13 @@ type (
 	}
 )
 
-func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents) Menu {
+func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents, parent ui.Screen) Menu {
 	menu := Menu{
 		position:      position,
 		menuItems:     menuItems,
 		menuSelection: -1,
 		app:           app,
+		parent:        parent,
 	}
 
 	menu.menuSpacing = 36
@@ -92,6 +95,20 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents) M
 	return menu
 }
 
+func (menu *Menu) returnToParent() {
+	if menu.parent != nil {
+		menu.app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: menu.parent,
+		})
+	}
+}
+
+func (menu *Menu) Enter() {
+}
+
+func (menu *Menu) Exit() {
+}
+
 func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
 
@@ -101,6 +118,10 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
 	} else if input.IsActionJustPressed(settings.ActionMenuUp) {
 		menu.menuSelection = (menu.menuSelection + len(menu.menuItems) - 1) % len(menu.menuItems)
+	}
+
+	if input.IsActionJustPressed(settings.ActionMenuCancel) {
+		menu.returnToParent()
 	}
 
 	if menu.menuSelection >= 0 {
