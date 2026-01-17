@@ -10,6 +10,7 @@
 - Change map layouts to not need 3D collisions?
 - Physics fixes
   - Plasma gun pushes enemies through walls
+    - Seems to happen while the enemy is dying.
   - Squeezing through adjacent props
   - Hitching on consecutive sloped walls
 - Optimize memory usage of particle effects

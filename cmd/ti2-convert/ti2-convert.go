@@ -95,15 +95,15 @@ func main() {
 		IDX_PANEL
 		IDX_BARS
 		IDX_DOOR
-		IDX_MARKER
+		IDX_HANDRAIL
 	)
 
 	modelList := []string{
-		IDX_CUBE:   "assets/models/shapes/cube.obj",
-		IDX_PANEL:  "assets/models/shapes/panel.obj",
-		IDX_BARS:   "assets/models/shapes/bars.obj",
-		IDX_DOOR:   "assets/models/shapes/door.obj",
-		IDX_MARKER: "assets/models/shapes/cube_marker.obj",
+		IDX_CUBE:     "assets/models/shapes/cube.obj",
+		IDX_PANEL:    "assets/models/shapes/panel.obj",
+		IDX_BARS:     "assets/models/shapes/bars.obj",
+		IDX_DOOR:     "assets/models/shapes/door.obj",
+		IDX_HANDRAIL: "assets/models/shapes/handrail.obj",
 	}
 	textureList := make([]string, 0, 64)
 
@@ -184,8 +184,10 @@ func main() {
 			modelIndex = IDX_BARS
 		case "door", "spacedoor", "spacedoor_dark", "prismirdoor":
 			modelIndex = IDX_DOOR
+		case "fence_invisible":
+			modelIndex = IDX_HANDRAIL
 		case "invisible":
-			modelIndex = IDX_MARKER
+			modelIndex = IDX_CUBE
 		}
 
 		if flag > 0 && flag != 6 && flag != 7 {
