@@ -82,7 +82,7 @@ func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 		if input.IsAnythingPressed() {
 			scr.app.ProcessSignal(game.ChangeScreenSignal{
-				Screen: NewTitleMenu(scr.app, false),
+				Screen: new(TitleMenu).Init(scr.app, false),
 			})
 		}
 	}

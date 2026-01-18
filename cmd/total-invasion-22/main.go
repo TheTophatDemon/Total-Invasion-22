@@ -48,16 +48,11 @@ func (app *App) Update(deltaTime float32) {
 		)
 		app.renderQueue.Add(&app.titleScreenBackground)
 		app.screen.Layout(&app.renderQueue, deltaTime)
-		//TODO: Only do this if you aren't in a submenu
-		if app.world != nil && input.IsActionJustPressed(settings.ActionMenuCancel) {
-			input.TrapMouse()
-			app.screen = nil
-		}
 	case app.world != nil:
 		app.world.Update(deltaTime)
 		if input.IsActionJustPressed(settings.ActionMenuCancel) {
 			input.UntrapMouse()
-			app.screen = screens.NewTitleMenu(app, true)
+			app.screen = new(screens.TitleMenu).Init(app, true)
 		}
 	case app.loadingTimer.Update(deltaTime):
 		app.LoadGame(app.loadingMap)
@@ -128,9 +123,13 @@ func (app *App) executeSignal(signal any) {
 		if app.screen != nil {
 			app.screen.Exit()
 		}
-		app.screen = msg.Screen
 		if msg.Screen != nil {
+			app.screen = msg.Screen
 			msg.Screen.Enter()
+		} else if app.world != nil {
+			// No parent screen = resuming game
+			input.TrapMouse()
+			app.screen = nil
 		}
 	}
 }

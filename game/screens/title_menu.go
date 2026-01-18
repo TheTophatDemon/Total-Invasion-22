@@ -3,23 +3,20 @@ package screens
 import (
 	"os"
 
-	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type TitleMenu struct {
 	Menu
 	resumeGame, newGame, loadGame, saveGame, options, exit MenuItem
+	inGame                                                 bool
 }
 
-func NewTitleMenu(app engine.Observer, inGame bool) *TitleMenu {
-	titleMenu := &TitleMenu{}
-	pos := mgl32.Vec2{
-		(float32(settings.Current.WindowWidth) / 2.0) - 256.0,
-		float32(settings.Current.WindowHeight) - 192.0,
+func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
+	*titleMenu = TitleMenu{
+		inGame: inGame,
 	}
 	titleMenu.resumeGame.Init("resumeGame", func(input.Action) {
 		app.ProcessSignal(game.ResumeGameSignal{})
@@ -33,7 +30,7 @@ func NewTitleMenu(app engine.Observer, inGame bool) *TitleMenu {
 	titleMenu.saveGame.Init("saveGame", nil)
 	titleMenu.options.Init("options", func(input.Action) {
 		app.ProcessSignal(game.ChangeScreenSignal{
-			Screen: NewSettingsMenu(app, titleMenu),
+			Screen: new(SettingsMenu).Init(app, titleMenu),
 		})
 	})
 	titleMenu.exit.Init("exit", func(input.Action) {
@@ -47,12 +44,10 @@ func NewTitleMenu(app engine.Observer, inGame bool) *TitleMenu {
 		&titleMenu.options,
 		&titleMenu.exit,
 	}
-	if inGame {
-		pos[1] -= 36.0
-	} else {
+	if !inGame {
 		menuItems = menuItems[1:]
 	}
-	titleMenu.Menu = newMenu(app, pos, menuItems, nil)
+	titleMenu.Menu.Init(app, menuItems, nil)
 	if inGame {
 		titleMenu.menuSelection = 0
 	}

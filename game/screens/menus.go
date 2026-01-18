@@ -41,16 +41,20 @@ type (
 	}
 )
 
-func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents, parent ui.Screen) Menu {
-	menu := Menu{
-		position:      position,
+func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Screen) *Menu {
+	*menu = Menu{
+		menuSpacing:   36,
 		menuItems:     menuItems,
 		menuSelection: -1,
 		app:           app,
 		parent:        parent,
 	}
 
-	menu.menuSpacing = 36
+	menu.position = mgl32.Vec2{
+		(float32(settings.Current.WindowWidth) / 2.0) - 256.0,
+		float32(int(settings.Current.WindowHeight) - ((len(menuItems) + 1) * int(menu.menuSpacing))),
+	}
+
 	menu.cursor = ui.NewBox(ui.Transform{
 		Size:   mgl32.Vec2{32.0, 32.0},
 		Origin: ui.Ratios{0.5, 0.5},
@@ -65,11 +69,11 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents, p
 		elem.SetTransform(
 			ui.Transform{
 				Position: mgl32.Vec2{
-					position[0] + 36,
-					position[1] + (menu.menuSpacing * float32(i)),
+					menu.position[0] + 36,
+					menu.position[1] + (menu.menuSpacing * float32(i)),
 				},
 				Size: mgl32.Vec2{
-					(settings.UIWidth() - position[0] - 24.0),
+					(settings.UIWidth() - menu.position[0] - 24.0),
 					24.0,
 				},
 				Origin: ui.Ratios{0.0, 0.5},
@@ -96,11 +100,9 @@ func newMenu(app engine.Observer, position mgl32.Vec2, menuItems []MenuEvents, p
 }
 
 func (menu *Menu) returnToParent() {
-	if menu.parent != nil {
-		menu.app.ProcessSignal(game.ChangeScreenSignal{
-			Screen: menu.parent,
-		})
-	}
+	menu.app.ProcessSignal(game.ChangeScreenSignal{
+		Screen: menu.parent,
+	})
 }
 
 func (menu *Menu) Enter() {

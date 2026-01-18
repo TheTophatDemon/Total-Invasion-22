@@ -1,21 +1,23 @@
 # TODO
-- Title screen
+- Menus
+  - Scale title graphic depending on screen size
   - Settings menu
-    - What is that stupid flickering!?
-    - Apply resolution changes
     - Fullscreen
+    - Vsync
+  - What is that stupid flickering!?
   - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
-- Change map layouts to not need 3D collisions?
 - Physics fixes
   - Plasma gun pushes enemies through walls
     - Seems to happen while the enemy is dying.
-  - Squeezing through adjacent props
+  - You can squeeze through adjacent props
+    - Place invisible map tiles around them
   - Hitching on consecutive sloped walls
+    - God help me...
 - Optimize memory usage of particle effects
   - Redo map collisions to be based on sweeping against 2D line segments
-- Optimize pauses by pre loaded textures for entities
+- Optimize pauses by pre loading textures for entities
 - Eyeball messages
   - Drop some lore in the secret room on E1M2
 - Player hit noise
@@ -35,7 +37,6 @@
 - Port E1M4
   - Textures
     - Satanic fountain
-    - Guardrail
   - Song
 
 ## Roadmap after Demo release

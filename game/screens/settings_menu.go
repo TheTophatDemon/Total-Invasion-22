@@ -3,7 +3,6 @@ package screens
 import (
 	"fmt"
 
-	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
@@ -23,8 +22,8 @@ func (res Resolution) String() string {
 	return fmt.Sprintf("%vx%v", res[0], res[1])
 }
 
-func NewSettingsMenu(app engine.Observer, parent ui.Screen) *SettingsMenu {
-	settingsMenu := &SettingsMenu{}
+func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *SettingsMenu {
+	*settingsMenu = SettingsMenu{}
 	settingsMenu.returnItem.Init("return", func(input.Action) { settingsMenu.returnToParent() })
 	sizeChoices := []Resolution{
 		{640, 480},
@@ -41,12 +40,8 @@ func NewSettingsMenu(app engine.Observer, parent ui.Screen) *SettingsMenu {
 		}
 	}
 	settingsMenu.chooserScreenSize.Init("screenResolution", sizeChoices, sizeChoice)
-	settingsMenu.Menu = newMenu(
+	settingsMenu.Menu.Init(
 		app,
-		mgl32.Vec2{
-			(float32(settings.Current.WindowWidth) / 2.0) - 256.0,
-			float32(settings.Current.WindowHeight) - 192.0,
-		},
 		[]MenuEvents{
 			&settingsMenu.returnItem,
 			&settingsMenu.chooserScreenSize,
@@ -62,5 +57,10 @@ func (menu *SettingsMenu) Exit() {
 		settings.Current.WindowWidth = newSize[0]
 		settings.Current.WindowHeight = newSize[1]
 		engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
+
+		// Reset the title menu so things are positioned correctly
+		if titleMenu, ok := menu.parent.(*TitleMenu); ok {
+			titleMenu.Init(titleMenu.app, titleMenu.inGame)
+		}
 	}
 }
