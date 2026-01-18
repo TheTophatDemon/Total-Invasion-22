@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Settings menu
-    - Fullscreen
     - Vsync
     - Sfx
     - Music
@@ -22,7 +21,6 @@
   - Hitching on consecutive sloped walls
     - God help me...
 - Optimize memory usage of particle effects
-  - Redo map collisions to be based on sweeping against 2D line segments
 - Optimize pauses by pre loading textures for entities
 - Eyeball messages
   - Drop some lore in the secret room on E1M2

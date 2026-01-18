@@ -1,8 +1,6 @@
 package screens
 
 import (
-	"os"
-
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -34,7 +32,7 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 		})
 	})
 	titleMenu.exit.Init("exit", func(input.Action) {
-		os.Exit(0)
+		engine.Shutdown()
 	})
 	menuItems := []MenuEvents{
 		&titleMenu.resumeGame,

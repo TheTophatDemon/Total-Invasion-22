@@ -25,6 +25,9 @@ type App interface {
 var debugMode bool
 var window *glfw.Window
 
+// We're tracking this ourselves so that switching to fullscreen doesn't mess up the UI
+var gScreenWidth, gScreenHeight int
+
 func FPS() int {
 	return int(clock.ActualTPS())
 }
@@ -38,14 +41,35 @@ func InDebugMode() bool {
 }
 
 func ScreenSize() (width, height int) {
-	width, height = window.GetFramebufferSize()
-	return
+	return gScreenWidth, gScreenHeight
 }
 
 func SetScreenSize(width, height int) {
+	gScreenWidth = width
+	gScreenHeight = height
 	window.SetSize(width, height)
 	gl.Viewport(0, 0, int32(width), int32(height))
 	CenterWindow()
+}
+
+func IsFullscreen() bool {
+	return window.GetMonitor() != nil
+}
+
+func SetFullscreen(isFullscreen bool) {
+	//fmt.Printf("Monitor size before: %v, %v; ", glfw.GetPrimaryMonitor().GetVideoMode().Width, glfw.GetPrimaryMonitor().GetVideoMode().Height)
+	width, height := ScreenSize()
+	if isFullscreen {
+		window.SetMonitor(glfw.GetPrimaryMonitor(), 0, 0, width, height, 60)
+	} else {
+		x, y := window.GetPos()
+		window.SetMonitor(nil, x, y, width, height, 60)
+	}
+	//fmt.Printf("Monitor size after: %v, %v\n", glfw.GetPrimaryMonitor().GetVideoMode().Width, glfw.GetPrimaryMonitor().GetVideoMode().Height)
+}
+
+func Shutdown() {
+	window.SetShouldClose(true)
 }
 
 func CenterWindow() {
@@ -55,7 +79,7 @@ func CenterWindow() {
 	window.SetPos((monitorW/2)-(winWidth/2), (monitorH/2)-(winHeight/2))
 }
 
-func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) {
+func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFullscreen bool) {
 	err := glfw.Init()
 	if err != nil {
 		panic(err)
@@ -68,12 +92,18 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug bool) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	gScreenWidth = screenWidth
+	gScreenHeight = screenHeight
 	if debugMode {
 		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
 	} else {
 		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.False)
 	}
-	window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
+	if isFullscreen {
+		window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, glfw.GetPrimaryMonitor(), nil)
+	} else {
+		window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -121,6 +151,9 @@ func Run(app App) {
 		}
 		glfw.PollEvents()
 	}
+
+	// Reset video mode before leaving
+	window.SetMonitor(nil, 0, 0, 1280, 720, 0)
 }
 
 func DeInit() {

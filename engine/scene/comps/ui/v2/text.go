@@ -203,7 +203,7 @@ func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
 	if len(boxes) != len(chars) {
 		failure.LogErrWithLocation("boxes(%v) and chars(%v) arrays mismatch for \"%v\"", len(boxes), len(chars), txt.text)
 		return nil, false
-	} else if len(boxes) == 0 && txt.text != "" {
+	} else if len(boxes) == 0 && txt.text != "" && txt.Size() != (mgl32.Vec2{}) {
 		failure.LogWarningWithLocation("non-empty text element could not generate any vertices")
 	}
 

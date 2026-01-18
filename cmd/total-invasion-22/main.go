@@ -171,6 +171,7 @@ func main() {
 		int(settings.Current.WindowHeight),
 		"Total Invasion 22",
 		slices.Contains(os.Args[1:], "debug"),
+		settings.Current.Fullscreen,
 	)
 	defer engine.DeInit()
 

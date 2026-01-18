@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -139,6 +140,7 @@ func (el *Element) BgMatrix() mgl32.Mat4 {
 
 			// Translate
 			screenW, screenH := engine.ScreenSize()
+			fmt.Printf("engine's screen size: [%v, %v]\n", screenW, screenH)
 			fWidth, fHeight := float32(screenW), float32(screenH)
 			el.boxMatrix = mgl32.Translate3D(
 				el.Position()[0]+(el.Anchor()[0]*fWidth),
