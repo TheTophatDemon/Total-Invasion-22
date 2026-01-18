@@ -1,13 +1,19 @@
 # TODO
 - Menus
-  - Scale title graphic depending on screen size
   - Settings menu
     - Fullscreen
     - Vsync
+    - Sfx
+    - Music
+    - FOV
+    - Language
+    - Text Shadow
   - What is that stupid flickering!?
   - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
+- Developer level select menu
+- Fix in game HUD to adapt to screen size changes
 - Physics fixes
   - Plasma gun pushes enemies through walls
     - Seems to happen while the enemy is dying.

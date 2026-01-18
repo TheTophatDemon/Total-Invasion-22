@@ -83,12 +83,12 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 	}
 
 	menu.title = ui.NewBox(ui.Transform{
-		Size:     mgl32.Vec2{960.0, 256.0},
 		Anchor:   ui.Ratios{0.5, 0.0},
 		Origin:   ui.Ratios{0.5, 0.0},
-		Position: mgl32.Vec2{32.0, 0.0},
+		Position: mgl32.Vec2{0.0, 0.0},
 		Depth:    50,
 	}, cache.GetTexture("assets/textures/ui/title.png"))
+	menu.title.FitHeight(float32(settings.Current.WindowHeight) * 0.355555556)
 
 	menu.fade = ui.NewBox(ui.Transform{
 		Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},

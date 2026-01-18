@@ -25,10 +25,9 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 	scr := &IntroScreen{
 		app: app,
 		title: ui.NewBox(ui.Transform{
-			Size:     mgl32.Vec2{960.0, 256.0},
 			Anchor:   ui.Ratios{0.5, 0.0},
 			Origin:   ui.Ratios{0.5, 1.0},
-			Position: mgl32.Vec2{32.0, 0.0},
+			Position: mgl32.Vec2{0.0, 0.0},
 			Depth:    50,
 		}, cache.GetTexture("assets/textures/ui/title.png")),
 		flash: ui.NewBox(ui.Transform{
@@ -50,6 +49,7 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 		),
 	}
 	scr.flash.BgColor = maybe.Some(color.White.WithAlpha(0.0))
+	scr.title.FitHeight(float32(settings.Current.WindowHeight) * 0.355555556)
 	scr.titleAnim = *gween.New(0.0, scr.title.Size()[1], 1.0, ease.Linear) // Move title in from off screen
 	scr.flashAnim = *gween.NewSequence(
 		gween.New(0.0, 0.0, 0.5, ease.Linear),   // Wait

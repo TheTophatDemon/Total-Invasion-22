@@ -55,6 +55,9 @@ type Element struct {
 }
 
 func NewBox(transform Transform, texture *textures.Texture) Element {
+	if texture != nil && transform.Size.ApproxEqual(mgl32.Vec2{}) {
+		transform.Size = mgl32.Vec2{float32(texture.Width()), float32(texture.Height())}
+	}
 	return Element{
 		BgMesh:    cache.QuadMesh,
 		BgTexture: texture,
@@ -306,6 +309,12 @@ func (el *Element) SetShear(value mgl32.Vec2) {
 func (el *Element) SetDepth(value float32) {
 	el.transform.Depth = value
 	el.transformClean = false
+}
+
+// Expands the element to the specified height while keeping its current aspect ratio.
+func (el *Element) FitHeight(targetHeight float32) {
+	size := el.Size()
+	el.SetSize(size.Mul(targetHeight / size[1]))
 }
 
 func (el *Element) Render(context *render.Context) {

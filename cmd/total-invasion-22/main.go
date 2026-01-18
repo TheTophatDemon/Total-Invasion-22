@@ -43,9 +43,10 @@ func (app *App) Update(deltaTime float32) {
 	case app.screen != nil:
 		// Render title screen graphic
 		app.titleScreenBackground = ui.NewBox(
-			ui.Transform{Size: mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)}},
+			ui.Transform{},
 			cache.GetTexture("assets/textures/ui/title_screen.png"),
 		)
+		app.titleScreenBackground.FitHeight(float32(settings.Current.WindowHeight))
 		app.renderQueue.Add(&app.titleScreenBackground)
 		app.screen.Layout(&app.renderQueue, deltaTime)
 	case app.world != nil:
@@ -88,11 +89,13 @@ func (app *App) Render() {
 		gl.CullFace(gl.FRONT)
 		box := ui.NewBox(
 			ui.Transform{
-				Size:  mgl32.Vec2{settings.UIWidth(), settings.UIHeight()},
-				Depth: 10.0,
+				Anchor: ui.Ratios{0.5, 0.0},
+				Origin: ui.Ratios{0.5, 0.0},
+				Depth:  10.0,
 			},
 			loadingScreenTex,
 		)
+		box.FitHeight(float32(settings.Current.WindowHeight))
 		box.Render(&renderContext)
 	}
 }
