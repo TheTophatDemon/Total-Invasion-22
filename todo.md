@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Settings menu
-    - Vsync
     - Sfx
     - Music
     - FOV

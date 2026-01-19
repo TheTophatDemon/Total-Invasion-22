@@ -17,11 +17,12 @@ type Chooser[T fmt.Stringer] struct {
 	txtLeft, txtValue, txtRight ui.Element
 	labelWidth                  float32
 	choices                     []T
-	choice                      int
+	choiceIndex                 int
+	startingChoice              T
 	blinkTimer                  timer.Timer
 }
 
-func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T] {
+func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 	ch.MenuItem = MenuItem{
 		element: ui.NewText(ui.Transform{}, settings.Localize(labelKey)+": ", ui.TextConfig{}),
 	}
@@ -49,7 +50,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 		Align: ui.TextAlignCenterH,
 	})
 	ch.txtValue.FitText()
-	ch.txtValue.SetText(choices[choice].String())
+	ch.txtValue.SetText(choice.String())
 
 	ch.txtRight = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -60,7 +61,14 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 	})
 	ch.labelWidth = ch.OnScreenBox().Width
 	ch.choices = choices
-	ch.choice = choice
+	ch.startingChoice = choice
+	ch.choiceIndex = -1
+	for i, existingChoice := range choices {
+		if existingChoice.String() == choice.String() {
+			ch.choiceIndex = i
+			break
+		}
+	}
 	ch.blinkTimer = timer.Timer{
 		Interval: 0.5,
 		Elapsed:  0.5,
@@ -69,11 +77,11 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice int) *Chooser[T]
 }
 
 func (ch *Chooser[T]) next() {
-	ch.choice = (ch.choice + 1) % len(ch.choices)
+	ch.choiceIndex = (ch.choiceIndex + 1) % len(ch.choices)
 }
 
 func (ch *Chooser[T]) prev() {
-	ch.choice = (ch.choice + len(ch.choices) - 1) % len(ch.choices)
+	ch.choiceIndex = (ch.choiceIndex + len(ch.choices) - 1) % len(ch.choices)
 }
 
 func (ch *Chooser[T]) Input(action input.Action) {
@@ -100,7 +108,7 @@ func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {
 
 	leftWidth := ch.txtLeft.OnScreenBox().Width + 8.0
 	ch.txtValue.SetPosition(ch.txtLeft.Position())
-	ch.txtValue.SetText(ch.choices[ch.choice].String())
+	ch.txtValue.SetText(ch.Choice().String())
 	ch.txtValue.Translate(mgl32.Vec2{leftWidth, 0.0})
 	queue.Add(&ch.txtValue)
 
@@ -116,5 +124,8 @@ func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {
 }
 
 func (ch *Chooser[T]) Choice() T {
-	return ch.choices[ch.choice]
+	if ch.choiceIndex >= 0 {
+		return ch.choices[ch.choiceIndex]
+	}
+	return ch.startingChoice
 }

@@ -17,6 +17,7 @@ type (
 		returnItem        MenuItem
 		chooserScreenSize Chooser[Resolution]
 		chooserFullscreen Chooser[OnOff]
+		chooserVsync      Chooser[OnOff]
 	}
 )
 
@@ -41,26 +42,19 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 		{1280, 720},
 		{1920, 1080},
 	}
-	sizeChoice := 3
-	for i, choice := range sizeChoices {
-		if choice[0] == uint16(settings.Current.WindowWidth) && choice[1] == uint16(settings.Current.WindowHeight) {
-			sizeChoice = i
-			break
-		}
-	}
-	settingsMenu.chooserScreenSize.Init("screenResolution", sizeChoices, sizeChoice)
+	settingsMenu.chooserScreenSize.Init("screenResolution", sizeChoices, Resolution{settings.Current.WindowWidth, settings.Current.WindowHeight})
 
-	fullscreenChoice := 0
-	if settings.Current.Fullscreen {
-		fullscreenChoice = 1
-	}
-	settingsMenu.chooserFullscreen.Init("fullscreen", []OnOff{OnOff(false), OnOff(true)}, fullscreenChoice)
+	onOffChoices := []OnOff{OnOff(false), OnOff(true)}
+	settingsMenu.chooserFullscreen.Init("fullscreen", onOffChoices, OnOff(settings.Current.Fullscreen))
+	settingsMenu.chooserVsync.Init("vsync", onOffChoices, OnOff(settings.Current.Vsync))
+
 	settingsMenu.Menu.Init(
 		app,
 		[]MenuEvents{
 			&settingsMenu.returnItem,
 			&settingsMenu.chooserScreenSize,
 			&settingsMenu.chooserFullscreen,
+			&settingsMenu.chooserVsync,
 		},
 		parent,
 	)
@@ -81,6 +75,10 @@ func (menu *SettingsMenu) Exit() {
 		settings.Current.WindowHeight = newSize[1]
 		engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
 		resetMenu = true
+	}
+	if newVsync := bool(menu.chooserVsync.Choice()); settings.Current.Vsync != newVsync {
+		settings.Current.Vsync = newVsync
+		engine.SetVsync(newVsync)
 	}
 	if resetMenu {
 		// Reset the title menu so things are positioned correctly

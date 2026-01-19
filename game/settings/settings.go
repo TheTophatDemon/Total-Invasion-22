@@ -70,7 +70,7 @@ const settingsFilePath = "game_settings.toml"
 
 type Data struct {
 	WindowWidth, WindowHeight uint16
-	Fullscreen                bool
+	Fullscreen, Vsync         bool
 	MouseSensitivity          float32
 	TextShadowColor           color.Color
 	SfxVolume, MusicVolume    float32
@@ -88,6 +88,7 @@ func init() {
 	Default = Data{
 		WindowWidth: 1280, WindowHeight: 720,
 		Fullscreen:       false,
+		Vsync:            true,
 		MouseSensitivity: 0.005,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		SfxVolume:        1.0, MusicVolume: 1.0,

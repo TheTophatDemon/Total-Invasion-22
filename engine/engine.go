@@ -27,6 +27,7 @@ var window *glfw.Window
 
 // We're tracking this ourselves so that switching to fullscreen doesn't mess up the UI
 var gScreenWidth, gScreenHeight int
+var gVsync bool
 
 func FPS() int {
 	return int(clock.ActualTPS())
@@ -56,16 +57,28 @@ func IsFullscreen() bool {
 	return window.GetMonitor() != nil
 }
 
+func IsVsync() bool {
+	return gVsync
+}
+
+func SetVsync(isVsync bool) {
+	gVsync = isVsync
+	if isVsync {
+		glfw.SwapInterval(1)
+	} else {
+		glfw.SwapInterval(0)
+	}
+}
+
 func SetFullscreen(isFullscreen bool) {
-	//fmt.Printf("Monitor size before: %v, %v; ", glfw.GetPrimaryMonitor().GetVideoMode().Width, glfw.GetPrimaryMonitor().GetVideoMode().Height)
 	width, height := ScreenSize()
 	if isFullscreen {
 		window.SetMonitor(glfw.GetPrimaryMonitor(), 0, 0, width, height, 60)
 	} else {
 		x, y := window.GetPos()
 		window.SetMonitor(nil, x, y, width, height, 60)
+		CenterWindow()
 	}
-	//fmt.Printf("Monitor size after: %v, %v\n", glfw.GetPrimaryMonitor().GetVideoMode().Width, glfw.GetPrimaryMonitor().GetVideoMode().Height)
 }
 
 func Shutdown() {
@@ -153,7 +166,7 @@ func Run(app App) {
 	}
 
 	// Reset video mode before leaving
-	window.SetMonitor(nil, 0, 0, 1280, 720, 0)
+	SetFullscreen(false)
 }
 
 func DeInit() {
