@@ -64,6 +64,7 @@ const (
 	ActionCastBlessing input.Action = "castBlessing"
 	ActionLaunchEditor input.Action = "launchEditor"
 	ActionSpawnChicken input.Action = "spawnChicken"
+	ActionLevelSelect  input.Action = "levelSelect"
 )
 
 const settingsFilePath = "game_settings.toml"

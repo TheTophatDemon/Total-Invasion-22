@@ -129,6 +129,7 @@ func (app *App) executeSignal(signal any) {
 		if msg.Screen != nil {
 			app.screen = msg.Screen
 			msg.Screen.Enter()
+			input.UntrapMouse()
 		} else if app.world != nil {
 			// No parent screen = resuming game
 			input.TrapMouse()
@@ -198,15 +199,6 @@ func main() {
 	input.BindActionKey(settings.ActionAirhorn, glfw.Key7)
 	input.BindActionKey(settings.ActionDefenestrator, glfw.Key8)
 	input.BindActionKey(settings.ActionCluckster, glfw.Key9)
-	input.BindActionCharSequence(settings.ActionNoclip, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
-	input.BindActionCharSequence(settings.ActionGodMode, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
-	input.BindActionCharSequence(settings.ActionMarySue, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
-	input.BindActionCharSequence(settings.ActionDie, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
-	input.BindActionCharSequence(settings.ActionKillEnemies, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE, glfw.KeyM})               //TDNUKEM
-	input.BindActionCharSequence(settings.ActionCastBlessing, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})   //TDWOLOLO
-	input.BindActionCharSequence(settings.ActionLaunchEditor, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT})                         //TDJOMT
-	input.BindActionCharSequence(settings.ActionSpawnChicken, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC})                                    //TDKFC
-
 	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
 	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
 	input.BindActionKey(settings.ActionMenuIncrement, glfw.KeyRight)
@@ -215,6 +207,16 @@ func main() {
 	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton1)
 	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton2)
 	input.BindActionKey(settings.ActionMenuCancel, glfw.KeyEscape)
+
+	input.BindActionCharSequence(settings.ActionNoclip, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
+	input.BindActionCharSequence(settings.ActionGodMode, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
+	input.BindActionCharSequence(settings.ActionMarySue, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
+	input.BindActionCharSequence(settings.ActionDie, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
+	input.BindActionCharSequence(settings.ActionKillEnemies, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE, glfw.KeyM})               //TDNUKEM
+	input.BindActionCharSequence(settings.ActionCastBlessing, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})   //TDWOLOLO
+	input.BindActionCharSequence(settings.ActionLaunchEditor, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT})                         //TDJOMT
+	input.BindActionCharSequence(settings.ActionSpawnChicken, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC})                                    //TDKFC
+	input.BindActionCharSequence(settings.ActionLevelSelect, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV})                          //TDCLEV
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 

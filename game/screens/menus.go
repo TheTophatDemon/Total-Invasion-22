@@ -174,7 +174,14 @@ func (item *MenuItem) Init(stringKey string, callback func(input.Action)) *MenuI
 	if item == nil {
 		return nil
 	}
-	item.element = ui.NewText(ui.Transform{}, settings.Localize(stringKey), ui.TextConfig{})
+	return item.InitUnlocalized(settings.Localize(stringKey), callback)
+}
+
+func (item *MenuItem) InitUnlocalized(actualText string, callback func(input.Action)) *MenuItem {
+	if item == nil {
+		return nil
+	}
+	item.element = ui.NewText(ui.Transform{}, actualText, ui.TextConfig{})
 	item.OnInput = callback
 	return item
 }

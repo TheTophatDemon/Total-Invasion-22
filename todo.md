@@ -6,11 +6,12 @@
     - FOV
     - Language
     - Text Shadow
+  - Keybind menu
+    - Menu scrolling
   - What is that stupid flickering!?
   - Increase font size
   - Sound effects
   - Modify loading screen graphic to be more on-model
-- Developer level select menu
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
   - Plasma gun pushes enemies through walls
