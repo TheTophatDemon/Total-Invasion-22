@@ -3,9 +3,11 @@ package screens
 import (
 	"fmt"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -18,6 +20,8 @@ type (
 		chooserScreenSize Chooser[Resolution]
 		chooserFullscreen Chooser[OnOff]
 		chooserVsync      Chooser[OnOff]
+		sliderSfxVolume   Slider
+		sliderMusicVolume Slider
 	}
 )
 
@@ -48,6 +52,9 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.chooserFullscreen.Init("fullscreen", onOffChoices, OnOff(settings.Current.Fullscreen))
 	settingsMenu.chooserVsync.Init("vsync", onOffChoices, OnOff(settings.Current.Vsync))
 
+	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, int(settings.Current.SfxVolume*10.0))
+	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, int(settings.Current.MusicVolume*10.0))
+
 	settingsMenu.Menu.Init(
 		app,
 		[]MenuEvents{
@@ -55,10 +62,18 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.chooserScreenSize,
 			&settingsMenu.chooserFullscreen,
 			&settingsMenu.chooserVsync,
+			&settingsMenu.sliderSfxVolume,
+			&settingsMenu.sliderMusicVolume,
 		},
 		parent,
 	)
 	return settingsMenu
+}
+
+func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	menu.Menu.Layout(queue, deltaTime)
+	tdaudio.SetSfxVolume(menu.sliderSfxVolume.FractionValue())
+	tdaudio.SetMusicVolume(menu.sliderMusicVolume.FractionValue())
 }
 
 func (menu *SettingsMenu) Exit() {
@@ -80,6 +95,14 @@ func (menu *SettingsMenu) Exit() {
 		settings.Current.Vsync = newVsync
 		engine.SetVsync(newVsync)
 	}
+
+	if newVolume := menu.sliderSfxVolume.FractionValue(); !mgl32.FloatEqual(newVolume, settings.Current.SfxVolume) {
+		settings.Current.SfxVolume = newVolume
+	}
+	if newVolume := menu.sliderMusicVolume.FractionValue(); !mgl32.FloatEqual(newVolume, settings.Current.MusicVolume) {
+		settings.Current.MusicVolume = newVolume
+	}
+
 	if resetMenu {
 		// Reset the title menu so things are positioned correctly
 		if titleMenu, ok := menu.parent.(*TitleMenu); ok {

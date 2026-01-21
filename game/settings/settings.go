@@ -74,7 +74,7 @@ type Data struct {
 	Fullscreen, Vsync         bool
 	MouseSensitivity          float32
 	TextShadowColor           color.Color
-	SfxVolume, MusicVolume    float32
+	SfxVolume, MusicVolume    float32 // From 0 to 1
 	Locale                    string
 	Fov                       float32 // Measured in degrees
 	Debug                     struct {

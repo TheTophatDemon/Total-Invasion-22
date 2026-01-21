@@ -4,13 +4,15 @@ import (
 	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
-	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
+
+const sfxChoose = "assets/sounds/ui/weapon_select.wav"
 
 type Chooser[T fmt.Stringer] struct {
 	MenuItem
@@ -19,7 +21,6 @@ type Chooser[T fmt.Stringer] struct {
 	choices                     []T
 	choiceIndex                 int
 	startingChoice              T
-	blinkTimer                  timer.Timer
 }
 
 func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
@@ -69,18 +70,16 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 			break
 		}
 	}
-	ch.blinkTimer = timer.Timer{
-		Interval: 0.5,
-		Elapsed:  0.5,
-	}
 	return ch
 }
 
 func (ch *Chooser[T]) next() {
+	cache.GetSfx(sfxChoose).Play()
 	ch.choiceIndex = (ch.choiceIndex + 1) % len(ch.choices)
 }
 
 func (ch *Chooser[T]) prev() {
+	cache.GetSfx(sfxChoose).Play()
 	ch.choiceIndex = (ch.choiceIndex + len(ch.choices) - 1) % len(ch.choices)
 }
 

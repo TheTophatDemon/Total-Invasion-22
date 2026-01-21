@@ -35,10 +35,6 @@ type App struct {
 }
 
 func (app *App) Update(deltaTime float32) {
-	// Update audio volume based on settings.
-	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
-	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
-
 	switch true {
 	case app.screen != nil:
 		// Render title screen graphic
@@ -217,6 +213,10 @@ func main() {
 	input.BindActionCharSequence(settings.ActionLaunchEditor, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT})                         //TDJOMT
 	input.BindActionCharSequence(settings.ActionSpawnChicken, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC})                                    //TDKFC
 	input.BindActionCharSequence(settings.ActionLevelSelect, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV})                          //TDCLEV
+
+	// Update audio volume based on settings.
+	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
+	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 

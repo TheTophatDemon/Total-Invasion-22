@@ -12,11 +12,11 @@ const HALF_PI = 3.14159 / 2.0
 
 type (
 	Number interface {
-		int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+		~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64
 	}
 
 	Float interface {
-		float32 | float64
+		~float32 | ~float64
 	}
 
 	Radians float32
@@ -239,8 +239,4 @@ func Lerp[F Float](min, max, ratio F) F {
 		return min
 	}
 	return min + (max-min)*ratio
-}
-
-func Almost[F float32 | float64](number, equalTo F) bool {
-	return Abs(number-equalTo) < F(mgl32.Epsilon)
 }

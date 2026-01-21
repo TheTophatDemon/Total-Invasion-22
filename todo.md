@@ -1,8 +1,6 @@
 # TODO
 - Menus
   - Settings menu
-    - Sfx
-    - Music
     - FOV
     - Language
     - Text Shadow
@@ -10,7 +8,8 @@
     - Menu scrolling
   - What is that stupid flickering!?
   - Increase font size
-  - Sound effects
+  - More Sound effects
+  - Lerp the selection knob
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes

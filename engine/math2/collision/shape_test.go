@@ -45,7 +45,7 @@ func TestDistanceFromPoint(t *testing.T) {
 }
 
 func checkDist(t *testing.T, expected, actual float32) {
-	if !math2.Almost(actual, expected) {
+	if !mgl32.FloatEqual(actual, expected) {
 		t.Fatalf("dist should be %v but was %v", expected, actual)
 	}
 }
