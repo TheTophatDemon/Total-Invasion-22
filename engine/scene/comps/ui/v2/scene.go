@@ -37,6 +37,9 @@ func (renderQ *RenderQueue) Render(context *render.Context) {
 	for _, elem := range *renderQ {
 		elem.Render(context)
 	}
-	// Clear the queue for the next render
+	renderQ.Clear()
+}
+
+func (renderQ *RenderQueue) Clear() {
 	*renderQ = (*renderQ)[0:0]
 }

@@ -37,6 +37,7 @@ type App struct {
 func (app *App) Update(deltaTime float32) {
 	switch true {
 	case app.screen != nil:
+		app.renderQueue.Clear()
 		// Render title screen graphic
 		app.titleScreenBackground = ui.NewBox(
 			ui.Transform{},

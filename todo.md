@@ -6,7 +6,6 @@
     - Text Shadow
   - Keybind menu
     - Menu scrolling
-  - What is that stupid flickering!?
   - Increase font size
   - More Sound effects
   - Lerp the selection knob
