@@ -22,6 +22,7 @@ type (
 		chooserVsync      Chooser[OnOff]
 		sliderSfxVolume   Slider
 		sliderMusicVolume Slider
+		sliderFOV         Slider
 	}
 )
 
@@ -54,6 +55,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, int(settings.Current.SfxVolume*10.0))
 	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, int(settings.Current.MusicVolume*10.0))
+	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, int(settings.Current.Fov))
 
 	settingsMenu.Menu.Init(
 		app,
@@ -64,6 +66,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.chooserVsync,
 			&settingsMenu.sliderSfxVolume,
 			&settingsMenu.sliderMusicVolume,
+			&settingsMenu.sliderFOV,
 		},
 		parent,
 	)
@@ -101,6 +104,10 @@ func (menu *SettingsMenu) Exit() {
 	}
 	if newVolume := menu.sliderMusicVolume.FractionValue(); !mgl32.FloatEqual(newVolume, settings.Current.MusicVolume) {
 		settings.Current.MusicVolume = newVolume
+	}
+
+	if newFov := float32(menu.sliderFOV.IntValue()); !mgl32.FloatEqual(newFov, settings.Current.Fov) {
+		settings.Current.Fov = newFov
 	}
 
 	if resetMenu {

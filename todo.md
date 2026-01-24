@@ -1,7 +1,7 @@
 # TODO
 - Menus
   - Settings menu
-    - FOV
+    - Mouse sensitivity
     - Language
     - Text Shadow
   - Keybind menu

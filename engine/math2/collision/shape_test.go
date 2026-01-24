@@ -148,7 +148,7 @@ func checkResult(t *testing.T, expected, actual Result) {
 	fail := expected.Hit != actual.Hit ||
 		!expected.Position.ApproxEqual(actual.Position) ||
 		!expected.Normal.ApproxEqual(actual.Normal) ||
-		!math2.Almost(expected.Distance, actual.Distance)
+		!mgl32.FloatEqual(expected.Distance, actual.Distance)
 	_, file, line, _ := runtime.Caller(1)
 	if fail {
 		t.Fatalf("result should be %v but was %v at %v:%v", expected, actual, file, line)

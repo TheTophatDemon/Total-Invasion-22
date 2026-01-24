@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -9,6 +10,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -17,10 +19,10 @@ const sfxSlide = "assets/sounds/ui/stats_ding.wav"
 
 type Slider struct {
 	MenuItem
-	txtLeft, txtSlider, txtRight ui.Element
-	labelWidth                   float32
-	min, max, step, count        int
-	value                        int
+	txtLeft, txtSlider, txtRight, txtValue ui.Element
+	labelWidth                             float32
+	min, max, step, count                  int
+	value                                  int
 }
 
 func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slider {
@@ -47,7 +49,7 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 	sl.txtSlider = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, strings.Repeat("_", sl.count), ui.TextConfig{
+	}, strings.Repeat("_", sl.count+1), ui.TextConfig{
 		Align: ui.TextAlignCenterH,
 	})
 	sl.txtSlider.FitText()
@@ -59,6 +61,12 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 	}, ">", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
 	})
+
+	sl.txtValue = ui.NewText(ui.Transform{
+		Origin: ui.Ratios{0.0, 0.5},
+		Depth:  10,
+		Size:   mgl32.Vec2{80, 24},
+	}, fmt.Sprintf("%v", initialValue), ui.TextConfig{})
 
 	sl.labelWidth = sl.OnScreenBox().Width
 
@@ -99,7 +107,7 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		if sl.txtSlider.OnScreenBox().ContainsPoint(mousePos) {
 			offset := (mousePos[0] - sl.txtSlider.Position()[0]) / sl.txtSlider.Size()[0]
 			prev := sl.value
-			sl.value = sl.min + int(float32(sl.count)*offset)
+			sl.value = sl.min + int(math2.Round(float32(sl.count)*offset))*sl.step
 			if prev != sl.value {
 				cache.GetSfx(sfxSlide).Play()
 			}
@@ -132,8 +140,15 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	sl.txtRight.Translate(mgl32.Vec2{valueWidth, 0.0})
 	queue.Add(&sl.txtRight)
 
-	fullWidth := sl.labelWidth + leftWidth + valueWidth + sl.txtRight.OnScreenBox().Width
-	sl.SetSize(mgl32.Vec2{fullWidth, sl.Size()[1]})
+	sl.txtValue.SetPosition(mgl32.Vec2{
+		sl.txtRight.Position()[0] + sl.txtRight.OnScreenBox().Width + 8.0,
+		sl.txtRight.Position()[1],
+	})
+	sl.txtValue.SetText(fmt.Sprintf("%v", sl.value))
+	queue.Add(&sl.txtValue)
+
+	clickableWidth := sl.labelWidth + leftWidth + valueWidth + sl.txtRight.OnScreenBox().Width
+	sl.SetSize(mgl32.Vec2{clickableWidth, sl.Size()[1]})
 
 	sl.MenuItem.Layout(queue, deltaTime)
 }

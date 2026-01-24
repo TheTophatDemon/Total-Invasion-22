@@ -259,7 +259,7 @@ func (world *World) Render() {
 
 	// Setup 3D game render context
 	viewMat := camera.Transform.Matrix().Inv()
-	projMat := camera.ProjectionMatrix()
+	projMat := mgl32.Perspective(mgl32.DegToRad(settings.Current.Fov), settings.Current.WindowAspectRatio(), 0.1, 200.0)
 	renderContext := render.Context{
 		View:           viewMat,
 		ViewInverse:    viewMat.Inv(),

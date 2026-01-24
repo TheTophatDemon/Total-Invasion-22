@@ -6,7 +6,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type Camera struct {
@@ -53,9 +52,7 @@ func SpawnCamera(transform comps.Transform) (id scene.Id[*Camera], camera *Camer
 		return
 	}
 
-	camera.Camera = comps.NewCamera(
-		settings.Current.Fov, settings.Current.WindowAspectRatio(), 0.1, 200.0, transform,
-	)
+	camera.Camera = comps.NewCamera(transform)
 
 	return
 }
