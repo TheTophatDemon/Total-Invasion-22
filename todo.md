@@ -36,8 +36,6 @@
 - Optimize world raycasts using the bsp tree
 
 - Port E1M4
-  - Textures
-    - Satanic fountain
   - Song
 
 ## Roadmap after Demo release
