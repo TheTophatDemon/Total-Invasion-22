@@ -45,7 +45,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 	*menu = Menu{
 		menuSpacing:   36,
 		menuItems:     menuItems,
-		menuSelection: -1,
+		menuSelection: 0,
 		app:           app,
 		parent:        parent,
 	}
@@ -56,9 +56,10 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 	}
 
 	menu.cursor = ui.NewBox(ui.Transform{
-		Size:   mgl32.Vec2{32.0, 32.0},
-		Origin: ui.Ratios{0.5, 0.5},
-		Depth:  10,
+		Size:     mgl32.Vec2{32.0, 32.0},
+		Origin:   ui.Ratios{0.5, 0.5},
+		Depth:    10,
+		Position: mgl32.Vec2{-2050.0, -2050.0}, // Spawn offscreen until menu item is selected
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
 	for i := range menuItems {
@@ -80,6 +81,9 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 				Depth:  10,
 			})
 		elem.FitText()
+		if i == 0 {
+			menu.menuItems[0].Focus()
+		}
 	}
 
 	menu.title = ui.NewBox(ui.Transform{
@@ -115,7 +119,6 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
 
 	prevSelection := menu.menuSelection
-
 	if input.IsActionJustPressed(settings.ActionMenuDown) {
 		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
 	} else if input.IsActionJustPressed(settings.ActionMenuUp) {
@@ -137,15 +140,18 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
-	if input.MouseDelta().LenSqr() > 0.1 {
+	mouseMoved := input.MouseDelta().LenSqr() > 0.1
+	if mouseMoved {
 		menu.menuSelection = -1
 	}
 
 	for i := range menu.menuItems {
 		item := menu.menuItems[i]
 		if elem := item.Element(); elem != nil && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
-			menu.menuSelection = i
-			if input.IsActionJustReleased(settings.ActionMenuClick) {
+			if mouseMoved {
+				menu.menuSelection = i
+			}
+			if menu.menuSelection == i && input.IsActionJustReleased(settings.ActionMenuClick) {
 				item.Input(settings.ActionMenuClick)
 			}
 		}
@@ -159,14 +165,20 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 
 	if menu.menuSelection >= 0 {
 		// Draw cursor in front of menu items
-		menu.cursor.SetPosition(mgl32.Vec2{
+		target := mgl32.Vec2{
 			menu.position[0],
 			menu.position[1] + (menu.menuSpacing * float32(menu.menuSelection)),
-		})
-		menu.cursor.Rotate(-math2.Radians(deltaTime * math.Pi * 4.0))
-		queue.Add(&menu.cursor)
+		}
+		diff := target.Sub(menu.cursor.Position())
+		if diff.Len() > 2048.0 {
+			menu.cursor.SetPosition(target)
+		} else {
+			menu.cursor.Translate(diff.Mul(0.5))
+		}
 	}
 
+	menu.cursor.Rotate(-math2.Radians(deltaTime * math.Pi * 4.0))
+	queue.Add(&menu.cursor)
 	queue.Add(&menu.title)
 }
 
@@ -195,6 +207,7 @@ func (item *MenuItem) Focus() {
 	if config, ok := configMaybe.Get(); ok {
 		item.restoreColor = config.Color
 		config.Color = maybe.Some(color.Yellow)
+		item.element.SetTextConfig(*config)
 	}
 }
 
@@ -202,12 +215,15 @@ func (item *MenuItem) Blur() {
 	configMaybe := item.element.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = item.restoreColor
+		item.element.SetTextConfig(*config)
 	}
+	cache.GetSfx("assets/sounds/ui/menu0.wav").Play()
 }
 
 func (item *MenuItem) Input(action input.Action) {
 	if (action == settings.ActionMenuConfirm || action == settings.ActionMenuClick) && item.OnInput != nil {
 		item.OnInput(action)
+		cache.GetSfx("assets/sounds/ui/menu1.wav").Play()
 	}
 }
 

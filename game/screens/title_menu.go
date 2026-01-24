@@ -46,8 +46,5 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 		menuItems = menuItems[1:]
 	}
 	titleMenu.Menu.Init(app, menuItems, nil)
-	if inGame {
-		titleMenu.menuSelection = 0
-	}
 	return titleMenu
 }

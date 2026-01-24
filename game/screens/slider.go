@@ -10,7 +10,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -107,7 +106,7 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		if sl.txtSlider.OnScreenBox().ContainsPoint(mousePos) {
 			offset := (mousePos[0] - sl.txtSlider.Position()[0]) / sl.txtSlider.Size()[0]
 			prev := sl.value
-			sl.value = sl.min + int(math2.Round(float32(sl.count)*offset))*sl.step
+			sl.value = min(sl.max, sl.min+int(float32(sl.count+1)*offset)*sl.step)
 			if prev != sl.value {
 				cache.GetSfx(sfxSlide).Play()
 			}

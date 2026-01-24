@@ -6,9 +6,8 @@
     - Text Shadow
   - Keybind menu
     - Menu scrolling
+  - Exit screen
   - Increase font size
-  - More Sound effects
-  - Lerp the selection knob
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
