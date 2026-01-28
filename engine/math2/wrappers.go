@@ -40,6 +40,10 @@ func Pow[F Float](base F, exp F) F {
 	return F(math.Pow(float64(base), float64(exp)))
 }
 
+func Log[F Float](x F) F {
+	return F(math.Log(float64(x)))
+}
+
 func Sqrt[F Float](x F) F {
 	return F(math.Sqrt(float64(x)))
 }

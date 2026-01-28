@@ -23,6 +23,7 @@ type (
 		sliderSfxVolume   Slider
 		sliderMusicVolume Slider
 		sliderFOV         Slider
+		sliderSensitivity Slider
 	}
 )
 
@@ -56,6 +57,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, int(settings.Current.SfxVolume*10.0))
 	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, int(settings.Current.MusicVolume*10.0))
 	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, int(settings.Current.Fov))
+	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, min(10, max(1, settings.Current.MouseSensitivity)))
 
 	settingsMenu.Menu.Init(
 		app,
@@ -67,6 +69,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.sliderSfxVolume,
 			&settingsMenu.sliderMusicVolume,
 			&settingsMenu.sliderFOV,
+			&settingsMenu.sliderSensitivity,
 		},
 		parent,
 	)
@@ -108,6 +111,16 @@ func (menu *SettingsMenu) Exit() {
 
 	if newFov := float32(menu.sliderFOV.IntValue()); !mgl32.FloatEqual(newFov, settings.Current.Fov) {
 		settings.Current.Fov = newFov
+	}
+
+	if newSens := menu.sliderSensitivity.IntValue(); newSens != settings.Current.MouseSensitivity {
+		settings.Current.MouseSensitivity = newSens
+
+		scaledSens := settings.ScaledMouseSensitivity(newSens)
+		input.ClearBinding(settings.ActionLookHorz)
+		input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
+		input.ClearBinding(settings.ActionLookVert)
+		input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
 	}
 
 	if resetMenu {

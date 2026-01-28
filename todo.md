@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Settings menu
-    - Mouse sensitivity
     - Language
     - Text Shadow
   - Keybind menu
@@ -9,6 +8,7 @@
   - Exit screen
   - Increase font size
   - Modify loading screen graphic to be more on-model
+  - Make sliders look better
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
   - Plasma gun pushes enemies through walls

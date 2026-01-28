@@ -232,6 +232,9 @@ func LookAtV(eye, center, up mgl32.Vec3) mgl32.Mat4 {
 }
 
 func Lerp[F Float](min, max, ratio F) F {
+	if min > max {
+		max, min = min, max
+	}
 	if ratio >= 1.0 {
 		return max
 	}

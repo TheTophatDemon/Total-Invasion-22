@@ -72,7 +72,7 @@ const settingsFilePath = "game_settings.toml"
 type Data struct {
 	WindowWidth, WindowHeight uint16
 	Fullscreen, Vsync         bool
-	MouseSensitivity          float32
+	MouseSensitivity          int
 	TextShadowColor           color.Color
 	SfxVolume, MusicVolume    float32 // From 0 to 1
 	Locale                    string
@@ -84,13 +84,24 @@ type Data struct {
 }
 
 var Default, Current Data
+var scaledMouseSensitivities = [9]float32{
+	0.001,
+	0.002,
+	0.003,
+	0.004,
+	0.005,
+	0.007,
+	0.009,
+	0.013,
+	0.020,
+}
 
 func init() {
 	Default = Data{
 		WindowWidth: 1280, WindowHeight: 720,
 		Fullscreen:       false,
 		Vsync:            true,
-		MouseSensitivity: 0.005,
+		MouseSensitivity: 5,
 		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
 		SfxVolume:        1.0, MusicVolume: 1.0,
 		Locale:          LocaleEnglish,
@@ -223,4 +234,9 @@ func UIWidth() float32 {
 
 func UIHeight() float32 {
 	return float32(Current.WindowHeight)
+}
+
+// Returns a floating point value for the given mouse sensitivity value that should be applied to the mouse movement.
+func ScaledMouseSensitivity(intSensitivity int) float32 {
+	return scaledMouseSensitivities[max(0, min(len(scaledMouseSensitivities)-1, intSensitivity-1))]
 }

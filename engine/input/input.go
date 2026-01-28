@@ -113,6 +113,11 @@ func BindActionCharSequence(action Action, sequence []glfw.Key) {
 	bindingsWerePressed[action] = false
 }
 
+func ClearBinding(action Action) {
+	bindingMap[action] = [2]Binding{}
+	bindingsWerePressed[action] = false
+}
+
 // Returns booleans indicating if the action was just pressed, just released, or is otherwise being held down.
 func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) {
 	wasPressed, ok := bindingsWerePressed[action]
