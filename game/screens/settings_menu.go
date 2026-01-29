@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
@@ -25,6 +26,7 @@ type (
 		sliderMusicVolume Slider
 		sliderFOV         Slider
 		sliderSensitivity Slider
+		sliderTextShadow  Slider
 	}
 )
 
@@ -62,6 +64,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, int(settings.Current.MusicVolume*10.0))
 	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, int(settings.Current.Fov))
 	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, min(10, max(1, settings.Current.MouseSensitivity)))
+	settingsMenu.sliderTextShadow.Init("textShadow", 0, 10, 1, int(settings.Current.TextShadowTransparency*10.0))
 
 	settingsMenu.Menu.Init(
 		app,
@@ -75,6 +78,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.sliderMusicVolume,
 			&settingsMenu.sliderFOV,
 			&settingsMenu.sliderSensitivity,
+			&settingsMenu.sliderTextShadow,
 		},
 		parent,
 	)
@@ -132,6 +136,11 @@ func (menu *SettingsMenu) Exit() {
 		input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
 		input.ClearBinding(settings.ActionLookVert)
 		input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
+	}
+
+	if newTrans := float32(menu.sliderTextShadow.IntValue()) / 10.0; !mgl32.FloatEqual(newTrans, settings.Current.TextShadowTransparency) {
+		settings.Current.TextShadowTransparency = newTrans
+		ui.SetTextShadowColor(color.Black.WithAlpha(newTrans))
 	}
 
 	if resetMenu {

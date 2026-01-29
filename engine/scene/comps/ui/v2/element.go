@@ -42,8 +42,6 @@ type Transform struct {
 type Element struct {
 	BgColor                   maybe.T[color.Color]
 	AnimPlayer                comps.AnimationPlayer
-	ShadowColor               color.Color // Color of the drop shadow. Set to transparent to disable.
-	ShadowOffset              mgl32.Vec2
 	BgTexture                 *textures.Texture
 	BgMesh                    *geom.Mesh
 	text                      string
@@ -367,10 +365,10 @@ func (el *Element) Render(context *render.Context) {
 		textMatrix := el.TextMatrix()
 
 		// Draw drop shadow
-		if el.ShadowColor.A > 0.0 {
-			shadowMatrix := mgl32.Translate3D(el.ShadowOffset[0], el.ShadowOffset[1], 0.0).Mul4(textMatrix)
+		if !textConfig.DisableShadow {
+			shadowMatrix := mgl32.Translate3D(4.0, 4.0, 0.0).Mul4(textMatrix)
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
-			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.ShadowColor.Vector())
+			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textShadowColor.Vector())
 			failure.CheckOpenGLError()
 			el.TextMesh().DrawAll()
 		}

@@ -1,7 +1,7 @@
 # TODO
 - Menus
   - Settings menu
-    - Text Shadow
+    - Chicken harm
   - Keybind menu
     - Menu scrolling
   - Exit screen

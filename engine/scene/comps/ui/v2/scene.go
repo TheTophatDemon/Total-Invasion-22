@@ -2,11 +2,14 @@ package ui
 
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
 
 type RenderQueue []*Element
+
+var textShadowColor color.Color
 
 func (renderQ *RenderQueue) Add(elems ...*Element) {
 	for _, elem := range elems {
@@ -42,4 +45,8 @@ func (renderQ *RenderQueue) Render(context *render.Context) {
 
 func (renderQ *RenderQueue) Clear() {
 	*renderQ = (*renderQ)[0:0]
+}
+
+func SetTextShadowColor(clr color.Color) {
+	textShadowColor = clr
 }

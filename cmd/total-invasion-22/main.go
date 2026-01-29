@@ -13,6 +13,7 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
@@ -219,6 +220,8 @@ func main() {
 	// Update audio volume based on settings.
 	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
 	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
+
+	ui.SetTextShadowColor(color.Black.WithAlpha(settings.Current.TextShadowTransparency))
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 

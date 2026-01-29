@@ -56,7 +56,7 @@ func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		Color: color.White,
 		Settings: ui.TextSettings{
 			Text:         settings.Localize("levelComplete"),
-			ShadowColor:  settings.Current.TextShadowColor,
+			ShadowColor:  color.Black.WithAlpha(0.5),
 			ShadowOffset: mgl32.Vec2{2.0, 2.0},
 			Font:         cache.DefaultFont,
 		},
@@ -80,7 +80,7 @@ func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			Settings: ui.TextSettings{
 				Text:         settings.Localize("fireContinue"),
 				Alignment:    ui.TEXT_ALIGN_CENTER,
-				ShadowColor:  settings.Current.TextShadowColor,
+				ShadowColor:  color.Black.WithAlpha(0.5),
 				ShadowOffset: mgl32.Vec2{2.0, 2.0},
 				Font:         cache.DefaultFont,
 				WrapWords:    true,
@@ -121,7 +121,7 @@ func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&ui.Text{
 		Color: color.White,
 		Settings: ui.TextSettings{
-			ShadowColor:  settings.Current.TextShadowColor,
+			ShadowColor:  color.Black.WithAlpha(0.5),
 			ShadowOffset: mgl32.Vec2{2.0, 2.0},
 			Text: settings.Localize("statTime") + fmt.Sprintf(": %02d:%05.2f\n", int(timeStat.Minutes()), math2.Mod(timeStat.Seconds(), 60.0)) +
 				settings.Localize("statKills") + fmt.Sprintf(": %02d/%02d\n", screen.killCounter.count, screen.EnemiesTotal) +

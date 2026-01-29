@@ -10,7 +10,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
@@ -75,7 +74,7 @@ type Data struct {
 	WindowWidth, WindowHeight uint16
 	Fullscreen, Vsync         bool
 	MouseSensitivity          int
-	TextShadowColor           color.Color
+	TextShadowTransparency    float32 // From 0 to 1
 	SfxVolume, MusicVolume    float32 // From 0 to 1
 	Locale                    Locale
 	Fov                       float32 // Measured in degrees
@@ -101,11 +100,11 @@ var scaledMouseSensitivities = [9]float32{
 func init() {
 	Default = Data{
 		WindowWidth: 1280, WindowHeight: 720,
-		Fullscreen:       false,
-		Vsync:            true,
-		MouseSensitivity: 5,
-		TextShadowColor:  color.Color{R: 0.0, G: 0.0, B: 0.0, A: 0.5},
-		SfxVolume:        1.0, MusicVolume: 1.0,
+		Fullscreen:             false,
+		Vsync:                  true,
+		MouseSensitivity:       5,
+		TextShadowTransparency: 0.5,
+		SfxVolume:              1.0, MusicVolume: 1.0,
 		Locale:          LocaleEnglish,
 		Fov:             70.0,
 		DifficultyIndex: len(Difficulties) - 1,

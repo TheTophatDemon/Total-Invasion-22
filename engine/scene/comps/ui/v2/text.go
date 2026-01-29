@@ -16,24 +16,20 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type TextConfig struct {
-	Align        TextAlign
-	Color        maybe.T[color.Color]
-	ShadowColor  maybe.T[color.Color] // Color of the drop shadow. Set to transparent to disable.
-	ShadowOffset maybe.T[mgl32.Vec2]
-	WrapWords    bool
-	Font         *fonts.Font
+	Align         TextAlign
+	Color         maybe.T[color.Color]
+	DisableShadow bool
+	WrapWords     bool
+	Font          *fonts.Font
 }
 
 func NewText(transform Transform, text string, config TextConfig) Element {
 	elem := Element{
-		ShadowColor:  config.ShadowColor.Or(settings.Current.TextShadowColor),
-		ShadowOffset: config.ShadowOffset.Or(mgl32.Vec2{4.0, 4.0}),
-		transform:    transform,
-		textConfig:   maybe.Some(config),
+		transform:  transform,
+		textConfig: maybe.Some(config),
 	}
 	elem.SetText(text)
 	return elem
