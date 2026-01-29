@@ -1,3 +1,5 @@
+myLang="English"
+
 # Title Screen
 startPrompt = "Press any key"
 resumeGame = "Resume Game"

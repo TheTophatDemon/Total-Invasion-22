@@ -15,9 +15,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 )
 
+type Locale string
+
 const (
-	LocaleEnglish = "en"
-	LocaleRussian = "ru"
+	LocaleEnglish Locale = "en"
+	LocaleRussian Locale = "ru"
 )
 
 const (
@@ -75,7 +77,7 @@ type Data struct {
 	MouseSensitivity          int
 	TextShadowColor           color.Color
 	SfxVolume, MusicVolume    float32 // From 0 to 1
-	Locale                    string
+	Locale                    Locale
 	Fov                       float32 // Measured in degrees
 	Debug                     struct {
 		StartMap string
@@ -162,9 +164,13 @@ func Save() {
 }
 
 func Localize(key string) string {
-	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", strings.ToLower(Current.Locale)))
+	return LocalizeWith(key, Current.Locale)
+}
+
+func LocalizeWith(key string, locale Locale) string {
+	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", strings.ToLower(string(locale))))
 	if err != nil {
-		failure.LogErrWithLocation("failed to retrieve strings in %v for key %v: %v", Current.Locale, key, err)
+		failure.LogErrWithLocation("failed to retrieve strings in %v for key %v: %v", locale, key, err)
 		return "ERROR"
 	}
 	localizedText, ok := (*trans)[key]
@@ -204,14 +210,14 @@ func Localize(key string) string {
 		Parse(localizedText)
 
 	if err != nil {
-		failure.LogErrWithLocation("failed to parse template for key %v in lang %v: %v", key, Current.Locale, err)
+		failure.LogErrWithLocation("failed to parse template for key %v in lang %v: %v", key, locale, err)
 		return "ERROR"
 	}
 
 	var finalText strings.Builder
 	err = templ.Execute(&finalText, nil)
 	if err != nil {
-		failure.LogErrWithLocation("failed to execute template for key %v in lang %v: %v", key, Current.Locale, err)
+		failure.LogErrWithLocation("failed to execute template for key %v in lang %v: %v", key, locale, err)
 		return "ERROR"
 	}
 
@@ -239,4 +245,8 @@ func UIHeight() float32 {
 // Returns a floating point value for the given mouse sensitivity value that should be applied to the mouse movement.
 func ScaledMouseSensitivity(intSensitivity int) float32 {
 	return scaledMouseSensitivities[max(0, min(len(scaledMouseSensitivities)-1, intSensitivity-1))]
+}
+
+func (locale Locale) String() string {
+	return LocalizeWith("myLang", locale)
 }

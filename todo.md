@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Settings menu
-    - Language
     - Text Shadow
   - Keybind menu
     - Menu scrolling

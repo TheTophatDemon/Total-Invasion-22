@@ -1,3 +1,5 @@
+myLang="Русский"
+
 # Title Screen
 startPrompt = "Нажмите любую кнопку"
 resumeGame = "Продолжить Игру"

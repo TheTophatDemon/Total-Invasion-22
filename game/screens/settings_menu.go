@@ -17,6 +17,7 @@ type (
 	SettingsMenu struct {
 		Menu
 		returnItem        MenuItem
+		chooserLanguage   Chooser[settings.Locale]
 		chooserScreenSize Chooser[Resolution]
 		chooserFullscreen Chooser[OnOff]
 		chooserVsync      Chooser[OnOff]
@@ -41,6 +42,9 @@ func (onOff OnOff) String() string {
 func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *SettingsMenu {
 	*settingsMenu = SettingsMenu{}
 	settingsMenu.returnItem.Init("return", func(input.Action) { settingsMenu.returnToParent() })
+
+	settingsMenu.chooserLanguage.Init("language", []settings.Locale{settings.LocaleEnglish, settings.LocaleRussian}, settings.Current.Locale)
+
 	sizeChoices := []Resolution{
 		{640, 480},
 		{800, 480},
@@ -63,6 +67,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 		app,
 		[]MenuEvents{
 			&settingsMenu.returnItem,
+			&settingsMenu.chooserLanguage,
 			&settingsMenu.chooserScreenSize,
 			&settingsMenu.chooserFullscreen,
 			&settingsMenu.chooserVsync,
@@ -85,6 +90,12 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 func (menu *SettingsMenu) Exit() {
 	originalSettings := settings.Current
 	resetMenu := false
+
+	if newLang := menu.chooserLanguage.Choice(); newLang != settings.Current.Locale {
+		settings.Current.Locale = newLang
+		resetMenu = true
+	}
+
 	newSize := menu.chooserScreenSize.Choice()
 	if nowFullscreen := bool(menu.chooserFullscreen.Choice()); nowFullscreen != engine.IsFullscreen() {
 		settings.Current.Fullscreen = nowFullscreen

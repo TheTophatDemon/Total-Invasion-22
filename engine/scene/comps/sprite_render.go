@@ -101,7 +101,7 @@ func (sr *SpriteRender) Render(
 			if cross.Dot(math2.Vec3Up()) < 0.0 {
 				angleDifference *= -1
 			}
-			layer, flip, found := sr.meshRender.Texture.FindLayerToDisplay(angleDifference, settings.Current.Locale)
+			layer, flip, found := sr.meshRender.Texture.FindLayerToDisplay(angleDifference, string(settings.Current.Locale))
 			if found {
 				anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
 				if found {
