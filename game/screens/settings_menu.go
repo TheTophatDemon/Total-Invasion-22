@@ -27,6 +27,7 @@ type (
 		sliderFOV         Slider
 		sliderSensitivity Slider
 		sliderTextShadow  Slider
+		chooserChickens   Chooser[OnOff]
 	}
 )
 
@@ -66,6 +67,8 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, min(10, max(1, settings.Current.MouseSensitivity)))
 	settingsMenu.sliderTextShadow.Init("textShadow", 0, 10, 1, int(settings.Current.TextShadowTransparency*10.0))
 
+	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
+
 	settingsMenu.Menu.Init(
 		app,
 		[]MenuEvents{
@@ -79,6 +82,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.sliderFOV,
 			&settingsMenu.sliderSensitivity,
 			&settingsMenu.sliderTextShadow,
+			&settingsMenu.chooserChickens,
 		},
 		parent,
 	)
@@ -141,6 +145,10 @@ func (menu *SettingsMenu) Exit() {
 	if newTrans := float32(menu.sliderTextShadow.IntValue()) / 10.0; !mgl32.FloatEqual(newTrans, settings.Current.TextShadowTransparency) {
 		settings.Current.TextShadowTransparency = newTrans
 		ui.SetTextShadowColor(color.Black.WithAlpha(newTrans))
+	}
+
+	if chickenHarm := bool(menu.chooserChickens.Choice()); chickenHarm != settings.Current.ChickenHarm {
+		settings.Current.ChickenHarm = chickenHarm
 	}
 
 	if resetMenu {

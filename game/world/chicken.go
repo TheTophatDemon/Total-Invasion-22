@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 const (
@@ -95,6 +96,14 @@ func (chk *Chicken) Update(deltaTime float32) {
 		return
 	}
 	body := chk.Body()
+
+	if settings.Current.ChickenHarm {
+		chk.Body().Layers |= ColLayerActors
+	} else {
+		// If the chicken is invincible, let the player walk through it so it doesn't block you.
+		chk.Body().Layers &= (^ColLayerActors)
+	}
+
 	chk.AnimPlayer.Update(deltaTime)
 	chk.actor.Update(deltaTime)
 	chk.bloodParticles.Update(deltaTime, body.Position)
@@ -161,7 +170,7 @@ func (chk *Chicken) ProcessSignal(signal any) {
 }
 
 func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
-	if chk.actor.Health <= 0 {
+	if !settings.Current.ChickenHarm || chk.actor.Health <= 0 {
 		return false
 	}
 	chk.bloodParticles.EmissionTimer = 0.1

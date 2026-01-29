@@ -78,6 +78,7 @@ type Data struct {
 	SfxVolume, MusicVolume    float32 // From 0 to 1
 	Locale                    Locale
 	Fov                       float32 // Measured in degrees
+	ChickenHarm               bool    // Allow harm to chickens
 	Debug                     struct {
 		StartMap string
 	}
@@ -107,6 +108,7 @@ func init() {
 		SfxVolume:              1.0, MusicVolume: 1.0,
 		Locale:          LocaleEnglish,
 		Fov:             70.0,
+		ChickenHarm:     true,
 		DifficultyIndex: len(Difficulties) - 1,
 	}
 	Current = Default
