@@ -4,7 +4,6 @@
     - Menu scrolling
   - Exit screen
   - Increase font size
-  - Why does loading screen disappear???
   - Modify loading screen graphic to be more on-model
   - Make sliders look better
 - Fix in game HUD to adapt to screen size changes

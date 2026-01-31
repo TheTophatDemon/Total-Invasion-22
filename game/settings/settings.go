@@ -169,7 +169,7 @@ func Localize(key string) string {
 }
 
 func LocalizeWith(key string, locale Locale) string {
-	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", strings.ToLower(string(locale))))
+	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", string(locale)))
 	if err != nil {
 		failure.LogErrWithLocation("failed to retrieve strings in %v for key %v: %v", locale, key, err)
 		return "ERROR"
@@ -177,7 +177,7 @@ func LocalizeWith(key string, locale Locale) string {
 	localizedText, ok := (*trans)[key]
 	if !ok {
 		// Fall back to English
-		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", LocaleEnglish))
+		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", string(LocaleEnglish)))
 		if err != nil {
 			failure.LogErrWithLocation("failed to retrieve English fallback for localization key %v: %v", key, err)
 			return "ERROR"

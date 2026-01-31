@@ -84,7 +84,7 @@ func (app *App) Render() {
 			View:       mgl32.Ident4(),
 			Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 		}
-		loadingScreenTex := cache.GetTexture(fmt.Sprintf("assets/textures/ui/loading_screen_%v.png", settings.Current.Locale))
+		loadingScreenTex := cache.GetTexture(fmt.Sprintf("assets/textures/ui/loading_screen_%v.png", string(settings.Current.Locale)))
 		gl.CullFace(gl.FRONT)
 		box := ui.NewBox(
 			ui.Transform{
