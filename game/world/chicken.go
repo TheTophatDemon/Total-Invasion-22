@@ -99,9 +99,12 @@ func (chk *Chicken) Update(deltaTime float32) {
 
 	if settings.Current.ChickenHarm {
 		chk.Body().Layers |= ColLayerActors
+		chk.actor.collisionFilter &= (^ColLayerKillzone)
 	} else {
 		// If the chicken is invincible, let the player walk through it so it doesn't block you.
 		chk.Body().Layers &= (^ColLayerActors)
+		// Also let it walk on lava
+		chk.actor.collisionFilter |= ColLayerKillzone
 	}
 
 	chk.AnimPlayer.Update(deltaTime)
@@ -112,11 +115,6 @@ func (chk *Chicken) Update(deltaTime float32) {
 	chkDir := chk.actor.FacingVec()
 	if chk.voice.IsValid() {
 		chk.voice.SetPositionV(chkPos)
-	}
-
-	// Die in lava
-	if gWorld.GameMap.GridShape.OtherBodyTouches(mgl32.Vec3{}, chkPos, body.Shape, ColLayerKillzone) {
-		chk.OnDamage(gWorld.GameMap, 999999)
 	}
 
 	if chk.actor.Health > 0 {

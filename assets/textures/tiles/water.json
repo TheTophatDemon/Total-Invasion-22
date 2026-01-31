@@ -1,6 +1,6 @@
 { "frames": [
    {
-    "filename": "water.png;0",
+    "filename": "water_atlas.png;Layer;0",
     "frame": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -9,7 +9,7 @@
     "duration": 100
    },
    {
-    "filename": "water.png;1",
+    "filename": "water_atlas.png;Layer;1",
     "frame": { "x": 64, "y": 0, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -18,7 +18,7 @@
     "duration": 100
    },
    {
-    "filename": "water.png;2",
+    "filename": "water_atlas.png;Layer;2",
     "frame": { "x": 0, "y": 64, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -27,7 +27,7 @@
     "duration": 100
    },
    {
-    "filename": "water.png;3",
+    "filename": "water_atlas.png;Layer;3",
     "frame": { "x": 64, "y": 64, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -37,14 +37,20 @@
    }
  ],
  "meta": {
-  "app": "https://www.aseprite.org/",
-  "version": "1.3.9.2-x64",
+  "app": "http://www.aseprite.org/",
+  "version": "1.3.16.1-x64",
   "image": "water_atlas.png",
   "format": "I8",
   "size": { "w": 128, "h": 128 },
   "scale": "1",
   "frameTags": [
    { "name": "idle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff", "data": "default" }
+  ],
+  "layers": [
+   { "name": "Layer", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+   { "name": "meta", "color": "#0000ffff", "data": "liquid killzone", "keys": [{ "frame": 0, "bounds": {"x": 0, "y": 0, "w": 64, "h": 64 } }] }
   ]
  }
 }
