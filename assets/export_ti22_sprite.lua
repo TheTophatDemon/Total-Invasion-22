@@ -1,17 +1,27 @@
 -- Used to export animated sprites from Aseprite with layer & angle information
 -- Currently, you must have one layer per angle
 
+
 local spr = app.activeSprite
 if not spr then return print('No active sprite') end
 
 -- Show all layers so they will be exported
-originalLayerVisibility = {}
+local originalLayerVisibility = {}
 for _, layer in ipairs(spr.layers) do
 	originalLayerVisibility[layer.name] = layer.isVisible
 	layer.isVisible = true
 end
 
 local path, title = spr.filename:match("^(.+[/\\])(.-)%.([^%.]*)$")
+
+local borderPadding = 1
+for pathComponent in path:gmatch("[/\\](%w+)") do
+	if pathComponent:lower() == "tiles" then
+		-- Padding causes weird artifact on tile sprites
+		borderPadding = 0
+		break
+	end
+end
 
 -- Export main sprite sheet and data
 app.command.ExportSpriteSheet{
@@ -21,7 +31,7 @@ app.command.ExportSpriteSheet{
 	dataFilename=string.format("%s/%s.json", path, title),
 	dataFormat=SpriteSheetDataFormat.JSON_ARRAY,
 	filenameFormat="{title}_atlas.png;{layer};{frame}",
-	borderPadding=1,
+	borderPadding=borderPadding,
 	mergeDuplicates=true,
 	splitLayers=true,
 	listLayers=true,
