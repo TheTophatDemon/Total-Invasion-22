@@ -96,10 +96,11 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 	case "geoffrey":
 		prop.updateFunc = prop.geoffreyUpdate
 		prop.useFunc = prop.geoffreyUse
-		prop.body.Layers = ColLayerMap | ColLayerNPCs
+		prop.body.Layers = ColLayerMap | ColLayerNPCs | ColLayerUsable
 	case "eyeball":
 		prop.updateFunc = prop.eyeballUpdate
-		prop.body.Layers = ColLayerMap | ColLayerNPCs
+		prop.useFunc = prop.eyeballUse
+		prop.body.Layers = ColLayerMap | ColLayerNPCs | ColLayerUsable
 	case "fire":
 		prop.body.Layers = ColLayerInvisible
 	}
@@ -155,6 +156,11 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
  * EYEBALL *
  ***********/
 
+func (prop *Prop) eyeballUse(player *Player) {
+	_ = player
+	gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
+}
+
 func (prop *Prop) eyeballUpdate(deltaTime float32) {
 	idleAnim, _ := prop.SpriteRender.Texture().GetAnimation("idle")
 	openAnim, _ := prop.SpriteRender.Texture().GetAnimation("open")
@@ -183,6 +189,6 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 			prop.AnimPlayer.PlayAnimSequence(closeAnim, idleAnim)
 		}
 	} else if prop.stareTimer > 1.0 && prop.stareTimer < 1.5 {
-		gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
+		prop.eyeballUse(nil)
 	}
 }
