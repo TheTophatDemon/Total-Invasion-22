@@ -16,8 +16,6 @@
     - God help me...
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
-- Eyeball messages
-  - Drop some lore in the secret room on E1M2
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
