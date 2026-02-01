@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -28,6 +29,7 @@ type (
 		sliderSensitivity Slider
 		sliderTextShadow  Slider
 		chooserChickens   Chooser[OnOff]
+		keybindItem       MenuItem
 	}
 )
 
@@ -69,6 +71,12 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
 
+	settingsMenu.keybindItem.Init("keybind", func(input.Action) {
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(KeybindMenu).Init(app, settingsMenu),
+		})
+	})
+
 	settingsMenu.Menu.Init(
 		app,
 		[]MenuEvents{
@@ -83,6 +91,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.sliderSensitivity,
 			&settingsMenu.sliderTextShadow,
 			&settingsMenu.chooserChickens,
+			&settingsMenu.keybindItem,
 		},
 		parent,
 	)

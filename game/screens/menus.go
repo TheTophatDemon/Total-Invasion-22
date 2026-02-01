@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tanema/gween"
+	"github.com/tanema/gween/ease"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -24,14 +26,15 @@ type (
 		Layout(queue *ui.RenderQueue, deltaTime float32)
 	}
 	Menu struct {
-		position      mgl32.Vec2
-		menuSelection int
-		menuItems     []MenuEvents
-		menuSpacing   float32
-		cursor        ui.Element
-		title, fade   ui.Element
-		app           engine.Observer
-		parent        ui.Screen
+		position                     mgl32.Vec2
+		menuSelection                int
+		menuItems                    []MenuEvents
+		menuSpacing                  float32
+		cursor, scrollUp, scrollDown ui.Element
+		title, fade                  ui.Element
+		blinker                      gween.Sequence
+		app                          engine.Observer
+		parent                       ui.Screen
 	}
 	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
@@ -48,11 +51,17 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 		menuSelection: 0,
 		app:           app,
 		parent:        parent,
+		blinker: *gween.NewSequence( // Blink on and off
+			gween.New(1.0, 1.0, 0.75, ease.Linear),
+			gween.New(0.0, 0.0, 0.25, ease.Linear),
+		),
 	}
 
+	menu.blinker.SetLoop(-1)
+
 	menu.position = mgl32.Vec2{
-		(float32(settings.Current.WindowWidth) / 2.0) - 256.0,
-		float32(int(settings.Current.WindowHeight) - ((len(menuItems) + 1) * int(menu.menuSpacing))),
+		float32(settings.Current.WindowWidth) * 0.2,
+		float32(settings.Current.WindowHeight) * 0.4,
 	}
 
 	menu.cursor = ui.NewBox(ui.Transform{
@@ -61,6 +70,22 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 		Depth:    10,
 		Position: mgl32.Vec2{-2050.0, -2050.0}, // Spawn offscreen until menu item is selected
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
+
+	menu.scrollUp = ui.NewBox(ui.Transform{
+		Size:     mgl32.Vec2{64.0, 16.0},
+		Origin:   ui.Ratios{0.5, 1.0},
+		Depth:    10,
+		Anchor:   ui.Ratios{0.5, 0.0},
+		Position: mgl32.Vec2{0.0, menu.position[1]},
+	}, cache.GetTexture("assets/textures/ui/scroll_arrow.png"))
+
+	menu.scrollDown = ui.NewBox(ui.Transform{
+		Size:     mgl32.Vec2{64.0, 16.0},
+		Origin:   ui.Ratios{0.5, 0.0},
+		Depth:    10,
+		Anchor:   ui.Ratios{0.5, 0.0},
+		Position: mgl32.Vec2{0.0, float32(settings.Current.WindowHeight) - menu.menuSpacing},
+	}, cache.GetTexture("assets/textures/ui/scroll_arrow_down.png"))
 
 	for i := range menuItems {
 		elem := menu.menuItems[i].Element()
@@ -71,7 +96,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 			ui.Transform{
 				Position: mgl32.Vec2{
 					menu.position[0] + 36,
-					menu.position[1] + (menu.menuSpacing * float32(i)),
+					menu.position[1] + (menu.menuSpacing * float32(i+1)),
 				},
 				Size: mgl32.Vec2{
 					(settings.UIWidth() - menu.position[0] - 24.0),
@@ -145,9 +170,28 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.menuSelection = -1
 	}
 
+	menuTopY := menu.position[1] + menu.menuSpacing
+	menuBottomY := float32(settings.Current.WindowHeight) - menu.menuSpacing
+	moreAbove := false
+	moreBelow := false
+
+	// Draw menu items and take user input
 	for i := range menu.menuItems {
 		item := menu.menuItems[i]
-		if elem := item.Element(); elem != nil && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
+		elem := item.Element()
+		if elem == nil {
+			continue
+		}
+		// Occlude menu items outside of the viewable range
+		if elem.Position()[1]+elem.Size()[1] <= menuTopY {
+			moreAbove = true
+			continue
+		}
+		if elem.Position()[1] >= menuBottomY {
+			moreBelow = true
+			continue
+		}
+		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			if mouseMoved {
 				menu.menuSelection = i
 			}
@@ -163,11 +207,24 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		item.Layout(queue, deltaTime)
 	}
 
+	// Draw scroller arrows
+	if value, _, _ := menu.blinker.Update(deltaTime); value > 0.9 {
+		if moreAbove {
+			menu.scrollUp.SetPosition(mgl32.Vec2{0.0, menu.position[1]})
+			queue.Add(&menu.scrollUp)
+		}
+
+		if moreBelow {
+			menu.scrollDown.SetPosition(mgl32.Vec2{0.0, menuBottomY})
+			queue.Add(&menu.scrollDown)
+		}
+	}
+
 	if menu.menuSelection >= 0 {
 		// Draw cursor in front of menu items
 		target := mgl32.Vec2{
 			menu.position[0],
-			menu.position[1] + (menu.menuSpacing * float32(menu.menuSelection)),
+			menu.menuItems[menu.menuSelection].Element().Position()[1],
 		}
 		diff := target.Sub(menu.cursor.Position())
 		if diff.Len() > 2048.0 {
