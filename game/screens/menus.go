@@ -26,15 +26,16 @@ type (
 		Layout(queue *ui.RenderQueue, deltaTime float32)
 	}
 	Menu struct {
-		position                     mgl32.Vec2
-		menuSelection                int
-		menuItems                    []MenuEvents
-		menuSpacing                  float32
-		cursor, scrollUp, scrollDown ui.Element
-		title, fade                  ui.Element
-		blinker                      gween.Sequence
-		app                          engine.Observer
-		parent                       ui.Screen
+		position                                 mgl32.Vec2
+		scrollY, targetScrollY                   float32
+		menuSelection                            int
+		menuItems                                []MenuEvents
+		menuSpacing                              float32
+		cursor, scrollUpButton, scrollDownButton ui.Element
+		title, fade                              ui.Element
+		blinker                                  gween.Sequence
+		app                                      engine.Observer
+		parent                                   ui.Screen
 	}
 	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
@@ -71,7 +72,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 		Position: mgl32.Vec2{-2050.0, -2050.0}, // Spawn offscreen until menu item is selected
 	}, cache.GetTexture("assets/textures/ui/menu_cursor.png"))
 
-	menu.scrollUp = ui.NewBox(ui.Transform{
+	menu.scrollUpButton = ui.NewBox(ui.Transform{
 		Size:     mgl32.Vec2{64.0, 16.0},
 		Origin:   ui.Ratios{0.5, 1.0},
 		Depth:    10,
@@ -79,7 +80,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 		Position: mgl32.Vec2{0.0, menu.position[1]},
 	}, cache.GetTexture("assets/textures/ui/scroll_arrow.png"))
 
-	menu.scrollDown = ui.NewBox(ui.Transform{
+	menu.scrollDownButton = ui.NewBox(ui.Transform{
 		Size:     mgl32.Vec2{64.0, 16.0},
 		Origin:   ui.Ratios{0.5, 0.0},
 		Depth:    10,
@@ -140,6 +141,16 @@ func (menu *Menu) Enter() {
 func (menu *Menu) Exit() {
 }
 
+func (menu *Menu) scrollUp() {
+	cache.GetSfx(sfxChoose).Play()
+	menu.targetScrollY = min(0.0, menu.targetScrollY+menu.menuSpacing)
+}
+
+func (menu *Menu) scrollDown(minScrollY float32) {
+	cache.GetSfx(sfxChoose).Play()
+	menu.targetScrollY = max(minScrollY, menu.targetScrollY-menu.menuSpacing)
+}
+
 func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
 
@@ -175,49 +186,99 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	moreAbove := false
 	moreBelow := false
 
+	menuItemsHeight := float32(0)
+	if numItems := len(menu.menuItems); numItems > 0 {
+		menuItemsHeight = (menu.menuSpacing * float32(numItems)) + menu.menuItems[numItems-1].Element().Size()[1]
+	}
+	minScrollY := menuBottomY - menuTopY - menuItemsHeight
+
 	// Draw menu items and take user input
 	for i := range menu.menuItems {
 		item := menu.menuItems[i]
 		elem := item.Element()
-		if elem == nil {
-			continue
-		}
+
+		elem.SetPosition(mgl32.Vec2{
+			menu.position[0] + 36,
+			menu.position[1] + (menu.menuSpacing * float32(i+1)) + menu.scrollY,
+		})
+
+		noDraw := false
 		// Occlude menu items outside of the viewable range
-		if elem.Position()[1]+elem.Size()[1] <= menuTopY {
+		if elem.Position()[1]+elem.Size()[1] < menuTopY {
 			moreAbove = true
-			continue
+			noDraw = true
 		}
-		if elem.Position()[1] >= menuBottomY {
+		if elem.Position()[1]+elem.Size()[1] > menuBottomY {
 			moreBelow = true
-			continue
+			noDraw = true
 		}
-		if elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
+		if !noDraw && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			if mouseMoved {
 				menu.menuSelection = i
 			}
-			if menu.menuSelection == i && input.IsActionJustReleased(settings.ActionMenuClick) {
+			if menu.menuSelection == i && input.IsActionJustPressed(settings.ActionMenuClick) {
 				item.Input(settings.ActionMenuClick)
 			}
 		}
 		if menu.menuSelection == i && prevSelection != i {
 			item.Focus()
+			if noDraw {
+				// Scroll off screen menu item into view
+				menu.targetScrollY = min(0.0, max(minScrollY, -menu.menuSpacing*float32(i+1)))
+			}
 		} else if menu.menuSelection != i && prevSelection == i {
 			item.Blur()
 		}
-		item.Layout(queue, deltaTime)
+		if !noDraw {
+			item.Layout(queue, deltaTime)
+		}
 	}
 
 	// Draw scroller arrows
-	if value, _, _ := menu.blinker.Update(deltaTime); value > 0.9 {
-		if moreAbove {
-			menu.scrollUp.SetPosition(mgl32.Vec2{0.0, menu.position[1]})
-			queue.Add(&menu.scrollUp)
+	scrollerValue, _, _ := menu.blinker.Update(deltaTime)
+	showScrollers := scrollerValue > 0.9
+	if moreAbove {
+		menu.scrollUpButton.SetPosition(mgl32.Vec2{0.0, menu.position[1]})
+		if menu.scrollUpButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
+			menu.scrollUpButton.BgColor = maybe.Some(color.Yellow)
+			if input.IsActionJustPressed(settings.ActionMenuClick) {
+				menu.scrollUp()
+			}
+		} else {
+			menu.scrollUpButton.BgColor = maybe.Some(color.White)
 		}
+		if showScrollers {
+			queue.Add(&menu.scrollUpButton)
+		}
+	}
 
-		if moreBelow {
-			menu.scrollDown.SetPosition(mgl32.Vec2{0.0, menuBottomY})
-			queue.Add(&menu.scrollDown)
+	if moreBelow {
+		menu.scrollDownButton.SetPosition(mgl32.Vec2{0.0, menuBottomY})
+		if menu.scrollDownButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
+			menu.scrollDownButton.BgColor = maybe.Some(color.Yellow)
+			if input.IsActionJustPressed(settings.ActionMenuClick) {
+				menu.scrollDown(minScrollY)
+			}
+		} else {
+			menu.scrollDownButton.BgColor = maybe.Some(color.White)
 		}
+		if showScrollers {
+			queue.Add(&menu.scrollDownButton)
+		}
+	}
+
+	if scroll := input.MouseScrollDelta(); !mgl32.FloatEqual(scroll, 0.0) {
+		for ; scroll > 0.0; scroll -= 1.0 {
+			menu.scrollUp()
+		}
+		for ; scroll < 0.0; scroll += 1.0 {
+			menu.scrollDown(minScrollY)
+		}
+	}
+
+	// Move scroll value
+	if !mgl32.FloatEqual(menu.scrollY, menu.targetScrollY) {
+		menu.scrollY += (menu.targetScrollY - menu.scrollY) * 0.5
 	}
 
 	if menu.menuSelection >= 0 {

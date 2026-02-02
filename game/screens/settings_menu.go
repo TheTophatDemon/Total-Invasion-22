@@ -102,6 +102,11 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	menu.Menu.Layout(queue, deltaTime)
 	tdaudio.SetSfxVolume(menu.sliderSfxVolume.FractionValue())
 	tdaudio.SetMusicVolume(menu.sliderMusicVolume.FractionValue())
+
+	if newTrans := float32(menu.sliderTextShadow.IntValue()) / 10.0; !mgl32.FloatEqual(newTrans, settings.Current.TextShadowTransparency) {
+		settings.Current.TextShadowTransparency = newTrans
+		ui.SetTextShadowColor(color.Black.WithAlpha(newTrans))
+	}
 }
 
 func (menu *SettingsMenu) Exit() {
@@ -149,11 +154,6 @@ func (menu *SettingsMenu) Exit() {
 		input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
 		input.ClearBinding(settings.ActionLookVert)
 		input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
-	}
-
-	if newTrans := float32(menu.sliderTextShadow.IntValue()) / 10.0; !mgl32.FloatEqual(newTrans, settings.Current.TextShadowTransparency) {
-		settings.Current.TextShadowTransparency = newTrans
-		ui.SetTextShadowColor(color.Black.WithAlpha(newTrans))
 	}
 
 	if chickenHarm := bool(menu.chooserChickens.Choice()); chickenHarm != settings.Current.ChickenHarm {

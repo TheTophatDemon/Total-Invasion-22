@@ -31,6 +31,7 @@ var anythingPressed bool
 
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
+var mouseScrollY, mousePrevScrollY float32
 
 func init() {
 	bindingMap = make(map[Action][MaxBindCount]Binding)
@@ -41,6 +42,7 @@ func init() {
 func Init() {
 	glfw.GetCurrentContext().SetKeyCallback(keyCallback)
 	glfw.GetCurrentContext().SetMouseButtonCallback(mouseCallback)
+	glfw.GetCurrentContext().SetScrollCallback(scrollCallback)
 }
 
 func Update() {
@@ -51,6 +53,7 @@ func Update() {
 		mouseDeltaY = mousePosY - mousePrevY
 	}
 	mousePrevX, mousePrevY = mousePosX, mousePosY
+	mousePrevScrollY = mouseScrollY
 
 	for action, bindings := range bindingMap {
 		anyPressed := false
@@ -84,6 +87,14 @@ func MousePosition() mgl32.Vec2 {
 
 func MouseDelta() mgl32.Vec2 {
 	return mgl32.Vec2{float32(mouseDeltaX), float32(mouseDeltaY)}
+}
+
+func MouseScroll() float32 {
+	return mouseScrollY
+}
+
+func MouseScrollDelta() float32 {
+	return mouseScrollY - mousePrevScrollY
 }
 
 func SetMousePosition(x, y float32) {
@@ -227,6 +238,10 @@ func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, 
 	if action == glfw.Press {
 		anythingPressed = true
 	}
+}
+
+func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
+	mouseScrollY += float32(yoff)
 }
 
 func appendBinding(action Action, newBinding Binding) {

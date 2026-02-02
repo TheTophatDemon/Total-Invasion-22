@@ -1,7 +1,7 @@
 # TODO
 - Menus
+  - Fix menu item visibility when scrolling with keyboard
   - Keybind menu
-    - Menu scrolling
   - Exit screen
   - Increase font size
   - Modify loading screen graphic to be more on-model
