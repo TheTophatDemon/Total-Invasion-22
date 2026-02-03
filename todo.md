@@ -1,6 +1,6 @@
 # TODO
 - Menus
-  - Fix menu item visibility when scrolling with keyboard
+  - Make text wrap when screen is small
   - Keybind menu
   - Exit screen
   - Increase font size

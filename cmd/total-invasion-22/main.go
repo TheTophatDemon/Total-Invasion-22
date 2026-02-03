@@ -37,6 +37,12 @@ type App struct {
 }
 
 func (app *App) Update(deltaTime float32) {
+	if input.IsActionJustPressed(settings.ActionLevelSelect) {
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(screens.LevelSelectMenu).Init(app),
+		})
+	}
+
 	switch true {
 	case app.screen != nil:
 		app.renderQueue.Clear()

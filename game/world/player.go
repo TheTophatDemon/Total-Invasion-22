@@ -20,7 +20,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/game"
 
 	"tophatdemon.com/total-invasion-ii/game/hud"
-	"tophatdemon.com/total-invasion-ii/game/screens"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -336,12 +335,6 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		} else if err != nil {
 			failure.LogErrWithLocation("failed to launch editor: %v", err)
 		}
-	}
-
-	if input.IsActionJustPressed(settings.ActionLevelSelect) {
-		gWorld.app.ProcessSignal(game.ChangeScreenSignal{
-			Screen: new(screens.LevelSelectMenu).Init(gWorld.app),
-		})
 	}
 
 	// Spawn chicken

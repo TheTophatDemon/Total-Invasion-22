@@ -61,7 +61,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 	menu.blinker.SetLoop(-1)
 
 	menu.position = mgl32.Vec2{
-		float32(settings.Current.WindowWidth) * 0.2,
+		float32(settings.Current.WindowWidth) * 0.1,
 		float32(settings.Current.WindowHeight) * 0.4,
 	}
 
@@ -176,7 +176,8 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
-	mouseMoved := input.MouseDelta().LenSqr() > 0.1
+	scroll := input.MouseScrollDelta()
+	mouseMoved := input.MouseDelta().LenSqr() > 0.1 || !mgl32.FloatEqual(scroll, 0.0)
 	if mouseMoved {
 		menu.menuSelection = -1
 	}
@@ -224,7 +225,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			item.Focus()
 			if noDraw {
 				// Scroll off screen menu item into view
-				menu.targetScrollY = min(0.0, max(minScrollY, -menu.menuSpacing*float32(i+1)))
+				menu.targetScrollY = min(0.0, max(minScrollY, -menu.menuSpacing*float32(i)))
 			}
 		} else if menu.menuSelection != i && prevSelection == i {
 			item.Blur()
@@ -267,13 +268,15 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
-	if scroll := input.MouseScrollDelta(); !mgl32.FloatEqual(scroll, 0.0) {
+	if (moreAbove || moreBelow) && !mgl32.FloatEqual(scroll, 0.0) {
 		for ; scroll > 0.0; scroll -= 1.0 {
 			menu.scrollUp()
 		}
 		for ; scroll < 0.0; scroll += 1.0 {
 			menu.scrollDown(minScrollY)
 		}
+		// The cursor will end up in a weird position, so just hide it for now
+		menu.cursor.SetPosition(mgl32.Vec2{-2048.0, -2048.0})
 	}
 
 	// Move scroll value
