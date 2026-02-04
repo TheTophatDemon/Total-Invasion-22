@@ -107,7 +107,6 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 
 	gWorld.Hud.VictoryScreen.EnemiesTotal++
 	enemy.variant = variant
-	enemy.state = &enemy.idleState
 	enemy.id = id
 
 	enemy.actor = Actor{
@@ -116,11 +115,10 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
 			Layers:   EnemyColLayers,
 		},
-		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
-		YawAngle:        angles[1],
-		AccelRate:       80.0,
-		Friction:        20.0,
-		MaxSpeed:        5.5,
+		YawAngle:  angles[1],
+		AccelRate: 80.0,
+		Friction:  20.0,
+		MaxSpeed:  5.5,
 	}
 	enemy.WakeTime = 0.5
 	enemy.WakeLimit = 5.0
@@ -137,6 +135,8 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 
 	enemy.SpriteRender = comps.NewSpriteRender(params.texture, nil, &mgl32.Vec2{0.9, 0.9})
 	enemy.AnimPlayer = comps.NewAnimationPlayer(params.defaultAnim, false)
+
+	enemy.changeState(&enemy.idleState)
 
 	return
 }
@@ -282,55 +282,61 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 
 	oldState := enemy.state
 
-	if oldState.leaveFunc != nil {
-		oldState.leaveFunc(enemy, newState)
-	} else if oldState == &enemy.dieState {
-		// Ensure nobody's standing on top of the enemy that is getting revived.
-		actorsIter := gWorld.IterActorsInSphere(enemy.Body().Position, enemy.Body().Shape.Radius(), enemy)
-		for {
-			actor, _ := actorsIter.Next()
-			if actor == nil {
-				break
+	if oldState != nil {
+		if oldState.leaveFunc != nil {
+			oldState.leaveFunc(enemy, newState)
+		} else if oldState == &enemy.dieState {
+			// Ensure nobody's standing on top of the enemy that is getting revived.
+			actorsIter := gWorld.IterActorsInSphere(enemy.Body().Position, enemy.Body().Shape.Radius(), enemy)
+			for {
+				actor, _ := actorsIter.Next()
+				if actor == nil {
+					break
+				}
+				if actor.Actor().Health > 0 {
+					return
+				}
 			}
-			if actor.Actor().Health > 0 {
-				return
-			}
+
+			gWorld.Hud.VictoryScreen.EnemiesKilled--
+			enemy.actor.body.RestoreLayers()
+			enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 		}
-
-		gWorld.Hud.VictoryScreen.EnemiesKilled--
-		enemy.actor.body.RestoreLayers()
-		enemy.actor.NoClip = false
-		enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
-	}
-	if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
-		enemy.voice.Stop()
-		enemy.voice = leaveSound.PlayAttenuatedV(enemy.actor.Position())
-	}
-
-	if newState.anim.Frames != nil {
-		enemy.AnimPlayer.ChangeAnimation(newState.anim)
-		if newState.stopAnim {
-			enemy.AnimPlayer.Stop()
-		} else {
-			enemy.AnimPlayer.PlayFromStart()
+		if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
+			enemy.voice.Stop()
+			enemy.voice = leaveSound.PlayAttenuatedV(enemy.actor.Position())
 		}
 	}
-	if newState.enterSound.IsValid() {
-		enemy.voice.Stop()
-		enemy.voice = newState.enterSound.PlayAttenuatedV(enemy.actor.Position())
-	}
 
-	// Initialize new state
-	if newState.enterFunc != nil {
-		newState.enterFunc(enemy, enemy.state)
-	} else if newState == &enemy.dieState {
-		gWorld.Hud.VictoryScreen.EnemiesKilled++
-		enemy.actor.body.ExcludeLayers(collision.MaskAll)
-		enemy.actor.NoClip = true
-		enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
+	if newState != nil {
+		if newState.anim.Frames != nil {
+			enemy.AnimPlayer.ChangeAnimation(newState.anim)
+			if newState.stopAnim {
+				enemy.AnimPlayer.Stop()
+			} else {
+				enemy.AnimPlayer.PlayFromStart()
+			}
+		}
+		if newState.enterSound.IsValid() {
+			enemy.voice.Stop()
+			enemy.voice = newState.enterSound.PlayAttenuatedV(enemy.actor.Position())
+		}
 
-		if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
-			SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
+		// Initialize new state
+		if newState == &enemy.idleState {
+			enemy.actor.collisionFilter = ColLayerMap | ColLayerActors | ColLayerInvisible
+		}
+		if newState.enterFunc != nil {
+			newState.enterFunc(enemy, enemy.state)
+		} else if newState == &enemy.dieState {
+			gWorld.Hud.VictoryScreen.EnemiesKilled++
+			enemy.actor.body.ExcludeLayers(collision.MaskAll)
+			enemy.actor.collisionFilter = ColLayerMap | ColLayerInvisible
+			enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
+
+			if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
+				SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
+			}
 		}
 	}
 
@@ -436,7 +442,7 @@ func (enemy *Enemy) stalk(
 		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
 			enemy.actor.FacingVec(),
-			ColLayerMap|ColLayerActors|ColLayerInvisible,
+			enemy.actor.collisionFilter,
 			wraithMeleeRange,
 			enemy.Body(),
 		)

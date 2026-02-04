@@ -7,9 +7,8 @@
   - Modify loading screen graphic to be more on-model
   - Make sliders look better
 - Fix in game HUD to adapt to screen size changes
+- Fix explosion damage radius after Lerp changes
 - Physics fixes
-  - Plasma gun pushes enemies through walls
-    - Seems to happen while the enemy is dying.
   - You can squeeze through adjacent props
     - Place invisible map tiles around them
   - Hitching on consecutive sloped walls
