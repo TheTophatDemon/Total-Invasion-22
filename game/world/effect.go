@@ -67,7 +67,7 @@ func (fx *Effect) Render(context *render.Context) {
 
 func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect, err error) {
 	const damageRadius = 3.5
-	const maxEnemyDamage = 175.0
+	const maxEnemyDamage = 200.0
 	const minEnemyDamage = 50.0
 	id, fx, err = SpawnEffect(position, 1.0, ExplosionParticles(1, 1.0, 1.5, 0.0))
 	if err != nil {
@@ -95,7 +95,7 @@ func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect
 				difficulty := settings.CurrDifficulty()
 				damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/damageRadius)
 			} else {
-				damage = math2.Lerp(maxEnemyDamage, minEnemyDamage, distanceToExplosion/damageRadius)
+				damage = math2.Lerp(minEnemyDamage, maxEnemyDamage, 1.0-(distanceToExplosion/damageRadius))
 			}
 			damageable.OnDamage(fx, damage)
 		}
