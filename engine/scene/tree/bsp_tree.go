@@ -2,6 +2,7 @@ package tree
 
 import (
 	"maps"
+	"math"
 	"slices"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -159,30 +160,71 @@ func (tree *BspTree) ResolveCollisions(
 		return mgl32.Vec3{}
 	}
 
-	obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
-
 	push := mgl32.Vec3{}
 
-	for _, handle := range obstacles {
-		if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
-			otherBody := collidingEnt.Body()
-			if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
-				continue
-			}
+	{
+		shrinkyShape := body.Shape.ShrunkenBy(0.1)
+		obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
+		smallestRes := collision.Result{
+			Distance: math.MaxFloat32,
+		}
+		for _, handle := range obstacles {
+			if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+				otherBody := collidingEnt.Body()
+				if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
+					continue
+				}
 
-			nextPos := body.Position.Add(movement).Add(push)
-
-			// Bounding box check
-			bbox := body.Shape.Extents().Translate(nextPos)
-			if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
-				continue
-			}
-
-			hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
-			if hit {
-				push = push.Add(pushVec)
+				res := shrinkyShape.Sweep(body.Position, movement, otherBody.Position, otherBody.Shape)
+				if res.Hit && res.Distance < smallestRes.Distance {
+					smallestRes = res
+				}
 			}
 		}
+		if smallestRes.Hit {
+			// push = smallestRes.Position.Sub(body.Position.Add(movement))
+			speed := movement.Len()
+			slide := smallestRes.Normal.Mul(-movement.Dot(smallestRes.Normal)).Add(movement)
+			if slide != (mgl32.Vec3{}) {
+				slide.Mul(speed / slide.Len())
+			}
+			push = push.Add(slide.Sub(movement))
+			// movement = slide
+		}
+	}
+
+	for range 4 {
+		smallestPush := mgl32.Vec3{}
+		smallestPushLenSq := float32(math.MaxFloat32)
+		nextPos := body.Position.Add(movement).Add(push)
+		obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(nextPos, body.Shape)))
+		for _, handle := range obstacles {
+			if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+				otherBody := collidingEnt.Body()
+				if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
+					continue
+				}
+
+				// Bounding box check
+				bbox := body.Shape.Extents().Translate(nextPos)
+				if !bbox.Intersects(otherBody.Shape.Extents().Translate(otherBody.Position)) {
+					continue
+				}
+
+				hit, pushVec := body.Shape.PushOutOf(nextPos, otherBody.Position, otherBody.Shape)
+				if hit {
+					pushVecLenSq := pushVec.LenSqr()
+					if pushVecLenSq < smallestPushLenSq {
+						smallestPush = pushVec
+						smallestPushLenSq = pushVecLenSq
+					}
+				}
+			}
+		}
+		if smallestPush == (mgl32.Vec3{}) {
+			break
+		}
+		push = push.Add(smallestPush)
 	}
 
 	if lockY {

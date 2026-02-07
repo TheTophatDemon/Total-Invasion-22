@@ -7,10 +7,10 @@
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
-  - You can squeeze through adjacent props
-    - Place invisible map tiles around them
   - Hitching on consecutive sloped walls
     - God help me...
+  - You can push around enemies while in noclip
+    - Can also push around chicken corpses for some reason
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
 - Player hit noise
