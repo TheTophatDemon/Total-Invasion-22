@@ -13,9 +13,10 @@ import (
 const ERROR_SFX_PATH = "assets/sounds/error.wav"
 
 type sfxMetadata struct {
-	Loop      bool
-	Polyphony int
-	Rolloff   float32
+	Loop        bool
+	Polyphony   int
+	Rolloff     float32
+	NoRetrigger bool
 }
 
 func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
@@ -34,6 +35,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	polyphony := uint8(4)
 	looped := false
 	rolloff := float32(0.1)
+	noRetrig := false
 	if metadata != nil {
 		if metadata.Polyphony != 0 {
 			polyphony = uint8(metadata.Polyphony)
@@ -42,8 +44,9 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 		if metadata.Rolloff != 0.0 {
 			rolloff = metadata.Rolloff
 		}
+		noRetrig = metadata.NoRetrigger
 	}
-	soundHandle := tdaudio.LoadSound(soundPath, polyphony, looped, rolloff)
+	soundHandle := tdaudio.LoadSound(soundPath, polyphony, looped, rolloff, noRetrig)
 	log.Printf("Sfx loaded at %v.\n", soundPath)
 	return soundHandle, nil
 }

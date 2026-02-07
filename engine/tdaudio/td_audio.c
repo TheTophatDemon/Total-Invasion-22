@@ -38,6 +38,7 @@ typedef struct td_voice {
 
 typedef struct td_player {
     uint8_t num_voices;
+    bool no_retrigger;
     td_voice *voices;
 } td_player;
 
@@ -75,7 +76,7 @@ void td_audio_free_sounds(void) {
 }
 
 bool td_audio_voice_is_valid(td_voice_id voice) {
-    if (voice.player.id == 0 || 
+    if (voice.player.id == 0 ||
         voice.player.id >= g_players.length) {
         return false;
     }
@@ -87,12 +88,13 @@ bool td_audio_voice_is_valid(td_voice_id voice) {
     return true;
 }
 
-td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff) {
+td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff, bool no_retrigger) {
     assert(path != NULL);
     assert(polyphony > 0);
 
     td_player player = (td_player){
         .num_voices = polyphony,
+        .no_retrigger = no_retrigger,
         .voices = (td_voice *) calloc(polyphony, sizeof(td_voice)),
     };
     td_player_id new_id = (td_player_id){.id = g_players.length};
@@ -157,7 +159,7 @@ bool td_audio_init() {
         if ((result = ma_device_init(NULL, &config, &g_device)) != MA_SUCCESS) {
             LOG_ERR("failed to initialize audio system, code %d", result);
             return false;
-        }  
+        }
     }
 
     // Engine init
@@ -218,7 +220,7 @@ td_voice_id td_audio_play_sound(td_player_id player_id, float x, float y, float 
         }
         float chosen_voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(&chosen_voice->sound)));
         float voice_dist_from_listener = ma_vec3f_len2(ma_vec3f_sub(listener_pos, ma_sound_get_position(&voice->sound)));
-        if (chosen_voice == NULL || 
+        if (chosen_voice == NULL ||
             chosen_voice_dist_from_listener < voice_dist_from_listener ||
             (chosen_voice_dist_from_listener == voice_dist_from_listener && ma_sound_get_time_in_milliseconds(&chosen_voice->sound) < ma_sound_get_time_in_milliseconds(&voice->sound))
         ) {
@@ -230,9 +232,13 @@ td_voice_id td_audio_play_sound(td_player_id player_id, float x, float y, float 
 
     if (chosen_voice != NULL && chosen_voice_id > -1) {
         ma_result result;
-        
+
         if (ma_sound_is_playing(&chosen_voice->sound)) {
-            ma_sound_stop(&chosen_voice->sound);
+            if (player->no_retrigger) {
+                return (td_voice_id) {0};
+            } else {
+                ma_sound_stop(&chosen_voice->sound);
+            }
         }
 
         result = ma_sound_seek_to_pcm_frame(&chosen_voice->sound, 0);
@@ -245,7 +251,7 @@ td_voice_id td_audio_play_sound(td_player_id player_id, float x, float y, float 
 
         result = ma_sound_start(&chosen_voice->sound);
         if (result != MA_SUCCESS) LOG_ERR("failed to start sound with id %d, code %d", player_id.id, result);
-        
+
         ++chosen_voice->play_count;
 
         return (td_voice_id) {
@@ -364,7 +370,7 @@ bool td_audio_queue_song(const char *path, bool looping, uint64_t fadeout_millis
             }
         }
         stb_vorbis_close(vorb);
-        
+
         ma_sound_set_looping(g_next_song, looping);
     } else {
         g_next_song = NULL;

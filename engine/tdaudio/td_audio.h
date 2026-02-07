@@ -18,7 +18,7 @@ typedef struct td_voice_id {
 
 bool td_audio_init();
 bool td_audio_voice_is_valid(td_voice_id voice);
-td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff);
+td_player_id td_audio_load_sound(const char *path, uint8_t polyphony, bool looping, float rolloff, bool no_retrigger);
 td_voice_id td_audio_play_sound(td_player_id sound_id, float x, float y, float z, bool attenuated);
 void td_audio_free_sounds(void);
 bool td_audio_sound_is_looped(td_player_id sound);

@@ -17,11 +17,11 @@ type (
 
 // Sound functions
 
-func LoadSound(path string, polyphony uint8, looping bool, rolloff float32) SoundId {
+func LoadSound(path string, polyphony uint8, looping bool, rolloff float32, noRetrigger bool) SoundId {
 	log.Println("Loading sound at ", path)
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
-	cSound := C.td_audio_load_sound(cPath, C.uint8_t(polyphony), C.bool(looping), C.float(rolloff))
+	cSound := C.td_audio_load_sound(cPath, C.uint8_t(polyphony), C.bool(looping), C.float(rolloff), C.bool(noRetrigger))
 	return SoundId(cSound)
 }
 
