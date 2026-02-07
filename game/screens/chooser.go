@@ -16,18 +16,32 @@ const sfxChoose = "assets/sounds/ui/weapon_select.wav"
 
 type Chooser[T fmt.Stringer] struct {
 	MenuItem
-	txtLeft, txtValue, txtRight ui.Element
-	labelWidth                  float32
-	choices                     []T
-	choiceIndex                 int
-	startingChoice              T
+	txtLabel, txtLeft, txtValue, txtRight ui.Element
+	choices                               []T
+	choiceIndex                           int
+	startingChoice                        T
 }
 
 func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
-	ch.MenuItem = MenuItem{
-		element: ui.NewText(ui.Transform{}, settings.Localize(labelKey)+": ", ui.TextConfig{}),
+	*ch = Chooser[T]{}
+
+	smallScreen := settings.Current.WindowWidth <= 800
+
+	ch.txtLabel = ui.NewText(ui.Transform{
+		Origin: ui.Ratios{0.0, 0.5},
+		Depth:  10,
+	}, settings.Localize(labelKey)+": ", ui.TextConfig{
+		Color:     maybe.Some(color.White),
+		WrapWords: true,
+	})
+	ch.txtLabel.FitText()
+	if smallScreen && ch.txtLabel.Size()[0] >= 350.0 {
+		ch.txtLabel.SetSize(mgl32.Vec2{
+			350.0,
+			48.0,
+		})
 	}
-	ch.MenuItem.FitText()
+
 	ch.txtLeft = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
@@ -60,7 +74,6 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 	}, ">", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
 	})
-	ch.labelWidth = ch.OnScreenBox().Width
 	ch.choices = choices
 	ch.startingChoice = choice
 	ch.choiceIndex = -1
@@ -100,9 +113,31 @@ func (ch *Chooser[T]) Input(action input.Action) {
 	}
 }
 
+func (ch *Chooser[T]) Focus() {
+	ch.MenuItem.Focus()
+	configMaybe := ch.txtLabel.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		config.Color = maybe.Some(color.Yellow)
+		ch.txtLabel.SetTextConfig(*config)
+	}
+}
+
+func (ch *Chooser[T]) Blur() {
+	ch.MenuItem.Blur()
+	configMaybe := ch.txtLabel.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		config.Color = maybe.Some(color.White)
+		ch.txtLabel.SetTextConfig(*config)
+	}
+}
+
 func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	ch.txtLabel.SetPosition(ch.Position())
+	queue.Add(&ch.txtLabel)
+
+	labelWidth := ch.txtLabel.OnScreenBox().Width + 4.0
 	ch.txtLeft.SetPosition(ch.Position())
-	ch.txtLeft.Translate(mgl32.Vec2{ch.labelWidth, 0.0})
+	ch.txtLeft.Translate(mgl32.Vec2{labelWidth, 0.0})
 	queue.Add(&ch.txtLeft)
 
 	leftWidth := ch.txtLeft.OnScreenBox().Width + 8.0
@@ -116,7 +151,7 @@ func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	ch.txtRight.Translate(mgl32.Vec2{valueWidth, 0.0})
 	queue.Add(&ch.txtRight)
 
-	fullWidth := ch.labelWidth + leftWidth + valueWidth + ch.txtRight.OnScreenBox().Width
+	fullWidth := labelWidth + leftWidth + valueWidth + ch.txtRight.OnScreenBox().Width + 4.0
 	ch.SetSize(mgl32.Vec2{fullWidth, ch.Size()[1]})
 
 	ch.MenuItem.Layout(queue, deltaTime)

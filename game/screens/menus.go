@@ -58,11 +58,18 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 		),
 	}
 
+	smallScreen := settings.Current.WindowWidth <= 800
+
 	menu.blinker.SetLoop(-1)
 
 	menu.position = mgl32.Vec2{
 		float32(settings.Current.WindowWidth) * 0.1,
 		float32(settings.Current.WindowHeight) * 0.4,
+	}
+
+	if smallScreen {
+		menu.menuSpacing = 48
+		menu.position[0] = 16
 	}
 
 	menu.cursor = ui.NewBox(ui.Transform{
@@ -107,6 +114,10 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Sc
 				Depth:  10,
 			})
 		elem.FitText()
+		if smallScreen && elem.Size()[0] >= 300 {
+			elem.SetSize(mgl32.Vec2{300, 48})
+		}
+
 		if i == 0 {
 			menu.menuItems[0].Focus()
 		}

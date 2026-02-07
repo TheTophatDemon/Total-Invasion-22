@@ -1,11 +1,10 @@
 # TODO
 - Menus
-  - Make text wrap when screen is small
   - Keybind menu
+  - Resolution change confirmation?
   - Exit screen
-  - Increase font size
-  - Modify loading screen graphic to be more on-model
   - Make sliders look better
+  - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
   - You can squeeze through adjacent props

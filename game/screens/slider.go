@@ -18,10 +18,9 @@ const sfxSlide = "assets/sounds/ui/stats_ding.wav"
 
 type Slider struct {
 	MenuItem
-	txtLeft, txtSlider, txtRight, txtValue ui.Element
-	labelWidth                             float32
-	min, max, step, count                  int
-	value                                  int
+	txtLabel, txtLeft, txtSlider, txtRight, txtValue ui.Element
+	min, max, step, count                            int
+	value                                            int
 }
 
 func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slider {
@@ -32,10 +31,23 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 		value: initialValue,
 		count: (1 + max - min) / step,
 	}
-	sl.MenuItem = MenuItem{
-		element: ui.NewText(ui.Transform{}, settings.Localize(labelKey)+": ", ui.TextConfig{}),
+
+	smallScreen := settings.Current.WindowWidth <= 800
+
+	sl.txtLabel = ui.NewText(ui.Transform{
+		Origin: ui.Ratios{0.0, 0.5},
+		Depth:  10,
+	}, settings.Localize(labelKey)+": ", ui.TextConfig{
+		Color:     maybe.Some(color.White),
+		WrapWords: true,
+	})
+	sl.txtLabel.FitText()
+	if smallScreen && sl.txtLabel.Size()[0] >= 300.0 {
+		sl.txtLabel.SetSize(mgl32.Vec2{
+			300.0,
+			64.0,
+		})
 	}
-	sl.MenuItem.FitText()
 
 	sl.txtLeft = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -67,8 +79,6 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 		Size:   mgl32.Vec2{80, 24},
 	}, fmt.Sprintf("%v", initialValue), ui.TextConfig{})
 
-	sl.labelWidth = sl.OnScreenBox().Width
-
 	return sl
 }
 
@@ -99,6 +109,24 @@ func (sl *Slider) Input(action input.Action) {
 	}
 }
 
+func (sl *Slider) Focus() {
+	sl.MenuItem.Focus()
+	configMaybe := sl.txtLabel.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		config.Color = maybe.Some(color.Yellow)
+		sl.txtLabel.SetTextConfig(*config)
+	}
+}
+
+func (sl *Slider) Blur() {
+	sl.MenuItem.Blur()
+	configMaybe := sl.txtLabel.TextConfig()
+	if config, ok := configMaybe.Get(); ok {
+		config.Color = maybe.Some(color.White)
+		sl.txtLabel.SetTextConfig(*config)
+	}
+}
+
 func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	// Slide when mouse is held down
 	mousePos := input.MousePosition()
@@ -113,8 +141,11 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
+	sl.txtLabel.SetPosition(sl.Position())
+	queue.Add(&sl.txtLabel)
+
 	sl.txtLeft.SetPosition(sl.Position())
-	sl.txtLeft.Translate(mgl32.Vec2{sl.labelWidth, 0.0})
+	sl.txtLeft.Translate(mgl32.Vec2{sl.txtLabel.OnScreenBox().Width, 0.0})
 	queue.Add(&sl.txtLeft)
 
 	leftWidth := sl.txtLeft.OnScreenBox().Width + 8.0
@@ -146,7 +177,7 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	sl.txtValue.SetText(fmt.Sprintf("%v", sl.value))
 	queue.Add(&sl.txtValue)
 
-	clickableWidth := sl.labelWidth + leftWidth + valueWidth + sl.txtRight.OnScreenBox().Width
+	clickableWidth := sl.txtLabel.OnScreenBox().Width + leftWidth + valueWidth + sl.txtRight.OnScreenBox().Width
 	sl.SetSize(mgl32.Vec2{clickableWidth, sl.Size()[1]})
 
 	sl.MenuItem.Layout(queue, deltaTime)
