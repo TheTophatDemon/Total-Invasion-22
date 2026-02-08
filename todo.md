@@ -6,9 +6,8 @@
   - Make sliders look better
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
-- Physics fixes
-  - You can push around enemies while in noclip
-    - Can also push around chicken corpses for some reason
+- Fix jittering in corners?
+- Improve look of liquid surfaces
 - Saving / checkpoints
 - Make enemies able to hear player behind walls as long as space is connected.
 - Player hit noise

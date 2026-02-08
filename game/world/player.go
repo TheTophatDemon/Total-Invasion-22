@@ -275,9 +275,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Cheat codes
 	if input.IsActionJustPressed(settings.ActionNoclip) {
 		if !player.actor.NoClip {
+			player.actor.Body().ExcludeLayers(collision.MaskAll)
 			player.actor.NoClip = true
 			hudPtr.ShowMessage(settings.Localize("noclipActivate"), 4.0, 100, color.Red)
 		} else {
+			player.actor.Body().RestoreLayers()
 			player.actor.NoClip = false
 			hudPtr.ShowMessage(settings.Localize("noclipDeactivate"), 4.0, 100, color.Red)
 		}

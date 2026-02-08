@@ -175,6 +175,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	chk.actor.Health -= damage
 	if chk.actor.Health <= 0 {
 		chk.voice.Stop()
+		chk.actor.collisionFilter = ColLayerMap | ColLayerInvisible
 		chk.voice = cache.GetSfx(SfxChickenPain).PlayAttenuatedV(chk.Body().Position)
 		spawnPosition := chk.actor.Position().Add(chk.actor.FacingVec().Mul(0.5))
 		// Spawn an item sometimes
