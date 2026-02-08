@@ -7,23 +7,20 @@
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Physics fixes
-  - Hitching on consecutive sloped walls
-    - God help me...
   - You can push around enemies while in noclip
     - Can also push around chicken corpses for some reason
-- Optimize memory usage of particle effects
-- Optimize pauses by pre loading textures for entities
+- Saving / checkpoints
+- Make enemies able to hear player behind walls as long as space is connected.
 - Player hit noise
 - Chicken cannon secondary attack
 - Game Difficulty Settings
 - Dialog Cutscene
   - Song
 - Demo end screen
-- Saving / checkpoints
 - Re-record enemy voices
-- Make enemies able to hear player behind walls as long as space is connected.
 - Gamepad support (for Steam Deck)
-- Fix flickering artifacts on walls. Consider greedy meshing.
+- Optimize memory usage of particle effects
+- Optimize pauses by pre loading textures for entities
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize world raycasts using the bsp tree
 

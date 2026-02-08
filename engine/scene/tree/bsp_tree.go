@@ -182,14 +182,12 @@ func (tree *BspTree) ResolveCollisions(
 			}
 		}
 		if smallestRes.Hit {
-			// push = smallestRes.Position.Sub(body.Position.Add(movement))
 			speed := movement.Len()
 			slide := smallestRes.Normal.Mul(-movement.Dot(smallestRes.Normal)).Add(movement)
 			if slide != (mgl32.Vec3{}) {
 				slide.Mul(speed / slide.Len())
 			}
 			push = push.Add(slide.Sub(movement))
-			// movement = slide
 		}
 	}
 

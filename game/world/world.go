@@ -82,7 +82,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 	gWorld.Items = scene.NewStorageWithFuncs(256, (*Item).Update, (*Item).Render)
 	gWorld.DebugShapes = scene.NewStorageWithFuncs(128, (*DebugShape).Update, (*DebugShape).Render)
 	gWorld.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
-	gWorld.MapLayers = scene.NewStorageWithFuncs(3, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
+	gWorld.MapLayers = scene.NewStorageWithFuncs(1, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
 
 	te3File, err := te3.LoadTE3File(mapPath)
 	if err != nil {
@@ -236,16 +236,21 @@ func (world *World) ResolveMapCollisions(
 		return mgl32.Vec3{}
 	}
 
-	layerIt := world.MapLayers.Iter()
-	push := mgl32.Vec3{}
-	for layer, _ := layerIt.Next(); layer != nil; layer, _ = layerIt.Next() {
-		nextPos := body.Position.Add(movement).Add(push)
-		pushVec := layer.GridShape.PushOut(mgl32.Vec3{}, nextPos, body.Shape, filter)
-		push = push.Add(pushVec)
+	var push mgl32.Vec3
+	grid := &world.GameMap.GridShape
+	shrunkenShape := body.Shape.ShrunkenBy(0.1)
+	sweepResult, _ := grid.SweepAgainst(mgl32.Vec3{}, body.Position, movement, shrunkenShape, filter)
+	if sweepResult.Hit {
+		speed := movement.Len()
+		slide := sweepResult.Normal.Mul(-movement.Dot(sweepResult.Normal)).Add(movement)
+		if slide != (mgl32.Vec3{}) {
+			slide.Mul(speed / slide.Len())
+		}
+		push = push.Add(slide.Sub(movement))
 	}
-	if lockY {
-		push[1] = 0.0
-	}
+
+	pushVec := grid.PushOut(mgl32.Vec3{}, body.Position.Add(movement.Add(push)), body.Shape, filter)
+	push = push.Add(pushVec)
 	return push
 }
 
