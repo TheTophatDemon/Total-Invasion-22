@@ -6,8 +6,7 @@
   - Make sliders look better
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
-- Fix jittering in corners?
-- Improve look of liquid surfaces
+- Fix jittering in corners
 - Saving / checkpoints
 - Make enemies able to hear player behind walls as long as space is connected.
 - Player hit noise

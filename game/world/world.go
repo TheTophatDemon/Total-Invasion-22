@@ -113,9 +113,6 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 			layer = ColLayerInvisible
 		} else if primaryTexture.HasFlag("killzone") {
 			layer = ColLayerKillzone
-		} else if primaryTexture.HasFlag("liquid") {
-			// Remove collision from liquid tiles.
-			continue
 		}
 
 		// Set collision shapes

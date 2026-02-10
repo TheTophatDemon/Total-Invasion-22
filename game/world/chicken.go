@@ -98,13 +98,23 @@ func (chk *Chicken) Update(deltaTime float32) {
 	body := chk.Body()
 
 	if settings.Current.ChickenHarm {
-		chk.Body().Layers |= ColLayerActors
+		body.Layers |= ColLayerActors
 		chk.actor.collisionFilter &= (^ColLayerKillzone)
+		if body.Position[1] < 2.0 {
+			// Die in lava
+			chk.actor.Health = 0
+		}
 	} else {
 		// If the chicken is invincible, let the player walk through it so it doesn't block you.
-		chk.Body().Layers &= (^ColLayerActors)
+		body.Layers &= (^ColLayerActors)
 		// Also let it walk on lava
 		chk.actor.collisionFilter |= ColLayerKillzone
+		if body.Position[1] < 4.0 {
+			body.Position[1] = 4.0
+		}
+	}
+	if body.Position[1] <= 0.0 {
+		chk.id.Remove()
 	}
 
 	chk.AnimPlayer.Update(deltaTime)
