@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -46,7 +45,7 @@ func (onOff OnOff) String() string {
 
 func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *SettingsMenu {
 	*settingsMenu = SettingsMenu{}
-	settingsMenu.returnItem.Init("return", func(input.Action) { settingsMenu.returnToParent() })
+	settingsMenu.returnItem.Init("return", func(MenuInputType) { settingsMenu.returnToParent() })
 
 	settingsMenu.chooserLanguage.Init("language", []settings.Locale{settings.LocaleEnglish, settings.LocaleRussian}, settings.Current.Locale)
 
@@ -71,7 +70,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
 
-	settingsMenu.keybindItem.Init("keybind", func(input.Action) {
+	settingsMenu.keybindItem.Init("keybind", func(MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(KeybindMenu).Init(app, settingsMenu),
 		})
@@ -149,11 +148,12 @@ func (menu *SettingsMenu) Exit() {
 	if newSens := menu.sliderSensitivity.IntValue(); newSens != settings.Current.MouseSensitivity {
 		settings.Current.MouseSensitivity = newSens
 
-		scaledSens := settings.ScaledMouseSensitivity(newSens)
-		input.ClearBinding(settings.ActionLookHorz)
-		input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
-		input.ClearBinding(settings.ActionLookVert)
-		input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
+		// scaledSens := settings.ScaledMouseSensitivity(newSens)
+		// input.ClearBinding(settings.ActionLookHorz)
+		// input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
+		// input.ClearBinding(settings.ActionLookVert)
+		// input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
+		// TODO: How do we make this work again?
 	}
 
 	if chickenHarm := bool(menu.chooserChickens.Choice()); chickenHarm != settings.Current.ChickenHarm {

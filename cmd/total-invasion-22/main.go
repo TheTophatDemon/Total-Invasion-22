@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -37,7 +36,7 @@ type App struct {
 }
 
 func (app *App) Update(deltaTime float32) {
-	if input.IsActionJustPressed(settings.ActionLevelSelect) {
+	if settings.ActionLevelSelect.JustPressed() {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(screens.LevelSelectMenu).Init(app),
 		})
@@ -56,7 +55,7 @@ func (app *App) Update(deltaTime float32) {
 		app.screen.Layout(&app.renderQueue, deltaTime)
 	case app.world != nil:
 		app.world.Update(deltaTime)
-		if input.IsActionJustPressed(settings.ActionMenuCancel) {
+		if settings.Current.ActionMenuCancel.JustPressed() {
 			input.UntrapMouse()
 			app.screen = new(screens.TitleMenu).Init(app, true)
 		}
@@ -184,44 +183,6 @@ func main() {
 	// The first sound loaded is used as the error sound
 	cache.GetSfx("assets/sounds/error.wav")
 	cache.PreloadSfx("assets/sounds")
-
-	input.BindActionKey(settings.ActionForward, glfw.KeyW)
-	input.BindActionKey(settings.ActionBack, glfw.KeyS)
-	input.BindActionKey(settings.ActionLeft, glfw.KeyA)
-	input.BindActionKey(settings.ActionRight, glfw.KeyD)
-	input.BindActionKey(settings.ActionSlow, glfw.KeyLeftShift)
-	input.BindActionKey(settings.ActionUse, glfw.KeyE)
-	input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, settings.ScaledMouseSensitivity(settings.Current.MouseSensitivity))
-	input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, settings.ScaledMouseSensitivity(settings.Current.MouseSensitivity))
-	input.BindActionMouseButton(settings.ActionFire, glfw.MouseButton1)
-	input.BindActionKey(settings.ActionWeaponWheel, glfw.KeyQ)
-	input.BindActionKey(settings.ActionSickle, glfw.Key1)
-	input.BindActionKey(settings.ActionChicken, glfw.Key2)
-	input.BindActionKey(settings.ActionGrenade, glfw.Key3)
-	input.BindActionKey(settings.ActionParusu, glfw.Key4)
-	input.BindActionKey(settings.ActionDblGrenade, glfw.Key5)
-	input.BindActionKey(settings.ActionSign, glfw.Key6)
-	input.BindActionKey(settings.ActionAirhorn, glfw.Key7)
-	input.BindActionKey(settings.ActionDefenestrator, glfw.Key8)
-	input.BindActionKey(settings.ActionCluckster, glfw.Key9)
-	input.BindActionKey(settings.ActionMenuUp, glfw.KeyUp)
-	input.BindActionKey(settings.ActionMenuDown, glfw.KeyDown)
-	input.BindActionKey(settings.ActionMenuIncrement, glfw.KeyRight)
-	input.BindActionKey(settings.ActionMenuDecrement, glfw.KeyLeft)
-	input.BindActionKey(settings.ActionMenuConfirm, glfw.KeyEnter)
-	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton1)
-	input.BindActionMouseButton(settings.ActionMenuClick, glfw.MouseButton2)
-	input.BindActionKey(settings.ActionMenuCancel, glfw.KeyEscape)
-
-	input.BindActionCharSequence(settings.ActionNoclip, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP})                               //TDCLIP
-	input.BindActionCharSequence(settings.ActionGodMode, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD})                                         //TDDQD
-	input.BindActionCharSequence(settings.ActionMarySue, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM})                                         //TDMSM
-	input.BindActionCharSequence(settings.ActionDie, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE}) //TDUNALIVE
-	input.BindActionCharSequence(settings.ActionKillEnemies, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE, glfw.KeyM})               //TDNUKEM
-	input.BindActionCharSequence(settings.ActionCastBlessing, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO})   //TDWOLOLO
-	input.BindActionCharSequence(settings.ActionLaunchEditor, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT})                         //TDJOMT
-	input.BindActionCharSequence(settings.ActionSpawnChicken, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC})                                    //TDKFC
-	input.BindActionCharSequence(settings.ActionLevelSelect, []glfw.Key{glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV})                          //TDCLEV
 
 	// Update audio volume based on settings.
 	tdaudio.SetSfxVolume(settings.Current.SfxVolume)

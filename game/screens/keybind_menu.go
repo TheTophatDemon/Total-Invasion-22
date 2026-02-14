@@ -2,7 +2,6 @@ package screens
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 )
 
@@ -13,7 +12,7 @@ type KeybindMenu struct {
 
 func (keybindMenu *KeybindMenu) Init(app engine.Observer, parent ui.Screen) *KeybindMenu {
 	*keybindMenu = KeybindMenu{}
-	keybindMenu.returnItem.Init("return", func(input.Action) { keybindMenu.returnToParent() })
+	keybindMenu.returnItem.Init("return", func(MenuInputType) { keybindMenu.returnToParent() })
 
 	keybindMenu.Menu.Init(app, []MenuEvents{
 		&keybindMenu.returnItem,

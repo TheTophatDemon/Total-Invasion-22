@@ -96,14 +96,14 @@ func (ch *Chooser[T]) prev() {
 	ch.choiceIndex = (ch.choiceIndex + len(ch.choices) - 1) % len(ch.choices)
 }
 
-func (ch *Chooser[T]) Input(action input.Action) {
+func (ch *Chooser[T]) Input(action MenuInputType) {
 	ch.MenuItem.Input(action)
 	switch action {
-	case settings.ActionMenuIncrement:
+	case MenuInputIncrement:
 		ch.next()
-	case settings.ActionMenuDecrement:
+	case MenuInputDecrement:
 		ch.prev()
-	case settings.ActionMenuClick:
+	default:
 		mousePos := input.MousePosition()
 		if ch.txtLeft.OnScreenBox().ContainsPoint(mousePos) {
 			ch.prev()

@@ -92,14 +92,14 @@ func (sl *Slider) prev() {
 	sl.value = max(sl.min, sl.value-sl.step)
 }
 
-func (sl *Slider) Input(action input.Action) {
+func (sl *Slider) Input(action MenuInputType) {
 	sl.MenuItem.Input(action)
 	switch action {
-	case settings.ActionMenuIncrement:
+	case MenuInputIncrement:
 		sl.next()
-	case settings.ActionMenuDecrement:
+	case MenuInputDecrement:
 		sl.prev()
-	case settings.ActionMenuClick:
+	case MenuInputClick:
 		mousePos := input.MousePosition()
 		if sl.txtLeft.OnScreenBox().ContainsPoint(mousePos) {
 			sl.prev()

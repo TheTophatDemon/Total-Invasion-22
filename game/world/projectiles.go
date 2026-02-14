@@ -8,7 +8,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -70,7 +69,7 @@ func SpawnIntroSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene
 
 func (proj *Projectile) sickleMove(deltaTime float32) {
 	var decelerationRate float32 = 65.0
-	if !input.IsActionPressed(settings.ActionFire) {
+	if !settings.Current.ActionFire.Pressed() {
 		decelerationRate = 100.0
 	}
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*decelerationRate)

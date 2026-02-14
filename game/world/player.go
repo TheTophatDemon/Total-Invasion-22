@@ -47,18 +47,6 @@ type Player struct {
 var _ HasActor = (*Player)(nil)
 var _ comps.HasBody = (*Player)(nil)
 
-var actionToWeapon = map[input.Action]game.WeaponType{
-	settings.ActionSickle:        game.WeaponSickle,
-	settings.ActionChicken:       game.WeaponChicken,
-	settings.ActionGrenade:       game.WeaponGrenade,
-	settings.ActionParusu:        game.WeaponParusu,
-	settings.ActionDblGrenade:    game.WeaponDblGrenade,
-	settings.ActionSign:          game.WeaponSign,
-	settings.ActionAirhorn:       game.WeaponAirhorn,
-	settings.ActionDefenestrator: game.WeaponDefenestrator,
-	settings.ActionCluckster:     game.WeaponCluckster,
-}
-
 func (player *Player) Actor() *Actor {
 	return &player.actor
 }
@@ -156,7 +144,7 @@ func (player *Player) Update(deltaTime float32) {
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
-		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ActionFire)) || player.transitionTimer > 35.0 {
+		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
 				NextMapPath:     gWorld.impendingLevel,
 				GiveAmmo:        player.ammo,
@@ -211,7 +199,7 @@ func (player *Player) Update(deltaTime float32) {
 			}
 		}
 		player.transitionTimer += deltaTime
-		if (player.transitionTimer > 2.0 && input.IsActionPressed(settings.ActionFire)) || player.transitionTimer > 10.0 {
+		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 10.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{NextMapPath: gWorld.GameMap.Name})
 		}
 	}
@@ -252,17 +240,17 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	hudPtr := &gWorld.Hud
 
 	_ = deltaTime
-	if input.IsActionPressed(settings.ActionForward) {
+	if settings.Current.ActionForward.Pressed() {
 		player.actor.inputForward = 1.0
-	} else if input.IsActionPressed(settings.ActionBack) {
+	} else if settings.Current.ActionBack.Pressed() {
 		player.actor.inputForward = -1.0
 	} else {
 		player.actor.inputForward = 0.0
 	}
 
-	if input.IsActionPressed(settings.ActionRight) {
+	if settings.Current.ActionRight.Pressed() {
 		player.actor.inputStrafe = 1.0
-	} else if input.IsActionPressed(settings.ActionLeft) {
+	} else if settings.Current.ActionLeft.Pressed() {
 		player.actor.inputStrafe = -1.0
 	} else {
 		player.actor.inputStrafe = 0.0
@@ -273,7 +261,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Cheat codes
-	if input.IsActionJustPressed(settings.ActionNoclip) {
+	if settings.ActionNoclip.JustPressed() {
 		if !player.actor.NoClip {
 			player.actor.Body().ExcludeLayers(collision.MaskAll)
 			player.actor.NoClip = true
@@ -286,7 +274,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// God mode
-	if input.IsActionJustPressed(settings.ActionGodMode) {
+	if settings.ActionGodMode.JustPressed() {
 		if !player.godMode {
 			player.actor.Health = player.actor.MaxHealth
 		}
@@ -301,7 +289,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Mary sue mode
-	if input.IsActionJustPressed(settings.ActionMarySue) {
+	if settings.ActionMarySue.JustPressed() {
 		hudPtr.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
 		for i := range game.WeaponCount - 1 {
 			hudPtr.Weapons.Get(i + 1).Equipped = true
@@ -313,17 +301,17 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Unalive
-	if input.IsActionJustPressed(settings.ActionDie) {
+	if settings.ActionDie.JustPressed() {
 		player.actor.Health = 0
 	}
 
 	// Cast blessing
-	if input.IsActionJustPressed(settings.ActionCastBlessing) {
+	if settings.ActionCastBlessing.JustPressed() {
 		SpawnBlessing(player.actor.Position(), player.actor.FacingVec(), player.id.Handle)
 	}
 
 	// Launch editor
-	if input.IsActionJustPressed(settings.ActionLaunchEditor) {
+	if settings.ActionLaunchEditor.JustPressed() {
 		cmd := exec.Command("./Total Editor 3.exe", gWorld.GameMap.Name)
 		err := cmd.Run()
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
@@ -340,12 +328,12 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Spawn chicken
-	if input.IsActionJustPressed(settings.ActionSpawnChicken) {
+	if settings.ActionSpawnChicken.JustPressed() {
 		SpawnChicken(player.Body().Position.Add(player.actor.FacingVec()), mgl32.Vec3{})
 	}
 
 	// Use key
-	if input.IsActionJustPressed(settings.ActionUse) {
+	if settings.Current.ActionUse.JustPressed() {
 		const useDist float32 = 3.0
 		hit, closestBody := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerUsable, useDist, player.Body())
 		if hit.Hit && !closestBody.IsNil() {
@@ -368,13 +356,28 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Weapon selection
-	for action, weapon := range actionToWeapon {
-		if input.IsActionJustPressed(action) {
-			hudPtr.Weapons.Select(weapon)
-		}
+	switch true {
+	case settings.Current.ActionSickle.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponSickle)
+	case settings.Current.ActionChicken.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponChicken)
+	case settings.Current.ActionGrenade.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponGrenade)
+	case settings.Current.ActionParusu.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponParusu)
+	case settings.Current.ActionDblGrenade.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponDblGrenade)
+	case settings.Current.ActionSign.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponSign)
+	case settings.Current.ActionAirhorn.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponAirhorn)
+	case settings.Current.ActionDefenestrator.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponDefenestrator)
+	case settings.Current.ActionCluckster.JustPressed():
+		hudPtr.Weapons.Select(game.WeaponCluckster)
 	}
 
-	if weap := hudPtr.Weapons.Selected(); weap != nil && input.IsActionPressed(settings.ActionFire) {
+	if weap := hudPtr.Weapons.Selected(); weap != nil && settings.Current.ActionFire.Pressed() {
 		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
@@ -383,7 +386,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 		ammoBefore := player.ammo
 		if !cast.Hit && hudPtr.Weapons.AttemptFire(&player.ammo) {
-			player.AttackWithWeapon(input.IsActionJustPressed(settings.ActionFire))
+			player.AttackWithWeapon(settings.Current.ActionFire.JustPressed())
 			if player.armorType == game.ArmorTypeBullet && weap.Kind() != game.WeaponSickle {
 				player.ammo = ammoBefore
 			}
@@ -391,17 +394,17 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	// Sprinting
-	if input.IsActionPressed(settings.ActionSlow) {
+	if settings.Current.ActionSlow.Pressed() {
 		player.actor.MaxSpeed = player.WalkSpeed
 	} else {
 		player.actor.MaxSpeed = player.RunSpeed
 	}
 
-	if input.IsActionPressed(settings.ActionWeaponWheel) {
+	if settings.Current.ActionWeaponWheel.Pressed() {
 		player.weaponWheelOpenness = 1.0
 	}
 	if player.weaponWheelOpenness <= 0.0 {
-		player.actor.YawAngle -= input.ActionAxis(settings.ActionLookHorz)
+		player.actor.YawAngle += settings.Current.ActionLookLeft.Axis() - settings.Current.ActionLookRight.Axis()
 	}
 }
 

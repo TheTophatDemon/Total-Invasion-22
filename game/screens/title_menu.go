@@ -2,7 +2,6 @@ package screens
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/game"
 )
 
@@ -16,22 +15,22 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 	*titleMenu = TitleMenu{
 		inGame: inGame,
 	}
-	titleMenu.resumeGame.Init("resumeGame", func(input.Action) {
+	titleMenu.resumeGame.Init("resumeGame", func(MenuInputType) {
 		app.ProcessSignal(game.ResumeGameSignal{})
 	})
-	titleMenu.newGame.Init("newGame", func(input.Action) {
+	titleMenu.newGame.Init("newGame", func(MenuInputType) {
 		app.ProcessSignal(game.MapChangeSignal{
 			NextMapPath: "assets/maps/e1m1.te3",
 		})
 	})
 	titleMenu.loadGame.Init("loadGame", nil)
 	titleMenu.saveGame.Init("saveGame", nil)
-	titleMenu.options.Init("options", func(input.Action) {
+	titleMenu.options.Init("options", func(MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(SettingsMenu).Init(app, titleMenu),
 		})
 	})
-	titleMenu.exit.Init("exit", func(input.Action) {
+	titleMenu.exit.Init("exit", func(MenuInputType) {
 		engine.Shutdown()
 	})
 	menuItems := []MenuEvents{

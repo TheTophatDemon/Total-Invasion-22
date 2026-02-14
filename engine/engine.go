@@ -140,7 +140,7 @@ func Run(app App) {
 		numUpdates := clock.UpdateFrame()
 		for range numUpdates {
 			app.Update(1.0 / float32(clock.TPS()))
-			input.Update()
+			input.PostUpdate()
 			tdaudio.Update()
 		}
 

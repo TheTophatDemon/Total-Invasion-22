@@ -26,6 +26,28 @@ keybind = "Назначение Клавиши"
 on = "Вклч."
 off = "Выклч."
 
+# Input bindings
+mouseButtonLeft = "Левая Кнопка Мыши"
+mouseButtonLeftAccusative = "Левую Кнопку Мыши"
+mouseButtonRight = "Правая Кнопка Мыши"
+mouseButtonRightAccusative = "Правую Кнопку Мыши"
+mouseButtonMiddle = "Средная Кнопка Мыши"
+mouseButtonMiddleAccusative = "Средную Кнопку Мыши"
+mouseButton4 = "Кнопка Мыши 4"
+mouseButton4Accusative = "Кнопку Мыши 4"
+mouseButton5 = "Кнопка Мыши 5"
+mouseButton5Accusative = "Кнопку Мыши 5"
+mouseButton6 = "Кнопка Мыши 6"
+mouseButton6Accusative = "Кнопку Мыши 6"
+mouseButton7 = "Кнопка Мыши 7"
+mouseButton7Accusative = "Кнопку Мыши 7"
+mouseButton8 = "Кнопка Мыши 8"
+mouseButton8Accusative = "Кнопку Мыши 8"
+mousePosX = "Движ. Мыши Вправо"
+mouseNegX = "Движ. Мыши Влево"
+mousePosY = "Движ. Мыши Вниз"
+mouseNegY = "Движ. Мыши Вверх"
+
 # Doors
 doorStuck = "Дверь не движется..."
 doorSwitch = "Дверь открывается не отсюда..."
@@ -44,7 +66,7 @@ grayKeyNeeded = "Мне нужна серая ключ-карта..."
 grayKeyGet = "Досталась серая ключ-карта."
 
 # Victory screen
-fireContinue = 'Нажмите кнопку "стрельба" чтобы продолжить.'
+fireContinue = 'Нажмите любую кнопку чтобы продолжить.'
 statTime = "Время"
 statKills = "Убито"
 statSecrets = "Тайники"
@@ -123,16 +145,16 @@ eyeballMessage3 = "Мы - твои друзья."
 eyeballMessage4 = "Хоть дригие не видят нас, мы всегда видим вас."
 eyeballMessage5 = "Не волнуйтесь, ты не сошла с ума."
 eyeballMessage6 = "Такое понимание не подходит земнородными."
-tutorialSickle = 'Нажмите кнопку {{ binding "fire" }} чтобы бросать сепр. Держите её чтобы серп летел дальше.'
-tutorialDoors = 'Нажмите кнопку {{ binding "use" }} чтобы включить двери и выключатели.'
+tutorialSickle = 'Нажмите "{{ acc .ActionFire }}" чтобы бросать сепр. Держите её чтобы серп летел дальше.'
+tutorialDoors = 'Нажмите "{{ acc .ActionUse }}" чтобы включить двери и выключатели.'
 tutorialEyes = 'Уставьтесь в очи чтобы принять древное знание.'
 tutorialSecret = 'Мне кажется, что зта стена подозрительна...'
 tutorialHealth = 'Такие предметы, как это, лечат вас.'
-tutorialWeapon = 'Можно выбрать оружия такими кнопками, как {{ binding "sickle" }} и {{ binding "chicken" }}, или держанием {{ binding "weaponWheel" }}.'
+tutorialWeapon = 'Можно выбрать оружия такими кнопками, как "{{ acc .ActionSickle }}" и "{{ acc .ActionChicken }}", или держанием "{{ acc .ActionWeaponWheel }}".'
 tutorialTeleporter = 'Прибор на земле телепортирует вас.'
 tutorialCrux = "Если ударяете врага при вершине траектории серпа, вы вредите его больше!"
-tutorialWeaponWheel = 'Не надо целиться точно в колесо оружия. Просто держите {{ binding "weaponWheel" }} и сразу же продвиньте курсор через оружие.'
-tutorialSwitch = 'Доберитесь до выключателя и нажмите {{ binding "use" }} чтобы влючить...нууу...я забыл.'
+tutorialWeaponWheel = 'Не надо целиться точно в колесо оружия. Просто держите "{{ acc .ActionWeaponWheel }}" и сразу же продвиньте курсор через оружие.'
+tutorialSwitch = 'Доберитесь до выключателя и нажмите "{{ acc .ActionUse }}" чтобы включить...нууу...я забыл.'
 
 # Map titles
 e1m1Title = "КАРНАВАЛ ГЕНОЦИДА"

@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -161,9 +160,9 @@ func (weapons *Weapons) init(hud *Hud) {
 func (weapons *Weapons) Layout(queue *ui.RenderQueue, deltaTime float32, stats PlayerStats) {
 	// Update weapon wheel
 	wheel := &weapons.weaponWheel
-	if _, justPressed, justReleased := input.ActionPressStates(settings.ActionWeaponWheel); justPressed {
+	if settings.Current.ActionWeaponWheel.JustPressed() {
 		*wheel = newWeaponWheel(weapons.weapons[:])
-	} else if justReleased && stats.Health > 0 && weapons.Get(wheel.highlightedWeapon) != nil {
+	} else if settings.Current.ActionWeaponWheel.JustReleased() && stats.Health > 0 && weapons.Get(wheel.highlightedWeapon) != nil {
 		weapons.Select(wheel.highlightedWeapon)
 	}
 

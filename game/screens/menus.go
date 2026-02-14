@@ -18,11 +18,12 @@ import (
 )
 
 type (
-	MenuEvents interface {
+	MenuInputType = uint8
+	MenuEvents    interface {
 		Element() *ui.Element
 		Focus()
 		Blur()
-		Input(action input.Action)
+		Input(MenuInputType)
 		Layout(queue *ui.RenderQueue, deltaTime float32)
 	}
 	Menu struct {
@@ -40,9 +41,16 @@ type (
 	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
 		element
-		OnInput      func(action input.Action)
+		OnInput      func(MenuInputType)
 		restoreColor maybe.T[color.Color]
 	}
+)
+
+const (
+	MenuInputConfirm MenuInputType = iota
+	MenuInputIncrement
+	MenuInputDecrement
+	MenuInputClick
 )
 
 func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Screen) *Menu {
@@ -166,24 +174,24 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.fade)
 
 	prevSelection := menu.menuSelection
-	if input.IsActionJustPressed(settings.ActionMenuDown) {
+	if settings.Current.ActionMenuDown.JustPressed() {
 		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
-	} else if input.IsActionJustPressed(settings.ActionMenuUp) {
+	} else if settings.Current.ActionMenuUp.JustPressed() {
 		menu.menuSelection = (menu.menuSelection + len(menu.menuItems) - 1) % len(menu.menuItems)
 	}
 
-	if input.IsActionJustPressed(settings.ActionMenuCancel) {
+	if settings.Current.ActionMenuCancel.JustPressed() {
 		menu.returnToParent()
 	}
 
 	if menu.menuSelection >= 0 {
 		item := menu.menuItems[menu.menuSelection]
-		if input.IsActionJustPressed(settings.ActionMenuConfirm) {
-			item.Input(settings.ActionMenuConfirm)
-		} else if input.IsActionJustPressed(settings.ActionMenuIncrement) {
-			item.Input(settings.ActionMenuIncrement)
-		} else if input.IsActionJustPressed(settings.ActionMenuDecrement) {
-			item.Input(settings.ActionMenuDecrement)
+		if settings.Current.ActionMenuConfirm.JustPressed() {
+			item.Input(MenuInputConfirm)
+		} else if settings.Current.ActionMenuIncrement.JustPressed() {
+			item.Input(MenuInputIncrement)
+		} else if settings.Current.ActionMenuDecrement.JustPressed() {
+			item.Input(MenuInputDecrement)
 		}
 	}
 
@@ -228,8 +236,8 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			if mouseMoved {
 				menu.menuSelection = i
 			}
-			if menu.menuSelection == i && input.IsActionJustPressed(settings.ActionMenuClick) {
-				item.Input(settings.ActionMenuClick)
+			if menu.menuSelection == i && input.AnyMouseButtonJustPressed() {
+				item.Input(MenuInputClick)
 			}
 		}
 		if menu.menuSelection == i && prevSelection != i {
@@ -253,7 +261,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.scrollUpButton.SetPosition(mgl32.Vec2{0.0, menu.position[1]})
 		if menu.scrollUpButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollUpButton.BgColor = maybe.Some(color.Yellow)
-			if input.IsActionJustPressed(settings.ActionMenuClick) {
+			if input.AnyMouseButtonJustPressed() {
 				menu.scrollUp()
 			}
 		} else {
@@ -268,7 +276,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.scrollDownButton.SetPosition(mgl32.Vec2{0.0, menuBottomY})
 		if menu.scrollDownButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollDownButton.BgColor = maybe.Some(color.Yellow)
-			if input.IsActionJustPressed(settings.ActionMenuClick) {
+			if input.AnyMouseButtonJustPressed() {
 				menu.scrollDown(minScrollY)
 			}
 		} else {
@@ -314,14 +322,14 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.title)
 }
 
-func (item *MenuItem) Init(stringKey string, callback func(input.Action)) *MenuItem {
+func (item *MenuItem) Init(stringKey string, callback func(MenuInputType)) *MenuItem {
 	if item == nil {
 		return nil
 	}
 	return item.InitUnlocalized(settings.Localize(stringKey), callback)
 }
 
-func (item *MenuItem) InitUnlocalized(actualText string, callback func(input.Action)) *MenuItem {
+func (item *MenuItem) InitUnlocalized(actualText string, callback func(MenuInputType)) *MenuItem {
 	if item == nil {
 		return nil
 	}
@@ -352,8 +360,8 @@ func (item *MenuItem) Blur() {
 	cache.GetSfx("assets/sounds/ui/menu0.wav").Play()
 }
 
-func (item *MenuItem) Input(action input.Action) {
-	if (action == settings.ActionMenuConfirm || action == settings.ActionMenuClick) && item.OnInput != nil {
+func (item *MenuItem) Input(action MenuInputType) {
+	if (action == MenuInputConfirm || action == MenuInputClick) && item.OnInput != nil {
 		item.OnInput(action)
 		cache.GetSfx("assets/sounds/ui/menu1.wav").Play()
 	}

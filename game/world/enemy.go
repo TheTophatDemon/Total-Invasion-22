@@ -8,7 +8,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -150,9 +149,10 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		return
 	}
 
-	if input.IsActionJustPressed(settings.ActionKillEnemies) {
+	if settings.ActionKillEnemies.JustPressed() {
 		// Kill all cheat
 		enemy.actor.Health = 0
+		gWorld.Hud.ShowMessage(settings.Localize("killAllEnemies"), 2.0, 100, color.Red)
 	}
 
 	enemy.AnimPlayer.Update(deltaTime)

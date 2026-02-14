@@ -1,41 +1,20 @@
 package input
 
 import (
-	"log"
 	"math"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/failure"
 )
 
-type Action string
-type MouseAxis uint8
-
-const (
-	MouseAxisX    MouseAxis = 0
-	MouseAxisY    MouseAxis = 1
-	MouseDeadZone           = 0.05
-)
-
-// Maximum number of bindings allowed per action.
-const MaxBindCount = 2
-
-const (
-	txtNoAction string = "WARNING: Action %v not bound.\n"
-)
-
-var bindingMap map[Action][MaxBindCount]Binding
-var bindingsWerePressed map[Action]bool
-var anythingPressed bool
-
+var anythingPressed, anyMouseButtonPressed, anyMouseButtonWasPressed bool
+var lastKeyPressed glfw.Key = glfw.KeyUnknown
+var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 var mouseScrollY, mousePrevScrollY float32
 
 func init() {
-	bindingMap = make(map[Action][MaxBindCount]Binding)
-	bindingsWerePressed = make(map[Action]bool)
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
 }
 
@@ -45,8 +24,12 @@ func Init() {
 	glfw.GetCurrentContext().SetScrollCallback(scrollCallback)
 }
 
-func Update() {
+func PostUpdate() {
+	inputFrameNumber += 1
 	anythingPressed = false
+	anyMouseButtonWasPressed = anyMouseButtonPressed
+	anyMouseButtonPressed = false
+	lastKeyPressed = glfw.KeyUnknown
 	mousePosX, mousePosY := glfw.GetCurrentContext().GetCursorPos()
 	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
 		mouseDeltaX = mousePosX - mousePrevX
@@ -54,17 +37,6 @@ func Update() {
 	}
 	mousePrevX, mousePrevY = mousePosX, mousePosY
 	mousePrevScrollY = mouseScrollY
-
-	for action, bindings := range bindingMap {
-		anyPressed := false
-		for _, binding := range bindings {
-			if binding != nil && binding.IsPressed() {
-				anyPressed = true
-				break
-			}
-		}
-		bindingsWerePressed[action] = anyPressed
-	}
 }
 
 func TrapMouse() {
@@ -104,116 +76,16 @@ func SetMousePosition(x, y float32) {
 	glfw.GetCurrentContext().SetCursorPos(mousePrevX, mousePrevY)
 }
 
-func BindActionKey(action Action, key glfw.Key) {
-	appendBinding(action, &KeyBinding{key})
-	bindingsWerePressed[action] = false
-}
-
-func BindActionMouseButton(action Action, button glfw.MouseButton) {
-	appendBinding(action, &MouseButtonBinding{button})
-	bindingsWerePressed[action] = false
-}
-
-func BindActionMouseMove(action Action, axis MouseAxis, sensitivity float32) {
-	appendBinding(action, &MouseMovementBinding{axis, sensitivity})
-	bindingsWerePressed[action] = false
-}
-
-func BindActionCharSequence(action Action, sequence []glfw.Key) {
-	appendBinding(action, &CharSequenceBinding{sequence: sequence, progress: 0})
-	bindingsWerePressed[action] = false
-}
-
-func ClearBinding(action Action) {
-	bindingMap[action] = [2]Binding{}
-	bindingsWerePressed[action] = false
-}
-
-// Returns booleans indicating if the action was just pressed, just released, or is otherwise being held down.
-func ActionPressStates(action Action) (pressed, justPressed, justReleased bool) {
-	wasPressed, ok := bindingsWerePressed[action]
-	if !ok {
-		log.Printf(txtNoAction, action)
-		return
-	}
-	pressed = IsActionPressed(action)
-	justPressed = pressed && !wasPressed
-	justReleased = !pressed && wasPressed
-	return
-}
-
-func IsActionPressed(action Action) bool {
-	bindings, ok := bindingMap[action]
-	if !ok {
-		failure.LogErrWithLocation(txtNoAction, action)
-		return false
-	}
-	for _, bind := range bindings {
-		if bind != nil && bind.IsPressed() {
-			return true
-		}
-	}
-	return false
-}
-
-func IsActionJustPressed(action Action) bool {
-	bindings, ok := bindingMap[action]
-	wasPressed, ok2 := bindingsWerePressed[action]
-	if !ok || !ok2 {
-		failure.LogErrWithLocation(txtNoAction, action)
-		return false
-	}
-	anyPressed := false
-	for _, bind := range bindings {
-		if bind != nil && bind.IsPressed() {
-			anyPressed = true
-			break
-		}
-	}
-	return anyPressed && !wasPressed
-}
-
-func IsActionJustReleased(action Action) bool {
-	bindings, ok := bindingMap[action]
-	wasPressed, ok2 := bindingsWerePressed[action]
-	if !ok || !ok2 {
-		failure.LogErrWithLocation(txtNoAction, action)
-		return false
-	}
-	anyPressed := false
-	for _, bind := range bindings {
-		if bind != nil && bind.IsPressed() {
-			anyPressed = true
-			break
-		}
-	}
-	return !anyPressed && wasPressed
-}
-
-func ActionAxis(action Action) float32 {
-	bindings, ok := bindingMap[action]
-	if !ok {
-		failure.LogErrWithLocation(txtNoAction, action)
-		return 0.0
-	}
-	for _, bind := range bindings {
-		if bind == nil {
-			continue
-		}
-		if axis := bind.Axis(); axis != 0.0 {
-			return axis
-		}
-	}
-	return 0.0
-}
-
-func ActionBindings(action Action) ([MaxBindCount]Binding, bool) {
-	binds, ok := bindingMap[action]
-	return binds, ok
-}
-
 func IsMouseButtonDown(button glfw.MouseButton) bool {
 	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press
+}
+
+func AnyMouseButtonPressed() bool {
+	return anyMouseButtonPressed
+}
+
+func AnyMouseButtonJustPressed() bool {
+	return anyMouseButtonPressed && !anyMouseButtonWasPressed
 }
 
 func IsAnythingPressed() bool {
@@ -223,34 +95,17 @@ func IsAnythingPressed() bool {
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press {
 		anythingPressed = true
-		for _, bindings := range bindingMap {
-			for _, binding := range bindings {
-				csb, isCSB := binding.(*CharSequenceBinding)
-				if isCSB {
-					csb.OnKeyPress(key)
-				}
-			}
-		}
+		lastKeyPressed = key
 	}
 }
 
 func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press {
 		anythingPressed = true
+		anyMouseButtonPressed = true
 	}
 }
 
 func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
 	mouseScrollY += float32(yoff)
-}
-
-func appendBinding(action Action, newBinding Binding) {
-	bindings := bindingMap[action]
-	for b, binding := range bindings {
-		if binding == nil || b == len(bindings)-1 {
-			bindings[b] = newBinding
-			break
-		}
-	}
-	bindingMap[action] = bindings
 }

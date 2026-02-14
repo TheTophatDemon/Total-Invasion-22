@@ -123,10 +123,7 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 }
 
 func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
-	wheel.selectPos = wheel.selectPos.Add(mgl32.Vec2{
-		input.ActionAxis(settings.ActionLookHorz) / settings.ScaledMouseSensitivity(settings.Current.MouseSensitivity),
-		input.ActionAxis(settings.ActionLookVert) / settings.ScaledMouseSensitivity(settings.Current.MouseSensitivity),
-	})
+	wheel.selectPos = wheel.selectPos.Add(input.MouseDelta())
 
 	wheel.selectPos[0] = math2.Clamp(wheel.selectPos[0], wheel.bounds.X, wheel.bounds.X+wheel.bounds.Width)
 	wheel.selectPos[1] = math2.Clamp(wheel.selectPos[1], wheel.bounds.Y, wheel.bounds.Y+wheel.bounds.Height)

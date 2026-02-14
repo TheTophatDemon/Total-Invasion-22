@@ -26,11 +26,26 @@ keybind = "Keyboard Bindings"
 on = "On"
 off = "Off"
 
+# Input bindings
+mouseButtonLeft = "Left Mouse Button"
+mouseButtonRight = "Right Mouse Button"
+mouseButtonMiddle = "Middle Mouse Button"
+mouseButton4 = "Mouse Button 4"
+mouseButton5 = "Mouse Button 5"
+mouseButton6 = "Mouse Button 6"
+mouseButton7 = "Mouse Button 7"
+mouseButton8 = "Mouse Button 8"
+mousePosX = "Mouse Move Right"
+mouseNegX = "Mouse Move Left"
+mousePosY = "Mouse Move Down"
+mouseNegY = "Mouse Move Up"
+
 # Cheats
 noclipActivate = "Noclip activated"
 noclipDeactivate = "Noclip deactivated"
 godModeActivate = "God mode activated"
 godModeDeactivate = "God mode deactivated"
+killAllEnemies = "Hail to the queen, baby!"
 
 # Doors
 doorStuck = "The door can't move..."
@@ -50,7 +65,7 @@ grayKeyNeeded = "I need a gray keycard..."
 grayKeyGet = "Got a gray keycard."
 
 # Victory screen
-fireContinue = "Press the fire button to continue."
+fireContinue = "Press any key to continue."
 statTime = "Time"
 statKills = "Kills"
 statSecrets = "Secrets"
@@ -129,16 +144,16 @@ eyeballMessage3 = "We are your friends."
 eyeballMessage4 = "Other people may not see us, but we always see you."
 eyeballMessage5 = "Don't worry, you're not crazy."
 eyeballMessage6 = "Such things are not for mortals to understand."
-tutorialSickle = 'Press {{ binding "fire" }} to throw the sickle. Hold the button to make it go further.'
-tutorialDoors = 'Press {{ binding "use" }} to activate doors and switches.'
+tutorialSickle = 'Press "{{ .ActionFire }}" to throw the sickle. Hold the button to make it go further.'
+tutorialDoors = 'Press "{{ .ActionUse }}" to activate doors and switches.'
 tutorialEyes = 'Stare into the eyes to receive ancient wisdom.'
 tutorialSecret = 'This wall seems suspicious...'
 tutorialHealth = 'Items like this will heal you.'
-tutorialWeapon = 'Weapons can be selected using keys like {{ binding "sickle" }} and {{ binding "chicken" }} or by holding {{ binding "weaponWheel" }}.'
+tutorialWeapon = 'Weapons can be selected using keys like "{{ .ActionSickle }}" and "{{ .ActionChicken }}" or by holding "{{ .ActionWeaponWheel }}".'
 tutorialTeleporter = 'The device on the ground will teleport you.'
 tutorialCrux = "If you hit an enemy at the apex of a sickle's trajectory you can do more damage!"
-tutorialWeaponWheel = 'No need to be precise with the weapon wheel. Just hold {{ binding "weaponWheel" }} and pass your cursor over the weapon quickly.'
-tutorialSwitch = 'Walk up to the switch and press {{ binding "use" }} to activate...uhh...I forgot.'
+tutorialWeaponWheel = 'No need to be precise with the weapon wheel. Just hold "{{ .ActionWeaponWheel }}" and pass your cursor over the weapon quickly.'
+tutorialSwitch = 'Walk up to the switch and press "{{ .ActionUse }}" to activate...uhh...I forgot.'
 
 # Map titles
 e1m1Title = "GENOCIDE CARNIVAL"

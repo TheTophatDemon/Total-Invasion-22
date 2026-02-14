@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/game"
 )
 
@@ -23,7 +22,7 @@ func (lsm *LevelSelectMenu) Init(app engine.Observer) *LevelSelectMenu {
 	filepath.WalkDir("assets/maps", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".te3") {
 			fileName := filepath.Base(path[:len(path)-4])
-			menuItems = append(menuItems, new(MenuItem).InitUnlocalized(fileName, func(input.Action) {
+			menuItems = append(menuItems, new(MenuItem).InitUnlocalized(fileName, func(MenuInputType) {
 				app.ProcessSignal(game.MapChangeSignal{
 					NextMapPath: path,
 				})
