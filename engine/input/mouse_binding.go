@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -17,11 +18,11 @@ const (
 type (
 	MouseButtonBinding struct {
 		bindingBase
-		Button glfw.MouseButton
+		MouseButton glfw.MouseButton
 	}
 	MouseMovementBinding struct {
 		bindingBase
-		WhichAxis   MouseAxis
+		MouseAxis   MouseAxis
 		Sensitivity float32
 	}
 	MouseAxis uint8
@@ -30,11 +31,11 @@ type (
 // MOUSE BUTTON BINDING
 
 func NewMouseButtonBinding(butt glfw.MouseButton) *MouseButtonBinding {
-	return new(MouseButtonBinding{Button: butt})
+	return new(MouseButtonBinding{MouseButton: butt})
 }
 
 func (mbb *MouseButtonBinding) Pressed() bool {
-	return mbb.updatePressStates(glfw.GetCurrentContext().GetMouseButton(mbb.Button) == glfw.Press)
+	return mbb.updatePressStates(glfw.GetCurrentContext().GetMouseButton(mbb.MouseButton) == glfw.Press)
 }
 
 func (mbb *MouseButtonBinding) JustPressed() bool {
@@ -56,7 +57,7 @@ func (mbb *MouseButtonBinding) Axis() float32 {
 }
 
 func (mbb *MouseButtonBinding) String() string {
-	switch mbb.Button {
+	switch mbb.MouseButton {
 	case glfw.MouseButtonLeft:
 		return "mouseButtonLeft"
 	case glfw.MouseButtonRight:
@@ -77,10 +78,14 @@ func (mbb *MouseButtonBinding) String() string {
 	return "???"
 }
 
+func (mbb *MouseButtonBinding) MarshalTOML() ([]byte, error) {
+	return fmt.Appendf(nil, "{ MouseButton = %v }", mbb.MouseButton), nil
+}
+
 // MOUSE MOVEMENT BINDING
 
 func NewMouseMovementBinding(axis MouseAxis, sensitivity float32) *MouseMovementBinding {
-	return new(MouseMovementBinding{WhichAxis: axis, Sensitivity: sensitivity})
+	return new(MouseMovementBinding{MouseAxis: axis, Sensitivity: sensitivity})
 }
 
 func (mmb *MouseMovementBinding) Pressed() bool {
@@ -88,7 +93,7 @@ func (mmb *MouseMovementBinding) Pressed() bool {
 }
 
 func (mmb *MouseMovementBinding) Axis() float32 {
-	switch mmb.WhichAxis {
+	switch mmb.MouseAxis {
 	case MouseAxisPosX:
 		return max(0.0, float32(mouseDeltaX)*mmb.Sensitivity)
 	case MouseAxisNegX:
@@ -102,7 +107,7 @@ func (mmb *MouseMovementBinding) Axis() float32 {
 }
 
 func (mmb *MouseMovementBinding) String() string {
-	switch mmb.WhichAxis {
+	switch mmb.MouseAxis {
 	case MouseAxisPosX:
 		return "mousePosX"
 	case MouseAxisNegX:
@@ -123,4 +128,8 @@ func (mmb *MouseMovementBinding) JustPressed() bool {
 func (mmb *MouseMovementBinding) JustReleased() bool {
 	mmb.Pressed()
 	return mmb.justReleased
+}
+
+func (mmb *MouseMovementBinding) MarshalTOML() ([]byte, error) {
+	return fmt.Appendf(nil, "{ MouseAxis = %v, Sensitivity = %v }", mmb.MouseAxis, mmb.Sensitivity), nil
 }

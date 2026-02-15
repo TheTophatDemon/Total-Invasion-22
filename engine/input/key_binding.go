@@ -1,6 +1,7 @@
 package input
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -48,6 +49,10 @@ func (kb *KeyBinding) Axis() float32 {
 
 func (kb *KeyBinding) String() string {
 	return strings.ToUpper(glfw.GetKeyName(kb.Key, 0))
+}
+
+func (kb *KeyBinding) MarshalTOML() ([]byte, error) {
+	return fmt.Appendf(nil, "{ Key = %v }", kb.Key), nil
 }
 
 // CHAR SEQUENCE BINDING

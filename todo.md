@@ -1,5 +1,4 @@
 # TODO
-- Fix serialization of game settings
 - Fix mouse sensitivity assignment
 - Menus
   - Keybind menu

@@ -316,3 +316,70 @@ func (action Action) LocalizationKey() string {
 func (action Action) String() string {
 	return Localize(action.LocalizationKey())
 }
+
+func (action Action) MarshalTOML() ([]byte, error) {
+	var builder strings.Builder
+	builder.WriteString("[\n")
+	encoder := toml.NewEncoder(&builder)
+	for _, binding := range action {
+		if binding != nil {
+			builder.WriteRune('\t')
+			err := encoder.Encode(binding)
+			if err != nil {
+				return nil, err
+			}
+			builder.WriteString(",\n")
+		}
+	}
+	builder.WriteRune(']')
+	return []byte(builder.String()), nil
+}
+
+func (action *Action) UnmarshalTOML(data any) error {
+	clear(action[:])
+	dataSlice, ok := data.([]any)
+	if !ok {
+		return fmt.Errorf("action must be an array")
+	}
+	if len(dataSlice) > len(action) {
+		return fmt.Errorf("too many bindings (%v) assigned to an action; maximum is %v", len(dataSlice), len(action))
+	}
+	for i, bindingData := range dataSlice {
+		bindingMap, isMap := bindingData.(map[string]any)
+		if !isMap || bindingMap == nil {
+			return fmt.Errorf("binding at index %v should be a map", i)
+		}
+		if value, hasKey := bindingMap["Key"]; hasKey {
+			if keyNumber, ok := value.(int64); ok {
+				action[i] = input.NewKeyBinding(glfw.Key(keyNumber))
+			} else {
+				return fmt.Errorf("binding Key value must be an integer")
+			}
+		} else if value, hasMouseButton := bindingMap["MouseButton"]; hasMouseButton {
+			if buttonNumber, ok := value.(int64); ok {
+				action[i] = input.NewMouseButtonBinding(glfw.MouseButton(buttonNumber))
+			} else {
+				return fmt.Errorf("binding MouseButton value must be an integer")
+			}
+		} else if value, hasMouseAxis := bindingMap["MouseAxis"]; hasMouseAxis {
+			var axisNumber int64
+			var sensitivity float64
+			var ok bool
+			if axisNumber, ok = value.(int64); !ok {
+				return fmt.Errorf("binding MouseAxis value must be an integer")
+			}
+			var hasSensitivity bool
+			value, hasSensitivity = bindingMap["Sensitivity"]
+			if !hasSensitivity {
+				return fmt.Errorf("binding is missing Sensitivity value")
+			}
+			if sensitivity, ok = value.(float64); !ok {
+				return fmt.Errorf("binding Sensitivity value must be a float")
+			}
+			action[i] = input.NewMouseMovementBinding(input.MouseAxis(axisNumber), float32(sensitivity))
+		} else {
+			return fmt.Errorf("this type of binding is unsupported")
+		}
+	}
+	return nil
+}
