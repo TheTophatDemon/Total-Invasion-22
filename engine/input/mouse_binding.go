@@ -56,7 +56,7 @@ func (mbb *MouseButtonBinding) Axis() float32 {
 	}
 }
 
-func (mbb *MouseButtonBinding) String() string {
+func (mbb *MouseButtonBinding) LocalizationKey() string {
 	switch mbb.MouseButton {
 	case glfw.MouseButtonLeft:
 		return "mouseButtonLeft"
@@ -106,7 +106,7 @@ func (mmb *MouseMovementBinding) Axis() float32 {
 	return 0.0
 }
 
-func (mmb *MouseMovementBinding) String() string {
+func (mmb *MouseMovementBinding) LocalizationKey() string {
 	switch mmb.MouseAxis {
 	case MouseAxisPosX:
 		return "mousePosX"

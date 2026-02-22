@@ -1,10 +1,11 @@
 # TODO
-- Fix mouse sensitivity assignment
 - Menus
   - Keybind menu
-  - Resolution change confirmation?
+  - Fix mouse sensitivity assignment
+  - Resolution change confirmation
   - Exit screen
   - Make sliders look better
+  - Add background to menus to make them more visible
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Fix jittering in corners

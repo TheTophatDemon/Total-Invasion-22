@@ -317,7 +317,6 @@ func (el *Element) FitHeight(targetHeight float32) {
 
 func (el *Element) Render(context *render.Context) {
 	if el.BgMesh == nil && el.TextMesh() == nil {
-		failure.LogWarningWithLocation("UI element rendering without mesh")
 		return
 	}
 	failure.CheckOpenGLError()

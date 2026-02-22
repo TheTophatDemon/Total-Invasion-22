@@ -28,7 +28,7 @@ type (
 		sliderSensitivity Slider
 		sliderTextShadow  Slider
 		chooserChickens   Chooser[OnOff]
-		keybindItem       MenuItem
+		bindingItem       MenuItem
 	}
 )
 
@@ -70,9 +70,9 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
 
-	settingsMenu.keybindItem.Init("keybind", func(MenuInputType) {
+	settingsMenu.bindingItem.Init("bindings", func(MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
-			Screen: new(KeybindMenu).Init(app, settingsMenu),
+			Screen: new(BindingMenu).Init(app, settingsMenu),
 		})
 	})
 
@@ -90,7 +90,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			&settingsMenu.sliderSensitivity,
 			&settingsMenu.sliderTextShadow,
 			&settingsMenu.chooserChickens,
-			&settingsMenu.keybindItem,
+			&settingsMenu.bindingItem,
 		},
 		parent,
 	)

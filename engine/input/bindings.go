@@ -9,8 +9,8 @@ type Binding interface {
 	JustReleased() bool
 	// Returns the input state as a float from -1 to 1
 	Axis() float32
-	// Display name for the binding
-	String() string
+	// Key for the display name of the binding.
+	LocalizationKey() string
 }
 
 type bindingBase struct {

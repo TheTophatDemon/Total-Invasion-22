@@ -33,8 +33,12 @@ type (
 		DifficultyIndex int
 
 		// Menu actions
-		ActionMenuDown, ActionMenuUp, ActionMenuConfirm            Action
-		ActionMenuCancel, ActionMenuIncrement, ActionMenuDecrement Action
+		ActionMenuDown      Action
+		ActionMenuUp        Action
+		ActionMenuConfirm   Action
+		ActionMenuCancel    Action
+		ActionMenuIncrement Action
+		ActionMenuDecrement Action
 
 		// In game actions
 		ActionForward, ActionBack, ActionLeft, ActionRight Action
@@ -307,7 +311,7 @@ func (action Action) JustReleased() bool {
 func (action Action) LocalizationKey() string {
 	for _, binding := range action {
 		if binding != nil {
-			return binding.String()
+			return binding.LocalizationKey()
 		}
 	}
 	return "???"
