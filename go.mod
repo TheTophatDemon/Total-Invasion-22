@@ -13,3 +13,8 @@ require github.com/BurntSushi/toml v1.5.0
 require github.com/fzipp/bmfont v0.1.0
 
 require github.com/tanema/gween v0.0.0-20250522035225-e874ee3ae01a
+
+require (
+	github.com/TotallyGamerJet/clay v0.0.8 // indirect
+	github.com/gotranspile/cxgo v0.5.2 // indirect
+)
