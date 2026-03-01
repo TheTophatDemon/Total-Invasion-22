@@ -141,16 +141,6 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
-	sl.txtLabel.SetPosition(sl.Position())
-	queue.Add(&sl.txtLabel)
-
-	sl.txtLeft.SetPosition(sl.Position())
-	sl.txtLeft.Translate(mgl32.Vec2{sl.txtLabel.OnScreenBox().Width, 0.0})
-	queue.Add(&sl.txtLeft)
-
-	leftWidth := sl.txtLeft.OnScreenBox().Width + 8.0
-	sl.txtSlider.SetPosition(sl.txtLeft.Position())
-
 	var sliderBuilder strings.Builder
 	sliderBuilder.Grow(sl.count)
 	for i := sl.min; i <= sl.max; i += sl.step {
@@ -161,24 +151,13 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 	sl.txtSlider.SetText(sliderBuilder.String())
-
-	sl.txtSlider.Translate(mgl32.Vec2{leftWidth, 0.0})
-	queue.Add(&sl.txtSlider)
-
-	valueWidth := sl.txtSlider.OnScreenBox().Width + 8.0
-	sl.txtRight.SetPosition(sl.txtSlider.Position())
-	sl.txtRight.Translate(mgl32.Vec2{valueWidth, 0.0})
-	queue.Add(&sl.txtRight)
-
-	sl.txtValue.SetPosition(mgl32.Vec2{
-		sl.txtRight.Position()[0] + sl.txtRight.OnScreenBox().Width + 8.0,
-		sl.txtRight.Position()[1],
-	})
 	sl.txtValue.SetText(fmt.Sprintf("%v", sl.value))
-	queue.Add(&sl.txtValue)
 
-	clickableWidth := sl.txtLabel.OnScreenBox().Width + leftWidth + valueWidth + sl.txtRight.OnScreenBox().Width
-	sl.SetSize(mgl32.Vec2{clickableWidth, sl.Size()[1]})
+	components := []*ui.Element{&sl.txtLabel, &sl.txtLeft, &sl.txtSlider, &sl.txtRight, &sl.txtValue}
+	ui.LayoutStack(&sl.element, ui.StackParams{
+		Gap: 8.0,
+	}, components...)
+	queue.Add(components...)
 
 	sl.MenuItem.Layout(queue, deltaTime)
 }

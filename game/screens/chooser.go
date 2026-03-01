@@ -132,27 +132,14 @@ func (ch *Chooser[T]) Blur() {
 }
 
 func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	ch.txtLabel.SetPosition(ch.Position())
-	queue.Add(&ch.txtLabel)
 
-	labelWidth := ch.txtLabel.OnScreenBox().Width + 4.0
-	ch.txtLeft.SetPosition(ch.Position())
-	ch.txtLeft.Translate(mgl32.Vec2{labelWidth, 0.0})
-	queue.Add(&ch.txtLeft)
-
-	leftWidth := ch.txtLeft.OnScreenBox().Width + 8.0
-	ch.txtValue.SetPosition(ch.txtLeft.Position())
 	ch.txtValue.SetText(ch.Choice().String())
-	ch.txtValue.Translate(mgl32.Vec2{leftWidth, 0.0})
-	queue.Add(&ch.txtValue)
 
-	valueWidth := ch.txtValue.OnScreenBox().Width + 8.0
-	ch.txtRight.SetPosition(ch.txtValue.Position())
-	ch.txtRight.Translate(mgl32.Vec2{valueWidth, 0.0})
-	queue.Add(&ch.txtRight)
-
-	fullWidth := labelWidth + leftWidth + valueWidth + ch.txtRight.OnScreenBox().Width + 4.0
-	ch.SetSize(mgl32.Vec2{fullWidth, ch.Size()[1]})
+	components := []*ui.Element{&ch.txtLabel, &ch.txtLeft, &ch.txtValue, &ch.txtRight}
+	ui.LayoutStack(&ch.element, ui.StackParams{
+		Gap: 8.0,
+	}, components...)
+	queue.Add(components...)
 
 	ch.MenuItem.Layout(queue, deltaTime)
 }
