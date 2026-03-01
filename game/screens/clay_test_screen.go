@@ -25,6 +25,7 @@ import (
 
 type ClayTestScreen struct {
 	HeeHeeCount int
+	SliderValue float32
 }
 
 func (scr *ClayTestScreen) Enter() {
@@ -75,10 +76,19 @@ func (scr *ClayTestScreen) Enter() {
 				Height: maxCharHeight,
 			}
 		},
-		unsafe.Pointer(nil),
+		unsafe.Pointer(&struct{}{}),
 	)
 }
 func (scr *ClayTestScreen) Exit() {}
+
+func scrollBarOnHover(elementId clay.ElementId, pointerInfo clay.PointerData, userData unsafe.Pointer) {
+	scr := (*ClayTestScreen)(userData)
+	if pointerInfo.State == clay.POINTER_DATA_PRESSED {
+		elemData := clay.GetElementData(elementId)
+		scr.SliderValue = (pointerInfo.Position.X - elemData.BoundingBox.X) / elemData.BoundingBox.Width
+		println(scr.SliderValue)
+	}
+}
 
 func (scr *ClayTestScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	mousePos := input.MousePosition()
@@ -137,7 +147,7 @@ func (scr *ClayTestScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 					Width:  clay.SizingFixed(32),
 				},
 			},
-		}, nil)
+		}, func() {})
 		clay.UI(clay.ID("HeaderLabel"))(clay.ElementDeclaration{
 			Layout: clay.LayoutConfig{
 				Sizing: clay.Sizing{
@@ -196,7 +206,9 @@ func (scr *ClayTestScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		},
 	}
 	clay.UI()(sliderPanelElem, func() {
-		sliderElem := clay.ElementDeclaration{
+		sliderId := clay.ID("slider")
+		slider := clay.UI(sliderId)
+		sliderDecl := clay.ElementDeclaration{
 			Layout: clay.LayoutConfig{
 				Sizing: clay.Sizing{
 					Width:  clay.SizingGrow(0.0),
@@ -210,8 +222,10 @@ func (scr *ClayTestScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			},
 			BackgroundColor: clay.Color{A: 1.0},
 		}
-		clay.UI(clay.ID("slider"))(sliderElem, func() {
-			knobElem := clay.ElementDeclaration{
+		clay.OnHover(scrollBarOnHover, unsafe.Pointer(scr))
+		slider(sliderDecl, func() {
+			knobElem := clay.UI(clay.ID("knob"))
+			decl := clay.ElementDeclaration{
 				Layout: clay.LayoutConfig{
 					Sizing: clay.Sizing{
 						Width:  clay.SizingFixed(16.0),
@@ -219,8 +233,23 @@ func (scr *ClayTestScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 					},
 				},
 				BackgroundColor: clay.Color{R: 0.2, G: 0.5, B: 0.7, A: 1.0},
+				Floating: clay.FloatingElementConfig{
+					AttachPoints: clay.FloatingAttachPoints{
+						Element: clay.ATTACH_POINT_LEFT_TOP,
+						Parent:  clay.ATTACH_POINT_LEFT_TOP,
+					},
+					AttachTo: clay.ATTACH_TO_PARENT,
+				},
 			}
-			clay.UI(clay.ID("knob"))(knobElem, func() {})
+			parentData := clay.GetElementData(sliderId)
+			decl.Floating.Offset = clay.Vector2{
+				X: parentData.BoundingBox.Width * scr.SliderValue,
+				Y: 0.0,
+			}
+			if clay.Hovered() {
+				decl.BackgroundColor = clay.Color{R: 0.2, G: 0.7, B: 1.0, A: 1.0}
+			}
+			knobElem(decl, func() {})
 		})
 	})
 
