@@ -25,6 +25,9 @@ harmChickens = "Enable Harm to Chickens"
 bindings = "Input Bindings"
 on = "On"
 off = "Off"
+setBindingFor = "Set binding %d (%v)"
+clearBinding = "Clear binding %d"
+inputPrompt = "Pick a button, joystick, or mouse action..."
 
 # Input actions
 actionMenuDown = "Menu Navigate Down"

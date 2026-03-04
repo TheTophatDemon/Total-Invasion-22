@@ -1,6 +1,9 @@
 # TODO
 - Menus
   - Keybind menu
+    - Add tracking for mouse input, mouse movement
+    - Disable other inputs while capturing
+    - Make binding changes update other menus and the game
   - Fix mouse sensitivity assignment
   - Resolution change confirmation
   - Exit screen

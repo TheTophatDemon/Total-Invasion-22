@@ -4,6 +4,7 @@ Total Editor 3
 total-invasion-ii
 .vscode
 .zed
+.gram
 *.exe
 settings.json
 *.prof

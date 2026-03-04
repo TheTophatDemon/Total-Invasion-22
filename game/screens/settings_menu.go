@@ -72,7 +72,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.bindingItem.Init("bindings", func(MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
-			Screen: new(BindingMenu).Init(app, settingsMenu),
+			Screen: new(BindingsMenu).Init(app, settingsMenu),
 		})
 	})
 

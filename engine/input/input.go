@@ -7,7 +7,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+type (
+	InputCaptureCallback func(newBinding Binding)
+)
+
 var anythingPressed, anyMouseButtonPressed, anyMouseButtonWasPressed bool
+var captureCallback InputCaptureCallback = nil
 var lastKeyPressed glfw.Key = glfw.KeyUnknown
 var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
@@ -50,6 +55,21 @@ func UntrapMouse() {
 
 func IsMouseTrapped() bool {
 	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
+}
+
+func CaptureInput(callback InputCaptureCallback) {
+	captureCallback = callback
+}
+
+func IsCapturingInput() bool {
+	return captureCallback != nil
+}
+
+func endCaptureInput(newBinding Binding) {
+	if captureCallback != nil {
+		captureCallback(newBinding)
+		captureCallback = nil
+	}
 }
 
 func MousePosition() mgl32.Vec2 {
@@ -96,6 +116,9 @@ func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action,
 	if action == glfw.Press {
 		anythingPressed = true
 		lastKeyPressed = key
+		if captureCallback != nil {
+			endCaptureInput(NewKeyBinding(key))
+		}
 	}
 }
 

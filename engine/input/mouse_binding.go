@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	MouseAxisPosX MouseAxis = iota
+	MouseAxisNone MouseAxis = iota
+	MouseAxisPosX
 	MouseAxisNegX
 	MouseAxisPosY
 	MouseAxisNegY
