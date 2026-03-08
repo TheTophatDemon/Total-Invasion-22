@@ -12,7 +12,13 @@ type (
 )
 
 var anythingPressed, anyMouseButtonPressed, anyMouseButtonWasPressed bool
+
+// Holds the callback that assigns the captured input to a binding
 var captureCallback InputCaptureCallback = nil
+
+// Holds the binding of the input action that was captured
+var capturedBinding Binding = nil
+
 var lastKeyPressed glfw.Key = glfw.KeyUnknown
 var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
@@ -39,6 +45,22 @@ func PostUpdate() {
 	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
 		mouseDeltaX = mousePosX - mousePrevX
 		mouseDeltaY = mousePosY - mousePrevY
+		movedAxis := MouseAxisNone
+		const moveThreshold = 5.0
+		switch true {
+		case mouseDeltaX > moveThreshold:
+			movedAxis = MouseAxisPosX
+		case mouseDeltaX < -moveThreshold:
+			movedAxis = MouseAxisNegX
+		case mouseDeltaY > moveThreshold:
+			movedAxis = MouseAxisPosY
+		case mouseDeltaY < -moveThreshold:
+			movedAxis = MouseAxisNegY
+		}
+		if movedAxis != MouseAxisNone && IsCapturingInput() {
+			capturedBinding = NewMouseMovementBinding(movedAxis, 0.05)
+			endCaptureInput()
+		}
 	}
 	mousePrevX, mousePrevY = mousePosX, mousePosY
 	mousePrevScrollY = mouseScrollY
@@ -65,10 +87,11 @@ func IsCapturingInput() bool {
 	return captureCallback != nil
 }
 
-func endCaptureInput(newBinding Binding) {
+func endCaptureInput() {
 	if captureCallback != nil {
-		captureCallback(newBinding)
+		captureCallback(capturedBinding)
 		captureCallback = nil
+		capturedBinding = nil
 	}
 }
 
@@ -97,35 +120,50 @@ func SetMousePosition(x, y float32) {
 }
 
 func IsMouseButtonDown(button glfw.MouseButton) bool {
-	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press
+	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press && !IsCapturingInput()
 }
 
 func AnyMouseButtonPressed() bool {
-	return anyMouseButtonPressed
+	return anyMouseButtonPressed && !IsCapturingInput()
 }
 
 func AnyMouseButtonJustPressed() bool {
-	return anyMouseButtonPressed && !anyMouseButtonWasPressed
+	return anyMouseButtonPressed && !anyMouseButtonWasPressed && !IsCapturingInput()
 }
 
 func IsAnythingPressed() bool {
-	return anythingPressed
+	return anythingPressed && !IsCapturingInput()
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	if action == glfw.Press {
-		anythingPressed = true
-		lastKeyPressed = key
-		if captureCallback != nil {
-			endCaptureInput(NewKeyBinding(key))
+	switch action {
+	case glfw.Press:
+		if IsCapturingInput() {
+			capturedBinding = NewKeyBinding(key)
+		} else {
+			anythingPressed = true
+			lastKeyPressed = key
+		}
+	case glfw.Release:
+		if IsCapturingInput() && capturedBinding != nil {
+			endCaptureInput()
 		}
 	}
 }
 
 func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	if action == glfw.Press {
-		anythingPressed = true
-		anyMouseButtonPressed = true
+	switch action {
+	case glfw.Press:
+		if IsCapturingInput() {
+			capturedBinding = NewMouseButtonBinding(button)
+		} else {
+			anythingPressed = true
+			anyMouseButtonPressed = true
+		}
+	case glfw.Release:
+		if IsCapturingInput() && capturedBinding != nil {
+			endCaptureInput()
+		}
 	}
 }
 

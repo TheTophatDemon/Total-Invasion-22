@@ -19,6 +19,10 @@ type bindingBase struct {
 }
 
 func (binding *bindingBase) updatePressStates(isPressed bool) bool {
+	if IsCapturingInput() {
+		binding.justPressed, binding.justReleased, binding.wasPressed = false, false, false
+		return false
+	}
 	if binding.lastUpdatedFrame != inputFrameNumber {
 		binding.justPressed = isPressed && !binding.wasPressed
 		binding.justReleased = !isPressed && binding.wasPressed

@@ -80,10 +80,11 @@ func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action 
 	allItems := []MenuEvents{
 		&menu.returnItem,
 	}
+	const blankBindingText = "___"
 	for i, binding := range action {
 		item := MenuItem{}
 		var bindingString strings.Builder
-		bindingName := "___"
+		bindingName := blankBindingText
 		if binding != nil {
 			bindingName = settings.Localize(binding.LocalizationKey())
 		}
@@ -100,6 +101,8 @@ func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action 
 		})
 		clearItem := MenuItem{}
 		clearItem.InitUnlocalized(fmt.Sprintf(settings.Localize("clearBinding"), displayNumber), func(MenuInputType) {
+			item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), displayNumber, blankBindingText))
+			item.FitText()
 			action[i] = nil
 		})
 		allItems = append(allItems, &item, &clearItem)
