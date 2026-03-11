@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -30,6 +31,10 @@ type (
 )
 
 func (item *actionItem) Input(inputType MenuInputType, menu *Menu) {
+	if item == nil || menu == nil || inputType == MenuInputDecrement || inputType == MenuInputIncrement {
+		return
+	}
+	cache.GetSfx(SfxMenuHit).Play()
 	menu.app.ProcessSignal(game.ChangeScreenSignal{
 		Screen: new(BindingEditMenu).Init(menu.app, menu, item.action),
 	})
@@ -57,6 +62,10 @@ func (item *actionItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
 }
 
 func (item *bindingItem) Input(inputType MenuInputType, menu *Menu) {
+	if item == nil || inputType == MenuInputDecrement || inputType == MenuInputIncrement {
+		return
+	}
+	cache.GetSfx(SfxMenuHit).Play()
 	*item.binding = nil
 	if !item.clear {
 		input.CaptureInput(func(newBinding input.Binding, extraData any) {
@@ -85,7 +94,7 @@ func (menu *BindingsMenu) Init(app engine.Observer, parent ui.Screen) *BindingsM
 	*menu = BindingsMenu{}
 
 	allItems := []MenuWidget{
-		new(MenuItem).Init("return", func(MenuInputType) { menu.returnToParent() }),
+		new(ReturnItem).Init(),
 	}
 
 	actionType := reflect.TypeFor[settings.Action]()
@@ -117,9 +126,7 @@ func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action 
 	}
 	*menu = BindingEditMenu{}
 	allItems := []MenuWidget{
-		new(MenuItem).Init("return", func(MenuInputType) {
-			menu.returnToParent()
-		}),
+		new(ReturnItem).Init(),
 	}
 	for i := range action {
 		displayNumber := i + 1

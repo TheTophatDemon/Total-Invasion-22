@@ -44,6 +44,9 @@ type (
 		OnInput      func(MenuInputType)
 		restoreColor maybe.T[color.Color]
 	}
+	ReturnItem struct {
+		MenuItem
+	}
 )
 
 const (
@@ -52,6 +55,9 @@ const (
 	MenuInputDecrement
 	MenuInputClick
 )
+
+const SfxMenuMove = "assets/sounds/ui/menu0.wav"
+const SfxMenuHit = "assets/sounds/ui/menu1.wav"
 
 func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Screen) *Menu {
 	*menu = Menu{
@@ -357,16 +363,38 @@ func (item *MenuItem) Blur() {
 		config.Color = item.restoreColor
 		item.element.SetTextConfig(*config)
 	}
-	cache.GetSfx("assets/sounds/ui/menu0.wav").Play()
+	cache.GetSfx(SfxMenuMove).Play()
 }
 
 func (item *MenuItem) Input(action MenuInputType, menu *Menu) {
 	if (action == MenuInputConfirm || action == MenuInputClick) && item.OnInput != nil {
 		item.OnInput(action)
-		cache.GetSfx("assets/sounds/ui/menu1.wav").Play()
+		cache.GetSfx(SfxMenuHit).Play()
 	}
 }
 
 func (item *MenuItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&item.element)
+}
+
+func (returnItem *ReturnItem) Init() *ReturnItem {
+	if returnItem == nil {
+		return nil
+	}
+	*returnItem = ReturnItem{
+		MenuItem: MenuItem{
+			element: ui.NewText(ui.Transform{}, settings.Localize("return"), ui.TextConfig{}),
+		},
+	}
+	return returnItem
+}
+
+func (returnItem *ReturnItem) Input(action MenuInputType, menu *Menu) {
+	if menu == nil {
+		return
+	}
+	if action == MenuInputConfirm || action == MenuInputClick {
+		cache.GetSfx(SfxMenuHit).Play()
+		menu.returnToParent()
+	}
 }

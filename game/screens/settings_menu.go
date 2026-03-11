@@ -17,7 +17,6 @@ type (
 	OnOff        bool
 	SettingsMenu struct {
 		Menu
-		returnItem        MenuItem
 		chooserLanguage   Chooser[settings.Locale]
 		chooserScreenSize Chooser[Resolution]
 		chooserFullscreen Chooser[OnOff]
@@ -45,7 +44,6 @@ func (onOff OnOff) String() string {
 
 func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *SettingsMenu {
 	*settingsMenu = SettingsMenu{}
-	settingsMenu.returnItem.Init("return", func(MenuInputType) { settingsMenu.returnToParent() })
 
 	settingsMenu.chooserLanguage.Init("language", []settings.Locale{settings.LocaleEnglish, settings.LocaleRussian}, settings.Current.Locale)
 
@@ -79,7 +77,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.Menu.Init(
 		app,
 		[]MenuWidget{
-			&settingsMenu.returnItem,
+			new(ReturnItem).Init(),
 			&settingsMenu.chooserLanguage,
 			&settingsMenu.chooserScreenSize,
 			&settingsMenu.chooserFullscreen,
