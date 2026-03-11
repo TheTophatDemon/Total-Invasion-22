@@ -96,8 +96,8 @@ func (ch *Chooser[T]) prev() {
 	ch.choiceIndex = (ch.choiceIndex + len(ch.choices) - 1) % len(ch.choices)
 }
 
-func (ch *Chooser[T]) Input(action MenuInputType) {
-	ch.MenuItem.Input(action)
+func (ch *Chooser[T]) Input(action MenuInputType, menu *Menu) {
+	ch.MenuItem.Input(action, menu)
 	switch action {
 	case MenuInputIncrement:
 		ch.next()

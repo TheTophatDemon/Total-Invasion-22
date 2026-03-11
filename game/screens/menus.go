@@ -19,18 +19,18 @@ import (
 
 type (
 	MenuInputType = uint8
-	MenuEvents    interface {
+	MenuWidget    interface {
 		Element() *ui.Element
 		Focus()
 		Blur()
-		Input(MenuInputType)
+		Input(MenuInputType, *Menu)
 		Layout(queue *ui.RenderQueue, deltaTime float32)
 	}
 	Menu struct {
 		position                                 mgl32.Vec2
 		scrollY, targetScrollY                   float32
 		menuSelection                            int
-		menuItems                                []MenuEvents
+		menuItems                                []MenuWidget
 		menuSpacing                              float32
 		cursor, scrollUpButton, scrollDownButton ui.Element
 		title, fade                              ui.Element
@@ -53,7 +53,7 @@ const (
 	MenuInputClick
 )
 
-func (menu *Menu) Init(app engine.Observer, menuItems []MenuEvents, parent ui.Screen) *Menu {
+func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Screen) *Menu {
 	*menu = Menu{
 		menuSpacing:   36,
 		menuItems:     menuItems,
@@ -187,11 +187,11 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if menu.menuSelection >= 0 {
 		item := menu.menuItems[menu.menuSelection]
 		if settings.Current.ActionMenuConfirm.JustPressed() {
-			item.Input(MenuInputConfirm)
+			item.Input(MenuInputConfirm, menu)
 		} else if settings.Current.ActionMenuIncrement.JustPressed() {
-			item.Input(MenuInputIncrement)
+			item.Input(MenuInputIncrement, menu)
 		} else if settings.Current.ActionMenuDecrement.JustPressed() {
-			item.Input(MenuInputDecrement)
+			item.Input(MenuInputDecrement, menu)
 		}
 	}
 
@@ -237,7 +237,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 				menu.menuSelection = i
 			}
 			if menu.menuSelection == i && input.AnyMouseButtonJustPressed() {
-				item.Input(MenuInputClick)
+				item.Input(MenuInputClick, menu)
 			}
 		}
 		if menu.menuSelection == i && prevSelection != i {
@@ -360,7 +360,7 @@ func (item *MenuItem) Blur() {
 	cache.GetSfx("assets/sounds/ui/menu0.wav").Play()
 }
 
-func (item *MenuItem) Input(action MenuInputType) {
+func (item *MenuItem) Input(action MenuInputType, menu *Menu) {
 	if (action == MenuInputConfirm || action == MenuInputClick) && item.OnInput != nil {
 		item.OnInput(action)
 		cache.GetSfx("assets/sounds/ui/menu1.wav").Play()

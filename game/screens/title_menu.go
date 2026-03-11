@@ -33,7 +33,7 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 	titleMenu.exit.Init("exit", func(MenuInputType) {
 		engine.Shutdown()
 	})
-	menuItems := []MenuEvents{
+	menuItems := []MenuWidget{
 		&titleMenu.resumeGame,
 		&titleMenu.newGame,
 		&titleMenu.loadGame,

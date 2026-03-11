@@ -1,9 +1,9 @@
 # TODO
 - Menus
   - Keybind menu
-    - Make binding changes update other menus and the game
+    - Make binding changes save to settings
+    - Fix mouse sensitivity assignment
     - Translation
-  - Fix mouse sensitivity assignment
   - Resolution change confirmation
   - Exit screen
   - Make sliders look better

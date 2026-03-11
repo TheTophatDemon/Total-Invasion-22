@@ -12,47 +12,94 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type BindingsMenu struct {
-	Menu
-	returnItem  MenuItem
-	actionItems []MenuItem
+type (
+	BindingsMenu struct {
+		Menu
+	}
+	actionItem struct {
+		MenuItem
+		bindingName string
+		action      *settings.Action
+	}
+	bindingItem struct {
+		MenuItem
+		displayNumber int
+		binding       *input.Binding
+		clear         bool
+	}
+)
+
+func (item *actionItem) Input(inputType MenuInputType, menu *Menu) {
+	menu.app.ProcessSignal(game.ChangeScreenSignal{
+		Screen: new(BindingEditMenu).Init(menu.app, menu, item.action),
+	})
+}
+
+func (item *actionItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	if item == nil || item.action == nil {
+		return
+	}
+	var actionString strings.Builder
+	fmt.Fprintf(&actionString, "%v: ", item.bindingName)
+	for i, binding := range item.action {
+		if binding != nil {
+			actionString.WriteString(settings.Localize(binding.LocalizationKey()))
+		} else {
+			actionString.WriteString("___")
+		}
+		if i != len(item.action)-1 {
+			actionString.WriteString(", ")
+		}
+	}
+	item.SetText(actionString.String())
+	item.FitText()
+	queue.Add(&item.element)
+}
+
+func (item *bindingItem) Input(inputType MenuInputType, menu *Menu) {
+	*item.binding = nil
+	if !item.clear {
+		input.CaptureInput(func(newBinding input.Binding, extraData any) {
+			*item.binding = newBinding
+		}, item)
+	}
+}
+
+func (item *bindingItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	bindingText := "___"
+	if item.clear {
+		item.SetText(fmt.Sprintf(settings.Localize("clearBinding"), item.displayNumber))
+	} else {
+		if item.binding != nil && *item.binding != nil {
+			bindingText = settings.Localize((*item.binding).LocalizationKey())
+		} else if input.CaptureExtraData() == item {
+			bindingText = settings.Localize("inputPrompt")
+		}
+		item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), item.displayNumber, bindingText))
+	}
+	item.FitText()
+	queue.Add(&item.element)
 }
 
 func (menu *BindingsMenu) Init(app engine.Observer, parent ui.Screen) *BindingsMenu {
 	*menu = BindingsMenu{}
-	menu.returnItem.Init("return", func(MenuInputType) { menu.returnToParent() })
 
-	allItems := []MenuEvents{
-		&menu.returnItem,
+	allItems := []MenuWidget{
+		new(MenuItem).Init("return", func(MenuInputType) { menu.returnToParent() }),
 	}
 
 	actionType := reflect.TypeFor[settings.Action]()
-	for field, fieldValue := range reflect.ValueOf(settings.Current).Fields() {
+	for field, fieldValue := range reflect.ValueOf(&settings.Current).Elem().Fields() {
 		if field.Type.Name() != actionType.Name() {
 			continue
 		}
-		item := MenuItem{}
-		bindingName := settings.Localize(strings.ToLower(string(field.Name[0])) + field.Name[1:])
-		action := fieldValue.Interface().(settings.Action)
-		var actionString strings.Builder
-		fmt.Fprintf(&actionString, "%v: ", bindingName)
-		for i, binding := range action {
-			if binding != nil {
-				actionString.WriteString(settings.Localize(binding.LocalizationKey()))
-			} else {
-				actionString.WriteString("___")
-			}
-			if i != len(action)-1 {
-				actionString.WriteString(", ")
-			}
-		}
-		item.InitUnlocalized(actionString.String(), func(MenuInputType) {
-			app.ProcessSignal(game.ChangeScreenSignal{
-				Screen: new(BindingEditMenu).Init(app, menu, &action),
-			})
+		allItems = append(allItems, &actionItem{
+			MenuItem: MenuItem{
+				element: ui.NewText(ui.Transform{}, "", ui.TextConfig{}),
+			},
+			bindingName: settings.Localize(strings.ToLower(string(field.Name[0])) + field.Name[1:]),
+			action:      fieldValue.Addr().Interface().(*settings.Action),
 		})
-		menu.actionItems = append(menu.actionItems, item)
-		allItems = append(allItems, &menu.actionItems[len(menu.actionItems)-1])
 	}
 
 	menu.Menu.Init(app, allItems, parent)
@@ -62,50 +109,32 @@ func (menu *BindingsMenu) Init(app engine.Observer, parent ui.Screen) *BindingsM
 
 type BindingEditMenu struct {
 	Menu
-	returnItem   MenuItem
-	bindingItems []MenuItem
-	action       *settings.Action
-	editedAction settings.Action
 }
 
 func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action *settings.Action) *BindingEditMenu {
 	if menu == nil || action == nil {
 		return nil
 	}
-	*menu = BindingEditMenu{
-		action:       action,
-		editedAction: *action,
+	*menu = BindingEditMenu{}
+	allItems := []MenuWidget{
+		new(MenuItem).Init("return", func(MenuInputType) {
+			menu.returnToParent()
+		}),
 	}
-	menu.returnItem.Init("return", func(MenuInputType) { menu.returnToParent() })
-	allItems := []MenuEvents{
-		&menu.returnItem,
-	}
-	const blankBindingText = "___"
-	for i, binding := range action {
-		item := MenuItem{}
-		var bindingString strings.Builder
-		bindingName := blankBindingText
-		if binding != nil {
-			bindingName = settings.Localize(binding.LocalizationKey())
-		}
+	for i := range action {
 		displayNumber := i + 1
-		fmt.Fprintf(&bindingString, settings.Localize("setBindingFor"), displayNumber, bindingName)
-		item.InitUnlocalized(bindingString.String(), func(mit MenuInputType) {
-			item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), displayNumber, settings.Localize("inputPrompt")))
-			item.FitText()
-			input.CaptureInput(func(newBinding input.Binding) {
-				item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), displayNumber, settings.Localize(newBinding.LocalizationKey())))
-				item.FitText()
-				action[i] = newBinding
-			})
-		})
-		clearItem := MenuItem{}
-		clearItem.InitUnlocalized(fmt.Sprintf(settings.Localize("clearBinding"), displayNumber), func(MenuInputType) {
-			item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), displayNumber, blankBindingText))
-			item.FitText()
-			action[i] = nil
-		})
-		allItems = append(allItems, &item, &clearItem)
+		item := &bindingItem{
+			displayNumber: displayNumber,
+			binding:       &action[i],
+		}
+		item.InitUnlocalized("", nil)
+		clearItem := &bindingItem{
+			displayNumber: displayNumber,
+			binding:       &action[i],
+			clear:         true,
+		}
+		clearItem.InitUnlocalized("", nil)
+		allItems = append(allItems, item, clearItem)
 	}
 	menu.Menu.Init(app, allItems, parent)
 	return menu

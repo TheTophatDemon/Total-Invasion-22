@@ -18,7 +18,7 @@ type (
 func (lsm *LevelSelectMenu) Init(app engine.Observer) *LevelSelectMenu {
 	*lsm = LevelSelectMenu{}
 
-	menuItems := make([]MenuEvents, 0, 64)
+	menuItems := make([]MenuWidget, 0, 64)
 	filepath.WalkDir("assets/maps", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".te3") {
 			fileName := filepath.Base(path[:len(path)-4])

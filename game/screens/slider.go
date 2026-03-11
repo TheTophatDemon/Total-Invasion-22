@@ -92,8 +92,8 @@ func (sl *Slider) prev() {
 	sl.value = max(sl.min, sl.value-sl.step)
 }
 
-func (sl *Slider) Input(action MenuInputType) {
-	sl.MenuItem.Input(action)
+func (sl *Slider) Input(action MenuInputType, menu *Menu) {
+	sl.MenuItem.Input(action, menu)
 	switch action {
 	case MenuInputIncrement:
 		sl.next()

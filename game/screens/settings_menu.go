@@ -78,7 +78,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.Menu.Init(
 		app,
-		[]MenuEvents{
+		[]MenuWidget{
 			&settingsMenu.returnItem,
 			&settingsMenu.chooserLanguage,
 			&settingsMenu.chooserScreenSize,

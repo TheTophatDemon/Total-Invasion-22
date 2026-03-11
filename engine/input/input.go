@@ -8,13 +8,16 @@ import (
 )
 
 type (
-	InputCaptureCallback func(newBinding Binding)
+	InputCaptureCallback func(newBinding Binding, extraData any)
 )
 
 var anythingPressed, anyMouseButtonPressed, anyMouseButtonWasPressed bool
 
 // Holds the callback that assigns the captured input to a binding
 var captureCallback InputCaptureCallback = nil
+
+// Extra data for the capture callback
+var captureData any = nil
 
 // Holds the binding of the input action that was captured
 var capturedBinding Binding = nil
@@ -79,18 +82,27 @@ func IsMouseTrapped() bool {
 	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
 }
 
-func CaptureInput(callback InputCaptureCallback) {
+func CaptureInput(callback InputCaptureCallback, extraData any) {
 	captureCallback = callback
+	captureData = extraData
 }
 
 func IsCapturingInput() bool {
 	return captureCallback != nil
 }
 
+func CaptureExtraData() any {
+	if captureCallback != nil {
+		return captureData
+	}
+	return nil
+}
+
 func endCaptureInput() {
 	if captureCallback != nil {
-		captureCallback(capturedBinding)
+		captureCallback(capturedBinding, captureData)
 		captureCallback = nil
+		captureData = nil
 		capturedBinding = nil
 	}
 }
