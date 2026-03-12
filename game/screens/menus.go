@@ -353,7 +353,6 @@ func (item *MenuItem) Focus() {
 	if config, ok := configMaybe.Get(); ok {
 		item.restoreColor = config.Color
 		config.Color = maybe.Some(color.Yellow)
-		item.element.SetTextConfig(*config)
 	}
 }
 
@@ -361,7 +360,6 @@ func (item *MenuItem) Blur() {
 	configMaybe := item.element.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = item.restoreColor
-		item.element.SetTextConfig(*config)
 	}
 	cache.GetSfx(SfxMenuMove).Play()
 }

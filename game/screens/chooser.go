@@ -118,7 +118,6 @@ func (ch *Chooser[T]) Focus() {
 	configMaybe := ch.txtLabel.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = maybe.Some(color.Yellow)
-		ch.txtLabel.SetTextConfig(*config)
 	}
 }
 
@@ -127,7 +126,6 @@ func (ch *Chooser[T]) Blur() {
 	configMaybe := ch.txtLabel.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = maybe.Some(color.White)
-		ch.txtLabel.SetTextConfig(*config)
 	}
 }
 

@@ -83,8 +83,8 @@ func (el *Element) Text() string {
 	return el.text
 }
 
-func (el *Element) TextConfig() maybe.T[TextConfig] {
-	return el.textConfig
+func (el *Element) TextConfig() *maybe.T[TextConfig] {
+	return &el.textConfig
 }
 
 func (el *Element) SetTextConfig(config TextConfig) {

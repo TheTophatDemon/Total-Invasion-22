@@ -114,7 +114,6 @@ func (sl *Slider) Focus() {
 	configMaybe := sl.txtLabel.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = maybe.Some(color.Yellow)
-		sl.txtLabel.SetTextConfig(*config)
 	}
 }
 
@@ -123,7 +122,6 @@ func (sl *Slider) Blur() {
 	configMaybe := sl.txtLabel.TextConfig()
 	if config, ok := configMaybe.Get(); ok {
 		config.Color = maybe.Some(color.White)
-		sl.txtLabel.SetTextConfig(*config)
 	}
 }
 
