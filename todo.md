@@ -26,9 +26,6 @@
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize world raycasts using the bsp tree
 
-- Port E1M4
-  - Song
-
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
 - Additional Enemies
