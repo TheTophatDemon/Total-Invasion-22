@@ -1,9 +1,9 @@
 # TODO
 - Menus
   - Keybind menu
-    - Make binding changes save to settings
     - Fix mouse sensitivity assignment
     - Translation
+      - Make language switch in real time
   - Resolution change confirmation
   - Exit screen
   - Make sliders look better

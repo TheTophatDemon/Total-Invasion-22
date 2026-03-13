@@ -106,65 +106,34 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 }
 
-func (menu *SettingsMenu) Exit() {
-	originalSettings := settings.Current
-	resetMenu := false
+func (menu *SettingsMenu) Enter() {
+}
 
-	if newLang := menu.chooserLanguage.Choice(); newLang != settings.Current.Locale {
-		settings.Current.Locale = newLang
-		resetMenu = true
-	}
+func (menu *SettingsMenu) Exit() {
+	settings.Current.Locale = menu.chooserLanguage.Choice()
 
 	newSize := menu.chooserScreenSize.Choice()
-	if nowFullscreen := bool(menu.chooserFullscreen.Choice()); nowFullscreen != engine.IsFullscreen() {
-		settings.Current.Fullscreen = nowFullscreen
-		engine.SetFullscreen(nowFullscreen)
-		resetMenu = true
-	}
-	if newSize[0] != settings.Current.WindowWidth || newSize[1] != settings.Current.WindowHeight {
-		settings.Current.WindowWidth = newSize[0]
-		settings.Current.WindowHeight = newSize[1]
-		engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
-		resetMenu = true
-	}
-	if newVsync := bool(menu.chooserVsync.Choice()); settings.Current.Vsync != newVsync {
-		settings.Current.Vsync = newVsync
-		engine.SetVsync(newVsync)
-	}
 
-	if newVolume := menu.sliderSfxVolume.FractionValue(); !mgl32.FloatEqual(newVolume, settings.Current.SfxVolume) {
-		settings.Current.SfxVolume = newVolume
-	}
-	if newVolume := menu.sliderMusicVolume.FractionValue(); !mgl32.FloatEqual(newVolume, settings.Current.MusicVolume) {
-		settings.Current.MusicVolume = newVolume
-	}
+	settings.Current.Fullscreen = bool(menu.chooserFullscreen.Choice())
+	engine.SetFullscreen(settings.Current.Fullscreen)
 
-	if newFov := float32(menu.sliderFOV.IntValue()); !mgl32.FloatEqual(newFov, settings.Current.Fov) {
-		settings.Current.Fov = newFov
-	}
+	settings.Current.WindowWidth = newSize[0]
+	settings.Current.WindowHeight = newSize[1]
+	engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
 
-	if newSens := menu.sliderSensitivity.IntValue(); newSens != settings.Current.MouseSensitivity {
-		settings.Current.MouseSensitivity = newSens
+	settings.Current.Vsync = bool(menu.chooserVsync.Choice())
+	engine.SetVsync(settings.Current.Vsync)
 
-		// scaledSens := settings.ScaledMouseSensitivity(newSens)
-		// input.ClearBinding(settings.ActionLookHorz)
-		// input.BindActionMouseMove(settings.ActionLookHorz, input.MouseAxisX, scaledSens)
-		// input.ClearBinding(settings.ActionLookVert)
-		// input.BindActionMouseMove(settings.ActionLookVert, input.MouseAxisY, scaledSens)
-		// TODO: How do we make this work again?
-	}
+	settings.Current.SfxVolume = menu.sliderSfxVolume.FractionValue()
+	settings.Current.MusicVolume = menu.sliderMusicVolume.FractionValue()
+	settings.Current.Fov = float32(menu.sliderFOV.IntValue())
 
-	if chickenHarm := bool(menu.chooserChickens.Choice()); chickenHarm != settings.Current.ChickenHarm {
-		settings.Current.ChickenHarm = chickenHarm
-	}
+	settings.Current.MouseSensitivity = menu.sliderSensitivity.IntValue()
+	settings.Current.ChickenHarm = bool(menu.chooserChickens.Choice())
 
-	if resetMenu {
-		// Reset the title menu so things are positioned correctly
-		if titleMenu, ok := menu.parent.(*TitleMenu); ok {
-			titleMenu.Init(titleMenu.app, titleMenu.inGame)
-		}
+	// Reset the title menu so things are positioned correctly
+	if titleMenu, ok := menu.parent.(*TitleMenu); ok {
+		titleMenu.Init(titleMenu.app, titleMenu.inGame)
 	}
-	if originalSettings != settings.Current {
-		settings.Save()
-	}
+	settings.Save()
 }
