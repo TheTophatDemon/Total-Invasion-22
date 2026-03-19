@@ -11,7 +11,8 @@ type (
 	InputCaptureCallback func(newBinding Binding, extraData any)
 )
 
-var anythingPressed, anyMouseButtonPressed, anyMouseButtonWasPressed bool
+var anythingPressed bool
+var wasAnyMouseButtonPressed bool
 
 // Holds the callback that assigns the captured input to a binding
 var captureCallback InputCaptureCallback = nil
@@ -27,6 +28,7 @@ var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 var mouseScrollY, mousePrevScrollY float32
+var mouseSensitivity float32 = 0.005
 
 func init() {
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
@@ -41,8 +43,7 @@ func Init() {
 func PostUpdate() {
 	inputFrameNumber += 1
 	anythingPressed = false
-	anyMouseButtonWasPressed = anyMouseButtonPressed
-	anyMouseButtonPressed = false
+	wasAnyMouseButtonPressed = AnyMouseButtonPressed()
 	lastKeyPressed = glfw.KeyUnknown
 	mousePosX, mousePosY := glfw.GetCurrentContext().GetCursorPos()
 	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
@@ -61,7 +62,7 @@ func PostUpdate() {
 			movedAxis = MouseAxisNegY
 		}
 		if movedAxis != MouseAxisNone && IsCapturingInput() {
-			capturedBinding = NewMouseMovementBinding(movedAxis, 0.05)
+			capturedBinding = NewMouseMovementBinding(movedAxis)
 			endCaptureInput()
 		}
 	}
@@ -124,6 +125,14 @@ func MouseScrollDelta() float32 {
 	return mouseScrollY - mousePrevScrollY
 }
 
+func MouseSensitivity() float32 {
+	return mouseSensitivity
+}
+
+func SetMouseSensitivity(newValue float32) {
+	mouseSensitivity = newValue
+}
+
 func SetMousePosition(x, y float32) {
 	mousePrevX = float64(x)
 	mousePrevY = float64(y)
@@ -136,11 +145,11 @@ func IsMouseButtonDown(button glfw.MouseButton) bool {
 }
 
 func AnyMouseButtonPressed() bool {
-	return anyMouseButtonPressed && !IsCapturingInput()
+	return IsMouseButtonDown(glfw.MouseButton1) || IsMouseButtonDown(glfw.MouseButton2) || IsMouseButtonDown(glfw.MouseButton3)
 }
 
 func AnyMouseButtonJustPressed() bool {
-	return anyMouseButtonPressed && !anyMouseButtonWasPressed && !IsCapturingInput()
+	return AnyMouseButtonPressed() && !wasAnyMouseButtonPressed && !IsCapturingInput()
 }
 
 func IsAnythingPressed() bool {
@@ -170,7 +179,6 @@ func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, 
 			capturedBinding = NewMouseButtonBinding(button)
 		} else {
 			anythingPressed = true
-			anyMouseButtonPressed = true
 		}
 	case glfw.Release:
 		if IsCapturingInput() && capturedBinding != nil {

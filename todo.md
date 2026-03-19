@@ -1,12 +1,14 @@
 # TODO
 - Menus
+  - Slider improvements
+    - Expand to fit container
+    - Visual polish
+  - Fix mouse sensitivity assignment
+  - Make language switch in real time
   - Keybind menu
-    - Fix mouse sensitivity assignment
     - Translation
-      - Make language switch in real time
-  - Resolution change confirmation
+  - Resolution change confirmation?
   - Exit screen
-  - Make sliders look better
   - Add background to menus to make them more visible
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes

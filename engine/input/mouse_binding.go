@@ -23,8 +23,7 @@ type (
 	}
 	MouseMovementBinding struct {
 		bindingBase
-		MouseAxis   MouseAxis
-		Sensitivity float32
+		MouseAxis MouseAxis
 	}
 	MouseAxis uint8
 )
@@ -85,8 +84,8 @@ func (mbb *MouseButtonBinding) MarshalTOML() ([]byte, error) {
 
 // MOUSE MOVEMENT BINDING
 
-func NewMouseMovementBinding(axis MouseAxis, sensitivity float32) *MouseMovementBinding {
-	return new(MouseMovementBinding{MouseAxis: axis, Sensitivity: sensitivity})
+func NewMouseMovementBinding(axis MouseAxis) *MouseMovementBinding {
+	return new(MouseMovementBinding{MouseAxis: axis})
 }
 
 func (mmb *MouseMovementBinding) Pressed() bool {
@@ -96,13 +95,13 @@ func (mmb *MouseMovementBinding) Pressed() bool {
 func (mmb *MouseMovementBinding) Axis() float32 {
 	switch mmb.MouseAxis {
 	case MouseAxisPosX:
-		return max(0.0, float32(mouseDeltaX)*mmb.Sensitivity)
+		return max(0.0, float32(mouseDeltaX)*mouseSensitivity)
 	case MouseAxisNegX:
-		return -min(0.0, float32(mouseDeltaX)*mmb.Sensitivity)
+		return -min(0.0, float32(mouseDeltaX)*mouseSensitivity)
 	case MouseAxisPosY:
-		return max(0.0, float32(mouseDeltaY)*mmb.Sensitivity)
+		return max(0.0, float32(mouseDeltaY)*mouseSensitivity)
 	case MouseAxisNegY:
-		return -min(0.0, float32(mouseDeltaY)*mmb.Sensitivity)
+		return -min(0.0, float32(mouseDeltaY)*mouseSensitivity)
 	}
 	return 0.0
 }
@@ -132,5 +131,5 @@ func (mmb *MouseMovementBinding) JustReleased() bool {
 }
 
 func (mmb *MouseMovementBinding) MarshalTOML() ([]byte, error) {
-	return fmt.Appendf(nil, "{ MouseAxis = %v, Sensitivity = %v }", mmb.MouseAxis, mmb.Sensitivity), nil
+	return fmt.Appendf(nil, "{ MouseAxis = %v }", mmb.MouseAxis), nil
 }

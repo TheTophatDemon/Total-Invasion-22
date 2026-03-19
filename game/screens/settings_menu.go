@@ -3,7 +3,6 @@ package screens
 import (
 	"fmt"
 
-	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
@@ -60,11 +59,11 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.chooserFullscreen.Init("fullscreen", onOffChoices, OnOff(settings.Current.Fullscreen))
 	settingsMenu.chooserVsync.Init("vsync", onOffChoices, OnOff(settings.Current.Vsync))
 
-	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, int(settings.Current.SfxVolume*10.0))
-	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, int(settings.Current.MusicVolume*10.0))
-	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, int(settings.Current.Fov))
+	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, settings.Current.SfxVolume*10.0)
+	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, settings.Current.MusicVolume*10.0)
+	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, settings.Current.Fov)
 	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, min(10, max(1, settings.Current.MouseSensitivity)))
-	settingsMenu.sliderTextShadow.Init("textShadow", 0, 10, 1, int(settings.Current.TextShadowTransparency*10.0))
+	settingsMenu.sliderTextShadow.Init("textShadow", 0, 10, 1, settings.Current.TextShadowTransparency*10.0)
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
 
@@ -97,13 +96,12 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	menu.Menu.Layout(queue, deltaTime)
-	tdaudio.SetSfxVolume(menu.sliderSfxVolume.FractionValue())
-	tdaudio.SetMusicVolume(menu.sliderMusicVolume.FractionValue())
+	tdaudio.SetSfxVolume(float32(menu.sliderSfxVolume.FractionValue()))
+	tdaudio.SetMusicVolume(float32(menu.sliderMusicVolume.FractionValue()))
 
-	if newTrans := float32(menu.sliderTextShadow.IntValue()) / 10.0; !mgl32.FloatEqual(newTrans, settings.Current.TextShadowTransparency) {
-		settings.Current.TextShadowTransparency = newTrans
-		ui.SetTextShadowColor(color.Black.WithAlpha(newTrans))
-	}
+	newTrans := menu.sliderTextShadow.FractionValue()
+	settings.Current.TextShadowTransparency = newTrans
+	ui.SetTextShadowColor(color.Black.WithAlpha(float32(newTrans)))
 }
 
 func (menu *SettingsMenu) Enter() {
@@ -126,9 +124,9 @@ func (menu *SettingsMenu) Exit() {
 
 	settings.Current.SfxVolume = menu.sliderSfxVolume.FractionValue()
 	settings.Current.MusicVolume = menu.sliderMusicVolume.FractionValue()
-	settings.Current.Fov = float32(menu.sliderFOV.IntValue())
+	settings.Current.Fov = menu.sliderFOV.FloatValue()
 
-	settings.Current.MouseSensitivity = menu.sliderSensitivity.IntValue()
+	settings.Current.MouseSensitivity = menu.sliderSensitivity.FloatValue()
 	settings.Current.ChickenHarm = bool(menu.chooserChickens.Choice())
 
 	// Reset the title menu so things are positioned correctly

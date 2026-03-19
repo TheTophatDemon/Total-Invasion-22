@@ -21,11 +21,11 @@ type (
 	Data   struct {
 		WindowWidth, WindowHeight uint16
 		Fullscreen, Vsync         bool
-		MouseSensitivity          int
-		TextShadowTransparency    float32 // From 0 to 1
-		SfxVolume, MusicVolume    float32 // From 0 to 1
+		MouseSensitivity          float64
+		TextShadowTransparency    float64 // From 0 to 1
+		SfxVolume, MusicVolume    float64 // From 0 to 1
 		Locale                    Locale
-		Fov                       float32 // Measured in degrees
+		Fov                       float64 // Measured in degrees
 		ChickenHarm               bool    // Allow harm to chickens
 		Debug                     struct {
 			StartMap string
@@ -77,18 +77,6 @@ var (
 	ActionLaunchEditor = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT) //TDJOMT
 	ActionSpawnChicken = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC)            //TDKFC
 	ActionLevelSelect  = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV) //TDCLEV
-
-	scaledMouseSensitivities = [9]float32{
-		0.001,
-		0.002,
-		0.003,
-		0.004,
-		0.005,
-		0.007,
-		0.009,
-		0.013,
-		0.020,
-	}
 )
 
 func init() {
@@ -114,8 +102,8 @@ func init() {
 		ActionLeft:          Action{input.NewKeyBinding(glfw.KeyA)},
 		ActionRight:         Action{input.NewKeyBinding(glfw.KeyD)},
 		ActionSlow:          Action{input.NewKeyBinding(glfw.KeyLeftShift), input.NewKeyBinding(glfw.KeyRightShift)},
-		ActionLookLeft:      Action{input.NewMouseMovementBinding(input.MouseAxisNegX, ScaledMouseSensitivity(5)), input.NewKeyBinding(glfw.KeyLeft)},
-		ActionLookRight:     Action{input.NewMouseMovementBinding(input.MouseAxisPosX, ScaledMouseSensitivity(5)), input.NewKeyBinding(glfw.KeyRight)},
+		ActionLookLeft:      Action{input.NewMouseMovementBinding(input.MouseAxisNegX), input.NewKeyBinding(glfw.KeyLeft)},
+		ActionLookRight:     Action{input.NewMouseMovementBinding(input.MouseAxisPosX), input.NewKeyBinding(glfw.KeyRight)},
 		ActionFire:          Action{input.NewMouseButtonBinding(glfw.MouseButtonLeft), input.NewKeyBinding(glfw.KeyLeftControl)},
 		ActionAltFire:       Action{input.NewMouseButtonBinding(glfw.MouseButtonRight), input.NewKeyBinding(glfw.KeyLeftAlt)},
 		ActionUse:           Action{input.NewKeyBinding(glfw.KeyE)},
@@ -261,11 +249,6 @@ func UIHeight() float32 {
 	return float32(Current.WindowHeight)
 }
 
-// Returns a floating point value for the given mouse sensitivity value that should be applied to the mouse movement.
-func ScaledMouseSensitivity(intSensitivity int) float32 {
-	return scaledMouseSensitivities[max(0, min(len(scaledMouseSensitivities)-1, intSensitivity-1))]
-}
-
 func (locale Locale) String() string {
 	return LocalizeWith("myLang", locale, "")
 }
@@ -367,20 +350,11 @@ func (action *Action) UnmarshalTOML(data any) error {
 			}
 		} else if value, hasMouseAxis := bindingMap["MouseAxis"]; hasMouseAxis {
 			var axisNumber int64
-			var sensitivity float64
 			var ok bool
 			if axisNumber, ok = value.(int64); !ok {
 				return fmt.Errorf("binding MouseAxis value must be an integer")
 			}
-			var hasSensitivity bool
-			value, hasSensitivity = bindingMap["Sensitivity"]
-			if !hasSensitivity {
-				return fmt.Errorf("binding is missing Sensitivity value")
-			}
-			if sensitivity, ok = value.(float64); !ok {
-				return fmt.Errorf("binding Sensitivity value must be a float")
-			}
-			action[i] = input.NewMouseMovementBinding(input.MouseAxis(axisNumber), float32(sensitivity))
+			action[i] = input.NewMouseMovementBinding(input.MouseAxis(axisNumber))
 		} else {
 			return fmt.Errorf("this type of binding is unsupported")
 		}

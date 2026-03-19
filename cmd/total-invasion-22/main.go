@@ -185,10 +185,10 @@ func main() {
 	cache.PreloadSfx("assets/sounds")
 
 	// Update audio volume based on settings.
-	tdaudio.SetSfxVolume(settings.Current.SfxVolume)
-	tdaudio.SetMusicVolume(settings.Current.MusicVolume)
+	tdaudio.SetSfxVolume(float32(settings.Current.SfxVolume))
+	tdaudio.SetMusicVolume(float32(settings.Current.MusicVolume))
 
-	ui.SetTextShadowColor(color.Black.WithAlpha(settings.Current.TextShadowTransparency))
+	ui.SetTextShadowColor(color.Black.WithAlpha(float32(settings.Current.TextShadowTransparency)))
 
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 

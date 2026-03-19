@@ -443,7 +443,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 				dmgDir = dmgDir.Normalize()
 			}
 			forward := player.actor.FacingVec()
-			halfFov := mgl32.DegToRad(settings.Current.Fov / 2.0)
+			halfFov := mgl32.DegToRad(float32(settings.Current.Fov) / 2.0)
 			if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
 				// Source is in front or back
 				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtFront)

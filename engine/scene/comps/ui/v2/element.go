@@ -241,6 +241,14 @@ func (el *Element) Anchor() Ratios {
 	return el.transform.Anchor
 }
 
+func (el *Element) Width() float32 {
+	return el.transform.Size[0]
+}
+
+func (el *Element) Height() float32 {
+	return el.transform.Size[1]
+}
+
 func (el *Element) Origin() Ratios {
 	return el.transform.Origin
 }
@@ -285,6 +293,18 @@ func (el *Element) Rotate(amount math2.Radians) {
 
 func (el *Element) SetSize(value mgl32.Vec2) {
 	el.transform.Size = value
+	el.transformClean = false
+	el.textClean = false
+}
+
+func (el *Element) SetWidth(width float32) {
+	el.transform.Size[0] = width
+	el.transformClean = false
+	el.textClean = false
+}
+
+func (el *Element) SetHeight(height float32) {
+	el.transform.Size[1] = height
 	el.transformClean = false
 	el.textClean = false
 }

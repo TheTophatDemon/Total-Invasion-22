@@ -2,14 +2,13 @@ package screens
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -18,18 +17,19 @@ const sfxSlide = "assets/sounds/ui/stats_ding.wav"
 
 type Slider struct {
 	MenuItem
-	txtLabel, txtLeft, txtSlider, txtRight, txtValue ui.Element
-	min, max, step, count                            int
-	value                                            int
+	txtLabel, txtLeft, boxSlider, boxKnob, txtRight, txtValue ui.Element
+	min, max, step, count                                     float64
+	value                                                     float64
+	grabbed                                                   bool
 }
 
-func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slider {
+func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *Slider {
 	*sl = Slider{
 		min:   min,
 		max:   max,
 		step:  step,
 		value: initialValue,
-		count: (1 + max - min) / step,
+		count: math2.Floor((1.0 + max - min) / step),
 	}
 
 	smallScreen := settings.Current.WindowWidth <= 800
@@ -57,13 +57,18 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 		Color: maybe.Some(color.Yellow),
 	})
 
-	sl.txtSlider = ui.NewText(ui.Transform{
+	sl.boxSlider = ui.NewBox(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, strings.Repeat("_", sl.count+1), ui.TextConfig{
-		Align: ui.TextAlignCenterH,
-	})
-	sl.txtSlider.FitText()
+		Size:   mgl32.Vec2{128, 8},
+	}, nil)
+	sl.boxSlider.BgColor = maybe.Some(color.Color{R: 0.5, G: 0.5, B: 0.5, A: 1.0})
+
+	sl.boxKnob = ui.NewBox(ui.Transform{
+		Origin: ui.Ratios{0.5, 0.5},
+		Depth:  11,
+		Size:   mgl32.Vec2{16, 24.0},
+	}, nil)
 
 	sl.txtRight = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -84,12 +89,14 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue int) *Slide
 
 func (sl *Slider) next() {
 	cache.GetSfx(sfxSlide).Play()
-	sl.value = min(sl.value+sl.step, sl.max)
+	snappedValue := math2.Floor(sl.value/sl.step) * sl.step
+	sl.value = min(snappedValue+sl.step, sl.max)
 }
 
 func (sl *Slider) prev() {
 	cache.GetSfx(sfxSlide).Play()
-	sl.value = max(sl.min, sl.value-sl.step)
+	snappedValue := math2.Ceil(sl.value/sl.step) * sl.step
+	sl.value = max(sl.min, snappedValue-sl.step)
 }
 
 func (sl *Slider) Input(action MenuInputType, menu *Menu) {
@@ -128,42 +135,52 @@ func (sl *Slider) Blur() {
 func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	// Slide when mouse is held down
 	mousePos := input.MousePosition()
-	if input.IsMouseButtonDown(glfw.MouseButton1) || input.IsMouseButtonDown(glfw.MouseButton2) {
-		if sl.txtSlider.OnScreenBox().ContainsPoint(mousePos) {
-			offset := (mousePos[0] - sl.txtSlider.Position()[0]) / sl.txtSlider.Size()[0]
-			prev := sl.value
-			sl.value = min(sl.max, sl.min+int(float32(sl.count+1)*offset)*sl.step)
-			if prev != sl.value {
-				cache.GetSfx(sfxSlide).Play()
-			}
+	sliderBox := sl.boxSlider.OnScreenBox()
+	clickableBox := math2.Rect{
+		X:      sliderBox.X - sl.boxKnob.Width()/2.0,
+		Y:      sliderBox.Y - sl.boxKnob.Height()/2.0,
+		Width:  sliderBox.Width + sl.boxKnob.Width(),
+		Height: sliderBox.Height + sl.boxKnob.Height(),
+	}
+	if input.AnyMouseButtonJustPressed() {
+		if clickableBox.ContainsPoint(mousePos) {
+			sl.grabbed = true
 		}
+	} else if !input.AnyMouseButtonPressed() {
+		sl.grabbed = false
+	}
+	if sl.grabbed {
+		offset := float64((mousePos[0] - sliderBox.X) / sliderBox.Width)
+		// prev := sl.value
+		sl.value = min(sl.max, max(sl.min, sl.min+((sl.max-sl.min)*offset)))
+		// if !mgl64.FloatEqual(prev, sl.value) {
+		// 	cache.GetSfx(sfxSlide).Play()
+		// }
+		// TODO: Make this sound less obnoxious
 	}
 
-	var sliderBuilder strings.Builder
-	sliderBuilder.Grow(sl.count)
-	for i := sl.min; i <= sl.max; i += sl.step {
-		if i == sl.value {
-			sliderBuilder.WriteRune('*')
-		} else {
-			sliderBuilder.WriteRune('_')
-		}
-	}
-	sl.txtSlider.SetText(sliderBuilder.String())
-	sl.txtValue.SetText(fmt.Sprintf("%v", sl.value))
+	sl.txtValue.SetText(fmt.Sprintf("%.2f", sl.value))
 
-	components := []*ui.Element{&sl.txtLabel, &sl.txtLeft, &sl.txtSlider, &sl.txtRight, &sl.txtValue}
+	components := []*ui.Element{&sl.txtLabel, &sl.txtLeft, &sl.boxSlider, &sl.txtRight, &sl.txtValue}
 	ui.LayoutStack(&sl.element, ui.StackParams{
 		Gap: 8.0,
 	}, components...)
 	queue.Add(components...)
 
+	sl.boxKnob.SetPosition(sl.boxSlider.Position().Add(mgl32.Vec2{float32(sl.FractionValue()) * sl.boxSlider.Width()}))
+	queue.Add(&sl.boxKnob)
+
 	sl.MenuItem.Layout(queue, deltaTime)
 }
 
 func (sl *Slider) IntValue() int {
+	return int(sl.value)
+}
+
+func (sl *Slider) FloatValue() float64 {
 	return sl.value
 }
 
-func (sl *Slider) FractionValue() float32 {
-	return float32(sl.value-sl.min) / float32(sl.max-sl.min)
+func (sl *Slider) FractionValue() float64 {
+	return (sl.value - sl.min) / (sl.max - sl.min)
 }

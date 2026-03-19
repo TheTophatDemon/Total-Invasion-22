@@ -83,6 +83,16 @@ func (r Rect) Vec4() mgl32.Vec4 {
 	return mgl32.Vec4{r.X, r.Y, r.Width, r.Height}
 }
 
+func (husband Rect) Union(wife Rect) (child Rect) {
+	child = Rect{
+		X: min(husband.X, wife.X),
+		Y: min(husband.Y, wife.Y),
+	}
+	child.Width = max(husband.X+husband.Width, wife.X+wife.Width) - child.X
+	child.Height = max(husband.Y+husband.Height, wife.Y+wife.Height) - child.Y
+	return
+}
+
 func (r Rect) ContainsPoint(point mgl32.Vec2) bool {
 	return point[0] >= r.X && point[1] >= r.Y && point[0] < r.X+r.Width && point[1] < r.Y+r.Height
 }
