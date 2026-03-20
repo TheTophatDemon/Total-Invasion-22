@@ -100,7 +100,18 @@ func (ap *AnimationPlayer) FrameUV() math2.Rect {
 }
 
 func (ap *AnimationPlayer) MoveToRandomFrame() {
+	if len(ap.animation.Frames) == 0 {
+		return
+	}
 	ap.currentIndex = rand.Int() % len(ap.animation.Frames)
+	ap.frameTimer = 0.0
+}
+
+func (ap *AnimationPlayer) MoveToFrame(frame int) {
+	if len(ap.animation.Frames) == 0 {
+		return
+	}
+	ap.currentIndex = frame % len(ap.animation.Frames)
 	ap.frameTimer = 0.0
 }
 

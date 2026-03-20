@@ -64,11 +64,13 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 	}, nil)
 	sl.boxSlider.BgColor = maybe.Some(color.Color{R: 0.5, G: 0.5, B: 0.5, A: 1.0})
 
+	knobTex := cache.GetTexture("assets/textures/ui/slider_knob.png")
 	sl.boxKnob = ui.NewBox(ui.Transform{
 		Origin: ui.Ratios{0.5, 0.5},
 		Depth:  11,
-		Size:   mgl32.Vec2{16, 24.0},
-	}, nil)
+		Size:   mgl32.Vec2{24.0, 24.0},
+	}, knobTex)
+	sl.boxKnob.AnimPlayer.ChangeAnimation(knobTex.GetDefaultAnimation())
 
 	sl.txtRight = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -168,6 +170,7 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(components...)
 
 	sl.boxKnob.SetPosition(sl.boxSlider.Position().Add(mgl32.Vec2{float32(sl.FractionValue()) * sl.boxSlider.Width()}))
+	sl.boxKnob.AnimPlayer.MoveToFrame(int(sl.FractionValue() * float64(len(sl.boxKnob.AnimPlayer.CurrentAnimation().Frames)-1)))
 	queue.Add(&sl.boxKnob)
 
 	sl.MenuItem.Layout(queue, deltaTime)

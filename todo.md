@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Slider improvements
-    - Expand to fit container
     - Visual polish
   - Fix mouse sensitivity assignment
   - Make language switch in real time
