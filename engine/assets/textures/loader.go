@@ -85,7 +85,7 @@ func LoadTexture(assetPath string) (*Texture, error) {
 		if metadata.Meta.Slices != nil {
 			texture.slices = make(map[string]Slice)
 			for _, aseSlice := range metadata.Meta.Slices {
-				if aseSlice.Name != META_SLICE_NAME {
+				if aseSlice.Name != MetaSliceName {
 					texture.slices[aseSlice.Name] = Slice{
 						Data: aseSlice.Data,
 						Bounds: math2.Rect{
@@ -93,6 +93,12 @@ func LoadTexture(assetPath string) (*Texture, error) {
 							Y:      float32(aseSlice.Keys[0].Bounds.Y),
 							Width:  float32(aseSlice.Keys[0].Bounds.W),
 							Height: float32(aseSlice.Keys[0].Bounds.H),
+						},
+						Center: math2.Rect{
+							X:      float32(aseSlice.Keys[0].Center.X),
+							Y:      float32(aseSlice.Keys[0].Center.Y),
+							Width:  float32(aseSlice.Keys[0].Center.W),
+							Height: float32(aseSlice.Keys[0].Center.H),
 						},
 					}
 				}

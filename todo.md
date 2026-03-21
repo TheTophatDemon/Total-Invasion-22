@@ -3,12 +3,12 @@
   - Slider improvements
     - Visual polish
   - Fix mouse sensitivity assignment
+  - Add background to menus to make them more visible
   - Make language switch in real time
   - Keybind menu
     - Translation
   - Resolution change confirmation?
   - Exit screen
-  - Add background to menus to make them more visible
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Fix jittering in corners

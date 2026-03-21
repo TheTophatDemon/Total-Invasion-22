@@ -33,7 +33,7 @@ type (
 		menuItems                                []MenuWidget
 		menuSpacing                              float32
 		cursor, scrollUpButton, scrollDownButton ui.Element
-		title, fade                              ui.Element
+		title, background                        ui.Element
 		blinker                                  gween.Sequence
 		app                                      engine.Observer
 		parent                                   ui.Screen
@@ -103,12 +103,13 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 
 	menu.scrollDownButton = ui.NewBox(ui.Transform{
 		Size:     mgl32.Vec2{64.0, 16.0},
-		Origin:   ui.Ratios{0.5, 0.0},
+		Origin:   ui.Ratios{0.5, 1.0},
 		Depth:    10,
 		Anchor:   ui.Ratios{0.5, 0.0},
 		Position: mgl32.Vec2{0.0, float32(settings.Current.WindowHeight) - menu.menuSpacing},
 	}, cache.GetTexture("assets/textures/ui/scroll_arrow_down.png"))
 
+	var maxWidth float32
 	for i := range menuItems {
 		elem := menu.menuItems[i].Element()
 		if elem == nil {
@@ -131,6 +132,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 		if smallScreen && elem.Size()[0] >= 300 {
 			elem.SetSize(mgl32.Vec2{300, 48})
 		}
+		maxWidth = max(elem.Width(), maxWidth)
 
 		if i == 0 {
 			menu.menuItems[0].Focus()
@@ -145,11 +147,10 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 	}, cache.GetTexture("assets/textures/ui/title.png"))
 	menu.title.FitHeight(float32(settings.Current.WindowHeight) * 0.355555556)
 
-	menu.fade = ui.NewBox(ui.Transform{
-		Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
+	menu.background = ui.NewBox(ui.Transform{
 		Depth: 1,
-	}, nil)
-	menu.fade.BgColor = maybe.Some(color.Black.WithAlpha(0.25))
+	}, cache.GetTexture("assets/textures/ui/menu_background.png"))
+	menu.background.BgColor = maybe.Some(color.White.WithAlpha(0.5))
 
 	return menu
 }
@@ -177,8 +178,6 @@ func (menu *Menu) scrollDown(minScrollY float32) {
 }
 
 func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	queue.Add(&menu.fade)
-
 	prevSelection := menu.menuSelection
 	if settings.Current.ActionMenuDown.JustPressed() {
 		menu.menuSelection = (menu.menuSelection + 1) % len(menu.menuItems)
@@ -207,8 +206,9 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		menu.menuSelection = -1
 	}
 
-	menuTopY := menu.position[1] + menu.menuSpacing
-	menuBottomY := float32(settings.Current.WindowHeight) - menu.menuSpacing
+	scissorTopY := menu.position[1] + menu.menuSpacing
+	scissorBottomY := float32(settings.Current.WindowHeight) - menu.menuSpacing
+	scissorHeight := scissorBottomY - scissorTopY
 	moreAbove := false
 	moreBelow := false
 
@@ -216,9 +216,11 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if numItems := len(menu.menuItems); numItems > 0 {
 		menuItemsHeight = (menu.menuSpacing * float32(numItems)) + menu.menuItems[numItems-1].Element().Size()[1]
 	}
-	minScrollY := menuBottomY - menuTopY - menuItemsHeight
+	minScrollY := scissorBottomY - scissorTopY - menuItemsHeight
 
+	var maxWidth float32
 	// Draw menu items and take user input
+	queue.SetScissor(menu.position[0], menu.position[1], float32(settings.Current.WindowWidth), scissorHeight)
 	for i := range menu.menuItems {
 		item := menu.menuItems[i]
 		elem := item.Element()
@@ -228,17 +230,17 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			menu.position[1] + (menu.menuSpacing * float32(i+1)) + menu.scrollY,
 		})
 
-		noDraw := false
+		occluded := false
 		// Occlude menu items outside of the viewable range
-		if elem.Position()[1]+elem.Size()[1] < menuTopY {
+		if elem.Position()[1]+elem.Size()[1] < scissorTopY {
 			moreAbove = true
-			noDraw = true
+			occluded = true
 		}
-		if elem.Position()[1]+elem.Size()[1] > menuBottomY {
+		if elem.Position()[1]+elem.Size()[1] > scissorBottomY {
 			moreBelow = true
-			noDraw = true
+			occluded = true
 		}
-		if !noDraw && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
+		if !occluded && elem.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			if mouseMoved {
 				menu.menuSelection = i
 			}
@@ -248,23 +250,32 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 		if menu.menuSelection == i && prevSelection != i {
 			item.Focus()
-			if noDraw {
+			if occluded {
 				// Scroll off screen menu item into view
 				menu.targetScrollY = min(0.0, max(minScrollY, -menu.menuSpacing*float32(i)))
 			}
 		} else if menu.menuSelection != i && prevSelection == i {
 			item.Blur()
 		}
-		if !noDraw {
-			item.Layout(queue, deltaTime)
-		}
+
+		item.Layout(queue, deltaTime)
+		maxWidth = max(maxWidth, elem.Width())
 	}
+	queue.ClearScissor()
+	menu.background.SetPosition(menu.position.Add(mgl32.Vec2{0.0, -menu.menuSpacing}))
+	menu.background.SetSize(mgl32.Vec2{
+		maxWidth + menu.menuSpacing*2.0,
+		scissorHeight + menu.menuSpacing*2.0,
+	})
+	queue.Add(&menu.background)
+
+	margin := menu.menuSpacing / 4.0
 
 	// Draw scroller arrows
 	scrollerValue, _, _ := menu.blinker.Update(deltaTime)
 	showScrollers := scrollerValue > 0.9
 	if moreAbove {
-		menu.scrollUpButton.SetPosition(mgl32.Vec2{0.0, menu.position[1]})
+		menu.scrollUpButton.SetPosition(mgl32.Vec2{0.0, menu.position[1] - margin})
 		if menu.scrollUpButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollUpButton.BgColor = maybe.Some(color.Yellow)
 			if input.AnyMouseButtonJustPressed() {
@@ -279,7 +290,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	if moreBelow {
-		menu.scrollDownButton.SetPosition(mgl32.Vec2{0.0, menuBottomY})
+		menu.scrollDownButton.SetPosition(mgl32.Vec2{0.0, scissorBottomY - margin})
 		if menu.scrollDownButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollDownButton.BgColor = maybe.Some(color.Yellow)
 			if input.AnyMouseButtonJustPressed() {

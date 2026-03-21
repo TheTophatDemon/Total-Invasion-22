@@ -33,8 +33,77 @@ type Layer struct {
 }
 
 type Slice struct {
-	Data   string
-	Bounds math2.Rect
+	Data           string
+	Bounds, Center math2.Rect
+}
+
+// Retrieves 9 rectangles representing the borders and center of the slice.
+func (slice Slice) NinePatchRects() [9]math2.Rect {
+	return [9]math2.Rect{
+		// Top left
+		{
+			X:      slice.Bounds.X,
+			Y:      slice.Bounds.Y,
+			Width:  slice.Center.X,
+			Height: slice.Center.Y,
+		},
+		// Top middle
+		{
+			X:      slice.Bounds.X + slice.Center.X,
+			Y:      slice.Bounds.Y,
+			Width:  slice.Center.Width,
+			Height: slice.Center.Y,
+		},
+		// Top right
+		{
+			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
+			Y:      slice.Bounds.Y,
+			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
+			Height: slice.Center.Y,
+		},
+		// Right middle
+		{
+			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
+			Y:      slice.Bounds.Y + slice.Center.Y,
+			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
+			Height: slice.Center.Height,
+		},
+		// Bottom right
+		{
+			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
+			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
+			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
+			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+		},
+		// Bottom middle
+		{
+			X:      slice.Bounds.X + slice.Center.X,
+			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
+			Width:  slice.Center.Width,
+			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+		},
+		// Bottom left
+		{
+			X:      slice.Bounds.X,
+			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
+			Width:  slice.Center.X,
+			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+		},
+		// Left middle
+		{
+			X:      slice.Bounds.X,
+			Y:      slice.Bounds.Y + slice.Center.Y,
+			Width:  slice.Center.Width,
+			Height: slice.Center.Y,
+		},
+		// True middle
+		{
+			X:      slice.Bounds.X + slice.Center.X,
+			Y:      slice.Bounds.Y + slice.Center.Y,
+			Width:  slice.Center.Width,
+			Height: slice.Center.Height,
+		},
+	}
 }
 
 func (tex *Texture) Width() int {

@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	META_SLICE_NAME    = "meta"
-	DEFAULT_ANIM_FLAG  = "default"
-	TRIGGER_FRAME_FLAG = "triggerFrame"
+	MetaSliceName    = "meta"
+	DefaultAnimFlag  = "default"
+	TriggerFrameFlag = "triggerFrame"
 )
 
 type (
@@ -39,8 +39,8 @@ type (
 	}
 
 	aseSliceKey struct {
-		Frame  int
-		Bounds Rect
+		Frame          int
+		Bounds, Center Rect
 	}
 
 	aseFrame struct {
@@ -104,7 +104,7 @@ func (ss *aseSpriteSheet) atlasPath() string {
 // Returns an empty slice if no flags are found.
 func (ss *aseSpriteSheet) loadFlags() []string {
 	for _, slice := range ss.Meta.Slices {
-		if slice.Name == META_SLICE_NAME {
+		if slice.Name == MetaSliceName {
 			flags := strings.Split(slice.Data, " ")
 			for i := range flags {
 				flags[i] = strings.TrimSpace(flags[i])
@@ -199,16 +199,16 @@ func (ss *aseSpriteSheet) loadAnimations() (map[string]Animation, error) {
 		tagFlags := strings.SplitSeq(ss.Meta.FrameTags[t].Data, " ")
 		for flag := range tagFlags {
 			switch true {
-			case flag == DEFAULT_ANIM_FLAG:
+			case flag == DefaultAnimFlag:
 				anim.Default = true
-			case strings.HasPrefix(flag, TRIGGER_FRAME_FLAG):
-				if len(flag) <= len(TRIGGER_FRAME_FLAG)+1 {
-					return nil, fmt.Errorf("flag %v does not have frame number", TRIGGER_FRAME_FLAG)
+			case strings.HasPrefix(flag, TriggerFrameFlag):
+				if len(flag) <= len(TriggerFrameFlag)+1 {
+					return nil, fmt.Errorf("flag %v does not have frame number", TriggerFrameFlag)
 				}
-				if flag[len(TRIGGER_FRAME_FLAG)] != ':' {
-					return nil, fmt.Errorf("flag %v must be followed by a colon and no spacing", TRIGGER_FRAME_FLAG)
+				if flag[len(TriggerFrameFlag)] != ':' {
+					return nil, fmt.Errorf("flag %v must be followed by a colon and no spacing", TriggerFrameFlag)
 				}
-				frameStrings := strings.Split(flag[len(TRIGGER_FRAME_FLAG)+1:], ",")
+				frameStrings := strings.Split(flag[len(TriggerFrameFlag)+1:], ",")
 				anim.TriggerFrames = make([]uint, len(frameStrings))
 				for i, str := range frameStrings {
 					frameNum, err := strconv.ParseUint(str, 10, 32)
