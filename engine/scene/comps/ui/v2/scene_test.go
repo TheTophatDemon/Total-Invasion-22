@@ -1,6 +1,10 @@
 package ui
 
-import "testing"
+import (
+	"testing"
+
+	"tophatdemon.com/total-invasion-ii/engine/math2"
+)
 
 func TestElementSorting(t *testing.T) {
 	var q RenderQueue
@@ -17,8 +21,34 @@ func TestElementSorting(t *testing.T) {
 	}
 
 	for i, expectedDepth := range []float32{1.0, 2.0, 3.0, 3.0, 4.0} {
-		if q[i].Depth() != expectedDepth {
-			t.Errorf("expected depth %v at slot %v but got %v", expectedDepth, i, q[i].Depth())
+		if actualDepth := q.elements[i].Depth(); actualDepth != expectedDepth {
+			t.Errorf("expected depth %v at slot %v but got %v", expectedDepth, i, actualDepth)
+		}
+	}
+}
+
+func TestElementScissor(t *testing.T) {
+	var q RenderQueue
+
+	for i := range 6 {
+		switch i {
+		case 2:
+			q.SetScissor(4, 4, 50, 50)
+		case 4:
+			q.ClearScissor()
+		}
+		q.Add(new(NewBox(Transform{}, nil)))
+	}
+
+	for i, elem := range q.elements {
+		if i >= 2 && i < 4 {
+			if elem.Scissor != (math2.Rect{X: 4.0, Y: 4.0, Width: 50.0, Height: 50.0}) {
+				t.Fatalf("element %v did not have matching scissor, it was: %v", i, elem.Scissor)
+			}
+		} else {
+			if elem.Scissor != (math2.Rect{}) {
+				t.Fatalf("element %v has a scissor (%v) and should not", i, elem.Scissor)
+			}
 		}
 	}
 }

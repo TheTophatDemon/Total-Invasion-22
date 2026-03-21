@@ -3,6 +3,7 @@ package ui
 import (
 	"math"
 
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -44,6 +45,7 @@ type Element struct {
 	AnimPlayer                comps.AnimationPlayer
 	BgTexture                 *textures.Texture
 	BgMesh                    *geom.Mesh
+	Scissor                   math2.Rect
 	text                      string
 	textMesh                  *geom.Mesh
 	textConfig                maybe.T[TextConfig]
@@ -340,6 +342,17 @@ func (el *Element) Render(context *render.Context) {
 		return
 	}
 	failure.CheckOpenGLError()
+
+	if el.Scissor.Width > 0 && el.Scissor.Height > 0 {
+		gl.Enable(gl.SCISSOR_TEST)
+		_, scrHeight := engine.ScreenSize()
+		gl.Scissor(int32(el.Scissor.X), int32(scrHeight)-int32(el.Scissor.Y)-int32(el.Scissor.Height), int32(el.Scissor.Width), int32(el.Scissor.Height))
+		failure.CheckOpenGLError()
+		defer func() {
+			gl.Disable(gl.SCISSOR_TEST)
+			failure.CheckOpenGLError()
+		}()
+	}
 
 	shaders.UIShader.Use()
 	failure.CheckOpenGLError()
