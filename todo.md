@@ -1,9 +1,9 @@
 # TODO
 - Menus
+  - Add background to menus to make them more visible
   - Slider improvements
     - Visual polish
   - Fix mouse sensitivity assignment
-  - Add background to menus to make them more visible
   - Make language switch in real time
   - Keybind menu
     - Translation

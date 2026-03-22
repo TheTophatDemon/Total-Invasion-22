@@ -54,6 +54,12 @@ type Slice struct {
 
 // Retrieves 9 rectangles representing the borders and center of the slice.
 func (slice Slice) NinePatchRects() [SliceIndexCount]math2.Rect {
+	if slice.Center == (math2.Rect{}) {
+		// No nine patches, just return the whole rectangle
+		return [SliceIndexCount]math2.Rect{
+			SliceCenter: slice.Bounds,
+		}
+	}
 	return [SliceIndexCount]math2.Rect{
 		SliceTopLeft: {
 			X:      slice.Bounds.X,

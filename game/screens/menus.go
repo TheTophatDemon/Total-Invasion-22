@@ -150,7 +150,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 	menu.background = ui.NewBox(ui.Transform{
 		Depth: 1,
 	}, cache.GetTexture("assets/textures/ui/menu_background.png"))
-	menu.background.BgColor = maybe.Some(color.White.WithAlpha(0.5))
+	menu.background.BgColor = maybe.Some(color.White.WithAlpha(0.75))
 
 	return menu
 }

@@ -371,9 +371,14 @@ func (el *Element) Render(context *render.Context) {
 		var ninePatchSlice textures.Slice
 		if el.BgTexture != nil {
 			ninePatchSlice = el.BgTexture.FindSlice("ninePatch")
+			if ninePatchSlice == (textures.Slice{}) {
+				ninePatchSlice.Bounds = el.BgTexture.Rect()
+			}
+		} else {
+			ninePatchSlice.Bounds = math2.Rect{Width: 1, Height: 1}
 		}
 		boxSize := el.BgMesh.BoundingBox().Size()
-		displacement := el.getBoxDisplacement()
+		displacement := el.BgMesh.BoundingBox().Min.Vec2().Add(math2.ElemMul2(boxSize.Vec2(), mgl32.Vec2(el.transform.Origin))).Mul(-1.0)
 
 		patches := ninePatchSlice.NinePatchRects()
 		innerWidth := el.Size()[0] - patches[textures.SliceLeftMiddle].Width - patches[textures.SliceRightMiddle].Width
@@ -387,22 +392,24 @@ func (el *Element) Render(context *render.Context) {
 
 			if el.BgTexture != nil {
 				el.BgTexture.Bind()
-				// texRect := el.BgTexture.Rect()
+				texRect := el.BgTexture.Rect()
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 				animFrame := el.AnimPlayer.FrameUV()
-				// _ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{
-				// 	animFrame.X + (patch.X/texRect.Width)*animFrame.Width,
-				// 	animFrame.Y + (patch.Y/texRect.Height)*animFrame.Height,
-				// 	(patch.Width / texRect.Width) * animFrame.Width,
-				// 	(patch.Height / texRect.Height) * animFrame.Height,
-				// })
-				_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, animFrame.Vec4())
+				_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{
+					animFrame.X + (patch.X/texRect.Width)*animFrame.Width,
+					animFrame.Y + animFrame.Height - ((patch.Y / texRect.Height) * animFrame.Height),
+					(patch.Width / texRect.Width) * animFrame.Width,
+					(patch.Height / texRect.Height) * animFrame.Height,
+				})
+				// _ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, animFrame.Vec4())
 			} else {
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
 			}
 			failure.CheckOpenGLError()
 
-			var matrix mgl32.Mat4 = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
+			var matrix mgl32.Mat4 = mgl32.Ident4()
+
+			matrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0).Mul4(matrix)
 
 			var width, height float32
 			switch textures.SliceIndex(i) {
@@ -418,7 +425,7 @@ func (el *Element) Render(context *render.Context) {
 				width = innerWidth
 				height = innerHeight
 			}
-			matrix = mgl32.Scale3D(width/boxSize[0], height/boxSize[1], 1.0)
+			matrix = mgl32.Scale3D(width/boxSize[0], height/boxSize[1], 1.0).Mul4(matrix)
 
 			var xOff float32
 			switch textures.SliceIndex(i) {
