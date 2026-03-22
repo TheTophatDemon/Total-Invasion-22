@@ -32,72 +32,78 @@ type Layer struct {
 	FlippedViewRange [2]int // The range of yaw angles at which this layer will be shown flipped horizontally, in degrees.
 }
 
+type SliceIndex int
+
+const (
+	SliceTopLeft = iota
+	SliceTopMiddle
+	SliceTopRight
+	SliceRightMiddle
+	SliceBottomRight
+	SliceBottomMiddle
+	SliceBottomLeft
+	SliceLeftMiddle
+	SliceCenter
+	SliceIndexCount
+)
+
 type Slice struct {
 	Data           string
 	Bounds, Center math2.Rect
 }
 
 // Retrieves 9 rectangles representing the borders and center of the slice.
-func (slice Slice) NinePatchRects() [9]math2.Rect {
-	return [9]math2.Rect{
-		// Top left
-		{
+func (slice Slice) NinePatchRects() [SliceIndexCount]math2.Rect {
+	return [SliceIndexCount]math2.Rect{
+		SliceTopLeft: {
 			X:      slice.Bounds.X,
 			Y:      slice.Bounds.Y,
 			Width:  slice.Center.X,
 			Height: slice.Center.Y,
 		},
-		// Top middle
-		{
+		SliceTopMiddle: {
 			X:      slice.Bounds.X + slice.Center.X,
 			Y:      slice.Bounds.Y,
 			Width:  slice.Center.Width,
 			Height: slice.Center.Y,
 		},
-		// Top right
-		{
+		SliceTopRight: {
 			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
 			Y:      slice.Bounds.Y,
 			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
 			Height: slice.Center.Y,
 		},
-		// Right middle
-		{
+		SliceRightMiddle: {
 			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
 			Y:      slice.Bounds.Y + slice.Center.Y,
 			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
 			Height: slice.Center.Height,
 		},
-		// Bottom right
-		{
+		SliceBottomRight: {
 			X:      slice.Bounds.X + slice.Center.X + slice.Center.Width,
 			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
 			Width:  slice.Bounds.Width - slice.Center.Width - slice.Center.X,
-			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+			Height: slice.Bounds.Height - slice.Center.Height - slice.Center.Y,
 		},
-		// Bottom middle
-		{
+		SliceBottomMiddle: {
 			X:      slice.Bounds.X + slice.Center.X,
 			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
 			Width:  slice.Center.Width,
-			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+			Height: slice.Bounds.Height - slice.Center.Height - slice.Center.Y,
 		},
-		// Bottom left
-		{
+		SliceBottomLeft: {
 			X:      slice.Bounds.X,
 			Y:      slice.Bounds.Y + slice.Center.Y + slice.Center.Height,
 			Width:  slice.Center.X,
-			Height: slice.Bounds.Y - slice.Center.Height - slice.Center.Y,
+			Height: slice.Bounds.Height - slice.Center.Height - slice.Center.Y,
 		},
-		// Left middle
-		{
+		SliceLeftMiddle: {
 			X:      slice.Bounds.X,
 			Y:      slice.Bounds.Y + slice.Center.Y,
 			Width:  slice.Center.Width,
 			Height: slice.Center.Y,
 		},
-		// True middle
-		{
+		SliceCenter: {
 			X:      slice.Bounds.X + slice.Center.X,
 			Y:      slice.Bounds.Y + slice.Center.Y,
 			Width:  slice.Center.Width,
