@@ -1,13 +1,12 @@
 # TODO
 - Menus
-  - Add background to menus to make them more visible
-  - Slider improvements
-    - Visual polish
+  - Fix slider knob sprites
+  - Clean up 9 patch code
+  - Tween menu background width
   - Fix mouse sensitivity assignment
   - Make language switch in real time
-  - Keybind menu
-    - Translation
-  - Resolution change confirmation?
+  - Translate keybind menu
+  - Resolution change confirmation
   - Exit screen
   - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes

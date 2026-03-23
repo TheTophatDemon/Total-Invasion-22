@@ -97,7 +97,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 		Size:     mgl32.Vec2{64.0, 16.0},
 		Origin:   ui.Ratios{0.5, 1.0},
 		Depth:    10,
-		Anchor:   ui.Ratios{0.5, 0.0},
+		Anchor:   ui.Ratios{0.0, 0.0},
 		Position: mgl32.Vec2{0.0, menu.position[1]},
 	}, cache.GetTexture("assets/textures/ui/scroll_arrow.png"))
 
@@ -105,7 +105,7 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 		Size:     mgl32.Vec2{64.0, 16.0},
 		Origin:   ui.Ratios{0.5, 1.0},
 		Depth:    10,
-		Anchor:   ui.Ratios{0.5, 0.0},
+		Anchor:   ui.Ratios{0.0, 0.0},
 		Position: mgl32.Vec2{0.0, float32(settings.Current.WindowHeight) - menu.menuSpacing},
 	}, cache.GetTexture("assets/textures/ui/scroll_arrow_down.png"))
 
@@ -262,9 +262,9 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		maxWidth = max(maxWidth, elem.Width())
 	}
 	queue.ClearScissor()
-	menu.background.SetPosition(menu.position.Add(mgl32.Vec2{0.0, -menu.menuSpacing}))
+	menu.background.SetPosition(menu.position.Add(mgl32.Vec2{-menu.menuSpacing / 2.0, -menu.menuSpacing}))
 	menu.background.SetSize(mgl32.Vec2{
-		maxWidth + menu.menuSpacing*2.0,
+		maxWidth + menu.menuSpacing*2.5,
 		scissorHeight + menu.menuSpacing*2.0,
 	})
 	queue.Add(&menu.background)
@@ -274,8 +274,9 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	// Draw scroller arrows
 	scrollerValue, _, _ := menu.blinker.Update(deltaTime)
 	showScrollers := scrollerValue > 0.9
+	scrollerX := menu.background.Position()[0] + (menu.background.Width() / 2.0)
 	if moreAbove {
-		menu.scrollUpButton.SetPosition(mgl32.Vec2{0.0, menu.position[1] - margin})
+		menu.scrollUpButton.SetPosition(mgl32.Vec2{scrollerX, menu.position[1] - margin})
 		if menu.scrollUpButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollUpButton.BgColor = maybe.Some(color.Yellow)
 			if input.AnyMouseButtonJustPressed() {
@@ -290,7 +291,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	if moreBelow {
-		menu.scrollDownButton.SetPosition(mgl32.Vec2{0.0, scissorBottomY - margin})
+		menu.scrollDownButton.SetPosition(mgl32.Vec2{scrollerX, scissorBottomY - margin})
 		if menu.scrollDownButton.OnScreenBox().ContainsPoint(input.MousePosition()) {
 			menu.scrollDownButton.BgColor = maybe.Some(color.Yellow)
 			if input.AnyMouseButtonJustPressed() {
@@ -323,7 +324,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if menu.menuSelection >= 0 {
 		// Draw cursor in front of menu items
 		target := mgl32.Vec2{
-			menu.position[0],
+			menu.position[0] + (menu.cursor.Width() / 4.0),
 			menu.menuItems[menu.menuSelection].Element().Position()[1],
 		}
 		diff := target.Sub(menu.cursor.Position())

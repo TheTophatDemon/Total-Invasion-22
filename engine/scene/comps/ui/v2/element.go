@@ -401,7 +401,6 @@ func (el *Element) Render(context *render.Context) {
 					(patch.Width / texRect.Width) * animFrame.Width,
 					(patch.Height / texRect.Height) * animFrame.Height,
 				})
-				// _ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, animFrame.Vec4())
 			} else {
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
 			}

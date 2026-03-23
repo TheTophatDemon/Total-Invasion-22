@@ -61,8 +61,7 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{128, 8},
-	}, nil)
-	sl.boxSlider.BgColor = maybe.Some(color.Color{R: 0.5, G: 0.5, B: 0.5, A: 1.0})
+	}, cache.GetTexture("assets/textures/ui/slider_background.png"))
 
 	knobTex := cache.GetTexture("assets/textures/ui/slider_knob.png")
 	sl.boxKnob = ui.NewBox(ui.Transform{
