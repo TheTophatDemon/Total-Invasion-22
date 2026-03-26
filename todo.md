@@ -1,8 +1,10 @@
 # TODO
 - Menus
-  - Fix slider knob sprites
   - Clean up 9 patch code
+    - Unit tests?
+  - Fix scroll buttons not going the full way down
   - Tween menu background width
+  - Fix menu layout at low resolution
   - Fix mouse sensitivity assignment
   - Make language switch in real time
   - Translate keybind menu

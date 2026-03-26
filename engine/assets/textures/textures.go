@@ -55,9 +55,17 @@ type Slice struct {
 // Retrieves 9 rectangles representing the borders and center of the slice.
 func (slice Slice) NinePatchRects() [SliceIndexCount]math2.Rect {
 	if slice.Center == (math2.Rect{}) {
-		// No nine patches, just return the whole rectangle
+		// No nine patches, just return the whole rectangle as the center with 0 area patches on the sides and corners.
 		return [SliceIndexCount]math2.Rect{
-			SliceCenter: slice.Bounds,
+			SliceTopLeft:      {X: slice.Bounds.X, Y: slice.Bounds.Y},
+			SliceTopMiddle:    {X: slice.Bounds.X, Y: slice.Bounds.Y, Width: slice.Bounds.Width},
+			SliceTopRight:     {X: slice.Bounds.X + slice.Bounds.Width, Y: slice.Bounds.Y},
+			SliceRightMiddle:  {X: slice.Bounds.X + slice.Bounds.Width, Y: slice.Bounds.Y, Height: slice.Bounds.Height},
+			SliceBottomRight:  {X: slice.Bounds.X + slice.Bounds.Width, Y: slice.Bounds.Y + slice.Bounds.Height},
+			SliceBottomMiddle: {X: slice.Bounds.X, Y: slice.Bounds.Y + slice.Bounds.Height, Width: slice.Bounds.Width},
+			SliceBottomLeft:   {X: slice.Bounds.X, Y: slice.Bounds.Y + slice.Bounds.Height},
+			SliceLeftMiddle:   {X: slice.Bounds.X, Y: slice.Bounds.Y, Height: slice.Bounds.Height},
+			SliceCenter:       slice.Bounds,
 		}
 	}
 	return [SliceIndexCount]math2.Rect{

@@ -49,9 +49,11 @@ type Element struct {
 	text                      string
 	textMesh                  *geom.Mesh
 	textConfig                maybe.T[TextConfig]
-	boxMatrix, textMatrix     mgl32.Mat4
+	textMatrix                mgl32.Mat4
+	sliceMatrices             [textures.SliceIndexCount]mgl32.Mat4
 	transform                 Transform
 	transformClean, textClean bool
+	onScreenBox               math2.Rect
 }
 
 func NewBox(transform Transform, texture *textures.Texture) Element {
@@ -96,61 +98,98 @@ func (el *Element) SetTextConfig(config TextConfig) {
 	}
 }
 
-// Gets a displacement vector that goes from the element's origin to the BgMesh's origin
-func (el *Element) getBoxDisplacement() mgl32.Vec2 {
-	var mesh = el.BgMesh
-	if mesh == nil {
-		mesh = cache.QuadMesh
-	}
-	bbox := mesh.BoundingBox()
-	return bbox.Min.Vec2().Add(math2.ElemMul2(bbox.Size().Vec2(), mgl32.Vec2(el.transform.Origin))).Mul(-1.0)
-}
-
-// Gets a displacement vector that goes from the element's origin to the text mesh's origin
-func (el *Element) getTextDisplacement() mgl32.Vec2 {
-	return math2.ElemMul2(el.transform.Size, mgl32.Vec2(el.transform.Origin)).Mul(-1.0)
-}
-
-func (el *Element) BgMatrix() mgl32.Mat4 {
+func (el *Element) recalculateMatrices() {
 	if !el.transformClean {
+		minX := float32(math.MaxFloat32)
+		minY := float32(math.MaxFloat32)
+		maxX := -minX
+		maxY := -minY
+
 		// Calculate bg matrix
-		{
-			// Displace by origin
-			displacement := el.getBoxDisplacement()
-			el.boxMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
-
-			// Rotate
-			if el.Rotation() != 0 {
-				el.boxMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.boxMatrix)
+		if el.BgMesh != nil {
+			var ninePatchSlice textures.Slice
+			if el.BgTexture != nil {
+				ninePatchSlice = el.BgTexture.FindSlice("ninePatch")
+				if ninePatchSlice == (textures.Slice{}) {
+					ninePatchSlice.Bounds = el.BgTexture.Rect()
+				}
+			} else {
+				ninePatchSlice.Bounds = math2.Rect{Width: 1, Height: 1}
 			}
+			boxSize := el.BgMesh.BoundingBox().Size()
+			displacement := el.BgMesh.BoundingBox().Min.Vec2().Add(math2.ElemMul2(boxSize.Vec2(), mgl32.Vec2(el.transform.Origin))).Mul(-1.0)
 
-			// Scale
-			mesh := el.BgMesh
-			if mesh == nil {
-				mesh = cache.QuadMesh
-			}
-			boxSize := mesh.BoundingBox().Size()
-			el.boxMatrix = mgl32.Scale3D(el.Size()[0]/boxSize[0], el.Size()[1]/boxSize[1], 1.0).Mul4(el.boxMatrix)
-
-			// Apply shear
-			if el.Shear() != (mgl32.Vec2{}) {
-				el.boxMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.boxMatrix)
-			}
-
-			// Translate
+			patches := ninePatchSlice.NinePatchRects()
+			innerWidth := el.Size()[0] - patches[textures.SliceLeftMiddle].Width - patches[textures.SliceRightMiddle].Width
+			innerHeight := el.Size()[1] - patches[textures.SliceTopMiddle].Height - patches[textures.SliceBottomMiddle].Height
 			screenW, screenH := engine.ScreenSize()
-			fWidth, fHeight := float32(screenW), float32(screenH)
-			el.boxMatrix = mgl32.Translate3D(
-				el.Position()[0]+(el.Anchor()[0]*fWidth),
-				el.Position()[1]+(el.Anchor()[1]*fHeight),
-				el.Depth(),
-			).Mul4(el.boxMatrix)
+			fScreenWidth, fScreenHeight := float32(screenW), float32(screenH)
+			for i, patch := range patches {
+				sliceIndex := textures.SliceIndex(i)
+
+				var matrix mgl32.Mat4 = mgl32.Ident4()
+
+				matrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0).Mul4(matrix)
+
+				var width, height float32
+				switch sliceIndex {
+				case textures.SliceTopLeft, textures.SliceTopRight, textures.SliceBottomRight, textures.SliceBottomLeft:
+					width, height = patch.Width, patch.Height
+				case textures.SliceLeftMiddle, textures.SliceRightMiddle:
+					width = patch.Width
+					height = innerHeight
+				case textures.SliceTopMiddle, textures.SliceBottomMiddle:
+					width = innerWidth
+					height = patch.Height
+				case textures.SliceCenter:
+					width = innerWidth
+					height = innerHeight
+				}
+				matrix = mgl32.Scale3D(width/boxSize[0], height/boxSize[1], 1.0).Mul4(matrix)
+
+				var xOff float32
+				switch sliceIndex {
+				case textures.SliceTopMiddle, textures.SliceCenter, textures.SliceBottomMiddle:
+					xOff = patches[textures.SliceLeftMiddle].Width
+				case textures.SliceTopRight, textures.SliceRightMiddle, textures.SliceBottomRight:
+					xOff = patches[textures.SliceLeftMiddle].Width + innerWidth
+				}
+
+				var yOff float32
+				switch sliceIndex {
+				case textures.SliceLeftMiddle, textures.SliceCenter, textures.SliceRightMiddle:
+					yOff = patches[textures.SliceTopMiddle].Height
+				case textures.SliceBottomLeft, textures.SliceBottomMiddle, textures.SliceBottomRight:
+					yOff = patches[textures.SliceTopMiddle].Height + innerHeight
+				}
+
+				matrix = mgl32.Translate3D(xOff, yOff, 0.0).Mul4(matrix)
+
+				// Rotate
+				if el.Rotation() != 0 {
+					matrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(matrix)
+				}
+
+				// Apply shear
+				if el.Shear() != (mgl32.Vec2{}) {
+					matrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(matrix)
+				}
+
+				// Translate
+				matrix = mgl32.Translate3D(
+					el.Position()[0]+(el.Anchor()[0]*fScreenWidth),
+					el.Position()[1]+(el.Anchor()[1]*fScreenHeight),
+					el.Depth(),
+				).Mul4(matrix)
+
+				el.sliceMatrices[sliceIndex] = matrix
+			}
 		}
 
 		// Calculate text matrix
 		{
 			// Displace by origin
-			displacement := el.getTextDisplacement()
+			displacement := math2.ElemMul2(el.transform.Size, mgl32.Vec2(el.transform.Origin)).Mul(-1.0)
 			el.textMatrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0)
 
 			// Rotate
@@ -171,16 +210,31 @@ func (el *Element) BgMatrix() mgl32.Mat4 {
 				el.Position()[1]+(el.Anchor()[1]*fHeight),
 				el.Depth(),
 			).Mul4(el.textMatrix)
+
+			// Calculate mesh boundaries
+			for _, vert := range [...]mgl32.Vec3{
+				mgl32.Vec3{},
+				el.transform.Size.Vec3(0.0),
+				mgl32.Vec3{el.transform.Size[0]},
+				mgl32.Vec3{0.0, el.transform.Size[1]},
+			} {
+				vert = mgl32.TransformCoordinate(vert, el.textMatrix)
+				minX = min(minX, vert[0])
+				maxX = max(maxX, vert[0])
+				minY = min(minY, vert[1])
+				maxY = max(maxY, vert[1])
+			}
+		}
+
+		el.onScreenBox = math2.Rect{
+			X:      minX,
+			Y:      minY,
+			Width:  maxX - minX,
+			Height: maxY - minY,
 		}
 
 		el.transformClean = true
 	}
-	return el.boxMatrix
-}
-
-func (el *Element) TextMatrix() mgl32.Mat4 {
-	el.BgMatrix()
-	return el.textMatrix
 }
 
 func (el *Element) TextMesh() *geom.Mesh {
@@ -194,23 +248,8 @@ func (el *Element) TextMesh() *geom.Mesh {
 
 // Returns the rectangle that the element occupies on the screen
 func (el *Element) OnScreenBox() math2.Rect {
-	minX := float32(math.MaxFloat32)
-	minY := float32(math.MaxFloat32)
-	maxX := float32(-math.MaxFloat32)
-	maxY := float32(-math.MaxFloat32)
-	for _, pos := range cache.QuadMesh.Verts().Pos {
-		pos = mgl32.TransformCoordinate(pos, el.BgMatrix())
-		minX = min(pos[0], minX)
-		minY = min(pos[1], minY)
-		maxX = max(pos[0], maxX)
-		maxY = max(pos[1], maxY)
-	}
-	return math2.Rect{
-		X:      minX,
-		Y:      minY,
-		Width:  maxX - minX,
-		Height: maxY - minY,
-	}
+	el.recalculateMatrices()
+	return el.onScreenBox
 }
 
 func (el *Element) Transform() Transform {
@@ -341,6 +380,8 @@ func (el *Element) Render(context *render.Context) {
 	if el.BgMesh == nil && el.TextMesh() == nil {
 		return
 	}
+	el.recalculateMatrices()
+
 	failure.CheckOpenGLError()
 
 	if el.Scissor.Width > 0 && el.Scissor.Height > 0 {
@@ -397,7 +438,7 @@ func (el *Element) Render(context *render.Context) {
 				animFrame := el.AnimPlayer.FrameUV()
 				_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{
 					animFrame.X + (patch.X/texRect.Width)*animFrame.Width,
-					animFrame.Y + animFrame.Height - ((patch.Y / texRect.Height) * animFrame.Height),
+					animFrame.Y - ((patch.Y / texRect.Height) * animFrame.Height),
 					(patch.Width / texRect.Width) * animFrame.Width,
 					(patch.Height / texRect.Height) * animFrame.Height,
 				})
@@ -479,11 +520,9 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, el.AnimPlayer.FrameUV().Vec4())
 		failure.CheckOpenGLError()
 
-		textMatrix := el.TextMatrix()
-
 		// Draw drop shadow
 		if !textConfig.DisableShadow {
-			shadowMatrix := mgl32.Translate3D(4.0, 4.0, 0.0).Mul4(textMatrix)
+			shadowMatrix := mgl32.Translate3D(4.0, 4.0, 0.0).Mul4(el.textMatrix)
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
 			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textShadowColor.Vector())
 			failure.CheckOpenGLError()
@@ -493,7 +532,7 @@ func (el *Element) Render(context *render.Context) {
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textConfig.Color.Or(color.White).Vector())
 		failure.CheckOpenGLError()
 
-		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, textMatrix)
+		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.textMatrix)
 		failure.CheckOpenGLError()
 
 		el.TextMesh().DrawAll()
