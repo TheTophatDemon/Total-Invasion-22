@@ -1,17 +1,14 @@
 # TODO
 - Menus
-  - Clean up 9 patch code
-    - Unit tests?
-  - Fix scroll buttons not going the full way down
-  - Tween menu background width
-  - Fix menu layout at low resolution
-  - Fix mouse sensitivity assignment
-  - Make language switch in real time
   - Translate keybind menu
+  - Fix mouse sensitivity assignment
+  - Fix menu layout at low resolution
+  - Make language switch in real time
   - Resolution change confirmation
   - Exit screen
-  - Modify loading screen graphic to be more on-model
+- Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
+- Pressing E on Geoffrey doesn't show the message anymore?
 - Fix jittering in corners
 - Saving / checkpoints
 - Make enemies able to hear player behind walls as long as space is connected.

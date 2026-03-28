@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -67,6 +68,12 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 
 func (scr *IntroScreen) Enter() {}
 func (scr *IntroScreen) Exit()  {}
+func (scr *IntroScreen) Bounds() math2.Rect {
+	return math2.Rect{
+		Width:  float32(settings.Current.WindowWidth),
+		Height: float32(settings.Current.WindowHeight),
+	}
+}
 
 func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	newY, _ := scr.titleAnim.Update(deltaTime)

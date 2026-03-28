@@ -270,6 +270,14 @@ func (el *Element) Position() mgl32.Vec2 {
 	return el.transform.Position
 }
 
+func (el *Element) X() float32 {
+	return el.transform.Position[0]
+}
+
+func (el *Element) Y() float32 {
+	return el.transform.Position[1]
+}
+
 func (el *Element) Rotation() math2.Radians {
 	return el.transform.Rotation
 }

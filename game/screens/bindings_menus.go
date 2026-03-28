@@ -75,10 +75,10 @@ func (item *bindingItem) Input(inputType MenuInputType, menu *Menu) {
 }
 
 func (item *bindingItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	bindingText := "___"
 	if item.clear {
 		item.SetText(fmt.Sprintf(settings.Localize("clearBinding"), item.displayNumber))
 	} else {
+		bindingText := "___"
 		if item.binding != nil && *item.binding != nil {
 			bindingText = settings.Localize((*item.binding).LocalizationKey())
 		} else if input.CaptureExtraData() == item {
@@ -104,7 +104,7 @@ func (menu *BindingsMenu) Init(app engine.Observer, parent ui.Screen) *BindingsM
 		}
 		allItems = append(allItems, &actionItem{
 			MenuItem: MenuItem{
-				element: ui.NewText(ui.Transform{}, "", ui.TextConfig{}),
+				element: ui.NewText(ui.Transform{}, "?", ui.TextConfig{}),
 			},
 			bindingName: settings.Localize(strings.ToLower(string(field.Name[0])) + field.Name[1:]),
 			action:      fieldValue.Addr().Interface().(*settings.Action),
@@ -134,13 +134,13 @@ func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action 
 			displayNumber: displayNumber,
 			binding:       &action[i],
 		}
-		item.InitUnlocalized("", nil)
+		item.InitUnlocalized("?", nil)
 		clearItem := &bindingItem{
 			displayNumber: displayNumber,
 			binding:       &action[i],
 			clear:         true,
 		}
-		clearItem.InitUnlocalized("", nil)
+		clearItem.InitUnlocalized("?", nil)
 		allItems = append(allItems, item, clearItem)
 	}
 	menu.Menu.Init(app, allItems, parent)
