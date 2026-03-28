@@ -1,10 +1,10 @@
 # TODO
 - Menus
-  - Translate keybind menu
   - Fix mouse sensitivity assignment
   - Fix menu layout at low resolution
   - Make language switch in real time
   - Resolution change confirmation
+  - Separate Pause binding
   - Exit screen
 - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
