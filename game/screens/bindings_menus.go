@@ -74,17 +74,31 @@ func (item *bindingItem) Input(inputType MenuInputType, menu *Menu) {
 	}
 }
 
+func (item *bindingItem) blankBindingString() string {
+	return fmt.Sprintf(settings.Localize("setBindingFor"), item.displayNumber, "___")
+}
+
+func (item *bindingItem) captureBindingString() string {
+	return fmt.Sprintf(settings.Localize("setBindingFor"), item.displayNumber, settings.Localize("inputPrompt"))
+}
+
+func (item *bindingItem) bindingString() string {
+	return fmt.Sprintf(settings.Localize("setBindingFor"), item.displayNumber, settings.Localize((*item.binding).LocalizationKey()))
+}
+
+func (item *bindingItem) clearBindingString() string {
+	return fmt.Sprintf(settings.Localize("clearBinding"), item.displayNumber)
+}
+
 func (item *bindingItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if item.clear {
-		item.SetText(fmt.Sprintf(settings.Localize("clearBinding"), item.displayNumber))
+		item.SetText(item.clearBindingString())
+	} else if item.binding != nil && *item.binding != nil {
+		item.SetText(item.bindingString())
+	} else if input.CaptureExtraData() == item {
+		item.SetText(item.captureBindingString())
 	} else {
-		bindingText := "___"
-		if item.binding != nil && *item.binding != nil {
-			bindingText = settings.Localize((*item.binding).LocalizationKey())
-		} else if input.CaptureExtraData() == item {
-			bindingText = settings.Localize("inputPrompt")
-		}
-		item.SetText(fmt.Sprintf(settings.Localize("setBindingFor"), item.displayNumber, bindingText))
+		item.SetText(item.blankBindingString())
 	}
 	item.FitText()
 	queue.Add(&item.element)
@@ -134,13 +148,13 @@ func (menu *BindingEditMenu) Init(app engine.Observer, parent ui.Screen, action 
 			displayNumber: displayNumber,
 			binding:       &action[i],
 		}
-		item.InitUnlocalized("?", nil)
+		item.InitUnlocalized(item.captureBindingString(), nil)
 		clearItem := &bindingItem{
 			displayNumber: displayNumber,
 			binding:       &action[i],
 			clear:         true,
 		}
-		clearItem.InitUnlocalized("?", nil)
+		clearItem.InitUnlocalized(item.clearBindingString(), nil)
 		allItems = append(allItems, item, clearItem)
 	}
 	menu.Menu.Init(app, allItems, parent)
