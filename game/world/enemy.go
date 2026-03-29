@@ -70,6 +70,7 @@ var enemyTypeConfigFuncs = [game.EnemyTypeCount]func(enemy *Enemy) enemyConfig{
 	game.EnemyTypeFireWraith:   configureFireWraith,
 	game.EnemyTypeMotherWraith: configureMotherWraith,
 	game.EnemyTypeDummkopf:     configureDummkopf,
+	game.EnemyTypePrisrak:      configurePrisrak,
 }
 
 var _ HasActor = (*Enemy)(nil)
@@ -84,6 +85,8 @@ func SpawnEnemyFromTE3(ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
 		variant = game.EnemyTypeMotherWraith
 	case "dummkopf":
 		variant = game.EnemyTypeDummkopf
+	case "prisrak":
+		variant = game.EnemyTypePrisrak
 	default:
 		variant = game.EnemyTypeWraith
 	}

@@ -123,7 +123,7 @@ func configureFireWraith(enemy *Enemy) (params enemyConfig) {
 	}
 
 	enemy.actor.MaxSpeed = 6.0
-	enemy.actor.MaxHealth = 150.0
+	enemy.actor.MaxHealth = 150.0 //40
 
 	return
 }
@@ -406,4 +406,53 @@ func dummkopfUpdateAttack(enemy *Enemy, deltaTime float32) {
 	} else if enemy.AnimPlayer.IsPlayingAnim(attackEndAnim) && enemy.AnimPlayer.IsAtEnd() {
 		enemy.changeState(&enemy.chaseState)
 	}
+}
+
+/**============================================
+ *               Prisrak
+ *=============================================**/
+
+func configurePrisrak(enemy *Enemy) (params enemyConfig) {
+	params.bloodColor = color.Yellow
+	params.texture = cache.GetTexture("assets/textures/sprites/prisrak.png")
+	walkAnim, _ := params.texture.GetAnimation("float;front")
+	attackAnim, _ := params.texture.GetAnimation("attack;front")
+	stunAnim, _ := params.texture.GetAnimation("hurt;front")
+	dieAnim, _ := params.texture.GetAnimation("die;front")
+	params.defaultAnim = walkAnim
+
+	enemy.idleState = enemyState{
+		anim:       walkAnim,
+		stopAnim:   true,
+		leaveSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_greeting.wav"),
+	}
+	enemy.chaseState = enemyState{
+		anim:       walkAnim,
+		enterFunc:  fireWraithEnterChase,
+		updateFunc: fireWraithUpdateChase,
+	}
+	enemy.stunState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_hurt.wav"),
+		anim:       stunAnim,
+	}
+	enemy.attackState = enemyState{
+		anim:       attackAnim,
+		enterFunc:  fireWraithEnterAttack,
+		updateFunc: fireWraithUpdateAttack,
+	}
+	enemy.dieState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_die.wav"),
+		anim:       dieAnim,
+	}
+
+	reviveAnim, _ := params.texture.GetAnimation("revive;front")
+	enemy.reviveState = enemyState{
+		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_revive.wav"),
+		anim:       reviveAnim,
+	}
+
+	enemy.actor.MaxSpeed = 4.0
+	enemy.actor.MaxHealth = 225.0
+
+	return
 }

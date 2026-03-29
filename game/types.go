@@ -74,6 +74,7 @@ const (
 	EnemyTypeFireWraith
 	EnemyTypeMotherWraith
 	EnemyTypeDummkopf
+	EnemyTypePrisrak
 	EnemyTypeCount
 )
 
