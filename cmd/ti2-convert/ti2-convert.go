@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/png"
 	"math"
 	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 )
 
@@ -56,7 +59,7 @@ func translateTextureName(category, ti2Name string) string {
 			"dopefish":             "dopefish_statue",
 			"chickencannon":        "chicken_cannon",
 			"grenadelauncher":      "grenade_launcher",
-			"plasmavials":          "plasma_vials",
+			"plasmavial":           "plasma_vials",
 			"exitsign":             "exit_sign",
 			"boringarmor":          "boring_armor_stand",
 			"bulletarmor":          "bullet_armor_stand",
@@ -163,14 +166,14 @@ func main() {
 			panic(err)
 		}
 
-		var yaw uint8
+		var yaw int
 		switch flag {
 		case 7: // Panel
-			yaw = uint8(link % 2)
+			yaw = int(link % 2)
 		case 2, 9: // Z-axis doors
 			yaw = 1
 		case 5: // Secret walls
-			yaw = uint8((1 + link) % 4)
+			yaw = int((1 + link) % 4)
 		}
 
 		// Set shape depending on tile type
@@ -286,7 +289,7 @@ func main() {
 				Tile: te3.Tile{
 					ShapeID:    te3.ShapeID(modelIndex),
 					TextureIDs: [2]te3.TextureID{te3.TextureID(textureIndex), te3.TextureID(textureIndex)},
-					Yaw:        yaw,
+					Yaw:        uint8(yaw),
 					Pitch:      0,
 				},
 				coords: [3]int{int(x), 1, int(z)},
@@ -359,6 +362,7 @@ func main() {
 		entsToAdd[i].Position[2] -= float32(minZ) * te3.GridSpacing
 	}
 
+	cameraPosition := mgl32.Vec3{}
 	for range entCount {
 		tiScanner.Scan()
 		tokens := strings.Split(tiScanner.Text(), ",")
@@ -406,20 +410,22 @@ func main() {
 		}
 
 		shouldBeSprite := false
-		strippedTexName := removeTextureTags(tokens[3])
+		texPath := translateTextureName("sprites", tokens[3])
+		texName := strings.TrimSuffix(filepath.Base(texPath), ".png")
 
 		switch entType {
 		case 0: // Player
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/segan.png"
 			ent.Properties["type"] = "player"
+			cameraPosition = mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, 12.0, 4.0})
 		case 1: // Prop
 			ent.Properties["type"] = "prop"
-			ent.Properties["prop"] = strippedTexName
+			ent.Properties["prop"] = texName
 			shouldBeSprite = true
 		case 2, 3: // Item or weapon
 			ent.Properties["type"] = "item"
-			ent.Properties["item"] = strippedTexName
+			ent.Properties["item"] = texName
 			shouldBeSprite = true
 		case 4: // Wraith
 			ent.Properties["type"] = "enemy"
@@ -434,7 +440,8 @@ func main() {
 		case 6, 14: // Dummkopf
 			ent.Properties["type"] = "enemy"
 			ent.Properties["enemy"] = "dummkopf"
-			ent.Properties["name"] = "dummkopf"
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/dummkopf.png"
 		case 7: // Mother wraith / Caco wraith
 			ent.Properties["type"] = "enemy"
 			ent.Properties["enemy"] = "mother wraith"
@@ -443,7 +450,8 @@ func main() {
 		case 8: // Prisrak
 			ent.Properties["type"] = "enemy"
 			ent.Properties["enemy"] = "prisrak"
-			ent.Properties["name"] = "prisrak"
+			ent.Display = te3.ENT_DISPLAY_SPRITE
+			ent.Texture = "assets/textures/sprites/prisrak.png"
 		case 9: // Providence
 			ent.Properties["type"] = "enemy"
 			ent.Properties["enemy"] = "providence"
@@ -474,22 +482,23 @@ func main() {
 		}
 
 		if shouldBeSprite {
-			texPath := translateTextureName("sprites", strippedTexName)
 			if imgFile, err := os.Open(texPath); err == nil {
 				defer imgFile.Close()
 
 				ent.Display = te3.ENT_DISPLAY_SPRITE
 
-				// Scale according to image dimensions
-				img, _, err := image.Decode(imgFile)
-				if err != nil {
-					panic(err)
+				if !strings.HasSuffix(texPath, "geoffrey.png") {
+					// Scale according to image dimensions
+					img, _, err := image.Decode(imgFile)
+					if err != nil {
+						panic(err)
+					}
+					ent.Radius = float32(img.Bounds().Dy()) / 64.0
 				}
-				ent.Radius = float32(img.Bounds().Dy()) / 64.0
 
 				ent.Texture = texPath
 			} else {
-				ent.Properties["name"] = strippedTexName
+				ent.Properties["name"] = texName
 			}
 		}
 
@@ -497,6 +506,10 @@ func main() {
 	}
 
 	te3Map := te3.TE3File{
+		EditorCamera: te3.EditorCamera{
+			Position:    cameraPosition,
+			EulerAngles: mgl32.Vec3{-68.0},
+		},
 		Ents: entsToAdd,
 		Tiles: te3.Tiles{
 			Textures: textureList,

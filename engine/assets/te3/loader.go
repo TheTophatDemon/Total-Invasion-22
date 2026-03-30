@@ -3,11 +3,18 @@ package te3
 import (
 	"log"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
 )
 
+type EditorCamera struct {
+	EulerAngles mgl32.Vec3 `json:"eulerAngles"`
+	Position    mgl32.Vec3 `json:"position"`
+}
+
 type TE3File struct {
-	Meta struct {
+	EditorCamera EditorCamera `json:"editorCamera"`
+	Meta         struct {
 		Editor  string `json:"editor"`
 		Version string `json:"version"`
 	} `json:"meta"`
