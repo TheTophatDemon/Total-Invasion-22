@@ -6,17 +6,28 @@
   - Resolution change confirmation
   - Separate Pause binding
   - Exit screen
+- E1M5
+  - Prisrak
+    - Finish fireball attack
+    - Teleportation
+  - Hanging Skeleton Prop
+  - Sign of Madness
+  - Super Armor
+  - Song
+- TI2 Converter
+  - Automatically set next level
 - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Pressing E on Geoffrey doesn't show the message anymore?
-- Fix jittering in corners
+- Prevent intro sickle from damaging enemies
 - Saving / checkpoints
-- Make enemies able to hear player behind walls as long as space is connected.
-- Player hit noise
-- Chicken cannon secondary attack
 - Game Difficulty Settings
+- Make enemies able to hear player behind walls as long as space is connected.
 - Dialog Cutscene
   - Song
+- Player hit noise
+- Chicken cannon secondary attack
+- Fix jittering in corners
 - Demo end screen
 - Re-record enemy voices
 - Gamepad support (for Steam Deck)
@@ -28,7 +39,6 @@
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
 - Additional Enemies
-  - Prisrak
   - Providence
   - Fundie
   - Banshee
