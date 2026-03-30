@@ -8,7 +8,6 @@
   - Exit screen
 - E1M5
   - Prisrak
-    - Finish fireball attack
     - Teleportation
   - Hanging Skeleton Prop
   - Sign of Madness

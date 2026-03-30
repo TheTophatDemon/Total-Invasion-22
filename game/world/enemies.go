@@ -415,19 +415,19 @@ func dummkopfUpdateAttack(enemy *Enemy, deltaTime float32) {
 func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	params.bloodColor = color.Yellow
 	params.texture = cache.GetTexture("assets/textures/sprites/prisrak.png")
-	walkAnim, _ := params.texture.GetAnimation("float;front")
+	floatAnim, _ := params.texture.GetAnimation("float;front")
 	attackAnim, _ := params.texture.GetAnimation("attack;front")
 	stunAnim, _ := params.texture.GetAnimation("hurt;front")
 	dieAnim, _ := params.texture.GetAnimation("die;front")
-	params.defaultAnim = walkAnim
+	params.defaultAnim = floatAnim
 
 	enemy.idleState = enemyState{
-		anim:       walkAnim,
+		anim:       floatAnim,
 		stopAnim:   true,
 		leaveSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_greeting.wav"),
 	}
 	enemy.chaseState = enemyState{
-		anim:       walkAnim,
+		anim:       floatAnim,
 		enterFunc:  fireWraithEnterChase,
 		updateFunc: fireWraithUpdateChase,
 	}
@@ -438,7 +438,7 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	enemy.attackState = enemyState{
 		anim:       attackAnim,
 		enterFunc:  fireWraithEnterAttack,
-		updateFunc: fireWraithUpdateAttack,
+		updateFunc: prisrakUpdateAttack,
 	}
 	enemy.dieState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_die.wav"),
@@ -455,4 +455,21 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	enemy.actor.MaxHealth = 225.0
 
 	return
+}
+
+func prisrakUpdateAttack(enemy *Enemy, deltaTime float32) {
+	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
+	for triggerIndex := range enemy.AnimPlayer.CurrentAnimation().TriggerFrames {
+		if enemy.AnimPlayer.HitTriggerFrame(triggerIndex) {
+			enemy.faceTarget()
+			shootDir := enemy.actor.FacingVec()
+			const spreadAngle = 22.5
+			angle := math2.Degrees((-spreadAngle * 1.5) + (float32(triggerIndex) * spreadAngle) + (rand.Float32() * spreadAngle))
+			shootDir = mgl32.TransformNormal(shootDir, mgl32.HomogRotate3DY(float32(math2.ToRadians(angle))))
+			SpawnFireball(enemy.actor.Position(), shootDir, enemy.id.Handle)
+		}
+	}
+	if enemy.AnimPlayer.IsAtEnd() {
+		enemy.changeState(&enemy.chaseState)
+	}
 }
