@@ -5,6 +5,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3/mesh_gen"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 )
@@ -22,7 +23,7 @@ type MapLayer struct {
 // `collisionLayer` is assigned to the map's GridShape.
 // `excludeFlags` specifies texture flags that will be invisible.
 func NewMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, excludeFlags []string) (MapLayer, error) {
-	mesh, err := te3File.BuildMesh(excludeFlags)
+	mesh, err := mesh_gen.BuildMeshFromTE3Map(te3File, excludeFlags)
 	if err != nil {
 		return MapLayer{}, err
 	}

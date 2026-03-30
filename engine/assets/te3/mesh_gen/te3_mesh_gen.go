@@ -1,4 +1,4 @@
-package te3
+package mesh_gen
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
@@ -26,15 +27,15 @@ func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, r
 	for i := range len(triangle) {
 		// Rotate and translate the points of the triangle to the tile's final position
 		outTriangle[i] = mgl32.TransformCoordinate(triangle[i], rotation)
-		outTriangle[i][0] += float32(gridX)*GridSpacing + HalfGridSpacing
-		outTriangle[i][1] += float32(gridY)*GridSpacing + HalfGridSpacing
-		outTriangle[i][2] += float32(gridZ)*GridSpacing + HalfGridSpacing
+		outTriangle[i][0] += float32(gridX)*te3.GridSpacing + te3.HalfGridSpacing
+		outTriangle[i][1] += float32(gridY)*te3.GridSpacing + te3.HalfGridSpacing
+		outTriangle[i][2] += float32(gridZ)*te3.GridSpacing + te3.HalfGridSpacing
 	}
 	return outTriangle
 }
 
 // Returns true if the triangle happens to match with one from a neighboring tile.
-func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle, tileCache []cullInfo) bool {
+func shouldCull(file *te3.TE3File, gridX, gridY, gridZ int, triangle math2.Triangle, tileCache []cullInfo) bool {
 	plane := triangle.Plane()
 
 	// Determine the grid position of the tile neighboring this face.
@@ -55,10 +56,10 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 		return false
 	}
 
-	if !te3.Tiles.OutOfBounds(nborX, nborY, nborZ) {
+	if !file.Tiles.OutOfBounds(nborX, nborY, nborZ) {
 		// Check the faces of the neighboring tile
-		nborIdx := te3.Tiles.FlattenGridPos(nborX, nborY, nborZ)
-		nborTile := te3.Tiles.Data[nborIdx]
+		nborIdx := file.Tiles.FlattenGridPos(nborX, nborY, nborZ)
+		nborTile := file.Tiles.Data[nborIdx]
 		if nborTile.ShapeID < 0 {
 			return false
 		}
@@ -83,7 +84,7 @@ func (te3 *TE3File) shouldCull(gridX, gridY, gridZ int, triangle math2.Triangle,
 
 // Creates a mesh from the tiles in the map. The result is not cached, so don't call this too often.
 // The excludeTags parameter is used to provide a list of texture flags that will not generate any geometry.
-func (te3 *TE3File) BuildMesh(excludeFlags []string) (*geom.Mesh, error) {
+func BuildMeshFromTE3Map(file *te3.TE3File, excludeFlags []string) (*geom.Mesh, error) {
 	var err error
 
 	// cpuProfile, err := os.Create("buildMesh.pprof")
@@ -97,15 +98,15 @@ func (te3 *TE3File) BuildMesh(excludeFlags []string) (*geom.Mesh, error) {
 	// defer pprof.StopCPUProfile()
 
 	mapVerts := geom.Vertices{
-		Pos:      make([]mgl32.Vec3, 0, len(te3.Tiles.Data)*24),
-		TexCoord: make([]mgl32.Vec2, 0, len(te3.Tiles.Data)*24),
-		Normal:   make([]mgl32.Vec3, 0, len(te3.Tiles.Data)*24),
+		Pos:      make([]mgl32.Vec3, 0, len(file.Tiles.Data)*24),
+		TexCoord: make([]mgl32.Vec2, 0, len(file.Tiles.Data)*24),
+		Normal:   make([]mgl32.Vec3, 0, len(file.Tiles.Data)*24),
 		Color:    nil,
 	}
-	mapInds := make([]uint32, 0, len(te3.Tiles.Data)*12)
+	mapInds := make([]uint32, 0, len(file.Tiles.Data)*12)
 
-	shapeMeshes := make([]*geom.Mesh, len(te3.Tiles.Shapes))
-	for i, path := range te3.Tiles.Shapes {
+	shapeMeshes := make([]*geom.Mesh, len(file.Tiles.Shapes))
+	for i, path := range file.Tiles.Shapes {
 		shapeMeshes[i], err = cache.GetMesh(path)
 		if err != nil {
 			return nil, fmt.Errorf("shape mesh at %s not found", path)
@@ -113,25 +114,25 @@ func (te3 *TE3File) BuildMesh(excludeFlags []string) (*geom.Mesh, error) {
 	}
 
 	// Groups tile data indices by their texture
-	groupTiles := make(map[TextureID][]int, len(te3.Tiles.Textures))
+	groupTiles := make(map[te3.TextureID][]int, len(file.Tiles.Textures))
 
 	// Find visible textures
 textureLoop:
-	for id, texPath := range te3.Tiles.Textures {
+	for id, texPath := range file.Tiles.Textures {
 		tex := cache.GetTexture(texPath)
 		for _, flag := range excludeFlags {
 			if tex == nil || tex.HasFlag(flag) {
 				continue textureLoop
 			}
 		}
-		groupTiles[TextureID(id)] = make([]int, 0, 32)
+		groupTiles[te3.TextureID(id)] = make([]int, 0, 32)
 	}
 
 	// Caches the transformed triangles belonging to each tile.
-	tileTriangles := make([]cullInfo, len(te3.Tiles.Data))
+	tileTriangles := make([]cullInfo, len(file.Tiles.Data))
 
 	// Preprocess tiles
-	for t, tile := range te3.Tiles.Data {
+	for t, tile := range file.Tiles.Data {
 		// Only visible tiles are processed here
 		if tile.ShapeID < 0 {
 			continue
@@ -149,7 +150,7 @@ textureLoop:
 		if visible {
 			// Determine triangle orientations
 			rotMatrix := tile.GetRotationMatrix()
-			gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(t)
+			gridX, gridY, gridZ := file.Tiles.UnflattenGridPos(t)
 			shapeTriIter := shapeMeshes[tile.ShapeID].IterTriangles()
 			for shapeTriIter.HasNext() {
 				tileTriangles[t] = append(tileTriangles[t], transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix))
@@ -165,9 +166,9 @@ textureLoop:
 		outGroup := geom.Group{Offset: len(mapInds), Length: 0}
 
 		for _, ti := range tileIndices {
-			tile := te3.Tiles.Data[ti]
+			tile := file.Tiles.Data[ti]
 			shapeMesh := shapeMeshes[tile.ShapeID]
-			gridX, gridY, gridZ := te3.Tiles.UnflattenGridPos(ti)
+			gridX, gridY, gridZ := file.Tiles.UnflattenGridPos(ti)
 
 			rotMatrix := tile.GetRotationMatrix()
 
@@ -192,7 +193,7 @@ textureLoop:
 				triangle := tileTriangles[ti][(shapeGroup.Offset/3)+tri]
 
 				// Skip if culling tile
-				if te3.shouldCull(gridX, gridY, gridZ, triangle, tileTriangles) {
+				if shouldCull(file, gridX, gridY, gridZ, triangle, tileTriangles) {
 					continue
 				}
 
@@ -204,8 +205,8 @@ textureLoop:
 					// Vertices that are near grid boundaries are snapped to grid boundaries.
 					// This covers up floating point errors that result in flickering bands of color on the screen.
 					for v, coord := range triangle[i] {
-						lowerBound := math2.Floor(coord/GridSpacing) * GridSpacing
-						upperBound := math2.Ceil(coord/GridSpacing) * GridSpacing
+						lowerBound := math2.Floor(coord/te3.GridSpacing) * te3.GridSpacing
+						upperBound := math2.Ceil(coord/te3.GridSpacing) * te3.GridSpacing
 						if coord-lowerBound < 0.05 {
 							triangle[i][v] = lowerBound
 						} else if upperBound-coord < 0.05 {
@@ -228,7 +229,7 @@ textureLoop:
 		}
 
 		meshGroups = append(meshGroups, outGroup)
-		meshGroupNames = append(meshGroupNames, te3.Tiles.Textures[texID])
+		meshGroupNames = append(meshGroupNames, file.Tiles.Textures[texID])
 	}
 
 	mesh := geom.CreateMesh(mapVerts, mapInds)
