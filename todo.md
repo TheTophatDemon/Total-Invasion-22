@@ -8,13 +8,16 @@
   - Exit screen
 - E1M5
   - Prisrak
-    - Teleportation
+    - Teleport left or right depending on distance to nearest wall
+    - Stream of particles indicating direction of teleportation
   - Hanging Skeleton Prop
   - Sign of Madness
   - Super Armor
   - Song
 - TI2 Converter
+  - Move maps up a tile so chickens can swim in the right place
   - Automatically set next level
+  - Auto secret placement
 - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Pressing E on Geoffrey doesn't show the message anymore?

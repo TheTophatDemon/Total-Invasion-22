@@ -282,6 +282,7 @@ func (grid *Grid) SweepAgainst(myPosition, theirPosition, theirMovement mgl32.Ve
 
 	minResult := Result{
 		Distance: theirMovement.Len(),
+		Position: theirPosition.Add(theirMovement),
 	}
 	var minMask Mask
 

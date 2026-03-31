@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -36,11 +37,12 @@ type Enemy struct {
 	chaseStrafeDir                                 float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
 	spriteAngle                                    float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
 	idleState, chaseState, stunState               enemyState
-	attackState, dieState, reviveState             enemyState
+	attackState, dodgeState, dieState, reviveState enemyState
 	state, previousState                           *enemyState
 	voice                                          tdaudio.VoiceId
 	spawnAmmo                                      game.AmmoType // Ammo type that will drop when enemy is killed
 	spawnAmmoChance                                float32       // Probability from 0 to 1
+	defaultCollisionFilters                        collision.Mask
 
 	// Player or target tracking variables
 	targetHandle                scene.Handle
@@ -54,6 +56,7 @@ type enemyState struct {
 	anim                   textures.Animation
 	stopAnim               bool // Set to true to leave the animation on its first frame without playing it.
 	enterSound, leaveSound tdaudio.SoundId
+	collisionFilters       maybe.T[collision.Mask]
 	updateFunc             func(enemy *Enemy, deltaTime float32)
 	enterFunc              func(enemy *Enemy, oldState *enemyState)
 	leaveFunc              func(enemy *Enemy, newState *enemyState)
@@ -127,8 +130,13 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 	enemy.StunChance = 1.0
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
+	enemy.defaultCollisionFilters = ColLayerMap | ColLayerActors | ColLayerInvisible
 
 	params := enemyTypeConfigFuncs[variant](enemy)
+
+	if !enemy.dieState.collisionFilters.IsSome() {
+		enemy.dieState.collisionFilters = maybe.Some(ColLayerMap | ColLayerInvisible)
+	}
 
 	enemy.bloodParticles = BloodParticles(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
@@ -326,15 +334,12 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 		}
 
 		// Initialize new state
-		if newState == &enemy.idleState {
-			enemy.actor.collisionFilter = ColLayerMap | ColLayerActors | ColLayerInvisible
-		}
+		enemy.actor.collisionFilter = newState.collisionFilters.Or(enemy.defaultCollisionFilters)
 		if newState.enterFunc != nil {
 			newState.enterFunc(enemy, enemy.state)
 		} else if newState == &enemy.dieState {
-			gWorld.Hud.VictoryScreen.EnemiesKilled++
 			enemy.actor.body.ExcludeLayers(collision.MaskAll)
-			enemy.actor.collisionFilter = ColLayerMap | ColLayerInvisible
+			gWorld.Hud.VictoryScreen.EnemiesKilled++
 			enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 			if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {

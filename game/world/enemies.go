@@ -3,11 +3,13 @@ package world
 import (
 	"math"
 	"math/rand"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -419,6 +421,7 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	attackAnim, _ := params.texture.GetAnimation("attack;front")
 	stunAnim, _ := params.texture.GetAnimation("hurt;front")
 	dieAnim, _ := params.texture.GetAnimation("die;front")
+	teleportAnim, _ := params.texture.GetAnimation("teleport;front")
 	params.defaultAnim = floatAnim
 
 	enemy.idleState = enemyState{
@@ -428,8 +431,8 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	}
 	enemy.chaseState = enemyState{
 		anim:       floatAnim,
-		enterFunc:  fireWraithEnterChase,
-		updateFunc: fireWraithUpdateChase,
+		enterFunc:  prisrakEnterChase,
+		updateFunc: prisrakUpdateChase,
 	}
 	enemy.stunState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_hurt.wav"),
@@ -439,6 +442,10 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 		anim:       attackAnim,
 		enterFunc:  fireWraithEnterAttack,
 		updateFunc: prisrakUpdateAttack,
+	}
+	enemy.dodgeState = enemyState{
+		anim:       teleportAnim,
+		updateFunc: prisrakUpdateTeleport,
 	}
 	enemy.dieState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_die.wav"),
@@ -451,10 +458,34 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 		anim:       reviveAnim,
 	}
 
+	enemy.defaultCollisionFilters = ColLayerMap | ColLayerActors
+
 	enemy.actor.MaxSpeed = 4.0
 	enemy.actor.MaxHealth = 225.0
+	enemy.actor.body.Shape = collision.NewBoxShape(0.6, 0.5, 0.6)
 
 	return
+}
+
+func prisrakEnterChase(enemy *Enemy, oldState *enemyState) {
+	enemy.attackTimer = rand.Float32() + 1.0
+}
+
+func prisrakUpdateChase(enemy *Enemy, deltaTime float32) {
+	enemy.stalk(deltaTime, 1.0)
+	enemy.attackTimer -= deltaTime
+	if enemy.attackTimer <= 0.0 {
+		hit, _ := gWorld.Raycast(
+			enemy.actor.Position(),
+			enemy.dirToTarget,
+			ColLayerMap|ColLayerNPCs,
+			enemy.distToTarget,
+			enemy.Body(),
+		)
+		if !hit.Hit {
+			enemy.changeState(&enemy.attackState)
+		}
+	}
 }
 
 func prisrakUpdateAttack(enemy *Enemy, deltaTime float32) {
@@ -470,6 +501,28 @@ func prisrakUpdateAttack(enemy *Enemy, deltaTime float32) {
 		}
 	}
 	if enemy.AnimPlayer.IsAtEnd() {
-		enemy.changeState(&enemy.chaseState)
+		enemy.changeState(&enemy.dodgeState)
+	}
+}
+
+func prisrakUpdateTeleport(enemy *Enemy, deltaTime float32) {
+	appearAnim, _ := enemy.SpriteRender.Texture().GetAnimation("appear")
+	if enemy.AnimPlayer.IsAtEnd() {
+		if !strings.HasPrefix(enemy.AnimPlayer.CurrentAnimation().Name, "appear") {
+			teleportRay := enemy.actor.FacingVec().Mul(12.0)
+			if rand.Float32() < 0.5 {
+				teleportRay[0], teleportRay[2] = -teleportRay[2], teleportRay[0]
+			} else {
+				teleportRay[0], teleportRay[2] = teleportRay[2], -teleportRay[0]
+			}
+			// Enlarged shape used to avoid getting stuck
+			sweepShape := enemy.Body().Shape.ShrunkenBy(-0.1)
+			sweepResult, _ := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, enemy.actor.Position(), teleportRay, sweepShape, ColLayerMap)
+			sweepResult.Position[1] = enemy.actor.Position()[1]
+			enemy.Body().Position = sweepResult.Position
+			enemy.AnimPlayer.PlayNewAnim(appearAnim)
+		} else {
+			enemy.changeState(&enemy.chaseState)
+		}
 	}
 }

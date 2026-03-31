@@ -184,6 +184,13 @@ func (tex *Texture) AnimationCount() int {
 }
 
 func (tex *Texture) GetAnimation(name string) (anim Animation, ok bool) {
+	// If no layer specified, insert one automatically
+	for layerName := range tex.layers {
+		if !strings.ContainsRune(name, ';') {
+			name = name + ";" + layerName
+		}
+		break
+	}
 	anim, ok = tex.animations[name]
 	return
 }
