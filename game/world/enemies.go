@@ -213,6 +213,7 @@ func configureMotherWraith(enemy *Enemy) (params enemyConfig) {
 	enemy.actor.AccelRate = 50.0
 	enemy.actor.MaxSpeed = 4.0
 	enemy.actor.MaxHealth = 350.0
+	enemy.StunChance = 0.5
 
 	return
 }
@@ -445,7 +446,7 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	}
 	enemy.dodgeState = enemyState{
 		anim:       teleportAnim,
-		updateFunc: prisrakUpdateTeleport,
+		updateFunc: prisrakUpdateDodge,
 	}
 	enemy.dieState = enemyState{
 		enterSound: cache.GetSfx("assets/sounds/enemy/prisrak/prisrak_die.wav"),
@@ -463,6 +464,7 @@ func configurePrisrak(enemy *Enemy) (params enemyConfig) {
 	enemy.actor.MaxSpeed = 4.0
 	enemy.actor.MaxHealth = 225.0
 	enemy.actor.body.Shape = collision.NewBoxShape(0.6, 0.5, 0.6)
+	enemy.StunChance = 0.5
 
 	return
 }
@@ -505,21 +507,29 @@ func prisrakUpdateAttack(enemy *Enemy, deltaTime float32) {
 	}
 }
 
-func prisrakUpdateTeleport(enemy *Enemy, deltaTime float32) {
+func prisrakUpdateDodge(enemy *Enemy, deltaTime float32) {
 	appearAnim, _ := enemy.SpriteRender.Texture().GetAnimation("appear")
 	if enemy.AnimPlayer.IsAtEnd() {
 		if !strings.HasPrefix(enemy.AnimPlayer.CurrentAnimation().Name, "appear") {
-			teleportRay := enemy.actor.FacingVec().Mul(12.0)
-			if rand.Float32() < 0.5 {
-				teleportRay[0], teleportRay[2] = -teleportRay[2], teleportRay[0]
-			} else {
-				teleportRay[0], teleportRay[2] = teleportRay[2], -teleportRay[0]
-			}
+			leftRay := enemy.actor.FacingVec().Mul(12.0)
+			rightRay := leftRay
+			leftRay[0], leftRay[2] = -leftRay[2], leftRay[0]
+			rightRay[0], rightRay[2] = rightRay[2], -rightRay[0]
 			// Enlarged shape used to avoid getting stuck
 			sweepShape := enemy.Body().Shape.ShrunkenBy(-0.1)
-			sweepResult, _ := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, enemy.actor.Position(), teleportRay, sweepShape, ColLayerMap)
-			sweepResult.Position[1] = enemy.actor.Position()[1]
-			enemy.Body().Position = sweepResult.Position
+
+			farthestCast := collision.Result{Distance: 0.0, Position: enemy.actor.Position()}
+			for _, ray := range [...]mgl32.Vec3{leftRay, rightRay} {
+				sweepResult, _ := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, enemy.actor.Position(), ray, sweepShape, ColLayerMap)
+				if sweepResult.Distance > farthestCast.Distance {
+					farthestCast = sweepResult
+				}
+			}
+			farthestCast.Position[1] = enemy.actor.Position()[1]
+
+			SpawnEffect(enemy.Body().Position, 2.0, WarpParticles(0.5, farthestCast.Position.Sub(enemy.Body().Position)))
+
+			enemy.Body().Position = farthestCast.Position
 			enemy.AnimPlayer.PlayNewAnim(appearAnim)
 		} else {
 			enemy.changeState(&enemy.chaseState)

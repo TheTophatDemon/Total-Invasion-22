@@ -7,9 +7,6 @@
   - Separate Pause binding
   - Exit screen
 - E1M5
-  - Prisrak
-    - Teleport left or right depending on distance to nearest wall
-    - Stream of particles indicating direction of teleportation
   - Hanging Skeleton Prop
   - Sign of Madness
   - Super Armor

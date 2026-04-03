@@ -163,15 +163,6 @@
    },
    {
     "filename": "prisrak_atlas.png;back;18",
-    "frame": { "x": 65, "y": 193, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
-   },
-   {
-    "filename": "prisrak_atlas.png;back;19",
     "frame": { "x": 193, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -180,7 +171,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;back;20",
+    "filename": "prisrak_atlas.png;back;19",
     "frame": { "x": 129, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -189,7 +180,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;back;21",
+    "filename": "prisrak_atlas.png;back;20",
     "frame": { "x": 257, "y": 193, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -198,7 +189,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;back;22",
+    "filename": "prisrak_atlas.png;back;21",
     "frame": { "x": 65, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -207,13 +198,22 @@
     "duration": 150
    },
    {
+    "filename": "prisrak_atlas.png;back;22",
+    "frame": { "x": 65, "y": 193, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 200
+   },
+   {
     "filename": "prisrak_atlas.png;back;23",
     "frame": { "x": 385, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 150
    },
    {
     "filename": "prisrak_atlas.png;back;24",
@@ -243,17 +243,8 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;back;27",
-    "frame": { "x": 193, "y": 321, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 150
-   },
-   {
     "filename": "prisrak_atlas.png;side;0",
-    "frame": { "x": 257, "y": 321, "w": 64, "h": 64 },
+    "frame": { "x": 193, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -262,7 +253,7 @@
    },
    {
     "filename": "prisrak_atlas.png;side;1",
-    "frame": { "x": 321, "y": 321, "w": 64, "h": 64 },
+    "frame": { "x": 257, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -271,15 +262,6 @@
    },
    {
     "filename": "prisrak_atlas.png;side;2",
-    "frame": { "x": 385, "y": 321, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
-   },
-   {
-    "filename": "prisrak_atlas.png;side;3",
     "frame": { "x": 321, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -288,8 +270,17 @@
     "duration": 200
    },
    {
+    "filename": "prisrak_atlas.png;side;3",
+    "frame": { "x": 257, "y": 321, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 200
+   },
+   {
     "filename": "prisrak_atlas.png;side;4",
-    "frame": { "x": 1, "y": 385, "w": 64, "h": 64 },
+    "frame": { "x": 385, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -298,7 +289,7 @@
    },
    {
     "filename": "prisrak_atlas.png;side;5",
-    "frame": { "x": 65, "y": 385, "w": 64, "h": 64 },
+    "frame": { "x": 1, "y": 385, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -370,7 +361,7 @@
    },
    {
     "filename": "prisrak_atlas.png;side;13",
-    "frame": { "x": 1, "y": 385, "w": 64, "h": 64 },
+    "frame": { "x": 385, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -379,7 +370,7 @@
    },
    {
     "filename": "prisrak_atlas.png;side;14",
-    "frame": { "x": 65, "y": 385, "w": 64, "h": 64 },
+    "frame": { "x": 1, "y": 385, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -415,15 +406,6 @@
    },
    {
     "filename": "prisrak_atlas.png;side;18",
-    "frame": { "x": 65, "y": 193, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
-   },
-   {
-    "filename": "prisrak_atlas.png;side;19",
     "frame": { "x": 193, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -432,7 +414,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;side;20",
+    "filename": "prisrak_atlas.png;side;19",
     "frame": { "x": 193, "y": 1, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -441,8 +423,8 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;side;21",
-    "frame": { "x": 1, "y": 385, "w": 64, "h": 64 },
+    "filename": "prisrak_atlas.png;side;20",
+    "frame": { "x": 385, "y": 321, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
@@ -450,7 +432,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;side;22",
+    "filename": "prisrak_atlas.png;side;21",
     "frame": { "x": 129, "y": 1, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -459,7 +441,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;side;23",
+    "filename": "prisrak_atlas.png;side;22",
     "frame": { "x": 257, "y": 1, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -468,7 +450,7 @@
     "duration": 200
    },
    {
-    "filename": "prisrak_atlas.png;side;24",
+    "filename": "prisrak_atlas.png;side;23",
     "frame": { "x": 321, "y": 1, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -477,7 +459,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;side;25",
+    "filename": "prisrak_atlas.png;side;24",
     "frame": { "x": 385, "y": 1, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -486,7 +468,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;side;26",
+    "filename": "prisrak_atlas.png;side;25",
     "frame": { "x": 1, "y": 65, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -495,7 +477,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;side;27",
+    "filename": "prisrak_atlas.png;side;26",
     "frame": { "x": 65, "y": 65, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -667,15 +649,6 @@
    },
    {
     "filename": "prisrak_atlas.png;front;18",
-    "frame": { "x": 65, "y": 193, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
-   },
-   {
-    "filename": "prisrak_atlas.png;front;19",
     "frame": { "x": 193, "y": 257, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -684,7 +657,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;front;20",
+    "filename": "prisrak_atlas.png;front;19",
     "frame": { "x": 193, "y": 129, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -693,7 +666,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;front;21",
+    "filename": "prisrak_atlas.png;front;20",
     "frame": { "x": 321, "y": 65, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -702,7 +675,7 @@
     "duration": 100
    },
    {
-    "filename": "prisrak_atlas.png;front;22",
+    "filename": "prisrak_atlas.png;front;21",
     "frame": { "x": 129, "y": 129, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -711,7 +684,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;front;23",
+    "filename": "prisrak_atlas.png;front;22",
     "frame": { "x": 321, "y": 129, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -720,7 +693,7 @@
     "duration": 200
    },
    {
-    "filename": "prisrak_atlas.png;front;24",
+    "filename": "prisrak_atlas.png;front;23",
     "frame": { "x": 385, "y": 129, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -729,7 +702,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;front;25",
+    "filename": "prisrak_atlas.png;front;24",
     "frame": { "x": 1, "y": 193, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -738,7 +711,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;front;26",
+    "filename": "prisrak_atlas.png;front;25",
     "frame": { "x": 1, "y": 65, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -747,7 +720,7 @@
     "duration": 150
    },
    {
-    "filename": "prisrak_atlas.png;front;27",
+    "filename": "prisrak_atlas.png;front;26",
     "frame": { "x": 65, "y": 65, "w": 64, "h": 64 },
     "rotated": false,
     "trimmed": false,
@@ -766,11 +739,11 @@
   "frameTags": [
    { "name": "float", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
    { "name": "attack", "from": 4, "to": 12, "direction": "forward", "repeat": "1", "color": "#000000ff", "data": "triggerFrame:3,5,7" },
-   { "name": "teleport", "from": 13, "to": 18, "direction": "forward", "repeat": "1", "color": "#000000ff" },
-   { "name": "appear", "from": 19, "to": 22, "direction": "forward", "repeat": "1", "color": "#000000ff" },
-   { "name": "hurt", "from": 23, "to": 23, "direction": "forward", "color": "#000000ff" },
-   { "name": "die", "from": 24, "to": 27, "direction": "forward", "repeat": "1", "color": "#000000ff" },
-   { "name": "revive", "from": 24, "to": 27, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" }
+   { "name": "teleport", "from": 13, "to": 17, "direction": "forward", "repeat": "1", "color": "#000000ff" },
+   { "name": "appear", "from": 18, "to": 21, "direction": "forward", "repeat": "1", "color": "#000000ff" },
+   { "name": "hurt", "from": 22, "to": 22, "direction": "forward", "color": "#000000ff" },
+   { "name": "die", "from": 23, "to": 26, "direction": "forward", "repeat": "1", "color": "#000000ff" },
+   { "name": "revive", "from": 23, "to": 26, "direction": "reverse", "repeat": "1", "color": "#fe5b59ff" }
   ],
   "layers": [
    { "name": "back", "opacity": 255, "blendMode": "normal", "data": "viewRange:135,225" },

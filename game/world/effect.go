@@ -29,6 +29,10 @@ func SpawnEffect(position mgl32.Vec3, lifetime float32, particles comps.Particle
 		return
 	}
 
+	if particles.EmissionTimer == 0 {
+		particles.EmissionTimer = lifetime
+	}
+
 	*fx = Effect{
 		Position:  position,
 		Lifetime:  lifetime,
@@ -212,6 +216,39 @@ func TeleportParticles(radius float32) comps.ParticleRender {
 		},
 		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
 			const shrinkRate = 0.75
+			form.Size[0] -= deltaTime * shrinkRate
+			form.Size[1] -= deltaTime * shrinkRate
+			if form.Size[0] <= 0.1 {
+				form.Size = mgl32.Vec2{}
+				info.Lifetime = 0.0
+			}
+		},
+	}
+}
+
+func WarpParticles(radius float32, length mgl32.Vec3) comps.ParticleRender {
+	poofTexture := cache.GetTexture("assets/textures/sprites/teleport_poof.png")
+	return comps.ParticleRender{
+		Mesh:             cache.QuadMesh,
+		Texture:          poofTexture,
+		SpawnRate:        0.05,
+		SpawnRadius:      radius,
+		SpawnLength:      length,
+		BurstCount:       10,
+		VisibilityRadius: 5.0,
+		EmissionTimer:    0.1,
+		MaxCount:         max(50, int(10.0*length.Len())),
+		SpawnFunc: func(index int, form *comps.ParticleForm, info *comps.ParticleInfo) {
+			yellow := 0.75 + rand.Float32()*0.25
+			form.Color = mgl32.Vec4{yellow, yellow, 0.0, 1.0}
+			s := rand.Float32()*0.20 + 0.20
+			form.Size = mgl32.Vec2{s, s}
+			info.Velocity = info.Velocity.Mul(rand.Float32()*2 + 1.0)
+			info.Acceleration = mgl32.Vec3{}
+			info.Lifetime = 0.5
+		},
+		UpdateFunc: func(deltaTime float32, form *comps.ParticleForm, info *comps.ParticleInfo) {
+			const shrinkRate = 2.0
 			form.Size[0] -= deltaTime * shrinkRate
 			form.Size[1] -= deltaTime * shrinkRate
 			if form.Size[0] <= 0.1 {

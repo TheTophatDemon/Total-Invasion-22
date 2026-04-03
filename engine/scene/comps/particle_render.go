@@ -1,6 +1,7 @@
 package comps
 
 import (
+	"math/rand"
 	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -51,14 +52,15 @@ type ParticleInfo struct {
 type ParticleRender struct {
 	Mesh                *geom.Mesh
 	Texture             *textures.Texture
-	LocalTransform      Transform // Transform relative to the position it is rendered at.
-	EmissionTimer       float32   // Number of seconds before emission stops. Set this to >0 to start emitting particles.
-	SpawnRadius         float32   // The spherical radius within which particles will be spawned.
-	SpawnRate           float32   // The rate at which new particles will be spawned, in seconds per particle.
-	BurstCount          int       // Each time a particle is spawned, spawn this many particles.
-	VisibilityRadius    float32   // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
-	LocalSpaceParticles bool      // If true, then particle positions will be in the space of the transform passed to the render method.
-	MaxCount            int       // Maxmimum number of particles to render at one time
+	LocalTransform      Transform  // Transform relative to the position it is rendered at.
+	EmissionTimer       float32    // Number of seconds before emission stops. Set this to >0 to start emitting particles.
+	SpawnRadius         float32    // The spherical radius within which particles will be spawned.
+	SpawnLength         mgl32.Vec3 // Turns the emission sphere into a capsule going in this direction.
+	SpawnRate           float32    // The rate at which new particles will be spawned, in seconds per particle.
+	BurstCount          int        // Each time a particle is spawned, spawn this many particles.
+	VisibilityRadius    float32    // The radius of the invisible sphere that must be visible on camera for these particles to be drawn.
+	LocalSpaceParticles bool       // If true, then particle positions will be in the space of the transform passed to the render method.
+	MaxCount            int        // Maxmimum number of particles to render at one time
 
 	// Called every frame to move and animate the particles. Velocity and acceleration will be applied later.
 	UpdateFunc func(
@@ -156,7 +158,7 @@ func (parts *ParticleRender) Update(deltaTime float32, spawnPosition mgl32.Vec3)
 
 			for range parts.BurstCount {
 				dir := math2.RandomDir()
-				position := dir.Mul(parts.SpawnRadius)
+				position := parts.SpawnLength.Mul(rand.Float32()).Add(dir.Mul(parts.SpawnRadius))
 				if !parts.LocalSpaceParticles {
 					position = mgl32.TransformCoordinate(position, worldTransform)
 					dir = mgl32.TransformNormal(dir, worldTransform)
