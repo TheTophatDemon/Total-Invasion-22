@@ -520,7 +520,7 @@ func prisrakUpdateDodge(enemy *Enemy, deltaTime float32) {
 
 			farthestCast := collision.Result{Distance: 0.0, Position: enemy.actor.Position()}
 			for _, ray := range [...]mgl32.Vec3{leftRay, rightRay} {
-				sweepResult, _ := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, enemy.actor.Position(), ray, sweepShape, ColLayerMap)
+				sweepResult, _ := gWorld.GameMap.GridShape.SweepAgainst(mgl32.Vec3{}, enemy.actor.Position(), ray, sweepShape, ColLayerMap|ColLayerActors)
 				if sweepResult.Distance > farthestCast.Distance {
 					farthestCast = sweepResult
 				}
