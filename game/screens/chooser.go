@@ -48,6 +48,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 		Size:   mgl32.Vec2{16, 24},
 	}, "<", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
+		Align: ui.TextAlignCenterV,
 	})
 
 	longestChoiceStr := choices[0].String()
@@ -62,7 +63,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 	}, longestChoiceStr, ui.TextConfig{
-		Align: ui.TextAlignCenterH,
+		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
 	})
 	ch.txtValue.FitText()
 	ch.txtValue.SetText(choice.String())
@@ -73,6 +74,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 		Size:   mgl32.Vec2{16, 24},
 	}, ">", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
+		Align: ui.TextAlignCenterV,
 	})
 	ch.choices = choices
 	ch.startingChoice = choice

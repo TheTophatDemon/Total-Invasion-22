@@ -189,7 +189,7 @@ func main() {
 	tdaudio.SetMusicVolume(float32(settings.Current.MusicVolume))
 
 	ui.SetTextShadowColor(color.Black.WithAlpha(float32(settings.Current.TextShadowTransparency)))
-
+	ui.GlobalTextScale = settings.Current.TextScale()
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	app := &App{}

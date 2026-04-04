@@ -28,7 +28,6 @@ var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 var mouseScrollY, mousePrevScrollY float32
-var mouseSensitivity float32 = 0.005
 
 func init() {
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
@@ -123,14 +122,6 @@ func MouseScroll() float32 {
 
 func MouseScrollDelta() float32 {
 	return mouseScrollY - mousePrevScrollY
-}
-
-func MouseSensitivity() float32 {
-	return mouseSensitivity
-}
-
-func SetMouseSensitivity(newValue float32) {
-	mouseSensitivity = newValue
 }
 
 func SetMousePosition(x, y float32) {

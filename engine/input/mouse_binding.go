@@ -93,15 +93,17 @@ func (mmb *MouseMovementBinding) Pressed() bool {
 }
 
 func (mmb *MouseMovementBinding) Axis() float32 {
+	scaledX := mouseDeltaX / 10.0
+	scaledY := mouseDeltaY / 10.0
 	switch mmb.MouseAxis {
 	case MouseAxisPosX:
-		return max(0.0, float32(mouseDeltaX)*mouseSensitivity)
+		return max(0.0, float32(scaledX))
 	case MouseAxisNegX:
-		return -min(0.0, float32(mouseDeltaX)*mouseSensitivity)
+		return -min(0.0, float32(scaledX))
 	case MouseAxisPosY:
-		return max(0.0, float32(mouseDeltaY)*mouseSensitivity)
+		return max(0.0, float32(scaledY))
 	case MouseAxisNegY:
-		return -min(0.0, float32(mouseDeltaY)*mouseSensitivity)
+		return -min(0.0, float32(scaledY))
 	}
 	return 0.0
 }

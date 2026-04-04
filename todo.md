@@ -1,8 +1,5 @@
 # TODO
 - Menus
-  - Fix mouse sensitivity assignment
-  - Fix menu layout at low resolution
-  - Make language switch in real time
   - Resolution change confirmation
   - Separate Pause binding
   - Exit screen
@@ -48,7 +45,6 @@
   - New enemies for Episode 4
 - Additional Weapons
   - Double Grenade Launcher
-  - Sign of Madness
   - Defenestrator (Ep 4)
   - Cluckster Bomb (Ep 4)
 

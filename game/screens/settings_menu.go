@@ -27,6 +27,7 @@ type (
 		sliderTextShadow  Slider
 		chooserChickens   Chooser[OnOff]
 		bindingItem       MenuItem
+		reinitNextFrame   bool
 	}
 )
 
@@ -62,7 +63,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 	settingsMenu.sliderSfxVolume.Init("sfxVolume", 0, 10, 1, settings.Current.SfxVolume*10.0)
 	settingsMenu.sliderMusicVolume.Init("musVolume", 0, 10, 1, settings.Current.MusicVolume*10.0)
 	settingsMenu.sliderFOV.Init("fov", 45, 120, 5, settings.Current.Fov)
-	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, min(10, max(1, settings.Current.MouseSensitivity)))
+	settingsMenu.sliderSensitivity.Init("mouseSensitivity", 1, 10, 1, settings.Current.MouseSensitivity)
 	settingsMenu.sliderTextShadow.Init("textShadow", 0, 10, 1, settings.Current.TextShadowTransparency*10.0)
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
@@ -95,6 +96,11 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 }
 
 func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	if menu.reinitNextFrame {
+		menu.reinitNextFrame = false
+		menu.Init(menu.app, menu.parent)
+	}
+
 	menu.Menu.Layout(queue, deltaTime)
 	tdaudio.SetSfxVolume(float32(menu.sliderSfxVolume.FractionValue()))
 	tdaudio.SetMusicVolume(float32(menu.sliderMusicVolume.FractionValue()))
@@ -102,6 +108,11 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	newTrans := menu.sliderTextShadow.FractionValue()
 	settings.Current.TextShadowTransparency = newTrans
 	ui.SetTextShadowColor(color.Black.WithAlpha(float32(newTrans)))
+
+	if menu.chooserLanguage.Choice() != settings.Current.Locale {
+		settings.Current.Locale = menu.chooserLanguage.Choice()
+		menu.reinitNextFrame = true
+	}
 }
 
 func (menu *SettingsMenu) Enter() {
@@ -118,6 +129,7 @@ func (menu *SettingsMenu) Exit() {
 	settings.Current.WindowWidth = newSize[0]
 	settings.Current.WindowHeight = newSize[1]
 	engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
+	ui.GlobalTextScale = settings.Current.TextScale()
 
 	settings.Current.Vsync = bool(menu.chooserVsync.Choice())
 	engine.SetVsync(settings.Current.Vsync)

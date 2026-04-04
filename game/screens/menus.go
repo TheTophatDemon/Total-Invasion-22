@@ -72,18 +72,11 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 		),
 	}
 
-	smallScreen := settings.Current.WindowWidth <= 800
-
 	menu.blinker.SetLoop(-1)
 
 	menu.position = mgl32.Vec2{
 		float32(settings.Current.WindowWidth) * 0.1,
 		float32(settings.Current.WindowHeight) * 0.4,
-	}
-
-	if smallScreen {
-		menu.menuSpacing = 48
-		menu.position[0] = 16
 	}
 
 	menu.cursor = ui.NewBox(ui.Transform{
@@ -129,9 +122,6 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 				Depth:  10,
 			})
 		elem.FitText()
-		if smallScreen && elem.Size()[0] >= 300 {
-			elem.SetSize(mgl32.Vec2{300, 48})
-		}
 		maxWidth = max(elem.Width(), maxWidth)
 
 		if i == 0 {
@@ -329,6 +319,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	if menu.menuSelection >= 0 {
+		menu.cursor.SetSize(mgl32.Vec2{32, 32}.Mul(settings.Current.TextScale()))
 		// Draw cursor in front of menu items
 		halfHeight := menu.cursor.Height() / 2.0
 		target := mgl32.Vec2{

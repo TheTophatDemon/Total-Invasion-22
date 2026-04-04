@@ -18,6 +18,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
+var GlobalTextScale float32 = 1.0
+
 type TextConfig struct {
 	Align         TextAlign
 	Color         maybe.T[color.Color]
@@ -64,7 +66,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	newLine := func() {
 		// Set cursor to next line position
 		cursorX = 0.0
-		cursorY += float32(font.Common.LineHeight)
+		cursorY += float32(font.Common.LineHeight) * GlobalTextScale
 
 		if (config.Align&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
 			// This will be the last box added to this line.
@@ -89,7 +91,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 			newLine()
 			continue
 		} else if unicode.IsSpace(token) {
-			cursorX += 16
+			cursorX += 16 * GlobalTextScale
 			continue
 		}
 
@@ -105,16 +107,16 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 
 			if !ok {
 				// Add blank space for unknown character
-				cursorX += 16
+				cursorX += 16 * GlobalTextScale
 				continue
 			}
 
 			// Find character position
 			charRect := math2.Rect{
-				X:      cursorX + float32(char.XOffset),
+				X:      cursorX + float32(char.XOffset)*GlobalTextScale,
 				Y:      cursorY - float32(font.Common.Base+char.YOffset),
-				Width:  float32(char.Size().X),
-				Height: float32(char.Size().Y),
+				Width:  float32(char.Size().X) * GlobalTextScale,
+				Height: float32(char.Size().Y) * GlobalTextScale,
 			}
 			if i == 0 {
 				firstBox = charRect
@@ -149,14 +151,14 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 			boxes = append(boxes, charRect)
 			chars = append(chars, char)
 
-			cursorX += float32(char.XAdvance)
+			cursorX += float32(char.XAdvance) * GlobalTextScale
 
 			// Add kerning
 			if prevRune != scanner.EOF {
 				pair := bmfont.CharPair{First: prevRune, Second: rn}
 				kerning, ok := font.Kerning[pair]
 				if ok {
-					cursorX += float32(kerning.Amount)
+					cursorX += float32(kerning.Amount) * GlobalTextScale
 				}
 			}
 
@@ -167,13 +169,16 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	}
 	// This will apply alignment to text that is made of only one line.
 	newLine()
-	// `cursorY`` now defines the overall height of the text.
 
-	// Apply vertical alignment
-	if (config.Align&TextAlignCenterV) != 0 && cursorY < txt.Size()[1] {
-		shift := txt.Size()[1] - (cursorY / 2.0)
-		for i := range boxes {
-			boxes[i].Y += shift
+	if len(boxes) > 0 {
+		lastBox := boxes[len(boxes)-1]
+		charsHeight := lastBox.Height + lastBox.Y
+		// Apply vertical alignment
+		if (config.Align&TextAlignCenterV) != 0 && charsHeight < txt.Height() {
+			shift := (txt.Height() - charsHeight) / 2.0
+			for i := range boxes {
+				boxes[i].Y += shift
+			}
 		}
 	}
 

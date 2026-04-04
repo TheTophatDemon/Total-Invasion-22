@@ -404,7 +404,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.weaponWheelOpenness = 1.0
 	}
 	if player.weaponWheelOpenness <= 0.0 {
-		player.actor.YawAngle += settings.Current.ActionLookLeft.Axis() - settings.Current.ActionLookRight.Axis()
+		sensitivity := float32(0.005 * math2.Pow(10.0, (settings.Current.MouseSensitivity-1.0)/5.0))
+		player.actor.YawAngle += (settings.Current.ActionLookLeft.Axis() - settings.Current.ActionLookRight.Axis()) * sensitivity
 	}
 }
 

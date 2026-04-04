@@ -40,6 +40,7 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 	}, settings.Localize(labelKey)+": ", ui.TextConfig{
 		Color:     maybe.Some(color.White),
 		WrapWords: true,
+		Align:     ui.TextAlignCenterV,
 	})
 	sl.txtLabel.FitText()
 	if smallScreen && sl.txtLabel.Size()[0] >= 300.0 {
@@ -55,6 +56,7 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 		Size:   mgl32.Vec2{16, 24},
 	}, "<", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
+		Align: ui.TextAlignCenterV,
 	})
 
 	sl.boxSlider = ui.NewBox(ui.Transform{
@@ -77,13 +79,16 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 		Size:   mgl32.Vec2{16, 24},
 	}, ">", ui.TextConfig{
 		Color: maybe.Some(color.Yellow),
+		Align: ui.TextAlignCenterV,
 	})
 
 	sl.txtValue = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{80, 24},
-	}, fmt.Sprintf("%v", initialValue), ui.TextConfig{})
+	}, fmt.Sprintf("%v", initialValue), ui.TextConfig{
+		Align: ui.TextAlignCenterV,
+	})
 
 	return sl
 }
@@ -152,12 +157,7 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 	if sl.grabbed {
 		offset := float64((mousePos[0] - sliderBox.X) / sliderBox.Width)
-		// prev := sl.value
 		sl.value = min(sl.max, max(sl.min, sl.min+((sl.max-sl.min)*offset)))
-		// if !mgl64.FloatEqual(prev, sl.value) {
-		// 	cache.GetSfx(sfxSlide).Play()
-		// }
-		// TODO: Make this sound less obnoxious
 	}
 
 	sl.txtValue.SetText(fmt.Sprintf("%.2f", sl.value))
@@ -169,6 +169,11 @@ func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(components...)
 
 	sl.boxKnob.SetPosition(sl.boxSlider.Position().Add(mgl32.Vec2{float32(sl.FractionValue()) * sl.boxSlider.Width()}))
+	if settings.Current.TextScale() < 1.0 {
+		sl.boxKnob.SetSize(mgl32.Vec2{16, 16})
+	} else {
+		sl.boxKnob.SetSize(mgl32.Vec2{24, 24})
+	}
 	sl.boxKnob.AnimPlayer.MoveToFrame(int(sl.FractionValue() * float64(len(sl.boxKnob.AnimPlayer.CurrentAnimation().Frames)-1)))
 	queue.Add(&sl.boxKnob)
 

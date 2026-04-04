@@ -84,7 +84,7 @@ func init() {
 		WindowWidth: 1280, WindowHeight: 720,
 		Fullscreen:             false,
 		Vsync:                  true,
-		MouseSensitivity:       5,
+		MouseSensitivity:       6.0,
 		TextShadowTransparency: 0.5,
 		SfxVolume:              1.0, MusicVolume: 1.0,
 		Locale:              LocaleEnglish,
@@ -234,6 +234,13 @@ func LocalizeWith(key string, locale Locale, grammarCase string) string {
 // Deprecated: UI Elements should not normally be scaled with the screen size.
 func UIScale() float32 {
 	return float32(Current.WindowHeight) / 480
+}
+
+func (settings *Data) TextScale() float32 {
+	if settings == nil || settings.WindowWidth > 800 {
+		return 1.0
+	}
+	return 0.5
 }
 
 // Returns the size the sprites on the HUD should be scaled to.
