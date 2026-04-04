@@ -28,6 +28,8 @@ off = "Выклч."
 setBindingFor = "Привязать ввод %d (%v)"
 clearBinding = "Отменить привязку к вводу %d"
 inputPrompt = "Выберите кнопку, джойстик, или движение мыши"
+resizePrompt = "Это разрешение подходит? Отменится через %v..."
+confirm = "Утвердить"
 
 # Input actions
 actionPause = "Пауза"

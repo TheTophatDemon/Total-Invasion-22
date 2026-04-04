@@ -10,7 +10,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type (
@@ -64,6 +63,7 @@ func (sr *SpriteRender) Render(
 	animPlayer *AnimationPlayer,
 	context *render.Context,
 	yawAngle float32,
+	locale string,
 ) bool {
 	if sr.meshRender.Shader == nil {
 		return false
@@ -80,7 +80,7 @@ func (sr *SpriteRender) Render(
 		// Avoid making extra matrix
 		// Abstract render parameters into generic struct so that you can avoid closure captures
 		context.EnqueueTransparentRender(func(context *render.Context) {
-			sr.Render(position, animPlayer, context, yawAngle)
+			sr.Render(position, animPlayer, context, yawAngle, locale)
 		}, context.DistanceFromScreen(mgl32.Translate3D(position[0], position[1], position[2])))
 		return true
 	}
@@ -101,7 +101,7 @@ func (sr *SpriteRender) Render(
 			if cross.Dot(math2.Vec3Up()) < 0.0 {
 				angleDifference *= -1
 			}
-			layer, flip, found := sr.meshRender.Texture.FindLayerToDisplay(angleDifference, string(settings.Current.Locale))
+			layer, flip, found := sr.meshRender.Texture.FindLayerToDisplay(angleDifference, locale)
 			if found {
 				anim, found := sr.meshRender.Texture.GetAnimation(animPlayer.animation.BaseName() + ";" + layer.Name)
 				if found {

@@ -10,9 +10,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type (
@@ -123,6 +127,17 @@ func init() {
 
 func (data *Data) WindowAspectRatio() float32 {
 	return float32(data.WindowWidth) / float32(data.WindowHeight)
+}
+
+// Applies the settings to the state of the engine, UI, and audio
+func (data Data) Apply() {
+	engine.SetVideoMode(data.Fullscreen, int(data.WindowWidth), int(data.WindowHeight))
+	ui.GlobalTextScale = data.TextScale()
+	ui.SetTextShadowColor(color.Black.WithAlpha(float32(data.TextShadowTransparency)))
+
+	engine.SetVsync(data.Vsync)
+	tdaudio.SetSfxVolume(float32(data.SfxVolume))
+	tdaudio.SetMusicVolume(float32(data.MusicVolume))
 }
 
 func LoadOrInit() {

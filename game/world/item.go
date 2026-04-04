@@ -328,7 +328,7 @@ func (item *Item) Update(deltaTime float32) {
 }
 
 func (item *Item) Render(context *render.Context) {
-	item.spriteRender.Render(item.body.Position, &item.animPlayer, context, 0.0)
+	item.spriteRender.Render(item.body.Position, &item.animPlayer, context, 0.0, string(settings.Current.Locale))
 }
 
 func (item *Item) OnUse(player *Player) {

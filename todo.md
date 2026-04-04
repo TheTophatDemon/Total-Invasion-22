@@ -1,7 +1,8 @@
 # TODO
 - Menus
-  - Resolution change confirmation
-  - Separate Pause binding
+  - Fast look binding
+  - Screen resolution vs window resolution
+  - Headbanging Wraith
   - Exit screen
 - E1M5
   - Hanging Skeleton Prop

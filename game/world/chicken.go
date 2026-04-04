@@ -170,7 +170,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 }
 
 func (chk *Chicken) Render(context *render.Context) {
-	chk.SpriteRender.Render(chk.Body().Position, &chk.AnimPlayer, context, chk.actor.YawAngle)
+	chk.SpriteRender.Render(chk.Body().Position, &chk.AnimPlayer, context, chk.actor.YawAngle, string(settings.Current.Locale))
 	chk.bloodParticles.Render(chk.Body().Position, context)
 }
 

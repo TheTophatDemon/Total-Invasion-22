@@ -232,7 +232,7 @@ func (player *Player) Update(deltaTime float32) {
 
 func (player *Player) Render(context *render.Context) {
 	if gWorld.InWinState() {
-		player.Sprite.Render(player.Body().Position, &player.AnimPlayer, context, player.actor.YawAngle)
+		player.Sprite.Render(player.Body().Position, &player.AnimPlayer, context, player.actor.YawAngle, string(settings.Current.Locale))
 	}
 }
 

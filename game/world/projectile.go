@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 const (
@@ -133,7 +134,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 }
 
 func (proj *Projectile) Render(context *render.Context) {
-	proj.SpriteRender.Render(proj.body.Position, &proj.AnimPlayer, context, 0.0)
+	proj.SpriteRender.Render(proj.body.Position, &proj.AnimPlayer, context, 0.0, string(settings.Current.Locale))
 }
 
 func (proj *Projectile) moveForward(deltaTime float32) {

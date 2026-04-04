@@ -45,14 +45,6 @@ func ScreenSize() (width, height int) {
 	return gScreenWidth, gScreenHeight
 }
 
-func SetScreenSize(width, height int) {
-	gScreenWidth = width
-	gScreenHeight = height
-	window.SetSize(width, height)
-	gl.Viewport(0, 0, int32(width), int32(height))
-	CenterWindow()
-}
-
 func IsFullscreen() bool {
 	return window.GetMonitor() != nil
 }
@@ -70,14 +62,18 @@ func SetVsync(isVsync bool) {
 	}
 }
 
-func SetFullscreen(isFullscreen bool) {
-	width, height := ScreenSize()
-	if isFullscreen {
+func SetVideoMode(isFullscreen bool, width, height int) {
+	if gScreenWidth != width || gScreenHeight != height {
+		gScreenWidth = width
+		gScreenHeight = height
+		window.SetSize(width, height)
+		gl.Viewport(0, 0, int32(width), int32(height))
+	}
+	if isFullscreen && !IsFullscreen() {
 		window.SetMonitor(glfw.GetPrimaryMonitor(), 0, 0, width, height, 60)
-	} else {
-		x, y := window.GetPos()
+	} else if !isFullscreen && IsFullscreen() {
+		x, y := centerWindowPosition()
 		window.SetMonitor(nil, x, y, width, height, 60)
-		CenterWindow()
 	}
 }
 
@@ -85,11 +81,17 @@ func Shutdown() {
 	window.SetShouldClose(true)
 }
 
-func CenterWindow() {
+func centerWindowPosition() (x, y int) {
 	_, _, monitorW, monitorH := glfw.GetPrimaryMonitor().GetWorkarea()
 	winWidth, winHeight := window.GetSize()
 	// This isn't _exactly_ the center, but who cares?
-	window.SetPos((monitorW/2)-(winWidth/2), (monitorH/2)-(winHeight/2))
+	x = (monitorW / 2) - (winWidth / 2)
+	y = (monitorH / 2) - (winHeight / 2)
+	return
+}
+
+func CenterWindow() {
+	window.SetPos(centerWindowPosition())
 }
 
 func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFullscreen bool) {
@@ -166,7 +168,9 @@ func Run(app App) {
 	}
 
 	// Reset video mode before leaving
-	SetFullscreen(false)
+	winX, winY := window.GetPos()
+	winW, winH := window.GetSize()
+	window.SetMonitor(nil, winX, winY, winW, winH, 60)
 }
 
 func DeInit() {

@@ -47,6 +47,9 @@ type (
 	ReturnItem struct {
 		MenuItem
 	}
+	LabelItem struct {
+		element
+	}
 )
 
 const (
@@ -406,4 +409,36 @@ func (returnItem *ReturnItem) Input(action MenuInputType, menu *Menu) {
 		cache.GetSfx(SfxMenuHit).Play()
 		menu.returnToParent()
 	}
+}
+
+func (item *LabelItem) Init(stringKey string) *LabelItem {
+	if item == nil {
+		return nil
+	}
+	return item.InitUnlocalized(settings.Localize(stringKey))
+}
+
+func (item *LabelItem) InitUnlocalized(actualText string) *LabelItem {
+	if item == nil {
+		return nil
+	}
+	item.element = ui.NewText(ui.Transform{}, actualText, ui.TextConfig{})
+	return item
+}
+
+func (item *LabelItem) Element() *ui.Element {
+	return &item.element
+}
+
+func (item *LabelItem) Focus() {
+}
+
+func (item *LabelItem) Blur() {
+}
+
+func (item *LabelItem) Input(action MenuInputType, menu *Menu) {
+}
+
+func (item *LabelItem) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	queue.Add(&item.element)
 }

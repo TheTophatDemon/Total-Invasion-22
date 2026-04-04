@@ -120,26 +120,28 @@ func (menu *SettingsMenu) Enter() {
 
 func (menu *SettingsMenu) Exit() {
 	settings.Current.Locale = menu.chooserLanguage.Choice()
-
-	newSize := menu.chooserScreenSize.Choice()
-
-	settings.Current.Fullscreen = bool(menu.chooserFullscreen.Choice())
-	engine.SetFullscreen(settings.Current.Fullscreen)
-
-	settings.Current.WindowWidth = newSize[0]
-	settings.Current.WindowHeight = newSize[1]
-	engine.SetScreenSize(int(settings.Current.WindowWidth), int(settings.Current.WindowHeight))
-	ui.GlobalTextScale = settings.Current.TextScale()
-
 	settings.Current.Vsync = bool(menu.chooserVsync.Choice())
-	engine.SetVsync(settings.Current.Vsync)
-
 	settings.Current.SfxVolume = menu.sliderSfxVolume.FractionValue()
 	settings.Current.MusicVolume = menu.sliderMusicVolume.FractionValue()
 	settings.Current.Fov = menu.sliderFOV.FloatValue()
-
 	settings.Current.MouseSensitivity = menu.sliderSensitivity.FloatValue()
 	settings.Current.ChickenHarm = bool(menu.chooserChickens.Choice())
+
+	settingsBeforeSizeChange := settings.Current
+	settings.Current.Fullscreen = bool(menu.chooserFullscreen.Choice())
+	newSize := menu.chooserScreenSize.Choice()
+	settings.Current.WindowWidth = newSize[0]
+	settings.Current.WindowHeight = newSize[1]
+	settings.Current.Apply()
+
+	gotLarger := settingsBeforeSizeChange.WindowWidth < settings.Current.WindowWidth ||
+		settingsBeforeSizeChange.WindowHeight < settings.Current.WindowHeight ||
+		(!settingsBeforeSizeChange.Fullscreen && settings.Current.Fullscreen)
+	if gotLarger {
+		menu.app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(ConfirmMenu).Init(menu.app, menu, menu.parent, settingsBeforeSizeChange),
+		})
+	}
 
 	// Reset the title menu so things are positioned correctly
 	if titleMenu, ok := menu.parent.(*TitleMenu); ok {

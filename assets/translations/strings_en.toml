@@ -28,6 +28,8 @@ off = "Off"
 setBindingFor = "Set binding %d (%v)"
 clearBinding = "Clear binding %d"
 inputPrompt = "Pick a button, joystick, or mouse movement..."
+resizePrompt = "Is this resolution good? Reverting in %v..."
+confirm = "Confirm"
 
 # Input actions
 actionPause = "Pause"

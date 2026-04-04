@@ -270,7 +270,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 }
 
 func (enemy *Enemy) Render(context *render.Context) {
-	enemy.SpriteRender.Render(enemy.Body().Position, &enemy.AnimPlayer, context, enemy.spriteAngle)
+	enemy.SpriteRender.Render(enemy.Body().Position, &enemy.AnimPlayer, context, enemy.spriteAngle, string(settings.Current.Locale))
 	enemy.bloodParticles.Render(enemy.Body().Position, context)
 }
 

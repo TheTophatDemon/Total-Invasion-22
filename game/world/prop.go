@@ -120,7 +120,7 @@ func (prop *Prop) Update(deltaTime float32) {
 }
 
 func (prop *Prop) Render(context *render.Context) {
-	prop.isSeen = prop.SpriteRender.Render(prop.body.Position, &prop.AnimPlayer, context, prop.yaw)
+	prop.isSeen = prop.SpriteRender.Render(prop.body.Position, &prop.AnimPlayer, context, prop.yaw, string(settings.Current.Locale))
 }
 
 /************
