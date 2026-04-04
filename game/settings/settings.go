@@ -45,9 +45,9 @@ type (
 		ActionMenuDecrement Action
 
 		// In game actions
-		ActionForward, ActionBack, ActionLeft, ActionRight Action
-		ActionSlow, ActionLookLeft, ActionLookRight        Action
-		ActionFire, ActionAltFire, ActionUse               Action
+		ActionForward, ActionBack, ActionLeft, ActionRight                                   Action
+		ActionSlow, ActionLookLeft, ActionLookRight, ActionFastLookLeft, ActionFastLookRight Action
+		ActionFire, ActionAltFire, ActionUse                                                 Action
 
 		// Weapon selection actions
 		ActionSickle, ActionChicken, ActionGrenade, ActionParusu         Action
@@ -107,7 +107,9 @@ func init() {
 		ActionRight:         Action{input.NewKeyBinding(glfw.KeyD)},
 		ActionSlow:          Action{input.NewKeyBinding(glfw.KeyLeftShift), input.NewKeyBinding(glfw.KeyRightShift)},
 		ActionLookLeft:      Action{input.NewMouseMovementBinding(input.MouseAxisNegX), input.NewKeyBinding(glfw.KeyLeft)},
+		ActionFastLookLeft:  Action{nil, nil},
 		ActionLookRight:     Action{input.NewMouseMovementBinding(input.MouseAxisPosX), input.NewKeyBinding(glfw.KeyRight)},
+		ActionFastLookRight: Action{nil, nil},
 		ActionFire:          Action{input.NewMouseButtonBinding(glfw.MouseButtonLeft), input.NewKeyBinding(glfw.KeyLeftControl)},
 		ActionAltFire:       Action{input.NewMouseButtonBinding(glfw.MouseButtonRight), input.NewKeyBinding(glfw.KeyLeftAlt)},
 		ActionUse:           Action{input.NewKeyBinding(glfw.KeyE)},

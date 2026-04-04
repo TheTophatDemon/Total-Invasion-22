@@ -1,6 +1,5 @@
 # TODO
 - Menus
-  - Fast look binding
   - Screen resolution vs window resolution
   - Headbanging Wraith
   - Exit screen
