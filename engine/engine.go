@@ -26,7 +26,7 @@ var debugMode bool
 var window *glfw.Window
 
 // We're tracking this ourselves so that switching to fullscreen doesn't mess up the UI
-var gScreenWidth, gScreenHeight int
+var gScreenWidth, gScreenHeight int = 1280, 720
 var gVsync bool
 
 func FPS() int {

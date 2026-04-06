@@ -1,6 +1,6 @@
 # TODO
 - Menus
-  - Screen resolution vs window resolution
+  - Pixelization settings
   - Headbanging Wraith
   - Exit screen
 - E1M5
@@ -12,10 +12,11 @@
   - Move maps up a tile so chickens can swim in the right place
   - Automatically set next level
   - Auto secret placement
-- Modify loading screen graphic to be more on-model
-- Fix in game HUD to adapt to screen size changes
 - Pressing E on Geoffrey doesn't show the message anymore?
 - Prevent intro sickle from damaging enemies
+- Prevent wraiths from meleeing you through doors
+- Modify loading screen graphic to be more on-model
+- Fix in game HUD to adapt to screen size changes
 - Saving / checkpoints
 - Game Difficulty Settings
 - Make enemies able to hear player behind walls as long as space is connected.

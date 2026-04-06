@@ -426,14 +426,8 @@ func (el *Element) Render(context *render.Context) {
 		} else {
 			ninePatchSlice.Bounds = math2.Rect{Width: 1, Height: 1}
 		}
-		boxSize := el.BgMesh.BoundingBox().Size()
-		displacement := el.BgMesh.BoundingBox().Min.Vec2().Add(math2.ElemMul2(boxSize.Vec2(), mgl32.Vec2(el.transform.Origin))).Mul(-1.0)
 
 		patches := ninePatchSlice.NinePatchRects()
-		innerWidth := el.Size()[0] - patches[textures.SliceLeftMiddle].Width - patches[textures.SliceRightMiddle].Width
-		innerHeight := el.Size()[1] - patches[textures.SliceTopMiddle].Height - patches[textures.SliceBottomMiddle].Height
-		screenW, screenH := engine.ScreenSize()
-		fScreenWidth, fScreenHeight := float32(screenW), float32(screenH)
 		for i, patch := range patches {
 			if patch.Width == 0 || patch.Height == 0 {
 				continue
@@ -455,62 +449,7 @@ func (el *Element) Render(context *render.Context) {
 			}
 			failure.CheckOpenGLError()
 
-			var matrix mgl32.Mat4 = mgl32.Ident4()
-
-			matrix = mgl32.Translate3D(displacement[0], displacement[1], 0.0).Mul4(matrix)
-
-			var width, height float32
-			switch textures.SliceIndex(i) {
-			case textures.SliceTopLeft, textures.SliceTopRight, textures.SliceBottomRight, textures.SliceBottomLeft:
-				width, height = patch.Width, patch.Height
-			case textures.SliceLeftMiddle, textures.SliceRightMiddle:
-				width = patch.Width
-				height = innerHeight
-			case textures.SliceTopMiddle, textures.SliceBottomMiddle:
-				width = innerWidth
-				height = patch.Height
-			case textures.SliceCenter:
-				width = innerWidth
-				height = innerHeight
-			}
-			matrix = mgl32.Scale3D(width/boxSize[0], height/boxSize[1], 1.0).Mul4(matrix)
-
-			var xOff float32
-			switch textures.SliceIndex(i) {
-			case textures.SliceTopMiddle, textures.SliceCenter, textures.SliceBottomMiddle:
-				xOff = patches[textures.SliceLeftMiddle].Width
-			case textures.SliceTopRight, textures.SliceRightMiddle, textures.SliceBottomRight:
-				xOff = patches[textures.SliceLeftMiddle].Width + innerWidth
-			}
-
-			var yOff float32
-			switch textures.SliceIndex(i) {
-			case textures.SliceLeftMiddle, textures.SliceCenter, textures.SliceRightMiddle:
-				yOff = patches[textures.SliceTopMiddle].Height
-			case textures.SliceBottomLeft, textures.SliceBottomMiddle, textures.SliceBottomRight:
-				yOff = patches[textures.SliceTopMiddle].Height + innerHeight
-			}
-
-			matrix = mgl32.Translate3D(xOff, yOff, 0.0).Mul4(matrix)
-
-			// Rotate
-			if el.Rotation() != 0 {
-				matrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(matrix)
-			}
-
-			// Apply shear
-			if el.Shear() != (mgl32.Vec2{}) {
-				matrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(matrix)
-			}
-
-			// Translate
-			matrix = mgl32.Translate3D(
-				el.Position()[0]+(el.Anchor()[0]*fScreenWidth),
-				el.Position()[1]+(el.Anchor()[1]*fScreenHeight),
-				el.Depth(),
-			).Mul4(matrix)
-
-			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, matrix)
+			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.sliceMatrices[i])
 			failure.CheckOpenGLError()
 
 			el.BgMesh.DrawAll()

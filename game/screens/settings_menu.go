@@ -3,7 +3,9 @@ package screens
 import (
 	"fmt"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
@@ -28,6 +30,7 @@ type (
 		chooserChickens   Chooser[OnOff]
 		bindingItem       MenuItem
 		reinitNextFrame   bool
+		wraith            ui.Element
 	}
 )
 
@@ -92,6 +95,18 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 		},
 		parent,
 	)
+
+	wraithTex := cache.GetTexture("assets/textures/sprites/wraith.png")
+	if headbangAnim, ok := wraithTex.GetAnimation("headbang"); ok {
+		settingsMenu.wraith = ui.NewBox(ui.Transform{
+			Position: settingsMenu.position.Add(mgl32.Vec2{}),
+			Size:     mgl32.Vec2{64.0, 64.0},
+			Origin:   ui.Ratios{1.0, 0.0},
+			Depth:    20,
+		}, wraithTex)
+		settingsMenu.wraith.AnimPlayer.PlayNewAnim(headbangAnim)
+	}
+
 	return settingsMenu
 }
 
@@ -102,6 +117,11 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	menu.Menu.Layout(queue, deltaTime)
+	bounds := menu.Bounds()
+	menu.wraith.SetPosition(mgl32.Vec2{bounds.X + bounds.Width, bounds.Y})
+	menu.wraith.AnimPlayer.Update(deltaTime)
+	queue.Add(&menu.wraith)
+
 	tdaudio.SetSfxVolume(float32(menu.sliderSfxVolume.FractionValue()))
 	tdaudio.SetMusicVolume(float32(menu.sliderMusicVolume.FractionValue()))
 
