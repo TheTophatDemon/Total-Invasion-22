@@ -12,7 +12,6 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
@@ -179,17 +178,12 @@ func main() {
 		settings.Current.Fullscreen,
 	)
 	defer engine.DeInit()
+	settings.Current.Apply()
 
 	// The first sound loaded is used as the error sound
 	cache.GetSfx("assets/sounds/error.wav")
 	cache.PreloadSfx("assets/sounds")
 
-	// Update audio volume based on settings.
-	tdaudio.SetSfxVolume(float32(settings.Current.SfxVolume))
-	tdaudio.SetMusicVolume(float32(settings.Current.MusicVolume))
-
-	ui.SetTextShadowColor(color.Black.WithAlpha(float32(settings.Current.TextShadowTransparency)))
-	ui.GlobalTextScale = settings.Current.TextScale()
 	cache.DefaultFont, _ = cache.GetFont("assets/textures/ui/font.fnt")
 
 	app := &App{}
