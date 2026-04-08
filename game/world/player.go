@@ -349,7 +349,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			if !ok || item.Body() == nil || !item.Body().OnLayer(ColLayerUsable) {
 				continue
 			}
-			if item.Body().Shape.Touches(item.Body().Position, player.Body().Position, player.Body().Shape) {
+			if item.Body().Shape.Touches(item.Body().Position, player.Body().Position.Add(player.Body().Velocity.Mul(deltaTime)), player.Body().Shape) {
 				item.OnUse(player)
 			}
 		}

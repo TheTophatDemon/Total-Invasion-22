@@ -1,7 +1,6 @@
 # TODO
 - Menus
   - Pixelization settings
-  - Headbanging Wraith
   - Exit screen
 - E1M5
   - Hanging Skeleton Prop
@@ -12,7 +11,6 @@
   - Move maps up a tile so chickens can swim in the right place
   - Automatically set next level
   - Auto secret placement
-- Pressing E on Geoffrey doesn't show the message anymore?
 - Prevent intro sickle from damaging enemies
 - Prevent wraiths from meleeing you through doors
 - Modify loading screen graphic to be more on-model
