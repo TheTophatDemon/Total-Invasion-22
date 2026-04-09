@@ -3,7 +3,6 @@
   - Pixelization settings
   - Exit screen
 - E1M5
-  - Hanging Skeleton Prop
   - Sign of Madness
   - Super Armor
   - Song
