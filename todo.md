@@ -7,8 +7,6 @@
   - Super Armor
   - Song
 - TI2 Converter
-  - Move maps up a tile so chickens can swim in the right place
-  - Automatically set next level
   - Auto secret placement
 - Prevent intro sickle from damaging enemies
 - Prevent wraiths from meleeing you through doors

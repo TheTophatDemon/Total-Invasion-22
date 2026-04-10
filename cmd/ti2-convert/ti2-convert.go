@@ -88,25 +88,38 @@ func main() {
 	}
 	defer tiFile.Close()
 
+	// Parse map code / number
+	mapCode := strings.TrimSuffix(filepath.Base(inputPath), ".ti")
+	mLoc := strings.IndexRune(mapCode, 'M')
+	var episodeNumber, mapNumber int64
+	if mLoc >= 0 && mLoc < len(mapCode)-1 {
+		episodeNumber, _ = strconv.ParseInt(mapCode[1:mLoc], 10, 64)
+		mapNumber, _ = strconv.ParseInt(mapCode[mLoc+1:], 10, 64)
+	} else {
+		fmt.Errorf("warning: Map Code %v is in incorrect format", mapCode)
+	}
+
 	type tileToAdd struct {
 		te3.Tile
 		coords [3]int
 	}
 
 	const (
-		IDX_CUBE = iota
-		IDX_PANEL
-		IDX_BARS
-		IDX_DOOR
-		IDX_HANDRAIL
+		idxCube = iota
+		idxPanel
+		idxBars
+		idxDoor
+		idxHandrail
+		idxLiquid
 	)
 
 	modelList := []string{
-		IDX_CUBE:     "assets/models/shapes/cube.obj",
-		IDX_PANEL:    "assets/models/shapes/panel.obj",
-		IDX_BARS:     "assets/models/shapes/bars.obj",
-		IDX_DOOR:     "assets/models/shapes/door.obj",
-		IDX_HANDRAIL: "assets/models/shapes/handrail.obj",
+		idxCube:     "assets/models/shapes/cube.obj",
+		idxPanel:    "assets/models/shapes/panel.obj",
+		idxBars:     "assets/models/shapes/bars.obj",
+		idxDoor:     "assets/models/shapes/door.obj",
+		idxHandrail: "assets/models/shapes/handrail.obj",
+		idxLiquid:   "assets/models/shapes/liquid.obj",
 	}
 	textureList := make([]string, 0, 64)
 
@@ -117,6 +130,27 @@ func main() {
 			textureList = append(textureList, texturePath)
 		}
 		return textureIndex
+	}
+
+	modelForTile := func(oldTextureName string, wallFlag int64) int {
+		modelIndex := idxCube
+		switch wallFlag {
+		case 1, 2, 7, 8, 9:
+			modelIndex = idxPanel
+		}
+		switch removeTextureTags(oldTextureName) {
+		case "bars", "brokenbars":
+			modelIndex = idxBars
+		case "door", "spacedoor", "spacedoor_dark", "prismirdoor":
+			modelIndex = idxDoor
+		case "fence":
+			modelIndex = idxHandrail
+		case "invisible":
+			modelIndex = idxCube
+		case "lava":
+			modelIndex = idxLiquid
+		}
+		return modelIndex
 	}
 
 	tilesToAdd := make([]tileToAdd, 0, 1024)
@@ -176,22 +210,7 @@ func main() {
 			yaw = int((1 + link) % 4)
 		}
 
-		// Set shape depending on tile type
-		modelIndex := IDX_CUBE
-		switch flag {
-		case 1, 2, 7, 8, 9:
-			modelIndex = IDX_PANEL
-		}
-		switch tokens[3] {
-		case "bars_invisible", "brokenbars_invisible_notsolid":
-			modelIndex = IDX_BARS
-		case "door", "spacedoor", "spacedoor_dark", "prismirdoor":
-			modelIndex = IDX_DOOR
-		case "fence_invisible":
-			modelIndex = IDX_HANDRAIL
-		case "invisible":
-			modelIndex = IDX_CUBE
-		}
+		modelIndex := modelForTile(tokens[3], flag)
 
 		if flag > 0 && flag != 6 && flag != 7 {
 			// Add dynamic tile entities
@@ -204,7 +223,7 @@ func main() {
 				Color:   [3]uint8{255, 255, 255},
 				Position: [3]float32{
 					float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
-					te3.GridSpacing + te3.HalfGridSpacing,
+					te3.GridSpacing * 2.5,
 					float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 				},
 				Properties: map[string]string{},
@@ -263,8 +282,14 @@ func main() {
 						ent.Properties["action"] = "activate"
 					}
 				case 12: // Level exit
+					var nextMapCode string
+					if link == 0 {
+						nextMapCode = fmt.Sprintf("e%vm%v", episodeNumber, mapNumber+1)
+					} else {
+						nextMapCode = fmt.Sprintf("e%vm%v", episodeNumber, link)
+					}
 					ent.Properties["action"] = "end level"
-					ent.Properties["level"] = "TODO!"
+					ent.Properties["level"] = nextMapCode
 					delete(ent.Properties, "link")
 				case 13: // Conveyor belt
 					ent.Properties["action"] = "push"
@@ -292,7 +317,7 @@ func main() {
 					Yaw:        uint8(yaw),
 					Pitch:      0,
 				},
-				coords: [3]int{int(x), 1, int(z)},
+				coords: [3]int{int(x), 2, int(z)},
 			})
 		}
 	}
@@ -331,10 +356,16 @@ func main() {
 			panic(err)
 		}
 
+		var yOff int = 1
+		modelIndex := modelForTile(tokens[5], -1)
+		if modelIndex == idxLiquid {
+			yOff = 0
+		}
+
 		tilesToAdd = append(tilesToAdd, tileToAdd{
-			coords: [3]int{int(x), int(ceilingFlag * 2), int(z)},
+			coords: [3]int{int(x), yOff + int(ceilingFlag*2), int(z)},
 			Tile: te3.Tile{
-				ShapeID:    IDX_CUBE,
+				ShapeID:    te3.ShapeID(modelIndex),
 				TextureIDs: [2]te3.TextureID{te3.TextureID(textureIndex), te3.TextureID(textureIndex)},
 			},
 		})
@@ -351,7 +382,7 @@ func main() {
 	gridWidth := int(maxX - minX + 1)
 	gridLength := int(maxZ - minZ + 1)
 	gridLayerSize := gridWidth * gridLength
-	grid := slices.Repeat([]te3.Tile{{ShapeID: -1}}, gridWidth*3*gridLength)
+	grid := slices.Repeat([]te3.Tile{{ShapeID: -1}}, gridWidth*4*gridLength)
 	for _, pair := range tilesToAdd {
 		grid[(pair.coords[0]-int(minX))+((pair.coords[2]-int(minZ))*gridWidth)+(pair.coords[1]*gridLayerSize)] = pair.Tile
 	}
@@ -397,7 +428,7 @@ func main() {
 			Color: [3]uint8{255, 255, 255},
 			Position: [3]float32{
 				float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
-				te3.GridSpacing + te3.HalfGridSpacing,
+				te3.GridSpacing * 2.5,
 				float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 			},
 			Display:    te3.ENT_DISPLAY_SPHERE,
@@ -515,7 +546,7 @@ func main() {
 			Textures: textureList,
 			Shapes:   modelList,
 			Width:    gridWidth,
-			Height:   3,
+			Height:   4,
 			Length:   gridLength,
 			Data:     grid,
 		},
