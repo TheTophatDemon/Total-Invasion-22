@@ -132,7 +132,7 @@ func (proj *Projectile) sickleCollide(movement mgl32.Vec3, otherEnt any, mask co
 	}
 
 	// Apply damage per second
-	if damageable, canDamage := otherEnt.(Damageable); canDamage && damageable != owner {
+	if damageable, canDamage := otherEnt.(Damageable); canDamage && damageable != owner && proj.body.Layers.On(ColLayerProjectiles) {
 		damaged := damageable.OnDamage(proj, proj.Damage*deltaTime)
 		if damaged && !proj.voices[2].IsPlaying() {
 			proj.voices[2] = cache.GetSfx("assets/sounds/weapon/sickle_cut.wav").
