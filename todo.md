@@ -6,8 +6,6 @@
   - Sign of Madness
   - Super Armor
   - Song
-- TI2 Converter
-  - Auto secret placement
 - Prevent intro sickle from damaging enemies
 - Prevent wraiths from meleeing you through doors
 - Modify loading screen graphic to be more on-model

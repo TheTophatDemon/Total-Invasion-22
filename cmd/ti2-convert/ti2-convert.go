@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/png"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 func removeTextureTags(textureName string) string {
@@ -96,7 +98,7 @@ func main() {
 		episodeNumber, _ = strconv.ParseInt(mapCode[1:mLoc], 10, 64)
 		mapNumber, _ = strconv.ParseInt(mapCode[mLoc+1:], 10, 64)
 	} else {
-		fmt.Errorf("warning: Map Code %v is in incorrect format", mapCode)
+		log.Printf("warning: Map Code %v is in incorrect format\n", mapCode)
 	}
 
 	type tileToAdd struct {
@@ -261,6 +263,23 @@ func main() {
 				case 5: // Push walls
 					ent.Properties["type"] = "pushwall"
 					delete(ent.Properties, "link")
+
+					backAngle := float32(yaw) * math.Pi / 2.0
+					// Spawn a secret trigger behind it
+					entsToAdd = append(entsToAdd, te3.Ent{
+						Display: te3.ENT_DISPLAY_SPHERE,
+						Radius:  2.0,
+						Color:   [3]uint8{255, 0, 255},
+						Position: [3]float32{
+							(float32(x) + 0.5 + math2.Sin(backAngle)) * te3.GridSpacing,
+							te3.GridSpacing * 2.5,
+							(float32(z) + 0.5 + math2.Cos(backAngle)) * te3.GridSpacing,
+						},
+						Properties: map[string]string{
+							"type":   "trigger",
+							"action": "secret",
+						},
+					})
 				case 10: // Disappearing walls
 					ent.Properties["direction"] = "down"
 					ent.Properties["type"] = "pushwall"
