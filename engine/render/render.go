@@ -32,6 +32,26 @@ type transpRender struct {
 	distance   float32 // Distance from the camera / value of Z axis in screen space.
 }
 
+func (context *Context) Enable3D() {
+	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.CULL_FACE)
+	gl.Enable(gl.BLEND)
+	gl.DepthFunc(gl.LESS)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.Disable(gl.SCISSOR_TEST)
+	gl.CullFace(gl.BACK)
+}
+
+func (context *Context) Enable2D() {
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.FRONT)
+	gl.Disable(gl.DEPTH_TEST)
+	gl.Enable(gl.BLEND)
+	gl.DepthFunc(gl.LESS)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.Disable(gl.SCISSOR_TEST)
+}
+
 func (context *Context) SetUniforms(shader *shaders.Shader) error {
 	return errors.Join(
 		shader.SetUniformMatrix(shaders.UniformViewMatrix, context.View),

@@ -1,6 +1,7 @@
 # TODO
+- Fix flickering before level intro
+- Refactor gl calls out of HUD code
 - Menus
-  - Pixelization settings
   - Exit screen
 - E1M5
   - Sign of Madness
@@ -20,6 +21,7 @@
 - Demo end screen
 - Re-record enemy voices
 - Gamepad support (for Steam Deck)
+- Have world iterators return iter.Seq2 (it might not actually heap allocate)
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
 - Optimize the memory usage of map loading to avoid GC stutters

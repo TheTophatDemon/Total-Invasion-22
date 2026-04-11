@@ -10,7 +10,7 @@ uniform sampler2D uTex;
 uniform float uFogStart;
 uniform float uFogLength;
 
-out vec4 oColor;
+layout(location = 0) out vec4 oColor;
 
 void main() {
     //Sample texture

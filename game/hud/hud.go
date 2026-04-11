@@ -1,8 +1,10 @@
 package hud
 
 import (
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -81,12 +83,18 @@ func (hud *Hud) Update(deltaTime float32) {
 	}
 }
 
-func (hud *Hud) Render() {
+func (hud *Hud) Render(frameBufferTexture *textures.Texture) {
+	gl.Viewport(0, 0, int32(settings.Current.WindowWidth), int32(settings.Current.WindowHeight))
 	// Setup 2D render context
 	renderContext := render.Context{
 		View:       mgl32.Ident4(),
 		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 	}
+	renderContext.Enable2D()
+	hud.renderQueue.Add(new(ui.NewBoxFull(math2.Rect{
+		Width:  settings.UIWidth(),
+		Height: settings.UIHeight(),
+	}, frameBufferTexture, color.White, -1.0)))
 	hud.renderQueue.Render(&renderContext)
 }
 

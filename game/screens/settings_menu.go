@@ -15,27 +15,44 @@ import (
 
 type (
 	Resolution   [2]uint16
+	Pixelization int
 	OnOff        bool
 	SettingsMenu struct {
 		Menu
-		chooserLanguage   Chooser[settings.Locale]
-		chooserScreenSize Chooser[Resolution]
-		chooserFullscreen Chooser[OnOff]
-		chooserVsync      Chooser[OnOff]
-		sliderSfxVolume   Slider
-		sliderMusicVolume Slider
-		sliderFOV         Slider
-		sliderSensitivity Slider
-		sliderTextShadow  Slider
-		chooserChickens   Chooser[OnOff]
-		bindingItem       MenuItem
-		reinitNextFrame   bool
-		wraith            ui.Element
+		chooserLanguage     Chooser[settings.Locale]
+		chooserScreenSize   Chooser[Resolution]
+		chooserPixelization Chooser[Pixelization]
+		chooserFullscreen   Chooser[OnOff]
+		chooserVsync        Chooser[OnOff]
+		sliderSfxVolume     Slider
+		sliderMusicVolume   Slider
+		sliderFOV           Slider
+		sliderSensitivity   Slider
+		sliderTextShadow    Slider
+		chooserChickens     Chooser[OnOff]
+		bindingItem         MenuItem
+		reinitNextFrame     bool
+		wraith              ui.Element
 	}
 )
 
 func (res Resolution) String() string {
 	return fmt.Sprintf("%vx%v", res[0], res[1])
+}
+
+func (pix Pixelization) String() string {
+	switch pix {
+	case 1:
+		return settings.Localize("noPixelization")
+	case 2:
+		return settings.Localize("somePixelization")
+	case 4:
+		return settings.Localize("hardPixelization")
+	case 8:
+		return settings.Localize("maxPixelization")
+	default:
+		return "INVALID"
+	}
 }
 
 func (onOff OnOff) String() string {
@@ -58,6 +75,9 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 		{1920, 1080},
 	}
 	settingsMenu.chooserScreenSize.Init("screenResolution", sizeChoices, Resolution{settings.Current.WindowWidth, settings.Current.WindowHeight})
+
+	pixelizationChoices := []Pixelization{1, 2, 4, 8}
+	settingsMenu.chooserPixelization.Init("pixelization", pixelizationChoices, Pixelization(settings.Current.Pixelization))
 
 	onOffChoices := []OnOff{OnOff(false), OnOff(true)}
 	settingsMenu.chooserFullscreen.Init("fullscreen", onOffChoices, OnOff(settings.Current.Fullscreen))
@@ -83,6 +103,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 			new(ReturnItem).Init(),
 			&settingsMenu.chooserLanguage,
 			&settingsMenu.chooserScreenSize,
+			&settingsMenu.chooserPixelization,
 			&settingsMenu.chooserFullscreen,
 			&settingsMenu.chooserVsync,
 			&settingsMenu.sliderSfxVolume,
@@ -152,6 +173,7 @@ func (menu *SettingsMenu) Exit() {
 	newSize := menu.chooserScreenSize.Choice()
 	settings.Current.WindowWidth = newSize[0]
 	settings.Current.WindowHeight = newSize[1]
+	settings.Current.Pixelization = int(menu.chooserPixelization.Choice())
 	settings.Current.Apply()
 
 	gotLarger := settingsBeforeSizeChange.WindowWidth < settings.Current.WindowWidth ||

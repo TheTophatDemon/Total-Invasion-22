@@ -59,6 +59,7 @@ type World struct {
 	impendingLevel string          // Path to the next level. Set once the player reaches an exit.
 	bspTree        tree.BspTree    // The BSP tree built in the previous frame.
 	skyRender      comps.SkyRender
+	frameBuffer    render.Framebuffer // Contains the rendered texture of the game
 }
 
 var gWorld *World
@@ -252,6 +253,18 @@ func (world *World) ResolveMapCollisions(
 }
 
 func (world *World) Render() {
+	effectiveScreenWidth := int(settings.Current.WindowWidth) / max(1, settings.Current.Pixelization)
+	effectiveScreenHeight := int(settings.Current.WindowHeight) / max(1, settings.Current.Pixelization)
+	shouldRegenFramebuffer := gWorld.frameBuffer.RenderTexture == nil ||
+		gWorld.frameBuffer.RenderTexture.Width() != effectiveScreenWidth ||
+		gWorld.frameBuffer.RenderTexture.Height() != effectiveScreenHeight
+	if shouldRegenFramebuffer {
+		if gWorld.frameBuffer.RenderTexture != nil {
+			gWorld.frameBuffer.Free()
+		}
+		gWorld.frameBuffer = render.NewFramebuffer(effectiveScreenWidth, effectiveScreenHeight)
+	}
+
 	// Find camera
 	camera, cameraExists := world.CurrentCamera.Get()
 	if !cameraExists {
@@ -273,23 +286,27 @@ func (world *World) Render() {
 		AmbientColor:   mgl32.Vec3{0.5, 0.5, 0.5},
 	}
 
-	if world.Hud.Intro.TimeLeft() < 2.0 {
-		// Render sky
-		world.skyRender.Render(&renderContext)
+	renderContext.Enable3D()
+	gWorld.frameBuffer.Bind()
 
-		// Render 3D game elements
-		world.RenderStores(&renderContext)
-		renderContext.RenderTranslucentObjects()
-	}
+	// Render sky
+	world.skyRender.Render(&renderContext)
+
+	// Render 3D game elements
+	world.RenderStores(&renderContext)
+	renderContext.RenderTranslucentObjects()
+
+	gWorld.frameBuffer.Unbind()
 
 	world.Hud.Debug.UpdateCounters(&renderContext)
 	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {
-		world.Hud.Render()
+		world.Hud.Render(gWorld.frameBuffer.RenderTexture)
 	}
 }
 
 func (world *World) TearDown() {
 	world.TearDownStores()
+	world.frameBuffer.Free()
 }
 
 func (world *World) QueueRemoval(entHandle scene.Handle) {

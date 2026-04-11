@@ -7,7 +7,7 @@ uniform vec4 uDiffuseColor;
 uniform bool uNoTexture;
 uniform sampler2D uTex;
 
-out vec4 oColor;
+layout(location = 0) out vec4 oColor;
 
 void main() {
     //Sample texture

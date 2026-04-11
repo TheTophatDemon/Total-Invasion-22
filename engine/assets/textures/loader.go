@@ -47,6 +47,32 @@ func loadImage(assetPath string) (*image.RGBA, error) {
 	return rgba, nil
 }
 
+func GenerateRenderTexture(width, height int) *Texture {
+	texture := &Texture{
+		width:  uint32(width),
+		height: uint32(height),
+	}
+	texture.target = gl.TEXTURE_2D
+	texture.glUnit = gl.TEXTURE0
+	gl.ActiveTexture(gl.TEXTURE0)
+	failure.CheckOpenGLError()
+	gl.GenTextures(1, &texture.glID)
+	failure.CheckOpenGLError()
+	gl.BindTexture(texture.target, texture.glID)
+	failure.CheckOpenGLError()
+	gl.TexImage2D(texture.target, 0, gl.RGB, int32(texture.width), int32(texture.height), 0, gl.RGB, gl.UNSIGNED_BYTE, nil)
+	failure.CheckOpenGLError()
+	gl.TexParameteri(texture.Target(), gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	failure.CheckOpenGLError()
+	gl.TexParameteri(texture.Target(), gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	failure.CheckOpenGLError()
+	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
+	failure.CheckOpenGLError()
+	gl.TexParameteri(texture.Target(), gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
+	failure.CheckOpenGLError()
+	return texture
+}
+
 func LoadTexture(assetPath string) (*Texture, error) {
 
 	// Look for metadata file

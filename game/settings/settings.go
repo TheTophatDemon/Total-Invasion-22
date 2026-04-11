@@ -35,7 +35,7 @@ type (
 			StartMap string
 		}
 		DifficultyIndex int
-
+		Pixelization    int
 		// Menu actions
 		ActionMenuDown      Action
 		ActionMenuUp        Action
@@ -86,6 +86,7 @@ var (
 func init() {
 	Default = Data{
 		WindowWidth: 1280, WindowHeight: 720,
+		Pixelization:           2,
 		Fullscreen:             false,
 		Vsync:                  true,
 		MouseSensitivity:       6.0,
