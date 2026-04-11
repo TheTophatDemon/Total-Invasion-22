@@ -42,6 +42,7 @@ type Player struct {
 	weaponWheelOpenness float32 // 1 if wheel is open, gradually drops to 0 after closing.
 	punTimer            timer.Timer
 	puns                []string
+	safety              bool // Prevents firing accidentally after exiting a menu
 }
 
 var _ HasActor = (*Player)(nil)
@@ -377,7 +378,12 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		hudPtr.Weapons.Select(game.WeaponCluckster)
 	}
 
-	if weap := hudPtr.Weapons.Selected(); weap != nil && settings.Current.ActionFire.Pressed() {
+	// Fire weapon
+	if player.safety {
+		if !settings.Current.ActionFire.Pressed() {
+			player.safety = false
+		}
+	} else if weap := hudPtr.Weapons.Selected(); weap != nil && settings.Current.ActionFire.Pressed() {
 		var cast collision.Result
 		if weap.IsShooter() {
 			// Don't fire if there is a wall too close in front
@@ -415,6 +421,8 @@ func (player *Player) ProcessSignal(signal any) {
 	switch signal.(type) {
 	case game.TeleportationSignal:
 		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+	case game.ResumeGameSignal:
+		player.safety = true
 	}
 }
 

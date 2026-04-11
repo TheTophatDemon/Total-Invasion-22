@@ -403,3 +403,13 @@ func (world *World) DeactivateLinks(source Linkable) {
 		}
 	}
 }
+
+func (world *World) ProcessSignal(signal any) {
+	switch signal.(type) {
+	case game.ResumeGameSignal:
+		playerIter := world.Players.Iter()
+		for player, _ := playerIter.Next(); player != nil; player, _ = playerIter.Next() {
+			player.ProcessSignal(signal)
+		}
+	}
+}

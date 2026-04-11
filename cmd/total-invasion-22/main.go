@@ -113,6 +113,7 @@ func (app *App) executeSignal(signal any) {
 		if app.world != nil {
 			app.screen = nil
 			input.TrapMouse()
+			app.world.ProcessSignal(signal)
 		}
 	case game.MapChangeSignal:
 		if app.world != nil {
