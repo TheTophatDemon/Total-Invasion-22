@@ -128,7 +128,7 @@ func (prop *Prop) Render(context *render.Context) {
  ************/
 
 func (prop *Prop) geoffreyUse(player *Player) {
-	gWorld.Hud.ShowMessage(settings.Localize("geoffrey"), 2.0, 10, color.Red)
+	gWorld.Hud.ShowMessage(settings.Localize("geoffrey"), 10, color.Red)
 }
 
 func (prop *Prop) geoffreyUpdate(deltaTime float32) {
@@ -158,7 +158,7 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 
 func (prop *Prop) eyeballUse(player *Player) {
 	_ = player
-	gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 1.0, 50, color.Magenta)
+	gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 50, color.Magenta)
 }
 
 func (prop *Prop) eyeballUpdate(deltaTime float32) {

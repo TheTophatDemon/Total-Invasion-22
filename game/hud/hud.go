@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	ui2 "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -25,7 +26,8 @@ type PlayerStats struct {
 }
 
 type Hud struct {
-	renderQueue ui.RenderQueue
+	renderQueue  ui.RenderQueue
+	renderQueue2 ui2.RenderQueue
 
 	flashRect  ui.Box
 	flashSpeed float32
@@ -35,7 +37,7 @@ type Hud struct {
 	Intro         LevelIntro
 	VictoryScreen VictoryScreen
 	StatusBar     statusBar
-	MessageBar    messageBar
+	MessageBar    MessageBar
 	PlayerStats   PlayerStats // Information the player entity supplies
 }
 
@@ -74,7 +76,7 @@ func (hud *Hud) Update(deltaTime float32) {
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
 		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
-		hud.MessageBar.layout(&hud.renderQueue, deltaTime)
+		hud.MessageBar.layout(&hud.renderQueue2, deltaTime)
 		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
 	} else {
 		// Only show after level ends.
@@ -95,10 +97,11 @@ func (hud *Hud) Render(frameBufferTexture *textures.Texture) {
 		Height: settings.UIHeight(),
 	}, frameBufferTexture, color.White, -1.0)))
 	hud.renderQueue.Render(&renderContext)
+	hud.renderQueue2.Render(&renderContext)
 }
 
-func (hud *Hud) ShowMessage(text string, duration float32, priority int, colr color.Color) {
-	hud.MessageBar.ShowMessage(text, duration, priority, colr)
+func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {
+	hud.MessageBar.ShowMessage(text, priority, colr)
 }
 
 func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {

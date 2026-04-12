@@ -163,7 +163,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	if settings.ActionKillEnemies.JustPressed() {
 		// Kill all cheat
 		enemy.actor.Health = 0
-		gWorld.Hud.ShowMessage(settings.Localize("killAllEnemies"), 2.0, 100, color.Red)
+		gWorld.Hud.ShowMessage(settings.Localize("killAllEnemies"), 100, color.Red)
 	}
 
 	enemy.AnimPlayer.Update(deltaTime)

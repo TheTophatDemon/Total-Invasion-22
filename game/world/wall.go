@@ -412,7 +412,7 @@ func (wall *Wall) Body() *comps.Body {
 
 func (wall *Wall) OnUse(player *Player) {
 	if len(wall.activateMessageKey) > 0 {
-		gWorld.Hud.ShowMessage(settings.Localize(wall.activateMessageKey), 2.0, 10, color.Red)
+		gWorld.Hud.ShowMessage(settings.Localize(wall.activateMessageKey), 10, color.Red)
 	}
 	if wall.disableUse {
 		return
@@ -432,7 +432,7 @@ func (wall *Wall) OnUse(player *Player) {
 		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Position)
 	case wall.key != game.KeysNone && (player.keys&wall.key) != wall.key:
 		// Locked if keycard not retrieved
-		gWorld.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 2.0, 10, color.Red)
+		gWorld.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 10, color.Red)
 		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Position)
 	case !wall.Origin.ApproxEqual(wall.Destination):
 		wall.ToggleMovement()

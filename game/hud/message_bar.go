@@ -3,89 +3,82 @@ package hud
 import (
 	"unicode/utf8"
 
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/tanema/gween"
+	"github.com/tanema/gween/ease"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type messageBar struct {
-	text       ui.Text
-	background ui.Box
-	timer      float32
-	priority   int
-	flash      float32 // Tracks the color change in the message bar after a message is shown
+type MessageBar struct {
+	text     ui.Element
+	priority int
+	flash    gween.Tween    // Tracks the color change in the message bar after a message is shown
+	scroll   gween.Sequence // Tracks the appearance of the text as it scrolls off screen.
 }
 
-func (messageBar *messageBar) init() {
-	messageBar.background = ui.Box{
-		Color: color.Black,
-		Src: math2.Rect{
-			Width: 1.0, Height: 1.0,
+func (messageBar *MessageBar) init() {
+	messageBar.text = ui.NewText(
+		ui.Transform{
+			Anchor: ui.Ratios{0.0, 1.0},
+			Origin: ui.Ratios{0.0, 1.0},
+			Size:   mgl32.Vec2{float32(settings.Current.WindowWidth), 32.0},
+			Depth:  2.0,
 		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      0.0,
-				Y:      settings.UIHeight() - 32.0,
-				Width:  settings.UIWidth(),
-				Height: 32.0,
-			},
-			Depth: 2.0,
-		},
-	}
-
-	messageBar.text = ui.Text{
-		Settings: ui.TextSettings{
-			WrapWords: false,
-		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      messageBar.background.Dest.X + 8.0,
-				Y:      messageBar.background.Dest.Y + 2.0,
-				Width:  messageBar.background.Dest.Width - 16.0,
-				Height: messageBar.background.Dest.Height - 2.0,
-			},
-			Depth: 3.0,
-			Scale: 1.0,
-		},
-	}
+		"",
+		ui.TextConfig{},
+	)
+	messageBar.text.BgMesh = cache.QuadMesh
+	messageBar.text.BgColor = maybe.Some(color.Black)
 }
 
-func (messageBar *messageBar) ShowMessage(text string, duration float32, priority int, colr color.Color) {
+func (messageBar *MessageBar) ShowMessage(text string, priority int, colr color.Color) {
 	if priority >= messageBar.priority {
-		messageBar.timer = duration
+		charCount := utf8.RuneCount([]byte(text))
+		scrollTweens := make([]*gween.Tween, 0, charCount+1)
+		// Pause to let the player read
+		scrollTweens = append(scrollTweens, gween.New(0.0, 0.0, float32(charCount)*(3.0/80.0), ease.Linear))
+		// Adds a tween for removing each character in sequence
+		for i := range charCount {
+			scrollTweens = append(scrollTweens, gween.New(float32(i), float32(i+1), 0.1, ease.Linear))
+		}
+		messageBar.scroll = *gween.NewSequence(scrollTweens...)
+
 		messageBar.priority = priority
 		messageBar.text.SetText(text)
-		messageBar.text.Color = colr
-		messageBar.flash = 0.5
+		messageBar.text.SetTextConfig(ui.TextConfig{
+			Color:         maybe.Some(colr),
+			WrapWords:     false,
+			DisableShadow: true,
+		})
+		messageBar.flash = *gween.New(1.0, 0.0, 0.5, ease.OutCubic)
 	}
 }
 
-func (messageBar *messageBar) layout(queue *ui.RenderQueue, deltaTime float32) {
-	messageBar.timer -= deltaTime
-	if messageBar.timer <= 0.0 {
-		const scrollSpeed = -0.1
-		if messageBar.timer < scrollSpeed {
-			messageBar.timer = 0.0
-			msgText := messageBar.text.Text()
-			if len(msgText) > 1 {
-				_, byteCount := utf8.DecodeRuneInString(msgText)
-				messageBar.text.SetText(msgText[byteCount:])
-			} else {
-				messageBar.priority = 0
-				messageBar.text.Color = color.Transparent
-				messageBar.text.SetText("")
-			}
+func (messageBar *MessageBar) layout(queue *ui.RenderQueue, deltaTime float32) {
+	_, shouldScroll, _ := messageBar.scroll.Update(deltaTime)
+	if shouldScroll {
+		msgText := messageBar.text.Text()
+		if len(msgText) > 1 {
+			_, byteCount := utf8.DecodeRuneInString(msgText)
+			messageBar.text.SetText(msgText[byteCount:])
+		} else {
+			messageBar.priority = 0
+			messageBar.text.SetText("")
 		}
 	}
-	messageBar.flash = max(0.0, messageBar.flash-deltaTime)
-	messageBar.background.Color = color.Color{
-		R: (1.0 - messageBar.text.Color.R) * messageBar.flash,
-		G: (1.0 - messageBar.text.Color.G) * messageBar.flash,
-		B: (1.0 - messageBar.text.Color.B) * messageBar.flash,
+
+	flashAmt, _ := messageBar.flash.Update(deltaTime)
+	txtColor := messageBar.text.TextConfig().Unwrap().Color.Or(color.White)
+	messageBar.text.BgColor = maybe.Some(color.Color{
+		R: (1.0 - txtColor.R) * flashAmt,
+		G: (1.0 - txtColor.G) * flashAmt,
+		B: (1.0 - txtColor.B) * flashAmt,
 		A: 1.0,
-	}
+	})
 
 	queue.Add(&messageBar.text)
-	queue.Add(&messageBar.background)
 }

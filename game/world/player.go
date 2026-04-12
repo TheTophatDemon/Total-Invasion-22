@@ -172,7 +172,7 @@ func (player *Player) Update(deltaTime float32) {
 		// Update puns
 		if player.punTimer.Update(deltaTime) && len(player.puns) > 0 {
 			pun := player.puns[0]
-			hudPtr.ShowMessage(pun, 2.0, 10, color.Red)
+			hudPtr.ShowMessage(pun, 10, color.Red)
 			player.puns = player.puns[1:]
 			player.punTimer.Elapsed -= 10.0
 		}
@@ -266,11 +266,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		if !player.actor.NoClip {
 			player.actor.Body().ExcludeLayers(collision.MaskAll)
 			player.actor.NoClip = true
-			hudPtr.ShowMessage(settings.Localize("noclipActivate"), 4.0, 100, color.Red)
+			hudPtr.ShowMessage(settings.Localize("noclipActivate"), 100, color.Red)
 		} else {
 			player.actor.Body().RestoreLayers()
 			player.actor.NoClip = false
-			hudPtr.ShowMessage(settings.Localize("noclipDeactivate"), 4.0, 100, color.Red)
+			hudPtr.ShowMessage(settings.Localize("noclipDeactivate"), 100, color.Red)
 		}
 	}
 
@@ -286,12 +286,12 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		} else {
 			message = settings.Localize("godModeDeactivate")
 		}
-		hudPtr.ShowMessage(message, 4.0, 100, color.Red)
+		hudPtr.ShowMessage(message, 100, color.Red)
 	}
 
 	// Mary sue mode
 	if settings.ActionMarySue.JustPressed() {
-		hudPtr.ShowMessage("Mary Sue mode activated!", 4.0, 100, color.Red)
+		hudPtr.ShowMessage("Mary Sue mode activated!", 100, color.Red)
 		for i := range game.WeaponCount - 1 {
 			hudPtr.Weapons.Get(i + 1).Equipped = true
 		}
@@ -438,7 +438,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 	if player.armorAmount <= 0 && wasNonZero {
 		player.armorType = game.ArmorTypeNone
 		cache.GetSfx("assets/sounds/armor_break.wav").Play()
-		hudPtr.ShowMessage(settings.Localize("armorBroken"), 2.0, 10, color.Red)
+		hudPtr.ShowMessage(settings.Localize("armorBroken"), 10, color.Red)
 	}
 	damage *= (1.0 - player.armorType.Defense())
 

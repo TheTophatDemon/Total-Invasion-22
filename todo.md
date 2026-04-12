@@ -1,14 +1,15 @@
 # TODO
-- Menus
-  - Exit screen
+- Fix in game HUD to adapt to screen size changes
 - E1M5
   - Sign of Madness
   - Super Armor
   - Song
 - Modify loading screen graphic to be more on-model
-- Fix in game HUD to adapt to screen size changes
-- Saving / checkpoints
+- Exit screen
+- Checkpoints
+- Saving
 - Game Difficulty Settings
+  - Survey menu that appears after completing the first level
 - Make enemies able to hear player behind walls as long as space is connected.
 - Dialog Cutscene
   - Song
@@ -19,10 +20,10 @@
 - Re-record enemy voices
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
+- Optimize world raycasts using the bsp tree
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
 - Optimize the memory usage of map loading to avoid GC stutters
-- Optimize world raycasts using the bsp tree
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?

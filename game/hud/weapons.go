@@ -215,7 +215,7 @@ func (weapons *Weapons) Select(order game.WeaponType) {
 		return
 	}
 	if order >= game.WeaponSickle && !wantWeapon.Equipped {
-		weapons.hud.ShowMessage(settings.Localize(wantWeapon.name+"NotFound"), 1.5, 2, color.Red)
+		weapons.hud.ShowMessage(settings.Localize(wantWeapon.name+"NotFound"), 2, color.Red)
 		return
 	}
 	if weapons.selectedWeapon >= game.WeaponSickle {

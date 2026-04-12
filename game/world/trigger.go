@@ -1,6 +1,7 @@
 package world
 
 import (
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -236,7 +237,7 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
 	gWorld.Hud.VictoryScreen.SecretsFound++
-	gWorld.Hud.ShowMessage(settings.Localize("foundSecret"), 2.0, 50, color.Red)
+	gWorld.Hud.ShowMessage(settings.Localize("foundSecret"), 50, color.Red)
 	cache.GetSfx("assets/sounds/secret_chime.wav").Play()
 	gWorld.QueueRemoval(tr.id.Handle)
 }
@@ -247,12 +248,8 @@ func activateAction(tr *Trigger, handle scene.Handle) {
 
 func messageAction(tr *Trigger, handle scene.Handle) {
 	timeStr := tr.entProperties["messageTime"]
-	time, err := strconv.ParseFloat(timeStr, 32)
-	if err != nil {
-		if len(timeStr) != 0 {
-			failure.LogErrWithLocation("invalid message time specified: %v", timeStr)
-		}
-		time = 1.0
+	if timeStr != "" {
+		log.Println("Warning: 'messageTime' property for triggers is obsolete")
 	}
 
 	priorityStr := tr.entProperties["messagePriority"]
@@ -291,7 +288,7 @@ func messageAction(tr *Trigger, handle scene.Handle) {
 		colr = color.White
 	}
 
-	gWorld.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), float32(time), int(priority), colr)
+	gWorld.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), int(priority), colr)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {

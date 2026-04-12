@@ -43,7 +43,6 @@ type Item struct {
 	floatOrigin                            mgl32.Vec3
 
 	messageKey   string
-	messageTime  float32
 	messageColor color.Color
 
 	id scene.Id[*Item]
@@ -154,7 +153,6 @@ func SpawnEggCarton(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err er
 	item.giveAmmo[game.AmmoTypeEgg] = 12
 	item.dontWaste = true
 	item.messageKey = "eggCartonGet"
-	item.messageTime = 1.0
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/egg_carton.png"), nil, &mgl32.Vec2{0.5, 0.5})
 	return
 }
@@ -164,7 +162,6 @@ func SpawnGrenades(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err err
 	item.giveAmmo[game.AmmoTypeGrenade] = 3
 	item.dontWaste = true
 	item.messageKey = "grenadesGet"
-	item.messageTime = 1.0
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/grenades.png"), nil, &mgl32.Vec2{0.5, 0.5})
 	return
 }
@@ -174,7 +171,6 @@ func SpawnPlasmaVials(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err 
 	item.giveAmmo[game.AmmoTypePlasma] = 50
 	item.dontWaste = true
 	item.messageKey = "plasmaVialsGet"
-	item.messageTime = 1.0
 	tex := cache.GetTexture("assets/textures/sprites/plasma_vials.png")
 	item.spriteRender = comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.375, 0.25})
 	item.animPlayer = comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true)
@@ -187,7 +183,6 @@ func SpawnChickenCannon(position mgl32.Vec3) (id scene.Id[*Item], item *Item, er
 	item.giveWeapon = game.WeaponChicken
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "chickenCannonGet"
-	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/chicken_cannon.png"), nil, &mgl32.Vec2{0.625, 0.25})
 	return
 }
@@ -198,7 +193,6 @@ func SpawnGrenadeLauncher(position mgl32.Vec3) (id scene.Id[*Item], item *Item, 
 	item.giveWeapon = game.WeaponGrenade
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "grenadeLauncherGet"
-	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/grenade_launcher.png"), nil, &mgl32.Vec2{0.5, 0.25})
 	return
 }
@@ -209,7 +203,6 @@ func SpawnParusu(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error
 	item.giveWeapon = game.WeaponParusu
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "parusuGet"
-	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/parusu.png"), nil, &mgl32.Vec2{0.625, 0.25})
 	return
 }
@@ -219,7 +212,6 @@ func SpawnAirhorn(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err erro
 	item.giveWeapon = game.WeaponAirhorn
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "airhornGet"
-	item.messageTime = 1.5
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/airhorn.png"), nil, &mgl32.Vec2{0.5, 0.5})
 	return
 }
@@ -232,7 +224,6 @@ func SpawnKeycard(position mgl32.Vec3, keyType game.Keys) (id scene.Id[*Item], i
 	id, item, err = spawnItemGeneric(position, mgl32.Vec3{0.25, 0.25, 0.25})
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/"+keyType.Name()+"card.png"), nil, &mgl32.Vec2{0.25, 0.25})
 	item.messageKey = keyType.Name() + "KeyGet"
-	item.messageTime = 1.5
 	item.giveKey = keyType
 	item.fallSpeed = 0.0
 	item.pickupSound = cache.GetSfx("assets/sounds/key.wav")
@@ -260,7 +251,6 @@ func SpawnArmorStand(position mgl32.Vec3, armorType game.ArmorType) (id scene.Id
 		id:           id,
 		fallSpeed:    2.0,
 		messageKey:   armorType.Name() + "ArmorGet",
-		messageTime:  1.5,
 		messageColor: color.Red,
 		spriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.4, 0.8}),
 		giveArmor:    armorType,
@@ -375,7 +365,7 @@ func (item *Item) OnUse(player *Player) {
 	item.pickupSound.PlayAttenuatedV(item.body.Position)
 	gWorld.Hud.FlashScreen(item.flashColor, 1.5)
 	if len(item.messageKey) > 0 {
-		gWorld.Hud.ShowMessage(settings.Localize(item.messageKey), item.messageTime, 10, item.messageColor)
+		gWorld.Hud.ShowMessage(settings.Localize(item.messageKey), 10, item.messageColor)
 	}
 
 	if item.collectAnim.IsNil() {
