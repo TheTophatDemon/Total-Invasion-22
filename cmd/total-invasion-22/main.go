@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"slices"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -41,6 +40,10 @@ func (app *App) Update(deltaTime float32) {
 		})
 	}
 
+	if app.screen == nil && app.world == nil && app.loadingTimer.Update(deltaTime) {
+		app.LoadGame(app.loadingMap)
+	}
+
 	switch true {
 	case app.screen != nil:
 		app.renderQueue.Clear()
@@ -58,8 +61,6 @@ func (app *App) Update(deltaTime float32) {
 			input.UntrapMouse()
 			app.screen = new(screens.TitleMenu).Init(app, true)
 		}
-	case app.loadingTimer.Update(deltaTime):
-		app.LoadGame(app.loadingMap)
 	}
 
 	// Process signals
@@ -89,8 +90,8 @@ func (app *App) Render() {
 			View:       mgl32.Ident4(),
 			Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 		}
+		renderContext.Enable2D()
 		loadingScreenTex := cache.GetTexture(fmt.Sprintf("assets/textures/ui/loading_screen_%v.png", string(settings.Current.Locale)))
-		gl.CullFace(gl.FRONT)
 		box := ui.NewBox(
 			ui.Transform{
 				Anchor: ui.Ratios{0.5, 0.0},

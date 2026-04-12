@@ -1,6 +1,4 @@
 # TODO
-- Fix flickering before level intro
-- Refactor gl calls out of HUD code
 - Menus
   - Exit screen
 - E1M5

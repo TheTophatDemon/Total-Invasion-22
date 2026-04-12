@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
@@ -33,6 +34,8 @@ type transpRender struct {
 }
 
 func (context *Context) Enable3D() {
+	width, height := engine.ScreenSize()
+	gl.Viewport(0, 0, int32(width), int32(height))
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.BLEND)
@@ -43,6 +46,8 @@ func (context *Context) Enable3D() {
 }
 
 func (context *Context) Enable2D() {
+	width, height := engine.ScreenSize()
+	gl.Viewport(0, 0, int32(width), int32(height))
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.FRONT)
 	gl.Disable(gl.DEPTH_TEST)
