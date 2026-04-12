@@ -5,7 +5,6 @@
   - Sign of Madness
   - Super Armor
   - Song
-- Prevent wraiths from meleeing you through doors
 - Modify loading screen graphic to be more on-model
 - Fix in game HUD to adapt to screen size changes
 - Saving / checkpoints

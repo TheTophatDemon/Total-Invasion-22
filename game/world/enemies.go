@@ -73,10 +73,22 @@ func wraithChaseUpdate(enemy *Enemy, deltaTime float32) {
 func wraithAttackUpdate(enemy *Enemy, deltaTime float32) {
 	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 	if enemy.AnimPlayer.HitATriggerFrame() {
-		if enemy.distToTarget >= wraithMeleeRange {
+		target, ok := scene.Get[HasActor](enemy.targetHandle)
+		if !ok {
+			return
+		}
+		// Melee attack
+		// Cast from the left and right side of the wraith to get around corners
+		// without attacking through walls
+		sideOfs := enemy.dirToTarget.Cross(math2.Vec3Up()).Mul(enemy.Body().Shape.Radius())
+		leftOrigin := enemy.actor.Position().Add(sideOfs)
+		leftCast, leftHandle := gWorld.Raycast(leftOrigin, target.Body().Position.Sub(leftOrigin).Normalize(), ColLayerMap|ColLayerActors, wraithMeleeRange, enemy.Body())
+		rightOrigin := enemy.actor.Position().Sub(sideOfs)
+		rightCast, rightHandle := gWorld.Raycast(rightOrigin, target.Body().Position.Sub(rightOrigin).Normalize(), ColLayerMap|ColLayerActors, wraithMeleeRange, enemy.Body())
+		if (leftCast.Hit && leftHandle.Equals(enemy.targetHandle)) || (rightCast.Hit && rightHandle.Equals(enemy.targetHandle)) {
+			target.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
+		} else if enemy.distToTarget > wraithMeleeRange {
 			enemy.changeState(&enemy.chaseState)
-		} else if player, ok := gWorld.CurrentPlayer.Get(); ok {
-			player.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
 		}
 	}
 }
