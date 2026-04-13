@@ -261,6 +261,7 @@ func (settings *Data) TextScale() float32 {
 	return 0.5
 }
 
+// Deprecated: Use hud.SpriteScale instead
 // Returns the size the sprites on the HUD should be scaled to.
 func SpriteScale() float32 {
 	return float32(Current.WindowHeight) / 240

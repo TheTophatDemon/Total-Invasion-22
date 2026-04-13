@@ -26,6 +26,7 @@ type TextConfig struct {
 	DisableShadow bool
 	WrapWords     bool
 	Font          *fonts.Font
+	Scale         maybe.T[float32]
 }
 
 func NewText(transform Transform, text string, config TextConfig) Element {
@@ -55,6 +56,8 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 		font = cache.DefaultFont
 	}
 
+	scale := config.Scale.Or(1.0) * GlobalTextScale
+
 	var scan scanner.Scanner
 	scan.Init(strings.NewReader(txt.text))
 	// Don't skip spaces or newlines
@@ -66,7 +69,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	newLine := func() {
 		// Set cursor to next line position
 		cursorX = 0.0
-		cursorY += float32(font.Common.LineHeight) * GlobalTextScale
+		cursorY += float32(font.Common.LineHeight) * scale
 
 		if (config.Align&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
 			// This will be the last box added to this line.
@@ -91,7 +94,7 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 			newLine()
 			continue
 		} else if unicode.IsSpace(token) {
-			cursorX += 16 * GlobalTextScale
+			cursorX += 16 * scale
 			continue
 		}
 
@@ -107,16 +110,16 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 
 			if !ok {
 				// Add blank space for unknown character
-				cursorX += 16 * GlobalTextScale
+				cursorX += 16 * scale
 				continue
 			}
 
 			// Find character position
 			charRect := math2.Rect{
-				X:      cursorX + float32(char.XOffset)*GlobalTextScale,
+				X:      cursorX + float32(char.XOffset)*scale,
 				Y:      cursorY - float32(font.Common.Base+char.YOffset),
-				Width:  float32(char.Size().X) * GlobalTextScale,
-				Height: float32(char.Size().Y) * GlobalTextScale,
+				Width:  float32(char.Size().X) * scale,
+				Height: float32(char.Size().Y) * scale,
 			}
 			if i == 0 {
 				firstBox = charRect
@@ -151,14 +154,14 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 			boxes = append(boxes, charRect)
 			chars = append(chars, char)
 
-			cursorX += float32(char.XAdvance) * GlobalTextScale
+			cursorX += float32(char.XAdvance) * scale
 
 			// Add kerning
 			if prevRune != scanner.EOF {
 				pair := bmfont.CharPair{First: prevRune, Second: rn}
 				kerning, ok := font.Kerning[pair]
 				if ok {
-					cursorX += float32(kerning.Amount) * GlobalTextScale
+					cursorX += float32(kerning.Amount) * scale
 				}
 			}
 
@@ -176,6 +179,11 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 		// Apply vertical alignment
 		if (config.Align&TextAlignCenterV) != 0 && charsHeight < txt.Height() {
 			shift := (txt.Height() - charsHeight) / 2.0
+			for i := range boxes {
+				boxes[i].Y += shift
+			}
+		} else if (config.Align & TextAlignBottom) != 0 {
+			shift := txt.Height() - charsHeight
 			for i := range boxes {
 				boxes[i].Y += shift
 			}

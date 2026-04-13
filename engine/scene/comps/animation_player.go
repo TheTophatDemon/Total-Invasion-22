@@ -139,6 +139,24 @@ func (ap *AnimationPlayer) PlayAnimSequence(anim1, anim2 textures.Animation) {
 	ap.nextAnimation = anim2
 }
 
+func (ap *AnimationPlayer) PlaySingleFrame(texture *textures.Texture, srcRect math2.Rect) {
+	ap.PlayNewAnim(textures.Animation{
+		Frames: []textures.Frame{
+			{
+				Rect:     srcRect,
+				Duration: 1.0,
+			},
+		},
+		Loop:    true,
+		Name:    "default",
+		Default: true,
+		AtlasSize: [2]uint{
+			uint(texture.Width()),
+			uint(texture.Height()),
+		},
+	})
+}
+
 func (ap *AnimationPlayer) IsPlaying() bool {
 	return ap.playing
 }

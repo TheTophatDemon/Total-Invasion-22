@@ -75,7 +75,7 @@ func (hud *Hud) Update(deltaTime float32) {
 		hud.Intro.Layout(&hud.renderQueue, deltaTime)
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
-		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
+		hud.StatusBar.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
 		hud.MessageBar.layout(&hud.renderQueue2, deltaTime)
 		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
 	} else {
@@ -107,4 +107,9 @@ func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {
 func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {
 	hud.flashRect.Color = color
 	hud.flashSpeed = fadeSpeed
+}
+
+// Returns the size the sprites on the HUD should be scaled to.
+func SpriteScale() float32 {
+	return float32(settings.Current.WindowHeight) / 240
 }

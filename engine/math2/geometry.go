@@ -87,6 +87,10 @@ func (r Rect) SizeVec() mgl32.Vec2 {
 	return mgl32.Vec2{r.Width, r.Height}
 }
 
+func (r Rect) PosVec() mgl32.Vec2 {
+	return mgl32.Vec2{r.X, r.Y}
+}
+
 func (husband Rect) Union(wife Rect) (child Rect) {
 	child = Rect{
 		X: min(husband.X, wife.X),

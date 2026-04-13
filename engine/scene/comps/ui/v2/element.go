@@ -27,6 +27,7 @@ const (
 	TextAlignCenterH TextAlign = 1 << (iota - 1)
 	TextAlignCenterV
 	TextAlignRight
+	TextAlignBottom
 )
 
 type Ratios [2]float32 // Defines a 2d vector representing fractions of a rectangle
@@ -45,6 +46,7 @@ type Element struct {
 	AnimPlayer                comps.AnimationPlayer
 	BgTexture                 *textures.Texture
 	BgMesh                    *geom.Mesh
+	BgFlippedHorz             bool
 	Scissor                   math2.Rect
 	text                      string
 	textMesh                  *geom.Mesh
@@ -437,6 +439,7 @@ func (el *Element) Render(context *render.Context) {
 				el.BgTexture.Bind()
 				texRect := el.BgTexture.Rect()
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
+				_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, el.BgFlippedHorz)
 				animFrame := el.AnimPlayer.FrameUV()
 				_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{
 					animFrame.X + (patch.X/texRect.Width)*animFrame.Width,

@@ -1,4 +1,10 @@
 # TODO
+- Transition HUD to ui v2
+  - Screen flash
+  - Weapon
+  - Level Intro
+  - Level Complete
+- Add visual indicator of overheal
 - Fix in game HUD to adapt to screen size changes
 - E1M5
   - Sign of Madness

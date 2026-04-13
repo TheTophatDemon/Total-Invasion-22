@@ -2,13 +2,13 @@ package hud
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
-	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -19,13 +19,12 @@ const (
 )
 
 type statusBar struct {
-	leftPanel, rightPanel           ui.Box
-	face                            ui.Box
+	leftPanel, rightPanel, face     ui.Element
 	faceState                       faceState
 	faceTimer                       float32
-	heartIcon, ammoIcon, armorIcon  ui.Box
-	keyIcons                        [4]ui.Box
-	healthStat, ammoStat, armorStat ui.Text
+	heartIcon, ammoIcon, armorIcon  ui.Element
+	keyIcons                        [4]ui.Element
+	healthStat, ammoStat, armorStat ui.Element
 }
 
 type faceState struct {
@@ -68,39 +67,38 @@ func (status *statusBar) init() {
 
 	// Left HUD panel
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
-	panelHeight := float32(leftPanelTex.Height()) * settings.SpriteScale()
-	status.leftPanel = ui.NewBoxFull(
-		math2.Rect{
-			X: 0.0, Y: settings.UIHeight() - panelHeight - 32.0,
-			Width:  float32(leftPanelTex.Width()) * settings.SpriteScale(),
-			Height: panelHeight,
+	panelHeight := float32(leftPanelTex.Height()) * SpriteScale()
+	status.leftPanel = ui.NewBox(
+		ui.Transform{
+			Position: mgl32.Vec2{0, -32.0},
+			Anchor:   ui.Ratios{0.0, 1.0},
+			Origin:   ui.Ratios{0.0, 1.0},
+			Size:     mgl32.Vec2{float32(leftPanelTex.Width()) * SpriteScale(), panelHeight},
+			Depth:    5.0,
 		},
 		leftPanelTex,
-		color.White,
-		5.0,
 	)
 
-	fitToSlice := func(parent math2.Rect, slice textures.Slice) math2.Rect {
-		return math2.Rect{
-			X:      parent.X + slice.Bounds.X*settings.SpriteScale(),
-			Y:      parent.Y + slice.Bounds.Y*settings.SpriteScale(),
-			Width:  slice.Bounds.Width * settings.SpriteScale(),
-			Height: slice.Bounds.Height * settings.SpriteScale(),
+	fitToSlice := func(parent *ui.Element, sliceName string, depth float32) ui.Transform {
+		tex := parent.BgTexture
+		slice := tex.FindSlice(sliceName)
+		screenOfs := math2.ElemMul2(
+			mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
+			mgl32.Vec2(parent.Anchor()),
+		)
+		originOfs := math2.ElemMul2(parent.Size(), mgl32.Vec2(parent.Origin()))
+		parentTopLeft := parent.Position().Add(screenOfs).Sub(originOfs)
+		return ui.Transform{
+			Position: parentTopLeft.Add(slice.Bounds.PosVec().Mul(SpriteScale())),
+			Size:     slice.Bounds.SizeVec().Mul(SpriteScale()),
+			Depth:    depth,
 		}
 	}
 
 	hudIconsTexture := cache.GetTexture(texHudIcons)
 
 	// Heart icon
-	heartSlice := leftPanelTex.FindSlice("healthIcon")
-	status.heartIcon = ui.Box{
-		Color:   color.White,
-		Texture: hudIconsTexture,
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.leftPanel.Dest, heartSlice),
-			Depth: 6.0,
-		},
-	}
+	status.heartIcon = ui.NewBox(fitToSlice(&status.leftPanel, "healthIcon", 6), hudIconsTexture)
 	if heartAnim, ok := hudIconsTexture.GetAnimation("heart"); ok {
 		status.heartIcon.AnimPlayer.ChangeAnimation(heartAnim)
 		status.heartIcon.AnimPlayer.PlayFromStart()
@@ -109,129 +107,92 @@ func (status *statusBar) init() {
 	// Face
 	status.faceState = FaceStateIdle
 	faceTex := cache.GetTexture(texSeganFace)
-	faceSlice := leftPanelTex.FindSlice("face")
-	status.face = ui.Box{
-		Color:   color.White,
-		Texture: faceTex,
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.leftPanel.Dest, faceSlice),
-			Depth: 6.0,
-		},
-	}
+	status.face = ui.NewBox(fitToSlice(&status.leftPanel, "face", 6.0), faceTex)
 	if faceAnim, ok := faceTex.GetAnimation(FaceStateIdle.anim); ok {
 		status.face.AnimPlayer.PlayNewAnim(faceAnim)
 	}
 
 	// Health counter
-	counterFont, err := cache.GetFont("assets/textures/ui/hud_counter_font.fnt")
-	if err != nil {
-		log.Println("Could not load counter font for HUD.", err)
-	}
-	healthStatSlice := leftPanelTex.FindSlice("healthStat")
-	status.healthStat = ui.Text{
-		Settings: ui.TextSettings{
-			Font:      counterFont,
-			Text:      "000",
-			Alignment: ui.TEXT_ALIGN_CENTER,
+	counterFont, _ := cache.GetFont("assets/textures/ui/hud_counter_font.fnt")
+	status.healthStat = ui.NewText(
+		fitToSlice(&status.leftPanel, "healthStat", 6.0),
+		"000",
+		ui.TextConfig{
+			Font:          counterFont,
+			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
+			DisableShadow: true,
+			Color:         maybe.Some(color.Red),
+			Scale:         maybe.Some[float32](2.0),
 		},
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.leftPanel.Dest, healthStatSlice),
-			Depth: 6.0,
-			Scale: settings.SpriteScale(),
-		},
-		Color: color.Red,
-	}
+	)
 
 	// Right HUD panel
 	rightPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_right.png")
-	rightPanelWidth := rightPanelTex.Rect().Width * settings.SpriteScale()
-	status.rightPanel = ui.NewBoxFull(
-		math2.Rect{
-			X:      settings.UIWidth() - rightPanelWidth,
-			Y:      settings.UIHeight() - panelHeight - 32.0,
-			Width:  rightPanelWidth,
-			Height: panelHeight,
+	status.rightPanel = ui.NewBox(
+		ui.Transform{
+			Position: mgl32.Vec2{0.0, -32.0},
+			Anchor:   ui.Ratios{1.0, 1.0},
+			Origin:   ui.Ratios{1.0, 1.0},
+			Size:     mgl32.Vec2{rightPanelTex.Rect().Width * SpriteScale(), panelHeight},
+			Depth:    5.0,
 		},
 		rightPanelTex,
-		color.White,
-		5.0,
 	)
 
 	// Ammo icon
-	ammoIconSlice := rightPanelTex.FindSlice("ammoIcon")
-	status.ammoIcon = ui.Box{
-		Color:   color.White,
-		Texture: hudIconsTexture,
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.rightPanel.Dest, ammoIconSlice),
-			Depth: 6.0,
-		},
-	}
+	status.ammoIcon = ui.NewBox(
+		fitToSlice(&status.rightPanel, "ammoIcon", 6.0),
+		hudIconsTexture,
+	)
 
 	// Ammo counter
-	ammoStatSlice := rightPanelTex.FindSlice("ammoStat")
-	status.ammoStat = ui.Text{
-		Settings: ui.TextSettings{
-			Font:      counterFont,
-			Text:      "000",
-			Alignment: ui.TEXT_ALIGN_CENTER,
+	status.ammoStat = ui.NewText(
+		fitToSlice(&status.rightPanel, "ammoStat", 6.0),
+		"000",
+		ui.TextConfig{
+			Font:          counterFont,
+			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
+			DisableShadow: true,
+			Color:         maybe.Some(color.Blue),
+			Scale:         maybe.Some[float32](2.0),
 		},
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.rightPanel.Dest, ammoStatSlice),
-			Depth: 6.0,
-			Scale: settings.SpriteScale(),
-		},
-		Color: color.Blue,
-	}
+	)
 
 	// Armor icon
-	armorIconSlice := rightPanelTex.FindSlice("armorIcon")
-	status.armorIcon = ui.Box{
-		Color:   color.White,
-		Texture: hudIconsTexture,
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.rightPanel.Dest, armorIconSlice),
-			Depth: 6.0,
-		},
-	}
+	status.armorIcon = ui.NewBox(
+		fitToSlice(&status.rightPanel, "armorIcon", 6.0),
+		hudIconsTexture,
+	)
 
 	// Ammo counter
-	armorStatSlice := rightPanelTex.FindSlice("armorStat")
-	status.armorStat = ui.Text{
-		Settings: ui.TextSettings{
-			Font:      counterFont,
-			Text:      "000",
-			Alignment: ui.TEXT_ALIGN_CENTER,
+	status.armorStat = ui.NewText(
+		fitToSlice(&status.rightPanel, "armorStat", 6.0),
+		"000",
+		ui.TextConfig{
+			Font:          counterFont,
+			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
+			DisableShadow: true,
+			Color:         maybe.Some(color.Green),
+			Scale:         maybe.Some[float32](2.0),
 		},
-		Transform: ui.Transform{
-			Dest:  fitToSlice(status.rightPanel.Dest, armorStatSlice),
-			Depth: 6.0,
-			Scale: settings.SpriteScale(),
-		},
-		Color: color.Green,
-	}
+	)
 
 	// Key icons
+	keysTexture := cache.GetTexture("assets/textures/ui/hud_keycards.png")
 	for i, key := range [...]game.Keys{game.KeysBlue, game.KeysBrown, game.KeysYellow, game.KeysGray} {
-		keyName := key.Name() + "Key"
-		slice := rightPanelTex.FindSlice(keyName)
-		status.keyIcons[i] = ui.Box{
-			Color:   color.White,
-			Texture: cache.GetTexture("assets/textures/ui/hud_keycards.png"),
-			Transform: ui.Transform{
-				Dest:  fitToSlice(status.rightPanel.Dest, slice),
-				Depth: 6.0,
-			},
-		}
+		status.keyIcons[i] = ui.NewBox(
+			fitToSlice(&status.rightPanel, key.Name()+"Key", 6.0),
+			keysTexture,
+		)
 		switch key {
 		case game.KeysBlue:
-			status.keyIcons[i].Src = math2.Rect{X: 0, Y: 0, Width: 8, Height: 8}
+			status.keyIcons[i].AnimPlayer.PlaySingleFrame(keysTexture, math2.Rect{X: 0, Y: 0, Width: 8, Height: 8})
 		case game.KeysBrown:
-			status.keyIcons[i].Src = math2.Rect{X: 8, Y: 0, Width: 8, Height: 8}
+			status.keyIcons[i].AnimPlayer.PlaySingleFrame(keysTexture, math2.Rect{X: 8, Y: 0, Width: 8, Height: 8})
 		case game.KeysYellow:
-			status.keyIcons[i].Src = math2.Rect{X: 0, Y: 8, Width: 8, Height: 8}
+			status.keyIcons[i].AnimPlayer.PlaySingleFrame(keysTexture, math2.Rect{X: 0, Y: 8, Width: 8, Height: 8})
 		case game.KeysGray:
-			status.keyIcons[i].Src = math2.Rect{X: 8, Y: 8, Width: 8, Height: 8}
+			status.keyIcons[i].AnimPlayer.PlaySingleFrame(keysTexture, math2.Rect{X: 8, Y: 8, Width: 8, Height: 8})
 		}
 	}
 }
@@ -241,7 +202,7 @@ func (status *statusBar) forcePlayerFace(newState faceState) {
 		faceTex := cache.GetTexture(texSeganFace)
 		anim, _ := faceTex.GetAnimation(newState.anim)
 		status.face.AnimPlayer.PlayNewAnim(anim)
-		status.face.FlippedHorz = newState.flipX
+		status.face.BgFlippedHorz = newState.flipX
 	}
 	status.faceState = newState
 	status.faceTimer = newState.showTime
@@ -256,7 +217,7 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	queue.Add(&status.healthStat)
 
 	// Heart icon
-	status.heartIcon.Update(deltaTime)
+	status.heartIcon.AnimPlayer.Update(deltaTime)
 	queue.Add(&status.heartIcon)
 
 	iconsTex := cache.GetTexture(texHudIcons)
@@ -266,7 +227,7 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 		queue.Add(&status.ammoStat)
 
 		// Ammo icon
-		status.ammoIcon.Update(deltaTime)
+		status.ammoIcon.AnimPlayer.Update(deltaTime)
 		anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[selectedWeapon.ammoType])
 		if ok {
 			if !status.ammoIcon.AnimPlayer.IsPlayingAnim(anim) {
@@ -283,7 +244,7 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	}
 
 	// Armor icon
-	status.armorIcon.Update(deltaTime)
+	status.armorIcon.AnimPlayer.Update(deltaTime)
 	anim, ok := iconsTex.GetAnimation(stats.Armor.Name() + "Armor")
 	if ok {
 		if !status.armorIcon.AnimPlayer.IsPlayingAnim(anim) {
@@ -295,7 +256,7 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	// Keycards
 	for i := range status.keyIcons {
 		if (1<<i)&int(stats.Keys) != 0 {
-			status.keyIcons[i].Update(deltaTime)
+			status.keyIcons[i].AnimPlayer.Update(deltaTime)
 			queue.Add(&status.keyIcons[i])
 		}
 	}
@@ -315,6 +276,6 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 			status.forcePlayerFace(FaceStateIdle)
 		}
 	}
-	status.face.Update(deltaTime)
+	status.face.AnimPlayer.Update(deltaTime)
 	queue.Add(&status.face)
 }
