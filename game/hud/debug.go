@@ -3,30 +3,39 @@ package hud
 import (
 	"fmt"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 )
 
 type DebugStats struct {
-	fpsCounter, drawCounters ui.Text
+	fpsCounter, drawCounters ui.Element
 }
 
 func (stats *DebugStats) init() {
-	stats.fpsCounter = ui.Text{
-		Transform: ui.Transform{
-			Dest: math2.Rect{X: 4.0, Y: 52.0, Width: 160.0, Height: 32.0},
-		},
+	config := ui.TextConfig{
+		Color: maybe.Some(color.Blue),
 	}
+	stats.fpsCounter = ui.NewText(
+		ui.Transform{
+			Position: mgl32.Vec2{4.0, 52.0},
+			Size:     mgl32.Vec2{160.0, 32.0},
+		},
+		"",
+		config,
+	)
 
-	stats.drawCounters = ui.Text{
-		Transform: ui.Transform{
-			Dest: math2.Rect{X: 4.0, Y: 88.0, Width: 480.0, Height: 128.0},
+	stats.drawCounters = ui.NewText(
+		ui.Transform{
+			Position: mgl32.Vec2{4.0, 88.0},
+			Size:     mgl32.Vec2{480.0, 128.0},
 		},
-		Color: color.Blue,
-	}
+		"",
+		config,
+	)
 }
 
 func (stats *DebugStats) Layout(queue *ui.RenderQueue) {

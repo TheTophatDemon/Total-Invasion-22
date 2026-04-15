@@ -69,7 +69,7 @@ func (hud *Hud) Update(deltaTime float32) {
 	hud.renderQueue.Add(&hud.flashRect)
 
 	if engine.InDebugMode() {
-		hud.Debug.Layout(&hud.renderQueue)
+		hud.Debug.Layout(&hud.renderQueue2)
 	}
 	if !hud.Intro.Done() {
 		hud.Intro.Layout(&hud.renderQueue, deltaTime)

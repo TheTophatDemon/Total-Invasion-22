@@ -1,7 +1,6 @@
 # TODO
 - Transition HUD to ui v2
   - Screen flash
-  - Debug
   - Level Intro
   - Level Complete
 - Add visual indicator of overheal
@@ -16,6 +15,7 @@
 - Saving
 - Game Difficulty Settings
   - Survey menu that appears after completing the first level
+- Limit the distance that blessings can travel
 - Make enemies able to hear player behind walls as long as space is connected.
 - Dialog Cutscene
   - Song
