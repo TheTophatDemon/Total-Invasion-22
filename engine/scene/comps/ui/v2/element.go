@@ -215,10 +215,10 @@ func (el *Element) recalculateMatrices() {
 
 			// Calculate mesh boundaries
 			for _, vert := range [...]mgl32.Vec3{
-				mgl32.Vec3{},
+				{},
 				el.transform.Size.Vec3(0.0),
-				mgl32.Vec3{el.transform.Size[0]},
-				mgl32.Vec3{0.0, el.transform.Size[1]},
+				{el.transform.Size[0]},
+				{0.0, el.transform.Size[1]},
 			} {
 				vert = mgl32.TransformCoordinate(vert, el.textMatrix)
 				minX = min(minX, vert[0])
@@ -278,6 +278,10 @@ func (el *Element) X() float32 {
 
 func (el *Element) Y() float32 {
 	return el.transform.Position[1]
+}
+
+func (el *Element) Center() mgl32.Vec2 {
+	return el.transform.Position.Add(math2.ElemMul2(mgl32.Vec2(el.transform.Origin).Mul(-1.0).Add(mgl32.Vec2{0.5, 0.5}), el.transform.Size))
 }
 
 func (el *Element) Rotation() math2.Radians {
@@ -437,9 +441,12 @@ func (el *Element) Render(context *render.Context) {
 
 			if el.BgTexture != nil {
 				el.BgTexture.Bind()
+				failure.CheckOpenGLError()
 				texRect := el.BgTexture.Rect()
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
+				failure.CheckOpenGLError()
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, el.BgFlippedHorz)
+				failure.CheckOpenGLError()
 				animFrame := el.AnimPlayer.FrameUV()
 				_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, mgl32.Vec4{
 					animFrame.X + (patch.X/texRect.Width)*animFrame.Width,
@@ -447,10 +454,11 @@ func (el *Element) Render(context *render.Context) {
 					(patch.Width / texRect.Width) * animFrame.Width,
 					(patch.Height / texRect.Height) * animFrame.Height,
 				})
+				failure.CheckOpenGLError()
 			} else {
 				_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, true)
+				failure.CheckOpenGLError()
 			}
-			failure.CheckOpenGLError()
 
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.sliceMatrices[i])
 			failure.CheckOpenGLError()

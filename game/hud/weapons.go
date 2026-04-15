@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -35,7 +35,7 @@ func (weapons *Weapons) init(hud *Hud) {
 				updateFunc: func(sickle *Weapon, deltaTime float32, ammo game.Ammo) {
 					animPlayer := &sickle.sprite.AnimPlayer
 					if sickle.canFire(ammo) && animPlayer.CurrentAnimation().Name == fireAnimName {
-						catchAnim, _ := sickle.sprite.Texture.GetAnimation("catch")
+						catchAnim, _ := sickle.sprite.BgTexture.GetAnimation("catch")
 						animPlayer.ChangeAnimation(catchAnim)
 						animPlayer.PlayFromStart()
 						cache.GetSfx("assets/sounds/weapon/sickle_return.wav").Play()
@@ -93,7 +93,7 @@ func (weapons *Weapons) init(hud *Hud) {
 				updateFunc: func(parusu *Weapon, deltaTime float32, ammo game.Ammo) {
 					animPlayer := &parusu.sprite.AnimPlayer
 					if animPlayer.CurrentAnimation().Name == fireAnimName && animPlayer.IsAtEnd() {
-						idleAnim, _ := parusu.sprite.Texture.GetAnimation(idleAnimName)
+						idleAnim, _ := parusu.sprite.BgTexture.GetAnimation(idleAnimName)
 						animPlayer.PlayNewAnim(idleAnim)
 					}
 				},
@@ -128,7 +128,7 @@ func (weapons *Weapons) init(hud *Hud) {
 				fireSoundPath: "assets/sounds/weapon/airhorn.wav",
 				updateFunc: func(airhorn *Weapon, deltaTime float32, ammo game.Ammo) {
 					if !airhorn.heldDown {
-						idleAnim, _ := airhorn.sprite.Texture.GetAnimation(idleAnimName)
+						idleAnim, _ := airhorn.sprite.BgTexture.GetAnimation(idleAnimName)
 						airhorn.sprite.AnimPlayer.PlayNewAnim(idleAnim)
 						if airhorn.voice.IsPlaying() && airhorn.voice.GetTime() < 800 {
 							airhorn.voice.Seek(800)

@@ -7,10 +7,9 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type weaponState uint8
@@ -34,7 +33,7 @@ type Weapon struct {
 	name            string // Weapon name, same as localization key.
 	texturePath     string
 	initialAnimName string // Name of the animation played after the weapon is initialized. If unset, will be "idle"
-	sprite          ui.Box
+	sprite          ui.Element
 	cooldown        float32
 	cooldownTimer   float32
 	sway            float32     // Value tracking the timeline of the sway animation.
@@ -79,35 +78,26 @@ func (weap *Weapon) init() {
 		log.Printf("weapon %v missing idle animation\n", weap.name)
 	}
 
-	weap.sprite = ui.Box{
-		Texture: texture,
-		Color:   color.White,
-		Src:     math2.Rect{Width: 1.0, Height: 1.0},
-	}
-	spriteSize := mgl32.Vec2{
-		initAnim.Frames[0].Rect.Width * settings.SpriteScale(),
-		initAnim.Frames[0].Rect.Height * settings.SpriteScale(),
-	}
-	weap.sprite.Transform = ui.Transform{
-		Dest: math2.Rect{
-			Width: spriteSize[0], Height: spriteSize[1],
+	weap.sprite = ui.NewBox(ui.Transform{
+		Anchor: ui.Ratios{0.5, 1.0},
+		Origin: ui.Ratios{0.5, 1.0},
+		Size: mgl32.Vec2{
+			initAnim.Frames[0].Rect.Width * SpriteScale(),
+			initAnim.Frames[0].Rect.Height * SpriteScale(),
 		},
-	}
-	weap.sprite.SetDestPosition(weap.startPos())
+	}, texture)
+	weap.sprite.SetPosition(weap.startPos())
 	weap.sprite.AnimPlayer.PlayNewAnim(initAnim)
 }
 
 // The position that the weapon sprite will head towards after being selected
 func (weap *Weapon) endPos() mgl32.Vec2 {
-	return mgl32.Vec2{
-		(settings.UIWidth() / 2) - (weap.sprite.Dest.Width / 2.0) + weap.spriteOffset[0],
-		settings.UIHeight() - weap.sprite.Dest.Height + weap.spriteOffset[1],
-	}
+	return weap.spriteOffset
 }
 
 // The position that the weapon sprite will head towards after being deselected
 func (weap *Weapon) startPos() mgl32.Vec2 {
-	return weap.endPos().Add(mgl32.Vec2{0.0, weap.sprite.Dest.Height})
+	return weap.endPos().Add(mgl32.Vec2{0.0, weap.sprite.Height()})
 }
 
 func (weap *Weapon) onSelect() {
@@ -118,7 +108,7 @@ func (weap *Weapon) onSelect() {
 	weap.state = weaponStateIntro
 
 	if weap.sprite.AnimPlayer.CurrentAnimation().Name != weap.initialAnimName {
-		idleAnim, _ := weap.sprite.Texture.GetAnimation(idleAnimName)
+		idleAnim, _ := weap.sprite.BgTexture.GetAnimation(idleAnimName)
 		weap.sprite.AnimPlayer.PlayNewAnim(idleAnim)
 	}
 }
@@ -137,7 +127,7 @@ func (weap *Weapon) update(deltaTime float32, swayAmount float32, ammo game.Ammo
 	if len(weap.texturePath) == 0 {
 		return
 	}
-	weap.sprite.Update(deltaTime)
+	weap.sprite.AnimPlayer.Update(deltaTime)
 	weap.cooldownTimer = max(weap.cooldownTimer-deltaTime, 0.0)
 	swayOfs := mgl32.Vec2{
 		math2.Cos(weap.sway*weap.swaySpeed[0]) * weap.swayExtents[0],
@@ -149,24 +139,21 @@ func (weap *Weapon) update(deltaTime float32, swayAmount float32, ammo game.Ammo
 	case weaponStateReady:
 		weap.sway += deltaTime * swayAmount
 		// Sway the weapon according to player movement
-		weap.sprite.SetDestPosition(endPos)
+		weap.sprite.SetPosition(endPos)
 	case weaponStateIntro, weaponStateOutro:
 		// Move the weapon towards its screen position.
 		target := endPos
 		if weap.state == weaponStateOutro {
 			target = startPos
 		}
-		diff := mgl32.Vec2{
-			target[0] - weap.sprite.Dest.X,
-			target[1] - weap.sprite.Dest.Y,
-		}
+		diff := target.Sub(weap.sprite.Position())
 		dist := diff.Len()
 		moveAmt := deltaTime * 3072.0
 		if dist < moveAmt {
-			weap.sprite.SetDestPosition(target)
+			weap.sprite.SetPosition(target)
 			weap.state = (weap.state + 1) % weaponStateCount
 		} else {
-			weap.sprite.SetDestPosition(weap.sprite.DestPosition().Add(diff.Mul(moveAmt / dist)))
+			weap.sprite.Translate(diff.Mul(moveAmt / dist))
 		}
 	}
 
@@ -174,7 +161,7 @@ func (weap *Weapon) update(deltaTime float32, swayAmount float32, ammo game.Ammo
 		weap.updateFunc(weap, deltaTime, ammo)
 	} else {
 		// Default behavior: Swtitch to idle animation when firing is complete.
-		idleAnim, _ := weap.sprite.Texture.GetAnimation(idleAnimName)
+		idleAnim, _ := weap.sprite.BgTexture.GetAnimation(idleAnimName)
 		if weap.canFire(ammo) || ammo[weap.ammoType] == 0 {
 			weap.sprite.AnimPlayer.ChangeAnimation(idleAnim)
 		}
@@ -191,7 +178,7 @@ func (weap *Weapon) fire(ammo *game.Ammo) {
 	ammo[weap.ammoType] -= weap.ammoCost
 	weap.heldDown = true
 
-	fireAnim, ok := weap.sprite.Texture.GetAnimation(fireAnimName)
+	fireAnim, ok := weap.sprite.BgTexture.GetAnimation(fireAnimName)
 	if !ok {
 		log.Printf("fire anim not found for weapon %v\n", weap.name)
 		return

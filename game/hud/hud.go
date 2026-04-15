@@ -77,7 +77,7 @@ func (hud *Hud) Update(deltaTime float32) {
 	if hud.VictoryScreen.levelEndTime.IsZero() {
 		hud.StatusBar.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
 		hud.MessageBar.layout(&hud.renderQueue2, deltaTime)
-		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
+		hud.Weapons.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats)
 	} else {
 		// Only show after level ends.
 		hud.VictoryScreen.Layout(&hud.renderQueue, deltaTime)

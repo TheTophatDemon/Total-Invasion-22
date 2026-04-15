@@ -1,7 +1,7 @@
 # TODO
 - Transition HUD to ui v2
   - Screen flash
-  - Weapon
+  - Debug
   - Level Intro
   - Level Complete
 - Add visual indicator of overheal
