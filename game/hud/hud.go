@@ -5,10 +5,12 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	ui2 "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -29,8 +31,8 @@ type Hud struct {
 	renderQueue  ui.RenderQueue
 	renderQueue2 ui2.RenderQueue
 
-	flashRect  ui.Box
-	flashSpeed float32
+	flashBox  ui2.Element
+	flashAnim timer.Tween
 
 	Debug         DebugStats
 	Weapons       Weapons
@@ -42,17 +44,11 @@ type Hud struct {
 }
 
 func (hud *Hud) Init() {
-	hud.flashRect = ui.Box{
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				Width:  settings.UIWidth(),
-				Height: settings.UIHeight(),
-			},
-			Depth: 9.0,
-			Scale: 1.0,
-		},
-		Color: color.Transparent,
-	}
+	hud.flashBox = ui2.NewBox(ui2.Transform{
+		Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
+		Depth: 9.0,
+	}, nil)
+	hud.flashBox.BgColor = maybe.Some(color.Transparent)
 
 	if engine.InDebugMode() {
 		hud.Debug.init()
@@ -65,8 +61,10 @@ func (hud *Hud) Init() {
 
 func (hud *Hud) Update(deltaTime float32) {
 	// Update screen flash
-	hud.flashRect.Color = hud.flashRect.Color.Fade(hud.flashSpeed * deltaTime)
-	hud.renderQueue.Add(&hud.flashRect)
+	if flashClr, ok := hud.flashBox.BgColor.Get(); ok {
+		flashClr.A = hud.flashAnim.Update(deltaTime)
+	}
+	hud.renderQueue2.Add(&hud.flashBox)
 
 	if engine.InDebugMode() {
 		hud.Debug.Layout(&hud.renderQueue2)
@@ -104,9 +102,13 @@ func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {
 	hud.MessageBar.ShowMessage(text, priority, colr)
 }
 
-func (hud *Hud) FlashScreen(color color.Color, fadeSpeed float32) {
-	hud.flashRect.Color = color
-	hud.flashSpeed = fadeSpeed
+func (hud *Hud) FlashScreen(color color.Color, fadeDuration float32) {
+	hud.flashBox.BgColor = maybe.Some(color)
+	hud.flashAnim = timer.Tween{
+		StartValue: color.A,
+		EndValue:   0,
+		Duration:   fadeDuration,
+	}
 }
 
 // Returns the size the sprites on the HUD should be scaled to.

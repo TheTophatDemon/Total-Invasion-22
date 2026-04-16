@@ -420,7 +420,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 func (player *Player) ProcessSignal(signal any) {
 	switch signal.(type) {
 	case game.TeleportationSignal:
-		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 2.0)
+		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 1.0)
 	case game.ResumeGameSignal:
 		player.safety = true
 	}
@@ -445,7 +445,7 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 	player.actor.Health = max(0, player.actor.Health-damage)
 
 	if player.actor.Health > 0 {
-		hudPtr.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
+		hudPtr.FlashScreen(color.Red.WithAlpha(0.5), 0.75)
 
 		if bodyHaver, ok := sourceEntity.(comps.HasBody); ok {
 			// Change the hurt face with respect to the direction the damage is coming from

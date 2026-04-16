@@ -363,7 +363,7 @@ func (item *Item) OnUse(player *Player) {
 	}
 
 	item.pickupSound.PlayAttenuatedV(item.body.Position)
-	gWorld.Hud.FlashScreen(item.flashColor, 1.5)
+	gWorld.Hud.FlashScreen(item.flashColor, 0.5)
 	if len(item.messageKey) > 0 {
 		gWorld.Hud.ShowMessage(settings.Localize(item.messageKey), 10, item.messageColor)
 	}
