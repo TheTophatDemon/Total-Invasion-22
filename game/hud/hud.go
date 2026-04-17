@@ -10,7 +10,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	ui2 "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
-	"tophatdemon.com/total-invasion-ii/engine/timer"
+	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -32,7 +32,7 @@ type Hud struct {
 	renderQueue2 ui2.RenderQueue
 
 	flashBox  ui2.Element
-	flashAnim timer.Tween
+	flashAnim tween.Data
 
 	Debug         DebugStats
 	Weapons       Weapons
@@ -62,7 +62,7 @@ func (hud *Hud) Init() {
 func (hud *Hud) Update(deltaTime float32) {
 	// Update screen flash
 	if flashClr, ok := hud.flashBox.BgColor.Get(); ok {
-		flashClr.A = hud.flashAnim.Update(deltaTime)
+		flashClr.A, _ = hud.flashAnim.Update(deltaTime)
 	}
 	hud.renderQueue2.Add(&hud.flashBox)
 
@@ -104,7 +104,7 @@ func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {
 
 func (hud *Hud) FlashScreen(color color.Color, fadeDuration float32) {
 	hud.flashBox.BgColor = maybe.Some(color)
-	hud.flashAnim = timer.Tween{
+	hud.flashAnim = tween.Data{
 		StartValue: color.A,
 		EndValue:   0,
 		Duration:   fadeDuration,

@@ -4,20 +4,19 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/tanema/gween"
-	"github.com/tanema/gween/ease"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type MessageBar struct {
 	text     ui.Element
 	priority int
-	flash    gween.Tween    // Tracks the color change in the message bar after a message is shown
-	scroll   gween.Sequence // Tracks the appearance of the text as it scrolls off screen.
+	flash    tween.Data     // Tracks the color change in the message bar after a message is shown
+	scroll   tween.Sequence // Tracks the appearance of the text as it scrolls off screen.
 }
 
 func (messageBar *MessageBar) init() {
@@ -38,14 +37,16 @@ func (messageBar *MessageBar) init() {
 func (messageBar *MessageBar) ShowMessage(text string, priority int, colr color.Color) {
 	if priority >= messageBar.priority {
 		charCount := utf8.RuneCount([]byte(text))
-		scrollTweens := make([]*gween.Tween, 0, charCount+1)
+		tweens := make([]tween.Data, 0, charCount+1)
 		// Pause to let the player read
-		scrollTweens = append(scrollTweens, gween.New(0.0, 0.0, float32(charCount)*(3.0/80.0), ease.Linear))
+		tweens = append(tweens, tween.Data{Duration: float32(charCount) * (3.0 / 80.0)})
 		// Adds a tween for removing each character in sequence
 		for i := range charCount {
-			scrollTweens = append(scrollTweens, gween.New(float32(i), float32(i+1), 0.1, ease.Linear))
+			tweens = append(tweens, tween.Data{StartValue: float32(i), EndValue: float32(i + 1), Duration: 0.1})
 		}
-		messageBar.scroll = *gween.NewSequence(scrollTweens...)
+		messageBar.scroll = tween.Sequence{
+			Tweens: tweens,
+		}
 
 		messageBar.priority = priority
 		messageBar.text.SetText(text)
@@ -54,7 +55,11 @@ func (messageBar *MessageBar) ShowMessage(text string, priority int, colr color.
 			WrapWords:     false,
 			DisableShadow: true,
 		})
-		messageBar.flash = *gween.New(1.0, 0.0, 0.5, ease.OutCubic)
+		messageBar.flash = tween.Data{
+			StartValue: 1.0,
+			EndValue:   0.0,
+			Duration:   0.5,
+		}
 	}
 }
 
