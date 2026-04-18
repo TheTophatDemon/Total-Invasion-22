@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestTweenSequence(t *testing.T) {
+func TestSequenceNonLooping(t *testing.T) {
 	tweens := Sequence{Tweens: []Data{
 		{
 			StartValue: 1.0,
@@ -22,43 +22,35 @@ func TestTweenSequence(t *testing.T) {
 			Duration:   5.0,
 		},
 	}}
-	for timeStep, expected := range [](struct {
-		value                   float32
-		tweenDone, sequenceDone bool
-	}){
-		{value: 1.0, tweenDone: false, sequenceDone: false},
-		{value: 1.5, tweenDone: false, sequenceDone: false},
-		{value: 2.0, tweenDone: true, sequenceDone: false},
-		{value: 2.0, tweenDone: false, sequenceDone: false},
-		{value: 2.5, tweenDone: true, sequenceDone: false},
-		{value: 0.0, tweenDone: false, sequenceDone: false},
-		{value: 0.5, tweenDone: false, sequenceDone: false},
-		{value: 1.0, tweenDone: false, sequenceDone: false},
-		{value: 1.5, tweenDone: false, sequenceDone: false},
-		{value: 2.0, tweenDone: false, sequenceDone: false},
-		{value: 2.5, tweenDone: false, sequenceDone: false},
-		{value: 3.0, tweenDone: false, sequenceDone: false},
-		{value: 3.5, tweenDone: false, sequenceDone: false},
-		{value: 4.0, tweenDone: false, sequenceDone: false},
-		{value: 4.5, tweenDone: false, sequenceDone: false},
-		{value: 5.0, tweenDone: true, sequenceDone: true},
-		{value: 5.0, tweenDone: true, sequenceDone: true},
+	for timeStep, expected := range []SeqResult{
+		{Value: 1.0, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 1.5, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 2.0, TweenDone: true, SequenceDone: false, SequenceIndex: 0},
+		{Value: 2.0, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 2.5, TweenDone: true, SequenceDone: false, SequenceIndex: 1},
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 0.5, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 1.0, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 1.5, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 2.0, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 2.5, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 3.0, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 3.5, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 4.0, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 4.5, TweenDone: false, SequenceDone: false, SequenceIndex: 2},
+		{Value: 5.0, TweenDone: true, SequenceDone: true, SequenceIndex: 2},
+		{Value: 5.0, TweenDone: true, SequenceDone: true, SequenceIndex: 2},
 	} {
-		value, tweenDone, sequenceDone := tweens.Update(0.5)
+		res := tweens.Update(0.5)
 		tweenNumber := tweens.Index + 1
-		if value != expected.value {
-			t.Fatalf("expected value to be %v at timestep %v in tween #%v, but was %v", expected.value, timeStep, tweenNumber, value)
-		}
-		if tweenDone != expected.tweenDone {
-			t.Fatalf("expected tween #%v done=%t at timestep %v", tweenNumber, expected.tweenDone, timeStep)
-		}
-		if sequenceDone != expected.sequenceDone {
-			t.Fatalf("expected sequence done=%t at tween #%v timestep %v", expected.sequenceDone, tweenNumber, timeStep)
+		if res != expected {
+			t.Fatalf("expected value to be %+v at timestep %v in tween #%v, but was %+v", expected, timeStep, tweenNumber, res)
 		}
 	}
+}
 
-	// Test with looping
-	tweens = Sequence{
+func TestSequenceLooping(t *testing.T) {
+	tweens := Sequence{
 		Tweens: []Data{
 			{
 				StartValue: 1.0,
@@ -74,33 +66,113 @@ func TestTweenSequence(t *testing.T) {
 		Loop: true,
 	}
 
-	for timeStep, expected := range [](struct {
-		value                   float32
-		tweenDone, sequenceDone bool
-	}){
-		{value: 1.0, tweenDone: false, sequenceDone: false},
-		{value: 0.5, tweenDone: false, sequenceDone: false},
-		{value: 0.0, tweenDone: true, sequenceDone: false},
-		{value: 0.0, tweenDone: false, sequenceDone: false},
-		{value: 0.5, tweenDone: false, sequenceDone: false},
-		{value: 1.0, tweenDone: true, sequenceDone: true},
-		{value: 1.0, tweenDone: false, sequenceDone: false},
-		{value: 0.5, tweenDone: false, sequenceDone: false},
-		{value: 0.0, tweenDone: true, sequenceDone: false},
-		{value: 0.0, tweenDone: false, sequenceDone: false},
-		{value: 0.5, tweenDone: false, sequenceDone: false},
-		{value: 1.0, tweenDone: true, sequenceDone: true},
+	t.Log("Test with looping")
+	for timeStep, expected := range []SeqResult{
+		{Value: 1.0, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.5, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: true, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 0.5, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 1.0, TweenDone: true, SequenceDone: true, SequenceIndex: 1},
+		{Value: 1.0, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.5, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: true, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 0.5, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 1.0, TweenDone: true, SequenceDone: true, SequenceIndex: 1},
 	} {
-		value, tweenDone, sequenceDone := tweens.Update(0.5)
+		res := tweens.Update(0.5)
 		tweenNumber := tweens.Index + 1
-		if value != expected.value {
-			t.Fatalf("expected value to be %v at timestep %v in tween #%v, but was %v", expected.value, timeStep, tweenNumber, value)
+		if res != expected {
+			t.Fatalf("expected value to be %+v at timestep %v in tween #%v, but was %+v", expected, timeStep, tweenNumber, res)
 		}
-		if tweenDone != expected.tweenDone {
-			t.Fatalf("expected tween #%v done=%t at timestep %v", tweenNumber, expected.tweenDone, timeStep)
+	}
+}
+
+func TestTweenInfer(t *testing.T) {
+	t.Log("infer start")
+	tween := Data{
+		StartValue: Infer,
+		EndValue:   1.0,
+		Duration:   1.0,
+	}
+	res := tween.Update(0.5)
+	expected := Result{Value: 1.0, Done: false}
+	if res != expected {
+		t.Fatalf("expected result %+v but got %+v", expected, res)
+	}
+	if tween.StartValue != 1.0 {
+		t.Fatalf("tween start should be 1.0")
+	}
+
+	t.Log("infer end")
+	tween = Data{
+		StartValue: 2.0,
+		EndValue:   Infer,
+		Duration:   1.0,
+	}
+	res = tween.Update(0.5)
+	expected = Result{Value: 2.0, Done: false}
+	if res != expected {
+		t.Fatalf("expected result %+v but got %+v", expected, res)
+	}
+	if tween.EndValue != 2.0 {
+		t.Fatalf("tween end should be 2.0")
+	}
+
+	t.Log("infer both")
+	tween = Data{
+		StartValue: Infer,
+		EndValue:   Infer,
+		Duration:   1.0,
+	}
+	res = tween.Update(0.5)
+	expected = Result{Value: 0.0, Done: false}
+	if res != expected {
+		t.Fatalf("expected result %+v but got %+v", expected, res)
+	}
+	if tween.StartValue != 0.0 {
+		t.Fatalf("tween start should be 0.0")
+	}
+	if tween.EndValue != 0.0 {
+		t.Fatalf("tween end should be 0.0")
+	}
+}
+
+func TestSequenceInfer(t *testing.T) {
+	tweens := Sequence{Tweens: []Data{
+		{
+			StartValue: Infer,
+			EndValue:   Infer,
+			Duration:   1.0,
+		},
+		{
+			StartValue: Infer,
+			EndValue:   2.5,
+			Duration:   0.5,
+		},
+	}}
+	for timeStep, expected := range []SeqResult{
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: true, SequenceDone: false, SequenceIndex: 0},
+		{Value: 0.0, TweenDone: false, SequenceDone: false, SequenceIndex: 1},
+		{Value: 2.5, TweenDone: true, SequenceDone: true, SequenceIndex: 1},
+	} {
+		res := tweens.Update(0.5)
+		tweenNumber := tweens.Index + 1
+		switch res.SequenceIndex {
+		case 0:
+			if tweens.Tweens[0].StartValue != 0.0 {
+				t.Fatalf("tween #1's start value should be 0, but it's %v", tweens.Tweens[0].StartValue)
+			}
+		case 1:
+			if tweens.Tweens[1].StartValue != 0.0 {
+				t.Fatalf("tween #2's start value should be 0.0, but it's %v", tweens.Tweens[1].StartValue)
+			}
 		}
-		if sequenceDone != expected.sequenceDone {
-			t.Fatalf("expected sequence done=%t at tween #%v timestep %v", expected.sequenceDone, tweenNumber, timeStep)
+		if res != expected {
+			t.Fatalf("expected value to be %+v at timestep %v in tween #%v, but was %+v", expected, timeStep, tweenNumber, res)
 		}
 	}
 }

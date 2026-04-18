@@ -3,25 +3,27 @@ package hud
 import (
 	"math"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-const LEVEL_INTRO_TIME = 3.0 // Time after which the level intro ends.
+const LevelIntroTime = 3.0 // Time after which the level intro ends.
 
 type LevelIntro struct {
-	timer                   float32
-	voice                   tdaudio.VoiceId
-	starBackground          ui.Box
-	sweepTop, sweepBottom   ui.Box // Black boxes covering up the level titles until the sickle flies past them.
-	bannerTop, bannerBottom ui.Box
-	titleText, episodeText  ui.Text
-	sickle, eyes            ui.Box
+	timer                           float32
+	voice                           tdaudio.VoiceId
+	starBackground, blackBackground ui.Element
+	bannerTop, bannerBottom         ui.Element
+	sickle, eyes                    ui.Element
+	sickleXSeq, sickleYSeq          tween.Sequence
 }
 
 func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
@@ -32,207 +34,146 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		return
 	}
 
+	// Black background
+	intro.blackBackground = ui.NewColorBox(ui.Transform{
+		Anchor: ui.Ratios{0.5, 0.5},
+		Origin: ui.Ratios{0.5, 0.5},
+		Size:   mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
+		Depth:  8.9,
+	}, color.Black)
+
 	// Star background
 	starMesh, _ := cache.GetMesh("assets/models/star_transition.obj")
-	intro.starBackground = ui.Box{
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				Y:      -settings.UIHeight() * 0.25,
-				Width:  settings.UIWidth(),
-				Height: settings.UIHeight() * 1.5,
-			},
-			Depth: 8.9,
-			Scale: 0.5,
-		},
-		Color: color.Black,
-		Mesh:  starMesh,
+	intro.starBackground = ui.Element{
+		BgMesh:  starMesh,
+		BgColor: maybe.Some(color.Black),
 	}
+	intro.starBackground.SetTransform(ui.Transform{
+		Anchor: ui.Ratios{0.5, 0.5},
+		Origin: ui.Ratios{0.5, 0.5},
+		Size:   mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
+		Depth:  8.9,
+	})
 
 	// Top banner
-	intro.bannerTop = ui.Box{
-		Color: color.Blue,
-		Transform: ui.Transform{
-			Dest:  math2.Rect{X: 0.0, Y: 64.0, Width: settings.UIWidth(), Height: 96.0},
-			Depth: 9.0,
-		},
-	}
-
-	intro.titleText = ui.Text{
-		Color: color.White,
-		Settings: ui.TextSettings{
-			Text:      levelTitle,
-			Alignment: ui.TEXT_ALIGN_CENTER,
-			Font:      cache.DefaultFont,
-		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				Y:      80.0,
-				Width:  settings.UIWidth(),
-				Height: 64.0,
-			},
-			Scale: 3.0,
-			Depth: 9.1,
-		},
-	}
-
-	intro.sweepTop = ui.Box{
-		Color: color.Black,
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      0.0,
-				Y:      63.0,
-				Width:  settings.UIWidth(),
-				Height: 98.0,
-			},
-			Depth: 9.2,
-		},
-		// Set src? Matrix?
-	}
+	intro.bannerTop = ui.NewText(ui.Transform{
+		Position: mgl32.Vec2{0.0, 80.0},
+		Size:     mgl32.Vec2{float32(settings.Current.WindowWidth), 96.0},
+		Depth:    9.1,
+	}, levelTitle, ui.TextConfig{
+		Color: maybe.Some(color.White),
+		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
+		Scale: maybe.Some[float32](3.0),
+	})
+	intro.bannerTop.BgColor = maybe.Some(color.Blue)
+	intro.bannerTop.BgMesh = cache.QuadMesh
 
 	// Bottom banner
-	intro.bannerBottom = ui.Box{
-		Color: color.Blue,
-		Transform: ui.Transform{
-			Dest:  math2.Rect{X: -48.0, Y: settings.UIHeight() - 224.0, Width: 352.0, Height: 96.0},
-			Depth: 9.0,
-			Shear: 1.0,
-		},
-	}
+	intro.bannerBottom = ui.NewText(ui.Transform{
+		Position: mgl32.Vec2{-96.0, settings.UIHeight() - 224.0},
+		Size:     mgl32.Vec2{448.0, 96.0},
+		Depth:    9.1,
+		Shear:    mgl32.Vec2{1.0, 0.0},
+	}, mapNumber, ui.TextConfig{
+		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
+		Scale: maybe.Some[float32](3),
+	})
+	intro.bannerBottom.BgMesh = cache.QuadMesh
+	intro.bannerBottom.BgColor = maybe.Some(color.Blue)
 
-	intro.episodeText = ui.Text{
-		Color: color.White,
-		Settings: ui.TextSettings{
-			Text:      mapNumber,
-			Alignment: ui.TEXT_ALIGN_LEFT,
-			Font:      cache.DefaultFont,
-		},
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      32.0,
-				Y:      intro.bannerBottom.DestPosition()[1] + 8.0,
-				Width:  256.0,
-				Height: intro.bannerBottom.Dest.Height,
-			},
-			Scale: 3.0,
-			Depth: 9.1,
-		},
-	}
-
-	intro.sweepBottom = ui.Box{
-		Color: color.Black,
-		Transform: ui.Transform{
-			Dest: math2.Rect{
-				X:      0.0,
-				Y:      intro.bannerBottom.Dest.Y - 1.0,
-				Width:  intro.bannerBottom.Dest.Width + 1.0,
-				Height: intro.bannerBottom.Dest.Height + 2.0,
-			},
-			Depth: 9.2,
-		},
-	}
-
+	// Sickle
 	sickleTex := cache.GetTexture("assets/textures/ui/intro_sickle.png")
-	intro.sickle = ui.NewBoxFull(math2.Rect{
-		X:      settings.UIWidth() + 8.0,
-		Y:      intro.sweepTop.Dest.Y - float32(sickleTex.Height())/2.0,
-		Width:  float32(sickleTex.Width()) * settings.SpriteScale(),
-		Height: float32(sickleTex.Height()) * settings.SpriteScale(),
-	}, sickleTex, color.White, 9.3)
+	sickleSize := sickleTex.Rect().SizeVec().Mul(SpriteScale())
+	intro.sickle = ui.NewBox(ui.Transform{
+		Origin:   ui.Ratios{0.5, 0.5},
+		Position: mgl32.Vec2{settings.UIWidth() + sickleSize[0] + 8.0, intro.bannerTop.Y() + intro.bannerTop.Height()/2.0},
+		Size:     sickleSize,
+		Depth:    9.3,
+	}, sickleTex)
+	intro.sickleXSeq = tween.Sequence{Tweens: []tween.Data{
+		{StartValue: intro.sickle.X(), EndValue: tween.Infer, Duration: 0.1},
+		{StartValue: tween.Infer, EndValue: -sickleSize[0] - 8.0, Duration: 0.5},
+		{StartValue: tween.Infer, EndValue: tween.Infer, Duration: 0.5},
+		{StartValue: tween.Infer, EndValue: intro.sickle.X(), Duration: 0.5},
+		{StartValue: tween.Infer, EndValue: tween.Infer, Duration: 1.0},
+	}}
+	intro.sickleYSeq = tween.Sequence{Tweens: []tween.Data{
+		{StartValue: intro.sickle.Y(), EndValue: tween.Infer, Duration: 1.0},
+		{StartValue: intro.bannerBottom.Y() + intro.bannerBottom.Height()/2.0, EndValue: tween.Infer, Duration: 1.0},
+	}}
 
+	// Eyes
 	eyesTex := cache.GetTexture("assets/textures/ui/intro_eyes.png")
-	intro.eyes = ui.Box{
-		Color:      color.White,
-		AnimPlayer: comps.NewAnimationPlayer(eyesTex.GetDefaultAnimation(), true),
-		Texture:    eyesTex,
-	}
-	eyesWidth := intro.eyes.AnimPlayer.Frame().Rect.Width * settings.SpriteScale()
-	eyesHeight := intro.eyes.AnimPlayer.Frame().Rect.Height * settings.SpriteScale()
-	intro.eyes.Transform = ui.Transform{
-		Dest: math2.Rect{
-			X:      settings.UIWidth()/2.0 - eyesWidth/2.0,
-			Y:      settings.UIHeight()/2.0 - eyesHeight/2.0,
-			Width:  eyesWidth,
-			Height: eyesHeight,
-		},
-		Depth: 9.3,
-	}
+	eyesAnim := eyesTex.GetDefaultAnimation()
+	intro.eyes = ui.NewBox(ui.Transform{
+		Origin: ui.Ratios{0.5, 0.5},
+		Anchor: ui.Ratios{0.5, 0.5},
+		Depth:  9.3,
+		Size:   eyesAnim.Frames[0].Rect.SizeVec().Mul(SpriteScale()),
+	}, eyesTex)
+	intro.eyes.AnimPlayer = comps.NewAnimationPlayer(eyesAnim, true)
 }
 
 func (intro *LevelIntro) Done() bool {
-	return intro.timer >= LEVEL_INTRO_TIME
+	return intro.timer >= LevelIntroTime
 }
 
 // Returns number of seconds left before the intro ends.
 func (intro *LevelIntro) TimeLeft() float32 {
-	return LEVEL_INTRO_TIME - intro.timer
+	return LevelIntroTime - intro.timer
 }
 
 func (intro *LevelIntro) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	intro.timer += deltaTime
 
-	intro.eyes.Update(deltaTime)
+	intro.eyes.AnimPlayer.Update(deltaTime)
 	queue.Add(&intro.eyes)
 
 	// Move sickle
-	sickleSpeed := deltaTime * settings.UIWidth() * 3.0
-	intro.sickle.Rotation += deltaTime * math.Pi * 16.0
-	switch {
-	case intro.timer < 0.5:
-		// Wait
-		if !intro.voice.IsValid() {
+	intro.sickle.Rotate(math2.Radians(deltaTime * math.Pi * 12.0))
+	sickleXRes := intro.sickleXSeq.Update(deltaTime)
+	intro.sickle.SetX(sickleXRes.Value)
+	sickleYRes := intro.sickleYSeq.Update(deltaTime)
+	intro.sickle.SetY(sickleYRes.Value)
+	if sickleXRes.TweenDone {
+		switch sickleXRes.SequenceIndex {
+		case 0:
 			intro.voice = cache.GetSfx("assets/sounds/ui/intro_whoosh1.wav").Play()
-		}
-	case intro.timer < 1.0:
-		intro.voice = tdaudio.VoiceId{}
-		if intro.sickle.Dest.X < -float32(intro.sickle.Texture.Width())*settings.SpriteScale() {
-			intro.sickle.Dest.Y = intro.sweepBottom.Dest.Y - float32(intro.sickle.Texture.Height()/2)*settings.SpriteScale()
-		} else {
-			intro.sickle.Dest.X -= sickleSpeed
-		}
-	case intro.timer < 3.5:
-		if !intro.voice.IsValid() {
+		case 2:
 			intro.voice = cache.GetSfx("assets/sounds/ui/intro_whoosh2.wav").Play()
 		}
-		intro.sickle.Dest.X += sickleSpeed
 	}
 	queue.Add(&intro.sickle)
 
+	// Occlude banners along with sickle
+	switch sickleXRes.SequenceIndex {
+	case 1:
+		intro.bannerTop.Scissor = math2.Rect{
+			X: max(0, intro.sickle.X()), Y: 0,
+			Width: max(1, settings.UIWidth()-intro.sickle.X()), Height: settings.UIHeight(),
+		}
+		queue.Add(&intro.bannerTop)
+	case 2, 3, 4:
+		intro.bannerTop.Scissor = math2.Rect{}
+		intro.bannerBottom.Scissor = math2.Rect{X: 0.0, Y: 0, Width: max(0, intro.sickle.X()), Height: settings.UIHeight()}
+		queue.Add(&intro.bannerTop, &intro.bannerBottom)
+	default:
+		intro.bannerTop.Scissor, intro.bannerBottom.Scissor = math2.Rect{}, math2.Rect{}
+	}
+
+	if sickleXRes.SequenceDone {
+		// Move banners off screen at the end
+		delta := mgl32.Vec2{deltaTime * settings.UIWidth() * 2.0, 0}
+		intro.bannerTop.Translate(delta)
+		intro.bannerBottom.Translate(delta.Mul(-1))
+	}
+
 	if intro.timer < 2.0 {
 		// Black background
-		queue.Add(&ui.Box{
-			Color: color.Black,
-			Transform: ui.Transform{
-				Dest:  math2.Rect{Width: settings.UIWidth(), Height: settings.UIHeight()},
-				Depth: 8.9,
-			},
-		})
+		queue.Add(&intro.blackBackground)
 	} else {
 		// Star background
-		intro.starBackground.Scale += deltaTime * 200.0
+		intro.starBackground.SetSize(intro.starBackground.Size().Mul(1.0 + (deltaTime * 25.0)))
 		queue.Add(&intro.starBackground)
 	}
-
-	// Move top sweep
-	if intro.timer > 0.5 {
-		intro.sweepTop.Dest.Width -= deltaTime * settings.UIWidth() * 3.0
-	}
-	queue.Add(&intro.sweepTop)
-
-	// Move bottom sweep
-	if intro.timer > 1.0 {
-		delta := deltaTime * 2048.0
-		intro.sweepBottom.Dest.Width = max(0, intro.sweepBottom.Dest.Width-delta)
-		intro.sweepBottom.Dest.X += delta
-	}
-	queue.Add(&intro.sweepBottom)
-
-	// Move titles and banners
-	if intro.timer > 2.5 {
-		delta := deltaTime * settings.UIWidth() * 2.0
-		intro.bannerTop.Dest.X += delta
-		intro.titleText.Dest.X += delta
-		intro.bannerBottom.Dest.X -= delta
-		intro.episodeText.Dest.X -= delta
-	}
-	queue.Add(&intro.bannerTop, &intro.titleText, &intro.bannerBottom, &intro.episodeText)
 }

@@ -64,8 +64,7 @@ func (messageBar *MessageBar) ShowMessage(text string, priority int, colr color.
 }
 
 func (messageBar *MessageBar) layout(queue *ui.RenderQueue, deltaTime float32) {
-	_, shouldScroll, _ := messageBar.scroll.Update(deltaTime)
-	if shouldScroll {
+	if messageBar.scroll.Update(deltaTime).TweenDone {
 		msgText := messageBar.text.Text()
 		if len(msgText) > 1 {
 			_, byteCount := utf8.DecodeRuneInString(msgText)
@@ -76,7 +75,7 @@ func (messageBar *MessageBar) layout(queue *ui.RenderQueue, deltaTime float32) {
 		}
 	}
 
-	flashAmt, _ := messageBar.flash.Update(deltaTime)
+	flashAmt := messageBar.flash.Update(deltaTime).Value
 	txtColor := messageBar.text.TextConfig().Unwrap().Color.Or(color.White)
 	messageBar.text.BgColor = maybe.Some(color.Color{
 		R: (1.0 - txtColor.R) * flashAmt,

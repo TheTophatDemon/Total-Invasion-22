@@ -62,7 +62,7 @@ func (hud *Hud) Init() {
 func (hud *Hud) Update(deltaTime float32) {
 	// Update screen flash
 	if flashClr, ok := hud.flashBox.BgColor.Get(); ok {
-		flashClr.A, _ = hud.flashAnim.Update(deltaTime)
+		flashClr.A = hud.flashAnim.Update(deltaTime).Value
 	}
 	hud.renderQueue2.Add(&hud.flashBox)
 
@@ -70,7 +70,7 @@ func (hud *Hud) Update(deltaTime float32) {
 		hud.Debug.Layout(&hud.renderQueue2)
 	}
 	if !hud.Intro.Done() {
-		hud.Intro.Layout(&hud.renderQueue, deltaTime)
+		hud.Intro.Layout(&hud.renderQueue2, deltaTime)
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
 		hud.StatusBar.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats, hud.Weapons.Selected())

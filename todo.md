@@ -1,9 +1,9 @@
 # TODO
 - Transition HUD to ui v2
-  - Level Intro
   - Level Complete
-- Add visual indicator of overheal
 - Fix in game HUD to adapt to screen size changes
+- Make larger font
+- Add visual indicator of overheal
 - E1M5
   - Sign of Madness
   - Super Armor

@@ -69,6 +69,14 @@ func NewBox(transform Transform, texture *textures.Texture) Element {
 	}
 }
 
+func NewColorBox(transform Transform, clr color.Color) Element {
+	return Element{
+		BgMesh:    cache.QuadMesh,
+		BgColor:   maybe.Some(clr),
+		transform: transform,
+	}
+}
+
 func (el *Element) HasText() bool {
 	return el.textConfig.IsSome()
 }
@@ -197,11 +205,6 @@ func (el *Element) recalculateMatrices() {
 			// Rotate
 			if el.Rotation() != 0 {
 				el.textMatrix = mgl32.Rotate3DZ(float32(el.Rotation())).Mat4().Mul4(el.textMatrix)
-			}
-
-			// Apply shear
-			if el.Shear() != (mgl32.Vec2{}) {
-				el.textMatrix = mgl32.ShearY3D(el.Shear()[0], el.Shear()[1]).Mul4(el.textMatrix)
 			}
 
 			// Translate
@@ -398,7 +401,7 @@ func (el *Element) Render(context *render.Context) {
 
 	failure.CheckOpenGLError()
 
-	if el.Scissor.Width > 0 && el.Scissor.Height > 0 {
+	if el.Scissor.Width > 0 || el.Scissor.Height > 0 {
 		gl.Enable(gl.SCISSOR_TEST)
 		_, scrHeight := engine.ScreenSize()
 		gl.Scissor(int32(el.Scissor.X), int32(scrHeight)-int32(el.Scissor.Y)-int32(el.Scissor.Height), int32(el.Scissor.Width), int32(el.Scissor.Height))
