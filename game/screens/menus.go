@@ -4,8 +4,6 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/tanema/gween"
-	"github.com/tanema/gween/ease"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -13,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -34,7 +33,7 @@ type (
 		menuSpacing                              float32
 		cursor, scrollUpButton, scrollDownButton ui.Element
 		title, background                        ui.Element
-		blinker                                  gween.Sequence
+		blinker                                  tween.Sequence
 		app                                      engine.Observer
 		parent                                   ui.Screen
 	}
@@ -69,13 +68,14 @@ func (menu *Menu) Init(app engine.Observer, menuItems []MenuWidget, parent ui.Sc
 		menuSelection: 0,
 		app:           app,
 		parent:        parent,
-		blinker: *gween.NewSequence( // Blink on and off
-			gween.New(1.0, 1.0, 0.75, ease.Linear),
-			gween.New(0.0, 0.0, 0.25, ease.Linear),
-		),
+		blinker: tween.Sequence{
+			Tweens: []tween.Data{
+				{StartValue: 1.0, EndValue: tween.Infer, Duration: 0.75},
+				{StartValue: 0.0, EndValue: tween.Infer, Duration: 0.25},
+			},
+			Loop: true,
+		},
 	}
-
-	menu.blinker.SetLoop(-1)
 
 	menu.position = mgl32.Vec2{
 		float32(settings.Current.WindowWidth) * 0.1,
@@ -270,8 +270,7 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 
 	// Draw scroller arrows
 	moreAbove := menu.scrollY < -0.01
-	scrollerValue, _, _ := menu.blinker.Update(deltaTime)
-	showScrollers := scrollerValue > 0.9
+	showScrollers := menu.blinker.Update(deltaTime).Value > 0.9
 	scrollerX := menu.background.Position()[0] + (menu.background.Width() / 2.0)
 	if moreAbove {
 		menu.scrollUpButton.SetPosition(mgl32.Vec2{scrollerX, menu.position[1] - menu.menuSpacing/4.0})

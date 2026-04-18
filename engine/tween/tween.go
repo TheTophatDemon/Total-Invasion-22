@@ -12,6 +12,14 @@ func Linear(time, start, diff, duration float32) float32 {
 	return start + (diff * (time / duration))
 }
 
+func CubicIn(time, start, diff, duration float32) float32 {
+	return (diff * math2.Pow(time/duration, 3.0)) + start
+}
+
+func CubicOut(time, start, diff, duration float32) float32 {
+	return (diff * (math2.Pow((time/duration)-1.0, 3.0) + 1)) + start
+}
+
 type (
 	// Represents how a value is animated from one moment in time to the next.
 	Data struct {
@@ -52,7 +60,7 @@ func (tw *Data) Update(deltaTime float32) Result {
 	if math2.IsNan(tw.EndValue) {
 		tw.EndValue = tw.StartValue
 	}
-	var fn Func
+	var fn Func = tw.Interpolation
 	if tw.Interpolation == nil {
 		fn = Linear
 	}

@@ -11,5 +11,3 @@ require (
 require github.com/BurntSushi/toml v1.5.0
 
 require github.com/fzipp/bmfont v0.1.0
-
-require github.com/tanema/gween v0.0.0-20250522035225-e874ee3ae01a

@@ -2,8 +2,6 @@ package screens
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/tanema/gween"
-	"github.com/tanema/gween/ease"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
@@ -11,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -18,8 +17,8 @@ import (
 type IntroScreen struct {
 	title, flash, prompt  ui.Element
 	app                   engine.Observer
-	titleAnim             gween.Tween
-	flashAnim, promptAnim gween.Sequence
+	titleAnim             tween.Data
+	flashAnim, promptAnim tween.Sequence
 }
 
 func NewIntroScreen(app engine.Observer) *IntroScreen {
@@ -51,17 +50,28 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 	}
 	scr.flash.BgColor = maybe.Some(color.White.WithAlpha(0.0))
 	scr.title.FitHeight(float32(settings.Current.WindowHeight) * 0.355555556)
-	scr.titleAnim = *gween.New(0.0, scr.title.Size()[1], 1.0, ease.Linear) // Move title in from off screen
-	scr.flashAnim = *gween.NewSequence(
-		gween.New(0.0, 0.0, 0.5, ease.Linear),   // Wait
-		gween.New(0.0, 1.0, 0.5, ease.InCubic),  // Flash in
-		gween.New(1.0, 0.0, 1.0, ease.OutCubic), // Flash out
-	)
-	scr.promptAnim = *gween.NewSequence( // Blink on and off
-		gween.New(1.0, 1.0, 0.75, ease.Linear),
-		gween.New(0.0, 0.0, 0.25, ease.Linear),
-	)
-	scr.promptAnim.SetLoop(-1)
+
+	// Move title in from off screen
+	scr.titleAnim = tween.Data{
+		EndValue: scr.title.Height(),
+		Duration: 1.0,
+	}
+
+	scr.flashAnim = tween.Sequence{
+		Tweens: []tween.Data{
+			{EndValue: 0.8, Duration: 0.75, Interpolation: tween.CubicIn},
+			{StartValue: tween.Infer, EndValue: 0.0, Duration: 0.75, Interpolation: tween.CubicOut},
+		},
+	}
+
+	// Blink on and off
+	scr.promptAnim = tween.Sequence{
+		Tweens: []tween.Data{
+			{StartValue: 1.0, EndValue: tween.Infer, Duration: 0.75},
+			{Duration: 0.25},
+		},
+		Loop: true,
+	}
 
 	return scr
 }
@@ -76,15 +86,13 @@ func (scr *IntroScreen) Bounds() math2.Rect {
 }
 
 func (scr *IntroScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	newY, _ := scr.titleAnim.Update(deltaTime)
-	scr.title.SetY(newY)
-	var complete bool
-	scr.flash.BgColor.Unwrap().A, _, complete = scr.flashAnim.Update(deltaTime)
+	scr.title.SetY(scr.titleAnim.Update(deltaTime).Value)
+	flashRes := scr.flashAnim.Update(deltaTime)
+	scr.flash.BgColor.Unwrap().A = flashRes.Value
 	queue.Add(&scr.flash)
 	queue.Add(&scr.title)
-	if complete {
-		blink, _, _ := scr.promptAnim.Update(deltaTime)
-		if blink > 0.0 {
+	if flashRes.SequenceDone {
+		if scr.promptAnim.Update(deltaTime).Value > 0.0 {
 			queue.Add(&scr.prompt)
 		}
 		if input.IsAnythingPressed() {
