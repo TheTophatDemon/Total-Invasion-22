@@ -1,15 +1,13 @@
 # TODO
-- Transition HUD to ui v2
-  - Level Complete
-- Fix in game HUD to adapt to screen size changes
-- Make larger font
+- Make larger font for level complete
+- Fix in game HUD to adapt to screen size / language changes
 - Add visual indicator of overheal
+- Modify loading screen graphic to be more on-model
+- Exit screen
 - E1M5
   - Sign of Madness
   - Super Armor
   - Song
-- Modify loading screen graphic to be more on-model
-- Exit screen
 - Checkpoints
 - Saving
 - Game Difficulty Settings

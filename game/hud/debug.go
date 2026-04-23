@@ -8,7 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 )
 
 type DebugStats struct {

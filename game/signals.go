@@ -1,6 +1,6 @@
 package game
 
-import "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
+import "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 
 type (
 	MapChangeSignal struct {

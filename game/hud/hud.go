@@ -6,10 +6,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
-	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	ui2 "tophatdemon.com/total-invasion-ii/engine/scene/comps/ui/v2"
 	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -28,11 +26,12 @@ type PlayerStats struct {
 }
 
 type Hud struct {
-	renderQueue  ui.RenderQueue
-	renderQueue2 ui2.RenderQueue
+	renderQueue ui.RenderQueue
 
-	flashBox  ui2.Element
+	flashBox  ui.Element
 	flashAnim tween.Data
+
+	frameBufferBox ui.Element // Contains the rendered game world
 
 	Debug         DebugStats
 	Weapons       Weapons
@@ -44,11 +43,16 @@ type Hud struct {
 }
 
 func (hud *Hud) Init() {
-	hud.flashBox = ui2.NewBox(ui2.Transform{
+	hud.flashBox = ui.NewBox(ui.Transform{
 		Size:  mgl32.Vec2{float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight)},
 		Depth: 9.0,
 	}, nil)
 	hud.flashBox.BgColor = maybe.Some(color.Transparent)
+
+	hud.frameBufferBox = ui.NewBox(ui.Transform{
+		Size:  mgl32.Vec2{settings.UIWidth(), settings.UIHeight()},
+		Depth: -1.0,
+	}, nil)
 
 	if engine.InDebugMode() {
 		hud.Debug.init()
@@ -64,18 +68,18 @@ func (hud *Hud) Update(deltaTime float32) {
 	if flashClr, ok := hud.flashBox.BgColor.Get(); ok {
 		flashClr.A = hud.flashAnim.Update(deltaTime).Value
 	}
-	hud.renderQueue2.Add(&hud.flashBox)
+	hud.renderQueue.Add(&hud.flashBox)
 
 	if engine.InDebugMode() {
-		hud.Debug.Layout(&hud.renderQueue2)
+		hud.Debug.Layout(&hud.renderQueue)
 	}
 	if !hud.Intro.Done() {
-		hud.Intro.Layout(&hud.renderQueue2, deltaTime)
+		hud.Intro.Layout(&hud.renderQueue, deltaTime)
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
-		hud.StatusBar.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
-		hud.MessageBar.layout(&hud.renderQueue2, deltaTime)
-		hud.Weapons.Layout(&hud.renderQueue2, deltaTime, hud.PlayerStats)
+		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
+		hud.MessageBar.layout(&hud.renderQueue, deltaTime)
+		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
 	} else {
 		// Only show after level ends.
 		hud.VictoryScreen.Layout(&hud.renderQueue, deltaTime)
@@ -89,13 +93,9 @@ func (hud *Hud) Render(frameBufferTexture *textures.Texture) {
 		Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 	}
 	renderContext.Enable2D()
-	// Add the frame buffer containing the game screen below everything
-	hud.renderQueue.Add(new(ui.NewBoxFull(math2.Rect{
-		Width:  settings.UIWidth(),
-		Height: settings.UIHeight(),
-	}, frameBufferTexture, color.White, -1.0)))
+	hud.frameBufferBox.BgTexture = frameBufferTexture
+	hud.renderQueue.Add(&hud.frameBufferBox)
 	hud.renderQueue.Render(&renderContext)
-	hud.renderQueue2.Render(&renderContext)
 }
 
 func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {
