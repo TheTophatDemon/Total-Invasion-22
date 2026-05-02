@@ -213,11 +213,32 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	queue.Add(&status.rightPanel)
 
 	// Health stat
-	status.healthStat.SetText(fmt.Sprintf("%03d", stats.Health))
+	if stats.Health > stats.TargetHealth {
+		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.White)
+		status.healthStat.SetText(fmt.Sprintf("+%d", stats.Health-stats.TargetHealth))
+	} else {
+		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.Red)
+		status.healthStat.SetText(fmt.Sprintf("%03d", stats.Health))
+	}
 	queue.Add(&status.healthStat)
 
 	// Heart icon
-	status.heartIcon.AnimPlayer.Update(deltaTime)
+	overhealAnim, _ := status.heartIcon.BgTexture.GetAnimation("overheal")
+	heartAnim, _ := status.heartIcon.BgTexture.GetAnimation("heart")
+	if stats.Health > stats.TargetHealth {
+		if !status.heartIcon.AnimPlayer.IsPlayingAnim(overhealAnim) {
+			status.heartIcon.AnimPlayer.PlayNewAnim(overhealAnim)
+		}
+	} else if !status.heartIcon.AnimPlayer.IsPlayingAnim(heartAnim) {
+		status.heartIcon.AnimPlayer.PlayNewAnim(heartAnim)
+	}
+	if stats.Health > 0 {
+		speed := deltaTime
+		if stats.Health < 25 {
+			speed *= 2
+		}
+		status.heartIcon.AnimPlayer.Update(speed)
+	}
 	queue.Add(&status.heartIcon)
 
 	iconsTex := cache.GetTexture(texHudIcons)

@@ -98,14 +98,18 @@ func generateHudFont() {
 		chars = append(chars, Char{
 			ID:    uint('0' + i),
 			X:     i*12 + 2,
-			Y:     0,
+			Y:     1,
 			Width: 9, Height: 12,
 		})
 	}
 	// Infinity
 	chars = append(chars, Char{
 		ID: uint('∞'),
-		X:  0, Y: 12, Width: 24, Height: 12,
+		X:  1, Y: 13, Width: 24, Height: 12,
+	})
+	chars = append(chars, Char{
+		ID: uint('+'),
+		X:  25, Y: 13, Width: 10, Height: 12,
 	})
 
 	tpl := template.Must(template.New("BMFont").Parse(TEMPLATE))
@@ -113,7 +117,7 @@ func generateHudFont() {
 	err := tpl.Execute(builder, TemplParams{
 		FontName:   "Total Invasion 22 HUD Counter Font",
 		ImagePath:  "hud_counter_font.png",
-		ImageWidth: 120, ImageHeight: 24,
+		ImageWidth: 120, ImageHeight: 32,
 		LineHeight: 16, Base: 0, FontSize: 12,
 		Spacing: [2]int{2, 1},
 		Chars:   chars,

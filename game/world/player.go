@@ -220,6 +220,7 @@ func (player *Player) Update(deltaTime float32) {
 	hudPtr.PlayerStats = hud.PlayerStats{
 		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
 		Health:              int(math2.Ceil(player.actor.Health)),
+		TargetHealth:        int(math2.Ceil(player.actor.TargetHealth)),
 		Noclip:              player.actor.NoClip,
 		GodMode:             player.godMode,
 		Ammo:                player.ammo,
