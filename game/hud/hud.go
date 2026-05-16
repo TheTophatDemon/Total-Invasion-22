@@ -23,6 +23,8 @@ type PlayerStats struct {
 	Keys                game.Keys
 	MoveSpeed           float32
 	WeaponWheelOpenness float32 // Will be 1 when the weapon wheel is open and then gradually drop to 0 after the button is released.
+	EquippedWeapons     [game.WeaponCount]bool
+	SelectedWeapon      game.WeaponType
 }
 
 type Hud struct {

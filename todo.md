@@ -1,6 +1,7 @@
 # TODO
-- Make larger font for level complete
 - Fix in game HUD to adapt to screen size / language changes
+  - Decouple weapon state from the HUD state so that the HUD can be reinitialized without disrupting gameplay state
+- Make larger font for level complete
 - Add visual indicator of overheal
 - Modify loading screen graphic to be more on-model
 - Exit screen
