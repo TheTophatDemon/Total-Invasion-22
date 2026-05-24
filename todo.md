@@ -1,6 +1,6 @@
 # TODO
-- Make larger font for level complete
 - Fix in game HUD to adapt to screen size / language changes
+- Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
 - E1M5
@@ -18,6 +18,7 @@
 - Player hit noise
 - Chicken cannon secondary attack
 - Fix jittering in corners
+- Jittering while walking across non-solid props sometimes??
 - Demo end screen
 - Re-record enemy voices
 - Gamepad support (for Steam Deck)

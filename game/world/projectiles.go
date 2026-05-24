@@ -116,9 +116,7 @@ func (proj *Projectile) sickleCollide(movement mgl32.Vec3, otherEnt any, mask co
 				proj.id.Remove()
 				if player, isPlayer := owner.(*Player); isPlayer {
 					player.AddAmmo(game.AmmoTypeSickle, 1)
-					if sickleWeapon := gWorld.Hud.Weapons.Get(game.WeaponSickle); sickleWeapon != nil {
-						sickleWeapon.Equipped = true
-					}
+					player.Sickle.Equipped = true
 				}
 			}
 		}

@@ -20,7 +20,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene/tree"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -38,7 +37,7 @@ const (
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
-	Hud            hud.Hud
+	Hud            Hud
 	Players        scene.Storage[Player]
 	Enemies        scene.Storage[Enemy]
 	Chickens       scene.Storage[Chicken]
@@ -205,10 +204,10 @@ func (world *World) Update(deltaTime float32) {
 
 	// Update entities
 	world.UpdateStores(deltaTime)
-	world.Hud.Update(deltaTime)
 
 	// Set audio listener position
 	if player, ok := world.CurrentPlayer.Get(); ok {
+		world.Hud.Update(deltaTime, player)
 		pos := player.actor.Position()
 		dir := player.actor.FacingVec()
 		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
@@ -299,9 +298,7 @@ func (world *World) Render() {
 	gWorld.frameBuffer.Unbind()
 
 	world.Hud.Debug.UpdateCounters(&renderContext)
-	if player, playerExists := world.CurrentPlayer.Get(); playerExists && (world.CurrentCamera.Equals(player.Camera.Handle) || world.InWinState()) {
-		world.Hud.Render(gWorld.frameBuffer.RenderTexture)
-	}
+	world.Hud.Render(gWorld.frameBuffer.RenderTexture)
 }
 
 func (world *World) TearDown() {

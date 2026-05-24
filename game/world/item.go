@@ -29,7 +29,7 @@ type Item struct {
 	pickupSound tdaudio.SoundId
 	healAmount  float32
 	giveAmmo    [game.AmmoTypeCount]int // Amount of ammo to give for each type
-	giveWeapon  game.WeaponType
+	giveWeapon  game.WeaponIndex
 	dontWaste   bool // If true, the item will not be collected if the player has the maximum of its resource
 	giveKey     game.Keys
 	giveArmor   game.ArmorType
@@ -180,7 +180,7 @@ func SpawnPlasmaVials(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err 
 func SpawnChickenCannon(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(position, mgl32.Vec3{0.625, 0.25, 0.625})
 	item.giveAmmo[game.AmmoTypeEgg] = 24
-	item.giveWeapon = game.WeaponChicken
+	item.giveWeapon = game.WeaponIndexChicken
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "chickenCannonGet"
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/chicken_cannon.png"), nil, &mgl32.Vec2{0.625, 0.25})
@@ -190,7 +190,7 @@ func SpawnChickenCannon(position mgl32.Vec3) (id scene.Id[*Item], item *Item, er
 func SpawnGrenadeLauncher(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(position, mgl32.Vec3{0.5, 0.25, 0.5})
 	item.giveAmmo[game.AmmoTypeGrenade] = 5
-	item.giveWeapon = game.WeaponGrenade
+	item.giveWeapon = game.WeaponIndexGrenade
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "grenadeLauncherGet"
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/grenade_launcher.png"), nil, &mgl32.Vec2{0.5, 0.25})
@@ -200,7 +200,7 @@ func SpawnGrenadeLauncher(position mgl32.Vec3) (id scene.Id[*Item], item *Item, 
 func SpawnParusu(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(position, mgl32.Vec3{0.625, 0.25, 0.625})
 	item.giveAmmo[game.AmmoTypePlasma] = 100
-	item.giveWeapon = game.WeaponParusu
+	item.giveWeapon = game.WeaponIndexParusu
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "parusuGet"
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/parusu.png"), nil, &mgl32.Vec2{0.625, 0.25})
@@ -209,7 +209,7 @@ func SpawnParusu(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error
 
 func SpawnAirhorn(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
 	id, item, err = spawnItemGeneric(position, mgl32.Vec3{0.5, 0.5, 0.5})
-	item.giveWeapon = game.WeaponAirhorn
+	item.giveWeapon = game.WeaponIndexAirhorn
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "airhornGet"
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/airhorn.png"), nil, &mgl32.Vec2{0.5, 0.5})
@@ -326,11 +326,10 @@ func (item *Item) OnUse(player *Player) {
 		return
 	}
 
-	if item.giveWeapon != game.WeaponNone {
-		weapon := gWorld.Hud.Weapons.Get(item.giveWeapon)
-		if weapon != nil {
-			weapon.Equipped = true
-			gWorld.Hud.Weapons.Select(item.giveWeapon)
+	if item.giveWeapon != game.WeaponIndexNone {
+		if weap := player.WeaponWithIndex(item.giveWeapon); weap != nil {
+			weap.Equipped = true
+			player.TrySelect(weap)
 		}
 	}
 

@@ -129,6 +129,12 @@ func (ap *AnimationPlayer) PlayFromStart() {
 	ap.Play()
 }
 
+func (ap *AnimationPlayer) PlayIfNotAlready(newAnim textures.Animation) {
+	if ap.animation.BaseName() != newAnim.BaseName() || !ap.playing {
+		ap.PlayNewAnim(newAnim)
+	}
+}
+
 func (ap *AnimationPlayer) PlayNewAnim(newAnim textures.Animation) {
 	ap.ChangeAnimation(newAnim)
 	ap.PlayFromStart()

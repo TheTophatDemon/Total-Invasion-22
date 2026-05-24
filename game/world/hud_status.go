@@ -1,4 +1,4 @@
-package hud
+package world
 
 import (
 	"fmt"
@@ -18,16 +18,16 @@ const (
 	texHudIcons  = "assets/textures/ui/hud_icons.png"
 )
 
-type statusBar struct {
+type HudStatusBar struct {
 	leftPanel, rightPanel, face     ui.Element
-	faceState                       faceState
+	faceState                       HudFaceState
 	faceTimer                       float32
 	heartIcon, ammoIcon, armorIcon  ui.Element
 	keyIcons                        [4]ui.Element
 	healthStat, ammoStat, armorStat ui.Element
 }
 
-type faceState struct {
+type HudFaceState struct {
 	anim     string
 	flipX    bool
 	showTime float32 // Number of seconds the face will appear for before giving way to lower priority states.
@@ -36,13 +36,13 @@ type faceState struct {
 
 // Data about each face state.
 var (
-	FaceStateIdle      = faceState{anim: "idle", priority: 0}
-	FaceStateHurtFront = faceState{anim: "hurt:front", showTime: 1.0, priority: 5}
-	FaceStateHurtLeft  = faceState{anim: "hurt:side", flipX: true, showTime: 1.0, priority: 6}
-	FaceStateHurtRight = faceState{anim: "hurt:side", flipX: false, showTime: 1.0, priority: 7}
-	FaceStateDead      = faceState{anim: "dead", priority: 11}
-	FaceStateNoclip    = faceState{anim: "noclip", priority: 10}
-	FaceStateGod       = faceState{anim: "god", priority: 15}
+	FaceStateIdle      = HudFaceState{anim: "idle", priority: 0}
+	FaceStateHurtFront = HudFaceState{anim: "hurt:front", showTime: 1.0, priority: 5}
+	FaceStateHurtLeft  = HudFaceState{anim: "hurt:side", flipX: true, showTime: 1.0, priority: 6}
+	FaceStateHurtRight = HudFaceState{anim: "hurt:side", flipX: false, showTime: 1.0, priority: 7}
+	FaceStateDead      = HudFaceState{anim: "dead", priority: 11}
+	FaceStateNoclip    = HudFaceState{anim: "noclip", priority: 10}
+	FaceStateGod       = HudFaceState{anim: "god", priority: 15}
 )
 
 var ammoTypeIconNames = [game.AmmoTypeCount]string{
@@ -55,15 +55,15 @@ var ammoTypeIconNames = [game.AmmoTypeCount]string{
 
 // Attempts to update the player's face to reflect in game events.
 // If the current state has a higher priority and isn't out of time, then nothing will occur.
-func (status *statusBar) SuggestPlayerFace(newState faceState) {
+func (status *HudStatusBar) SuggestPlayerFace(newState HudFaceState) {
 	if status.faceState == newState || status.faceState.priority > newState.priority {
 		return
 	}
 	status.forcePlayerFace(newState)
 }
 
-func (status *statusBar) init() {
-	*status = statusBar{}
+func (status *HudStatusBar) init() {
+	*status = HudStatusBar{}
 
 	// Left HUD panel
 	leftPanelTex := cache.GetTexture("assets/textures/ui/hud_backdrop_left.png")
@@ -197,7 +197,7 @@ func (status *statusBar) init() {
 	}
 }
 
-func (status *statusBar) forcePlayerFace(newState faceState) {
+func (status *HudStatusBar) forcePlayerFace(newState HudFaceState) {
 	if status.faceState != newState {
 		faceTex := cache.GetTexture(texSeganFace)
 		anim, _ := faceTex.GetAnimation(newState.anim)
@@ -208,33 +208,35 @@ func (status *statusBar) forcePlayerFace(newState faceState) {
 	status.faceTimer = newState.showTime
 }
 
-func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats PlayerStats, selectedWeapon *Weapon) {
+func (status *HudStatusBar) Layout(queue *ui.RenderQueue, deltaTime float32, player *Player) {
 	queue.Add(&status.leftPanel)
 	queue.Add(&status.rightPanel)
 
+	health := int(math2.Ceil(player.Actor().Health))
+	targetHealth := int(math2.Ceil(player.Actor().TargetHealth))
 	// Health stat
-	if stats.Health > stats.TargetHealth {
+	if health > targetHealth {
 		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.White)
-		status.healthStat.SetText(fmt.Sprintf("+%d", stats.Health-stats.TargetHealth))
+		status.healthStat.SetText(fmt.Sprintf("+%d", health-targetHealth))
 	} else {
 		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.Red)
-		status.healthStat.SetText(fmt.Sprintf("%03d", stats.Health))
+		status.healthStat.SetText(fmt.Sprintf("%03d", health))
 	}
 	queue.Add(&status.healthStat)
 
 	// Heart icon
 	overhealAnim, _ := status.heartIcon.BgTexture.GetAnimation("overheal")
 	heartAnim, _ := status.heartIcon.BgTexture.GetAnimation("heart")
-	if stats.Health > stats.TargetHealth {
+	if health > targetHealth {
 		if !status.heartIcon.AnimPlayer.IsPlayingAnim(overhealAnim) {
 			status.heartIcon.AnimPlayer.PlayNewAnim(overhealAnim)
 		}
 	} else if !status.heartIcon.AnimPlayer.IsPlayingAnim(heartAnim) {
 		status.heartIcon.AnimPlayer.PlayNewAnim(heartAnim)
 	}
-	if stats.Health > 0 {
+	if health > 0 {
 		speed := deltaTime
-		if stats.Health < 25 {
+		if health < 25 {
 			speed *= 2
 		}
 		status.heartIcon.AnimPlayer.Update(speed)
@@ -242,14 +244,14 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	queue.Add(&status.heartIcon)
 
 	iconsTex := cache.GetTexture(texHudIcons)
-	if selectedWeapon != nil {
+	if player.SelectedWeapon != nil {
 		// Ammo stat
-		status.ammoStat.SetText(fmt.Sprintf("%03d", stats.Ammo[selectedWeapon.ammoType]))
+		status.ammoStat.SetText(fmt.Sprintf("%03d", player.ammo[player.SelectedWeapon.AmmoType]))
 		queue.Add(&status.ammoStat)
 
 		// Ammo icon
 		status.ammoIcon.AnimPlayer.Update(deltaTime)
-		anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[selectedWeapon.ammoType])
+		anim, ok := iconsTex.GetAnimation(ammoTypeIconNames[player.SelectedWeapon.AmmoType])
 		if ok {
 			if !status.ammoIcon.AnimPlayer.IsPlayingAnim(anim) {
 				status.ammoIcon.AnimPlayer.PlayNewAnim(anim)
@@ -259,14 +261,14 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 	}
 
 	// Armor stat
-	if stats.Armor != game.ArmorTypeNone {
-		status.armorStat.SetText(fmt.Sprintf("%03d", stats.ArmorAmount))
+	if player.armorType != game.ArmorTypeNone {
+		status.armorStat.SetText(fmt.Sprintf("%03d", int(player.armorAmount)))
 		queue.Add(&status.armorStat)
 	}
 
 	// Armor icon
 	status.armorIcon.AnimPlayer.Update(deltaTime)
-	anim, ok := iconsTex.GetAnimation(stats.Armor.Name() + "Armor")
+	anim, ok := iconsTex.GetAnimation(player.armorType.Name() + "Armor")
 	if ok {
 		if !status.armorIcon.AnimPlayer.IsPlayingAnim(anim) {
 			status.armorIcon.AnimPlayer.PlayNewAnim(anim)
@@ -276,19 +278,19 @@ func (status *statusBar) Layout(queue *ui.RenderQueue, deltaTime float32, stats 
 
 	// Keycards
 	for i := range status.keyIcons {
-		if (1<<i)&int(stats.Keys) != 0 {
+		if (1<<i)&int(player.keys) != 0 {
 			status.keyIcons[i].AnimPlayer.Update(deltaTime)
 			queue.Add(&status.keyIcons[i])
 		}
 	}
 
 	// Decide which face to display
-	if stats.Health <= 0 {
+	if player.actor.Health <= 0 {
 		status.forcePlayerFace(FaceStateDead)
 		status.heartIcon.AnimPlayer.Stop()
-	} else if stats.GodMode {
+	} else if player.godMode {
 		status.forcePlayerFace(FaceStateGod)
-	} else if stats.Noclip {
+	} else if player.actor.NoClip {
 		status.forcePlayerFace(FaceStateNoclip)
 	} else {
 		status.faceTimer -= deltaTime

@@ -1,6 +1,7 @@
 package world
 
 import (
+	"iter"
 	"math"
 	"math/rand"
 	"os/exec"
@@ -19,31 +20,34 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
-	"tophatdemon.com/total-invasion-ii/game/hud"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
-type Player struct {
-	Camera                                   scene.Id[*Camera]
-	Sprite                                   comps.SpriteRender // Mainly shown during the victory state
-	AnimPlayer                               comps.AnimationPlayer
-	RunSpeed, WalkSpeed                      float32
-	StandFriction, WalkFriction, RunFriction float32
-	id                                       scene.Id[*Player]
-	actor                                    Actor
+type (
+	Player struct {
+		Camera                                   scene.Id[*Camera]
+		Sprite                                   comps.SpriteRender // Mainly shown during the victory state
+		AnimPlayer                               comps.AnimationPlayer
+		RunSpeed, WalkSpeed                      float32
+		StandFriction, WalkFriction, RunFriction float32
+		id                                       scene.Id[*Player]
+		actor                                    Actor
 
-	cameraFall          float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
-	transitionTimer     float32 // Counts the seconds until the game resets after winning or dying.
-	godMode             bool    // If true, the player does not take damage.
-	ammo                game.Ammo
-	keys                game.Keys
-	armorType           game.ArmorType
-	armorAmount         float32
-	weaponWheelOpenness float32 // 1 if wheel is open, gradually drops to 0 after closing.
-	punTimer            timer.Timer
-	puns                []string
-	safety              bool // Prevents firing accidentally after exiting a menu
-}
+		cameraFall                                                                            float32 // Used to track the Y velocity of the camera as it falls to the ground after player death.
+		transitionTimer                                                                       float32 // Counts the seconds until the game resets after winning or dying.
+		godMode                                                                               bool    // If true, the player does not take damage.
+		ammo                                                                                  game.Ammo
+		keys                                                                                  game.Keys
+		armorType                                                                             game.ArmorType
+		armorAmount                                                                           float32
+		SelectedWeapon, NextWeapon                                                            *Weapon
+		Sickle, Chicken, Grenade, Parusu, DblGrenade, Sign, Airhorn, Defenestrator, Cluckster Weapon
+		WeaponWheel                                                                           HudWeaponWheel
+		punTimer                                                                              timer.Timer
+		puns                                                                                  []string
+		safety                                                                                bool // Prevents firing accidentally after exiting a menu
+	}
+)
 
 var _ HasActor = (*Player)(nil)
 var _ comps.HasBody = (*Player)(nil)
@@ -104,19 +108,23 @@ func SpawnPlayer(
 	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
 	// Initialize armor and ammo
-	player.ammo = changeInfo.GiveAmmo
+	player.ammo = changeInfo.Equipment.Ammo
 	player.ammo[game.AmmoTypeSickle] = 0
-	player.armorType = changeInfo.GiveArmor
-	player.armorAmount = changeInfo.ArmorAmount
+	player.armorType = changeInfo.Equipment.Armor
+	player.armorAmount = changeInfo.Equipment.ArmorAmount
 
 	// Initialize weapons
-	gWorld.Hud.Weapons.Get(game.WeaponSickle).Equipped = true
-	gWorld.Hud.Weapons.Select(game.WeaponSickle)
-	for i, equipped := range changeInfo.EquippedWeapons {
-		if equipped {
-			gWorld.Hud.Weapons.Get(game.WeaponType(i)).Equipped = true
-		}
-	}
+	player.Sickle.Init(&WeaponSickle, true)
+	player.SelectedWeapon = &player.Sickle
+	player.Sickle.State = WeaponStateIntro
+	player.Chicken.Init(&WeaponChicken, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexChicken])
+	player.Grenade.Init(&WeaponGrenade, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexGrenade])
+	player.Parusu.Init(&WeaponParusu, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexParusu])
+	player.DblGrenade.Init(&WeaponDblGrenade, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexDblGrenade])
+	player.Sign.Init(&WeaponSign, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexSign])
+	player.Airhorn.Init(&WeaponAirhorn, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexAirhorn])
+	player.Defenestrator.Init(&WeaponDefenestrator, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexDefenestrator])
+	player.Cluckster.Init(&WeaponCluckster, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexCluckster])
 
 	if gWorld.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
@@ -129,10 +137,33 @@ func SpawnPlayer(
 	return
 }
 
+func (player *Player) Equipment() game.Equipment {
+	equipment := game.Equipment{
+		Ammo:        player.ammo,
+		Armor:       player.armorType,
+		ArmorAmount: player.armorAmount,
+		EquippedWeapons: [...]bool{
+			game.WeaponIndexSickle:        player.Sickle.Equipped,
+			game.WeaponIndexChicken:       player.Chicken.Equipped,
+			game.WeaponIndexGrenade:       player.Grenade.Equipped,
+			game.WeaponIndexParusu:        player.Parusu.Equipped,
+			game.WeaponIndexDblGrenade:    player.DblGrenade.Equipped,
+			game.WeaponIndexSign:          player.Sign.Equipped,
+			game.WeaponIndexAirhorn:       player.Airhorn.Equipped,
+			game.WeaponIndexDefenestrator: player.Defenestrator.Equipped,
+			game.WeaponIndexCluckster:     player.Cluckster.Equipped,
+		},
+		Keys: player.keys,
+	}
+	if player.SelectedWeapon != nil {
+		equipment.SelectedWeapon = player.SelectedWeapon.Index
+	}
+	return equipment
+}
+
 func (player *Player) Update(deltaTime float32) {
 	hudPtr := &gWorld.Hud
 
-	player.weaponWheelOpenness = max(0.0, player.weaponWheelOpenness-(deltaTime*10.0))
 	if hudPtr.Intro.TimeLeft() > 0.5 {
 		// Wait
 	} else if gWorld.InWinState() {
@@ -141,17 +172,14 @@ func (player *Player) Update(deltaTime float32) {
 			player.AnimPlayer.Play()
 		}
 		player.AnimPlayer.Update(deltaTime)
-		hudPtr.Weapons.Select(game.WeaponNone)
+		player.SelectedWeapon = nil
 		player.actor.inputForward = 0.0
 		player.actor.inputStrafe = 0.0
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath:     gWorld.impendingLevel,
-				GiveAmmo:        player.ammo,
-				GiveArmor:       player.armorType,
-				ArmorAmount:     player.armorAmount,
-				EquippedWeapons: hudPtr.Weapons.ListEquipped(),
+				NextMapPath: gWorld.impendingLevel,
+				Equipment:   player.Equipment(),
 			})
 		}
 	} else if player.actor.Health > 0 {
@@ -184,7 +212,7 @@ func (player *Player) Update(deltaTime float32) {
 		}
 	} else {
 		// Death logic
-		hudPtr.Weapons.Select(game.WeaponNone)
+		player.TrySelect(nil)
 		player.armorType = game.ArmorTypeNone
 		player.armorAmount = 0.0
 		hudPtr.FlashScreen(color.Red.WithAlpha(0.5), 1.0)
@@ -215,21 +243,30 @@ func (player *Player) Update(deltaTime float32) {
 		player.actor.Friction = player.StandFriction
 	}
 
-	player.actor.Update(deltaTime)
-
-	hudPtr.PlayerStats = hud.PlayerStats{
-		// Health needs to be rounded up so the face logic stays in sync with the player's state when the health reaches 0.
-		Health:              int(math2.Ceil(player.actor.Health)),
-		TargetHealth:        int(math2.Ceil(player.actor.TargetHealth)),
-		Noclip:              player.actor.NoClip,
-		GodMode:             player.godMode,
-		Ammo:                player.ammo,
-		Keys:                player.keys,
-		MoveSpeed:           player.actor.body.Velocity.Len(),
-		Armor:               player.armorType,
-		ArmorAmount:         int(math2.Ceil(player.armorAmount)),
-		WeaponWheelOpenness: player.weaponWheelOpenness,
+	// Transition selected weapon
+	if player.SelectedWeapon == nil || player.SelectedWeapon.State == WeaponStateInactive {
+		player.SelectedWeapon = player.NextWeapon
+		player.SelectedWeapon.OnSelect()
 	}
+
+	// Update weapon wheel
+	if !settings.Current.ActionWeaponWheel.Pressed() {
+		player.WeaponWheel.Openness = max(0.0, player.WeaponWheel.Openness-(deltaTime*10.0))
+	}
+	if settings.Current.ActionWeaponWheel.JustPressed() {
+		player.WeaponWheel = NewWeaponWheel(player)
+	} else if settings.Current.ActionWeaponWheel.JustReleased() && player.actor.Health > 0 {
+		weap := player.WeaponWithIndex(player.WeaponWheel.HighlightedWeapon)
+		player.TrySelect(weap)
+	}
+
+	// Update weapons
+	swayAmt := player.Body().Velocity.Len()
+	for weap := range player.Weapons() {
+		weap.Update(deltaTime, swayAmt, player.ammo)
+	}
+
+	player.actor.Update(deltaTime)
 }
 
 func (player *Player) Render(context *render.Context) {
@@ -293,8 +330,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Mary sue mode
 	if settings.ActionMarySue.JustPressed() {
 		hudPtr.ShowMessage("Mary Sue mode activated!", 100, color.Red)
-		for i := range game.WeaponCount - 1 {
-			hudPtr.Weapons.Get(i + 1).Equipped = true
+		for weap := range player.Weapons() {
+			weap.Equipped = true
 		}
 		for i := range player.ammo {
 			player.ammo[i] = game.AmmoType(i).Limit()
@@ -318,11 +355,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		err := cmd.Run()
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath:     gWorld.GameMap.Name,
-				GiveAmmo:        player.ammo,
-				GiveArmor:       player.armorType,
-				ArmorAmount:     player.armorAmount,
-				EquippedWeapons: hudPtr.Weapons.ListEquipped(),
+				NextMapPath: gWorld.GameMap.Name,
+				Equipment:   player.Equipment(),
 			})
 		} else if err != nil {
 			failure.LogErrWithLocation("failed to launch editor: %v", err)
@@ -360,23 +394,23 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	// Weapon selection
 	switch true {
 	case settings.Current.ActionSickle.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponSickle)
+		player.TrySelect(&player.Sickle)
 	case settings.Current.ActionChicken.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponChicken)
+		player.TrySelect(&player.Chicken)
 	case settings.Current.ActionGrenade.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponGrenade)
+		player.TrySelect(&player.Grenade)
 	case settings.Current.ActionParusu.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponParusu)
+		player.TrySelect(&player.Parusu)
 	case settings.Current.ActionDblGrenade.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponDblGrenade)
+		player.TrySelect(&player.DblGrenade)
 	case settings.Current.ActionSign.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponSign)
+		player.TrySelect(&player.Sign)
 	case settings.Current.ActionAirhorn.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponAirhorn)
+		player.TrySelect(&player.Airhorn)
 	case settings.Current.ActionDefenestrator.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponDefenestrator)
+		player.TrySelect(&player.Defenestrator)
 	case settings.Current.ActionCluckster.JustPressed():
-		hudPtr.Weapons.Select(game.WeaponCluckster)
+		player.TrySelect(&player.Cluckster)
 	}
 
 	// Fire weapon
@@ -384,17 +418,19 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		if !settings.Current.ActionFire.Pressed() {
 			player.safety = false
 		}
-	} else if weap := hudPtr.Weapons.Selected(); weap != nil && settings.Current.ActionFire.Pressed() {
+	} else if player.SelectedWeapon != nil && settings.Current.ActionFire.Pressed() {
 		var cast collision.Result
-		if weap.IsShooter() {
+		if player.SelectedWeapon.IsShooter {
 			// Don't fire if there is a wall too close in front
 			cast, _ = gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
 		}
 
 		ammoBefore := player.ammo
-		if !cast.Hit && hudPtr.Weapons.AttemptFire(&player.ammo) {
-			player.AttackWithWeapon(settings.Current.ActionFire.JustPressed())
-			if player.armorType == game.ArmorTypeBullet && weap.Kind() != game.WeaponSickle {
+		if !cast.Hit && player.SelectedWeapon.AttemptFire(player, deltaTime, settings.Current.ActionFire.JustPressed()) {
+			player.punTimer.Reset()
+			player.actor.NoiseLevel = 0.5
+
+			if player.armorType == game.ArmorTypeBullet && player.SelectedWeapon != &player.Sickle {
 				player.ammo = ammoBefore
 			}
 		}
@@ -408,9 +444,9 @@ func (player *Player) takeUserInput(deltaTime float32) {
 	}
 
 	if settings.Current.ActionWeaponWheel.Pressed() {
-		player.weaponWheelOpenness = 1.0
+		player.WeaponWheel.Openness = 1.0
 	}
-	if player.weaponWheelOpenness <= 0.0 {
+	if player.WeaponWheel.Openness <= 0.0 {
 		sensitivity := float32(0.005 * math2.Pow(10.0, (settings.Current.MouseSensitivity-1.0)/5.0))
 		normalLook := settings.Current.ActionLookLeft.Axis() - settings.Current.ActionLookRight.Axis()
 		fastLook := (settings.Current.ActionFastLookLeft.Axis() - settings.Current.ActionFastLookRight.Axis()) * 2.5
@@ -458,19 +494,48 @@ func (player *Player) OnDamage(sourceEntity any, damage float32) bool {
 			halfFov := mgl32.DegToRad(float32(settings.Current.Fov) / 2.0)
 			if angleTo := math2.Acos(dmgDir.Dot(forward)); angleTo < halfFov || angleTo > math.Pi-halfFov {
 				// Source is in front or back
-				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtFront)
+				hudPtr.StatusBar.SuggestPlayerFace(FaceStateHurtFront)
 			} else if forward.Cross(dmgDir).Y() > 0.0 {
 				// Source is to the left
-				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtLeft)
+				hudPtr.StatusBar.SuggestPlayerFace(FaceStateHurtLeft)
 			} else {
 				// Source is to the right
-				hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtRight)
+				hudPtr.StatusBar.SuggestPlayerFace(FaceStateHurtRight)
 			}
 		} else {
-			hudPtr.StatusBar.SuggestPlayerFace(hud.FaceStateHurtFront)
+			hudPtr.StatusBar.SuggestPlayerFace(FaceStateHurtFront)
 		}
 	}
 	return true
+}
+
+func (player *Player) WeaponWithIndex(index game.WeaponIndex) *Weapon {
+	for weap := range player.Weapons() {
+		if weap.Index == index {
+			return weap
+		}
+	}
+	return nil
+}
+
+func (player *Player) Weapons() iter.Seq[*Weapon] {
+	return func(yield func(*Weapon) bool) {
+		for _, weap := range [...]*Weapon{
+			&player.Sickle,
+			&player.Chicken,
+			&player.Grenade,
+			&player.Parusu,
+			&player.DblGrenade,
+			&player.Sign,
+			&player.Airhorn,
+			&player.Defenestrator,
+			&player.Cluckster,
+		} {
+			if !yield(weap) {
+				return
+			}
+		}
+	}
 }
 
 // Adds ammo to the player's amounts, checking the limits to not overfill. Returns false if player has max ammo already.
@@ -494,46 +559,16 @@ func (player *Player) AddArmor(armorType game.ArmorType, amount int) bool {
 	return true
 }
 
-func (player *Player) AttackWithWeapon(justPressed bool) {
-	player.punTimer.Reset()
-	weapon := gWorld.Hud.Weapons.Selected()
-	if weapon == nil {
+func (player *Player) TrySelect(weapon *Weapon) {
+	if player.SelectedWeapon == weapon {
 		return
 	}
-	switch weapon.Kind() {
-	case game.WeaponSickle:
-		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5))
-		SpawnSickle(firePos, player.actor.FacingVec(), player.id.Handle)
-	case game.WeaponChicken:
-		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.15, 0.0}))
-		SpawnEgg(firePos, player.actor.FacingVec(), player.id.Handle)
-		cache.GetSfx("assets/sounds/weapon/chickengun.wav").Play()
-	case game.WeaponGrenade:
-		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(1.0).Add(mgl32.Vec3{0.0, 0.15, 0.0}))
-		SpawnGrenade(firePos, player.actor.FacingVec(), player.id.Handle)
-		cache.GetSfx("assets/sounds/weapon/grenadelaunch.wav").Play()
-	case game.WeaponParusu:
-		firePos := player.Body().Position.Add(player.actor.FacingVec().Mul(0.5).Add(mgl32.Vec3{0.0, -0.25, 0.0}))
-		SpawnPlasmaBall(firePos, player.actor.FacingVec(), player.id.Handle, false)
-		cache.GetSfx("assets/sounds/weapon/parusu.wav").Play()
-	case game.WeaponAirhorn:
-		if justPressed {
-			enemyIter := gWorld.Enemies.Iter()
-			for {
-				enemy, _ := enemyIter.Next()
-				if enemy == nil {
-					break
-				}
-				if enemy.actor.Health > 0 && enemy.state != &enemy.stunState {
-					diff := enemy.actor.Position().Sub(player.actor.Position())
-					dist := diff.Len()
-					if dist > 0.0 && dist < 3.0 && diff.Mul(1.0/dist).Dot(player.actor.FacingVec()) > 0.9 {
-						enemy.OnDamage(player, 1.0)
-						enemy.changeState(&enemy.stunState)
-					}
-				}
-			}
-		}
+	if weapon != nil && !weapon.Equipped {
+		gWorld.Hud.ShowMessage(settings.Localize(weapon.Name+"NotFound"), 30, color.Red)
+		return
 	}
-	player.actor.noisyTimer = 0.5
+	if player.SelectedWeapon != nil {
+		player.SelectedWeapon.OnDeselect()
+	}
+	player.NextWeapon = weapon
 }

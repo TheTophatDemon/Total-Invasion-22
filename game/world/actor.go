@@ -20,13 +20,13 @@ type Actor struct {
 	inputForward, inputStrafe       float32
 	onGround                        bool
 	knockbackForce                  mgl32.Vec3
-	noisyTimer                      float32 // While this timer is > 0, enemies will be able to 'hear' the actor
+	NoiseLevel                      float32 // While this timer is > 0, enemies will be able to 'hear' the actor
 	collisionFilter                 collision.Mask
 }
 
 func (actor *Actor) Update(deltaTime float32) {
 	// Diminish noise level
-	actor.noisyTimer = max(0.0, actor.noisyTimer-deltaTime)
+	actor.NoiseLevel = max(0.0, actor.NoiseLevel-deltaTime)
 
 	doGravity := actor.GravityAccel != 0.0
 	if doGravity {
