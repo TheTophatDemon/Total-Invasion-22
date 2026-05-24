@@ -191,9 +191,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			enemy.dirToTarget = vecToTarget.Normalize()
 		}
 
-		playerWeapon := gWorld.Hud.Weapons.Selected()
-		inHearingRange := targetActor.Actor().noisyTimer > 0 &&
-			playerWeapon != nil && enemy.distToTarget < playerWeapon.NoiseLevel()
+		inHearingRange := enemy.distToTarget < targetActor.Actor().NoiseLevel
 
 		const enemyFovRads = math.Pi
 		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < enemyFovRads/2.0

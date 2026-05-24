@@ -1,4 +1,4 @@
-package hud
+package world
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -9,23 +9,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tween"
-	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
-
-// Holds player information transferred between the HUD and the game worlds.
-type PlayerStats struct {
-	Health              int
-	Noclip, GodMode     bool
-	Ammo                game.Ammo
-	Armor               game.ArmorType
-	ArmorAmount         int
-	Keys                game.Keys
-	MoveSpeed           float32
-	WeaponWheelOpenness float32 // Will be 1 when the weapon wheel is open and then gradually drop to 0 after the button is released.
-	EquippedWeapons     [game.WeaponCount]bool
-	SelectedWeapon      game.WeaponType
-}
 
 type Hud struct {
 	renderQueue ui.RenderQueue
@@ -36,12 +21,10 @@ type Hud struct {
 	frameBufferBox ui.Element // Contains the rendered game world
 
 	Debug         DebugStats
-	Weapons       Weapons
 	Intro         LevelIntro
 	VictoryScreen VictoryScreen
-	StatusBar     statusBar
+	StatusBar     HudStatusBar
 	MessageBar    MessageBar
-	PlayerStats   PlayerStats // Information the player entity supplies
 }
 
 func (hud *Hud) Init() {
@@ -59,13 +42,12 @@ func (hud *Hud) Init() {
 	if engine.InDebugMode() {
 		hud.Debug.init()
 	}
-	hud.Weapons.init(hud)
 	hud.VictoryScreen.init()
 	hud.StatusBar.init()
 	hud.MessageBar.init()
 }
 
-func (hud *Hud) Update(deltaTime float32) {
+func (hud *Hud) Update(deltaTime float32, player *Player) {
 	// Update screen flash
 	if flashClr, ok := hud.flashBox.BgColor.Get(); ok {
 		flashClr.A = hud.flashAnim.Update(deltaTime).Value
@@ -79,9 +61,16 @@ func (hud *Hud) Update(deltaTime float32) {
 		hud.Intro.Layout(&hud.renderQueue, deltaTime)
 	}
 	if hud.VictoryScreen.levelEndTime.IsZero() {
-		hud.StatusBar.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats, hud.Weapons.Selected())
-		hud.MessageBar.layout(&hud.renderQueue, deltaTime)
-		hud.Weapons.Layout(&hud.renderQueue, deltaTime, hud.PlayerStats)
+		if gWorld.CurrentCamera.Equals(player.Camera.Handle) {
+			hud.StatusBar.Layout(&hud.renderQueue, deltaTime, player)
+			hud.MessageBar.layout(&hud.renderQueue, deltaTime)
+			if player.SelectedWeapon != nil {
+				hud.renderQueue.Add(&player.SelectedWeapon.Sprite)
+			}
+			if player.WeaponWheel.Openness > 0.0 {
+				player.WeaponWheel.Layout(&hud.renderQueue)
+			}
+		}
 	} else {
 		// Only show after level ends.
 		hud.VictoryScreen.Layout(&hud.renderQueue, deltaTime)

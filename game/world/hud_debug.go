@@ -1,4 +1,4 @@
-package hud
+package world
 
 import (
 	"fmt"

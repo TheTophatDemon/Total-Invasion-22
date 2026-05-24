@@ -127,3 +127,29 @@ func (ammoType AmmoType) Limit() int {
 	}
 	return 0
 }
+
+type (
+	WeaponIndex int
+	Equipment   struct {
+		Ammo            Ammo
+		Armor           ArmorType
+		ArmorAmount     float32
+		EquippedWeapons [WeaponIndexCount]bool
+		Keys            Keys
+		SelectedWeapon  WeaponIndex
+	}
+)
+
+const (
+	WeaponIndexNone WeaponIndex = iota
+	WeaponIndexSickle
+	WeaponIndexChicken
+	WeaponIndexGrenade
+	WeaponIndexParusu
+	WeaponIndexDblGrenade
+	WeaponIndexSign
+	WeaponIndexAirhorn
+	WeaponIndexDefenestrator
+	WeaponIndexCluckster
+	WeaponIndexCount
+)

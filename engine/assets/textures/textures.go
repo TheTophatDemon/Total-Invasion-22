@@ -171,12 +171,16 @@ func (tex *Texture) Free() {
 }
 
 func (tex *Texture) GetDefaultAnimation() Animation {
+	var first Animation
 	for _, anim := range tex.animations {
+		if first.IsNil() {
+			first = anim
+		}
 		if anim.Default || len(tex.animations) == 1 {
 			return anim
 		}
 	}
-	return Animation{}
+	return first
 }
 
 func (tex *Texture) AnimationCount() int {
@@ -184,6 +188,9 @@ func (tex *Texture) AnimationCount() int {
 }
 
 func (tex *Texture) GetAnimation(name string) (anim Animation, ok bool) {
+	if tex == nil {
+		return Animation{}, false
+	}
 	// If no layer specified, insert one automatically
 	for layerName := range tex.layers {
 		if !strings.ContainsRune(name, ';') {

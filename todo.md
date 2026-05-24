@@ -1,6 +1,5 @@
 # TODO
 - Fix in game HUD to adapt to screen size / language changes
-  - Decouple weapon state from the HUD state so that the HUD can be reinitialized without disrupting gameplay state
 - Make larger font for level complete
 - Add visual indicator of overheal
 - Modify loading screen graphic to be more on-model
@@ -20,6 +19,7 @@
 - Player hit noise
 - Chicken cannon secondary attack
 - Fix jittering in corners
+- Jittering while walking across non-solid props sometimes??
 - Demo end screen
 - Re-record enemy voices
 - Gamepad support (for Steam Deck)

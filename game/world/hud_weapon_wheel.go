@@ -1,4 +1,4 @@
-package hud
+package world
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -15,28 +15,29 @@ import (
 const texWeaponSlot = "assets/textures/ui/weapon_slot.png"
 const wheelIconTransparency = 0.2
 
-type weaponSlot struct {
-	kind       game.WeaponType
+type HudWeaponSlot struct {
+	kind       game.WeaponIndex
 	back, icon ui.Element
 	targetPos  mgl32.Vec2 // The position where each slot will move towards
 }
 
-type WeaponWheel struct {
-	slots             [3][3]weaponSlot
+type HudWeaponWheel struct {
+	HighlightedWeapon game.WeaponIndex
+	Openness          float32
+	slots             [3][3]HudWeaponSlot
 	highlight, cursor ui.Element
-	highlightedWeapon game.WeaponType
 	selectPos         mgl32.Vec2 // Represents a virtual mouse position for selecting the weapon
 	bounds            math2.Rect // Rectangular region within which the wheel resides
 }
 
-func newWeaponWheel(weapons []Weapon) WeaponWheel {
+func NewWeaponWheel(player *Player) HudWeaponWheel {
 	const slotMargin = 16.0
 	slotTexture := cache.GetTexture(texWeaponSlot)
 	slotWidth := slotTexture.Rect().Width * SpriteScale()
 	slotHeight := slotTexture.Rect().Height * SpriteScale()
 	slotSize := mgl32.Vec2{slotWidth, slotHeight}
 
-	wheel := WeaponWheel{
+	wheel := HudWeaponWheel{
 		selectPos: mgl32.Vec2{settings.UIWidth() / 2.0, settings.UIHeight() / 2.0},
 		bounds: math2.Rect{
 			X:      (settings.UIWidth() / 2.0) - slotMargin - (slotWidth * 1.5),
@@ -44,25 +45,25 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 			Width:  (slotWidth * 3.0) + (slotMargin * 2.0),
 			Height: (slotHeight * 3.0) + (slotMargin * 2.0),
 		},
-		highlightedWeapon: game.WeaponSickle,
+		HighlightedWeapon: game.WeaponIndexSickle,
 	}
 
 	slotStart := wheel.selectPos.Sub(mgl32.Vec2{slotWidth / 2.0, slotHeight / 2.0})
 
-	for i, kind := range [...]game.WeaponType{
-		game.WeaponCluckster, game.WeaponChicken, game.WeaponAirhorn,
-		game.WeaponSign, game.WeaponSickle, game.WeaponGrenade,
-		game.WeaponDefenestrator, game.WeaponParusu, game.WeaponDblGrenade,
+	for i, kind := range [...]game.WeaponIndex{
+		game.WeaponIndexCluckster, game.WeaponIndexChicken, game.WeaponIndexAirhorn,
+		game.WeaponIndexSign, game.WeaponIndexSickle, game.WeaponIndexGrenade,
+		game.WeaponIndexDefenestrator, game.WeaponIndexParusu, game.WeaponIndexDblGrenade,
 	} {
-		weapon := weapons[kind]
+		weapon := player.WeaponWithIndex(kind)
 
 		depth := float32(6.0)
-		if kind == game.WeaponSickle {
+		if kind == game.WeaponIndexSickle {
 			depth = 6.1 // Put sickle above other slots while they are expanding out
 		}
 
 		var icon ui.Element
-		if iconPath := weapon.wheelIconPath; len(iconPath) > 0 {
+		if iconPath := weapon.WheelIconPath; len(iconPath) > 0 {
 			iconTex := cache.GetTexture(iconPath)
 			iconWidth := min(iconTex.Rect().Width*SpriteScale(), 40*SpriteScale())
 			iconHeight := min(iconTex.Rect().Height*SpriteScale(), 40*SpriteScale())
@@ -84,7 +85,7 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 
 		x, y := i%len(wheel.slots[0]), i/len(wheel.slots[0])
 
-		slot := weaponSlot{
+		slot := HudWeaponSlot{
 			kind: kind,
 			back: ui.NewBox(ui.Transform{
 				// All slots start in the center and move towards their target positions
@@ -98,7 +99,7 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 				wheel.bounds.Y + float32(y)*(slotHeight+slotMargin),
 			},
 		}
-		slot.back.BgColor = maybe.Some(weapon.wheelColor)
+		slot.back.BgColor = maybe.Some(weapon.WheelColor)
 
 		wheel.slots[x][y] = slot
 	}
@@ -127,14 +128,14 @@ func newWeaponWheel(weapons []Weapon) WeaponWheel {
 	return wheel
 }
 
-func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
+func (wheel *HudWeaponWheel) Layout(queue *ui.RenderQueue) {
 	wheel.selectPos = wheel.selectPos.Add(input.MouseDelta())
 
 	wheel.selectPos[0] = math2.Clamp(wheel.selectPos[0], wheel.bounds.X, wheel.bounds.X+wheel.bounds.Width)
 	wheel.selectPos[1] = math2.Clamp(wheel.selectPos[1], wheel.bounds.Y, wheel.bounds.Y+wheel.bounds.Height)
 
 	wheel.cursor.SetPosition(wheel.selectPos)
-	wheel.cursor.BgColor = maybe.Some(color.White.WithAlpha(openness))
+	wheel.cursor.BgColor = maybe.Some(color.White.WithAlpha(wheel.Openness))
 	queue.Add(&wheel.cursor)
 
 	slotTexture := cache.GetTexture(texWeaponSlot)
@@ -147,7 +148,7 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 		for y := range wheel.slots[x] {
 			slot := &wheel.slots[x][y]
 
-			if slot.kind != game.WeaponSickle {
+			if slot.kind != game.WeaponIndexSickle {
 				// Move slot towards target position
 				delta := mgl32.Vec2{
 					(slot.targetPos[0] - slot.back.X()) * 0.5,
@@ -160,26 +161,26 @@ func (wheel *WeaponWheel) Layout(queue *ui.RenderQueue, openness float32) {
 			// Test intersection with the ellipse
 			center := slot.back.Center()
 			intersects := (math2.Pow(wheel.selectPos[0]-center[0], 2.0)/majorRadiusSq)+(math2.Pow(wheel.selectPos[1]-center[1], 2.0)/minorRadiusSq) <= 1.0
-			if intersects && wheel.highlightedWeapon != slot.kind {
-				wheel.highlightedWeapon = slot.kind
+			if intersects && wheel.HighlightedWeapon != slot.kind {
+				wheel.HighlightedWeapon = slot.kind
 				cache.GetSfx("assets/sounds/ui/weapon_select.wav").Play()
 			}
 
-			if wheel.highlightedWeapon == slot.kind {
+			if wheel.HighlightedWeapon == slot.kind {
 				wheel.highlight.SetPosition(slot.back.Position())
 				if clr, ok := wheel.highlight.BgColor.Get(); ok {
-					clr.A = openness
+					clr.A = wheel.Openness
 				}
 				queue.Add(&wheel.highlight)
 			}
 
 			if clr, ok := slot.back.BgColor.Get(); ok {
-				clr.A = openness
+				clr.A = wheel.Openness
 			}
 
 			queue.Add(&slot.back)
 
-			if openness > 0.9 {
+			if wheel.Openness > 0.9 {
 				queue.Add(&slot.icon)
 			}
 		}
