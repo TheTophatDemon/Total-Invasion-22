@@ -192,11 +192,37 @@ var (
 		WheelIconPath: "assets/textures/sprites/double_grenade_launcher.png",
 	}
 	WeaponSign = WeaponDef{
-		// NOT IMPLEMENTED
 		Name:          "signOfMadness",
 		Index:         game.WeaponIndexSign,
+		Cooldown:      1.0,
+		SwayExtents:   mgl32.Vec2{16.0, 8.0},
+		SwaySpeed:     mgl32.Vec2{0.75, 0.25},
+		AmmoType:      game.AmmoTypeNone,
+		AmmoCost:      0,
 		WheelColor:    color.FromBytes(170, 0, 0, 255),
 		WheelIconPath: "assets/textures/sprites/sign_of_madness.png",
+		NoiseLevel:    10.0,
+		IsShooter:     false,
+		IdleAnimName:  "idle",
+		FireAnimName:  "swing",
+		InitFunc: func(sign *Weapon) {
+			signTex := cache.GetTexture("assets/textures/ui/sign_hud.png")
+			sign.Sprite = ui.NewBox(ui.Transform{
+				Position: mgl32.Vec2{128.0, 0.0},
+				Origin:   ui.Ratios{0.5, 1.0},
+				Anchor:   ui.Ratios{0.5, 1.0},
+			}, signTex)
+		},
+		UpdateFunc: func(sign *Weapon, deltaTime float32, ammo game.Ammo) {
+			animPlayer := &sign.Sprite.AnimPlayer
+			if animPlayer.CurrentAnimation().Name == sign.FireAnimName && animPlayer.IsAtEnd() {
+				idleAnim, _ := sign.Sprite.BgTexture.GetAnimation(sign.IdleAnimName)
+				animPlayer.PlayNewAnim(idleAnim)
+			}
+		},
+		FireFunc: func(sign *Weapon, player *Player, deltaTime float32, justPressed bool) {
+			sign.Voice = cache.GetSfx("assets/sounds/weapon/swish.wav").Play()
+		},
 	}
 	WeaponAirhorn = WeaponDef{
 		Name:          "airhorn",
