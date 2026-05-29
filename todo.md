@@ -3,8 +3,8 @@
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
+- Sign of Madness freeze frame?
 - E1M5
-  - Sign of Madness
   - Super Armor
   - Song
 - Checkpoints

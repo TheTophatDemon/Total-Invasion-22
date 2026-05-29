@@ -73,6 +73,8 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 		id, item, err = SpawnGrenadeLauncher(ent.Position)
 	case "parusu":
 		id, item, err = SpawnParusu(ent.Position)
+	case "sign_of_madness":
+		id, item, err = SpawnSignOfMadness(ent.Position)
 	case "airhorn":
 		id, item, err = SpawnAirhorn(ent.Position)
 	case "bluecard":
@@ -204,6 +206,15 @@ func SpawnParusu(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error
 	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
 	item.messageKey = "parusuGet"
 	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/parusu.png"), nil, &mgl32.Vec2{0.625, 0.25})
+	return
+}
+
+func SpawnSignOfMadness(position mgl32.Vec3) (id scene.Id[*Item], item *Item, err error) {
+	id, item, err = spawnItemGeneric(position, mgl32.Vec3{1.0, 1.0, 1.0})
+	item.giveWeapon = game.WeaponIndexSign
+	item.pickupSound = cache.GetSfx("assets/sounds/weapon.wav")
+	item.messageKey = "signOfMadnessGet"
+	item.spriteRender = comps.NewSpriteRender(cache.GetTexture("assets/textures/sprites/sign_of_madness.png"), nil, &mgl32.Vec2{1.0, 1.0})
 	return
 }
 

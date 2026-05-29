@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -32,7 +33,7 @@ type (
 		WheelIconPath              string      // Path to icon texture displayed in weapon wheel slot
 
 		InitFunc   func(w *Weapon)
-		UpdateFunc func(w *Weapon, deltaTime float32, ammo game.Ammo)
+		UpdateFunc func(w *Weapon, player *Player, deltaTime float32)
 		FireFunc   func(w *Weapon, player *Player, deltaTime float32, justPressed bool)
 	}
 	// Represents dynamic state of the weapon
@@ -83,9 +84,9 @@ var (
 			fireAnim, _ := sickleTex.GetAnimation(sickle.FireAnimName)
 			sickle.Sprite.AnimPlayer.PlayNewAnim(fireAnim)
 		},
-		UpdateFunc: func(sickle *Weapon, deltaTime float32, ammo game.Ammo) {
+		UpdateFunc: func(sickle *Weapon, player *Player, deltaTime float32) {
 			animPlayer := &sickle.Sprite.AnimPlayer
-			if sickle.CanFire(ammo) && animPlayer.CurrentAnimation().Name == sickle.FireAnimName {
+			if sickle.CanFire(player.ammo) && animPlayer.CurrentAnimation().Name == sickle.FireAnimName {
 				catchAnim, _ := sickle.Sprite.BgTexture.GetAnimation("catch")
 				animPlayer.PlayNewAnim(catchAnim)
 				cache.GetSfx("assets/sounds/weapon/sickle_return.wav").Play()
@@ -172,7 +173,7 @@ var (
 				Anchor: ui.Ratios{0.5, 1.0},
 			}, parusuTex)
 		},
-		UpdateFunc: func(parusu *Weapon, deltaTime float32, ammo game.Ammo) {
+		UpdateFunc: func(parusu *Weapon, player *Player, deltaTime float32) {
 			animPlayer := &parusu.Sprite.AnimPlayer
 			if animPlayer.CurrentAnimation().Name == parusu.FireAnimName && animPlayer.IsAtEnd() {
 				idleAnim, _ := parusu.Sprite.BgTexture.GetAnimation(parusu.IdleAnimName)
@@ -213,11 +214,35 @@ var (
 				Anchor:   ui.Ratios{0.5, 1.0},
 			}, signTex)
 		},
-		UpdateFunc: func(sign *Weapon, deltaTime float32, ammo game.Ammo) {
+		UpdateFunc: func(sign *Weapon, player *Player, deltaTime float32) {
 			animPlayer := &sign.Sprite.AnimPlayer
-			if animPlayer.CurrentAnimation().Name == sign.FireAnimName && animPlayer.IsAtEnd() {
-				idleAnim, _ := sign.Sprite.BgTexture.GetAnimation(sign.IdleAnimName)
-				animPlayer.PlayNewAnim(idleAnim)
+			hitAnim, _ := sign.Sprite.BgTexture.GetAnimation("swing hit")
+			if animPlayer.CurrentAnimation().Name == sign.FireAnimName || animPlayer.CurrentAnimation().Name == hitAnim.Name {
+				if animPlayer.IsAtEnd() {
+					idleAnim, _ := sign.Sprite.BgTexture.GetAnimation(sign.IdleAnimName)
+					animPlayer.PlayNewAnim(idleAnim)
+				} else if animPlayer.HitATriggerFrame() {
+					for _, angle := range [...]math2.Degrees{-5.0, 5.0} {
+						offset := math2.ToRadians(angle)
+						_, handle := gWorld.Raycast(
+							player.Body().Position,
+							mgl32.Vec3{
+								-math2.Sin(player.actor.YawAngle + float32(offset)),
+								0.0,
+								-math2.Cos(player.actor.YawAngle + float32(offset)),
+							},
+							ColLayerActors|ColLayerMap,
+							2.5,
+							player.Body(),
+						)
+						if damageable, ok := scene.Get[Damageable](handle); ok {
+							damageable.OnDamage(player, 100.0)
+							cache.GetSfx("assets/sounds/weapon/sign_hit.wav").Play()
+							animPlayer.PlayNewAnim(hitAnim)
+							break
+						}
+					}
+				}
 			}
 		},
 		FireFunc: func(sign *Weapon, player *Player, deltaTime float32, justPressed bool) {
@@ -245,7 +270,7 @@ var (
 				Anchor:   ui.Ratios{0.5, 1.0},
 			}, airhornTex)
 		},
-		UpdateFunc: func(airhorn *Weapon, deltaTime float32, ammo game.Ammo) {
+		UpdateFunc: func(airhorn *Weapon, player *Player, deltaTime float32) {
 			if !airhorn.HeldDown {
 				idleAnim, _ := airhorn.Sprite.BgTexture.GetAnimation(airhorn.IdleAnimName)
 				airhorn.Sprite.AnimPlayer.PlayNewAnim(idleAnim)
@@ -355,7 +380,7 @@ func (weap *Weapon) CanFire(ammo game.Ammo) bool {
 	return weap.State == WeaponStateReady && weap.CooldownTimer <= 0.0 && ammo[weap.AmmoType] >= weap.AmmoCost
 }
 
-func (weap *Weapon) Update(deltaTime float32, swayAmount float32, ammo game.Ammo) {
+func (weap *Weapon) Update(player *Player, deltaTime float32) {
 	if weap == nil || weap.WeaponDef == nil {
 		return
 	}
@@ -369,7 +394,7 @@ func (weap *Weapon) Update(deltaTime float32, swayAmount float32, ammo game.Ammo
 	startPos := endPos.Add(mgl32.Vec2{0.0, weap.Sprite.AnimPlayer.Frame().Rect.Height * SpriteScale()})
 	switch weap.State {
 	case WeaponStateReady:
-		weap.Sway += deltaTime * swayAmount
+		weap.Sway += deltaTime * player.Body().Velocity.Len()
 		// Sway the weapon according to player movement
 		weap.Sprite.SetPosition(endPos)
 	case WeaponStateIntro, WeaponStateOutro:
@@ -392,11 +417,11 @@ func (weap *Weapon) Update(deltaTime float32, swayAmount float32, ammo game.Ammo
 	}
 
 	if weap.UpdateFunc != nil {
-		weap.UpdateFunc(weap, deltaTime, ammo)
+		weap.UpdateFunc(weap, player, deltaTime)
 	} else {
 		// Default behavior: Switch to idle animation when firing is complete.
 		idleAnim, _ := weap.Sprite.BgTexture.GetAnimation(weap.IdleAnimName)
-		if weap.CanFire(ammo) || ammo[weap.AmmoType] == 0 {
+		if weap.CanFire(player.ammo) || player.ammo[weap.AmmoType] == 0 {
 			weap.Sprite.AnimPlayer.ChangeAnimation(idleAnim)
 		}
 	}

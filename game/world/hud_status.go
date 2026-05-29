@@ -246,7 +246,11 @@ func (status *HudStatusBar) Layout(queue *ui.RenderQueue, deltaTime float32, pla
 	iconsTex := cache.GetTexture(texHudIcons)
 	if player.SelectedWeapon != nil {
 		// Ammo stat
-		status.ammoStat.SetText(fmt.Sprintf("%03d", player.ammo[player.SelectedWeapon.AmmoType]))
+		if player.SelectedWeapon.AmmoType == game.AmmoTypeNone {
+			status.ammoStat.SetText("∞")
+		} else {
+			status.ammoStat.SetText(fmt.Sprintf("%03d", player.ammo[player.SelectedWeapon.AmmoType]))
+		}
 		queue.Add(&status.ammoStat)
 
 		// Ammo icon

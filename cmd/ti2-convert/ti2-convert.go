@@ -69,6 +69,7 @@ func translateTextureName(category, ti2Name string) string {
 			"invasionchair":        "chair",
 			"invasiontable":        "table",
 			"invasiontable_laptop": "table_laptop",
+			"signofmadness":        "sign_of_madness",
 		}
 		if newName, ok := replacements[ti2Name]; ok {
 			ti2Name = newName

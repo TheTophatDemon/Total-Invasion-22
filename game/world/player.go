@@ -261,9 +261,8 @@ func (player *Player) Update(deltaTime float32) {
 	}
 
 	// Update weapons
-	swayAmt := player.Body().Velocity.Len()
 	for weap := range player.Weapons() {
-		weap.Update(deltaTime, swayAmt, player.ammo)
+		weap.Update(player, deltaTime)
 	}
 
 	player.actor.Update(deltaTime)
