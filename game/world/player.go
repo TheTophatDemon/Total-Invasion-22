@@ -412,6 +412,13 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		player.TrySelect(&player.Cluckster)
 	}
 
+	// Sprinting
+	if settings.Current.ActionSlow.Pressed() {
+		player.actor.MaxSpeed = player.WalkSpeed
+	} else {
+		player.actor.MaxSpeed = player.RunSpeed
+	}
+
 	// Fire weapon
 	if player.safety {
 		if !settings.Current.ActionFire.Pressed() {
@@ -432,14 +439,10 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			if player.armorType == game.ArmorTypeBullet && player.SelectedWeapon != &player.Sickle {
 				player.ammo = ammoBefore
 			}
+		} else if player.SelectedWeapon == &player.Sign && player.Sign.CooldownTimer > 0.0 {
+			// Slow down the player when swinging the sign
+			player.actor.MaxSpeed = player.WalkSpeed
 		}
-	}
-
-	// Sprinting
-	if settings.Current.ActionSlow.Pressed() {
-		player.actor.MaxSpeed = player.WalkSpeed
-	} else {
-		player.actor.MaxSpeed = player.RunSpeed
 	}
 
 	if settings.Current.ActionWeaponWheel.Pressed() {
