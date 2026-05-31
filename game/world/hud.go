@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tween"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -19,6 +20,8 @@ type Hud struct {
 	flashAnim tween.Data
 
 	frameBufferBox ui.Element // Contains the rendered game world
+
+	recalcTransforms bool
 
 	Debug         DebugStats
 	Intro         LevelIntro
@@ -86,7 +89,19 @@ func (hud *Hud) Render(frameBufferTexture *textures.Texture) {
 	renderContext.Enable2D()
 	hud.frameBufferBox.BgTexture = frameBufferTexture
 	hud.renderQueue.Add(&hud.frameBufferBox)
-	hud.renderQueue.Render(&renderContext)
+	hud.renderQueue.Render(&renderContext, hud.recalcTransforms)
+	if hud.recalcTransforms {
+		hud.recalcTransforms = false
+	}
+}
+
+func (hud *Hud) ProcessSignal(signal any) {
+	switch signal.(type) {
+	case game.ResumeGameSignal:
+		// Reinitialize HUD elements for potential new screen resolution
+		hud.Init()
+		hud.recalcTransforms = true
+	}
 }
 
 func (hud *Hud) ShowMessage(text string, priority int, colr color.Color) {

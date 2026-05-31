@@ -1,5 +1,4 @@
 # TODO
-- Fix in game HUD to adapt to screen size / language changes
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
@@ -26,6 +25,7 @@
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
 - Optimize the memory usage of map loading to avoid GC stutters
+- When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?

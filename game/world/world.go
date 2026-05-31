@@ -425,5 +425,6 @@ func (world *World) ProcessSignal(signal any) {
 		for player, _ := playerIter.Next(); player != nil; player, _ = playerIter.Next() {
 			player.ProcessSignal(signal)
 		}
+		world.Hud.ProcessSignal(signal)
 	}
 }

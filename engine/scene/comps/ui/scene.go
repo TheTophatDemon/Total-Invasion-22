@@ -40,7 +40,7 @@ func (renderQ *RenderQueue) Add(elems ...*Element) {
 	}
 }
 
-func (renderQ *RenderQueue) Render(context *render.Context) {
+func (renderQ *RenderQueue) Render(context *render.Context, recalcTransforms bool) {
 	failure.CheckOpenGLError()
 	gl.CullFace(gl.FRONT)
 	gl.Disable(gl.DEPTH_TEST)
@@ -49,6 +49,9 @@ func (renderQ *RenderQueue) Render(context *render.Context) {
 	defer failure.CheckOpenGLError()
 
 	for _, elem := range renderQ.elements {
+		if recalcTransforms {
+			elem.MarkDirty()
+		}
 		elem.Render(context)
 	}
 	renderQ.Clear()

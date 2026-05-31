@@ -81,7 +81,7 @@ func (app *App) Render() {
 			Projection: mgl32.Ortho(0.0, float32(settings.Current.WindowWidth), float32(settings.Current.WindowHeight), 0.0, -50.0, 50.0),
 		}
 		renderContext.Enable2D()
-		app.renderQueue.Render(&renderContext)
+		app.renderQueue.Render(&renderContext, false)
 	case app.world != nil:
 		app.world.Render()
 	default:

@@ -242,6 +242,12 @@ func (el *Element) recalculateMatrices() {
 	}
 }
 
+// Force the element to recalculate its matrices next time it is rendered.
+func (el *Element) MarkDirty() {
+	el.textClean = false
+	el.transformClean = false
+}
+
 func (el *Element) TextMesh() *geom.Mesh {
 	_, hasTextConfig := el.textConfig.Get()
 	if hasTextConfig && (!el.transformClean || !el.textClean) {

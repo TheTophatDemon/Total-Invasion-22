@@ -462,6 +462,11 @@ func (player *Player) ProcessSignal(signal any) {
 		gWorld.Hud.FlashScreen(color.Color{R: 1.0, G: 0.0, B: 1.0, A: 1.0}, 1.0)
 	case game.ResumeGameSignal:
 		player.safety = true
+		// Reinitialize weapon sprites for potential new screen resolution
+		player.NextWeapon = player.SelectedWeapon
+		for weap := range player.Weapons() {
+			weap.Init(weap.WeaponDef, weap.Equipped)
+		}
 	}
 }
 
