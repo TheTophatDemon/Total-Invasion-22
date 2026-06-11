@@ -149,7 +149,7 @@ func (app *App) LoadGame(sig game.MapChangeSignal) {
 
 	cache.Reset()
 
-	world, err := world.NewWorld(app, sig.NextMapPath, sig)
+	world, err := world.NewWorld(app, sig)
 	if err != nil {
 		panic(err)
 	}

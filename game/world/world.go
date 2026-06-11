@@ -63,7 +63,7 @@ type World struct {
 
 var gWorld *World
 
-func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSignal) (*World, error) {
+func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, error) {
 	gWorld = &World{
 		removalQueue: make([]scene.Handle, 0, 8),
 		app:          app,
@@ -84,7 +84,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 	gWorld.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
 	gWorld.MapLayers = scene.NewStorageWithFuncs(1, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
 
-	te3File, err := te3.LoadTE3File(mapPath)
+	te3File, err := te3.LoadTE3File(changeInfo.NextMapPath)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 		gWorld.GameMap.GridShape.SetShapeAtFlatIndex(id, shape, layer)
 	}
 
-	if levelFileName := path.Base(mapPath); len(levelFileName) >= 4 &&
+	if levelFileName := path.Base(changeInfo.NextMapPath); len(levelFileName) >= 4 &&
 		levelFileName[0] == 'e' &&
 		levelFileName[1] >= '0' && levelFileName[1] <= '9' &&
 		levelFileName[2] == 'm' &&
@@ -185,7 +185,13 @@ func NewWorld(app engine.Observer, mapPath string, changeInfo game.MapChangeSign
 			if err != nil {
 				log.Printf("error spawning player camera: %v\n", err)
 			}
-			gWorld.CurrentPlayer, _, err = SpawnPlayer(ent.Position, ent.Angles, gWorld.CurrentCamera, changeInfo)
+			if changeInfo.PlayerEnt != nil {
+				// Transfer properties from the previous level
+				ent.Properties = changeInfo.PlayerEnt.Properties
+				// But don't carry over keys
+				ent.Properties["keys"] = "0"
+			}
+			gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
 		}
 		if err != nil {
 			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)

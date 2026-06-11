@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"iter"
 	"math"
 	"math/rand"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -60,11 +62,9 @@ func (player *Player) Body() *comps.Body {
 	return &player.actor.body
 }
 
-func SpawnPlayer(
-	position,
-	angles mgl32.Vec3,
+func SpawnPlayerFromTE3(
+	ent te3.Ent,
 	camera scene.Id[*Camera],
-	changeInfo game.MapChangeSignal,
 ) (id scene.Id[*Player], player *Player, err error) {
 	id, player, err = gWorld.Players.New()
 	if err != nil {
@@ -73,17 +73,17 @@ func SpawnPlayer(
 	player.id = id
 	player.actor = Actor{
 		body: comps.Body{
-			Position: position,
+			Position: ent.Position,
 			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
 			Layers:   ColLayerActors | ColLayerPlayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
-		YawAngle:        mgl32.DegToRad(angles[1]),
+		YawAngle:        mgl32.DegToRad(ent.Angles[1]),
 		AccelRate:       100.0,
 		Friction:        20.0,
 		MaxHealth:       200,
 		TargetHealth:    100,
-		Health:          100,
+		Health:          ent.FloatPropertyOr("health", 100),
 	}
 	player.Camera = camera
 	player.RunSpeed = 12.0
@@ -108,23 +108,44 @@ func SpawnPlayer(
 	player.AnimPlayer = comps.NewAnimationPlayer(winAnim, false)
 
 	// Initialize armor and ammo
-	player.ammo = changeInfo.Equipment.Ammo
 	player.ammo[game.AmmoTypeSickle] = 0
-	player.armorType = changeInfo.Equipment.Armor
-	player.armorAmount = changeInfo.Equipment.ArmorAmount
+	player.ammo[game.AmmoTypeEgg] = ent.IntPropertyOr("ammoEgg", 0)
+	player.ammo[game.AmmoTypeGrenade] = ent.IntPropertyOr("ammoGrenade", 0)
+	player.ammo[game.AmmoTypePlasma] = ent.IntPropertyOr("ammoPlasma", 0)
+	switch ent.Properties["armor"] {
+	case "boring":
+		player.armorType = game.ArmorTypeBoring
+	case "bullet":
+		player.armorType = game.ArmorTypeBullet
+	case "super":
+		player.armorType = game.ArmorTypeSuper
+	case "chronos":
+		player.armorType = game.ArmorTypeChronos
+	}
+	player.armorAmount = ent.FloatPropertyOr("armorAmount", 0.0)
+
+	player.keys = game.Keys(ent.IntPropertyOr("keys", 0))
 
 	// Initialize weapons
 	player.Sickle.Init(&WeaponSickle, true)
 	player.SelectedWeapon = &player.Sickle
 	player.Sickle.State = WeaponStateIntro
-	player.Chicken.Init(&WeaponChicken, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexChicken])
-	player.Grenade.Init(&WeaponGrenade, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexGrenade])
-	player.Parusu.Init(&WeaponParusu, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexParusu])
-	player.DblGrenade.Init(&WeaponDblGrenade, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexDblGrenade])
-	player.Sign.Init(&WeaponSign, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexSign])
-	player.Airhorn.Init(&WeaponAirhorn, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexAirhorn])
-	player.Defenestrator.Init(&WeaponDefenestrator, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexDefenestrator])
-	player.Cluckster.Init(&WeaponCluckster, changeInfo.Equipment.EquippedWeapons[game.WeaponIndexCluckster])
+	chickenEquipped := ent.BoolPropertyOr("chickenEquipped", false)
+	player.Chicken.Init(&WeaponChicken, chickenEquipped)
+	grenadeEquipped := ent.BoolPropertyOr("grenadeEquipped", false)
+	player.Grenade.Init(&WeaponGrenade, grenadeEquipped)
+	parusuEquipped := ent.BoolPropertyOr("parusuEquipped", false)
+	player.Parusu.Init(&WeaponParusu, parusuEquipped)
+	dblGrenadeEquipped := ent.BoolPropertyOr("dblGrenadeEquipped", false)
+	player.DblGrenade.Init(&WeaponDblGrenade, dblGrenadeEquipped)
+	signEquipped := ent.BoolPropertyOr("signEquipped", false)
+	player.Sign.Init(&WeaponSign, signEquipped)
+	airhornEquipped := ent.BoolPropertyOr("airhornEquipped", false)
+	player.Airhorn.Init(&WeaponAirhorn, airhornEquipped)
+	defenestratorEquipped := ent.BoolPropertyOr("defenestratorEquipped", false)
+	player.Defenestrator.Init(&WeaponDefenestrator, defenestratorEquipped)
+	clucksterEquipped := ent.BoolPropertyOr("clucksterEquipped", false)
+	player.Cluckster.Init(&WeaponCluckster, clucksterEquipped)
 
 	if gWorld.Hud.Intro.TimeLeft() > 0.0 {
 		// Spawn intro sickle
@@ -137,28 +158,34 @@ func SpawnPlayer(
 	return
 }
 
-func (player *Player) Equipment() game.Equipment {
-	equipment := game.Equipment{
-		Ammo:        player.ammo,
-		Armor:       player.armorType,
-		ArmorAmount: player.armorAmount,
-		EquippedWeapons: [...]bool{
-			game.WeaponIndexSickle:        player.Sickle.Equipped,
-			game.WeaponIndexChicken:       player.Chicken.Equipped,
-			game.WeaponIndexGrenade:       player.Grenade.Equipped,
-			game.WeaponIndexParusu:        player.Parusu.Equipped,
-			game.WeaponIndexDblGrenade:    player.DblGrenade.Equipped,
-			game.WeaponIndexSign:          player.Sign.Equipped,
-			game.WeaponIndexAirhorn:       player.Airhorn.Equipped,
-			game.WeaponIndexDefenestrator: player.Defenestrator.Equipped,
-			game.WeaponIndexCluckster:     player.Cluckster.Equipped,
+func (player *Player) ToTE3Ent() te3.Ent {
+	ent := te3.Ent{
+		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(player.actor.YawAngle))), 0.0},
+		Position: player.actor.Position(),
+		Texture:  "assets/textures/sprites/segan.png",
+		Radius:   0.7,
+		Display:  te3.ENT_DISPLAY_SPRITE,
+		Color:    [3]uint8{255, 255, 255},
+		Properties: map[string]string{
+			"type":                  "player",
+			"ammoEgg":               fmt.Sprintf("%d", player.ammo[game.AmmoTypeEgg]),
+			"ammoGrenade":           fmt.Sprintf("%d", player.ammo[game.AmmoTypeGrenade]),
+			"ammoPlasma":            fmt.Sprintf("%d", player.ammo[game.AmmoTypePlasma]),
+			"armor":                 player.armorType.Name(),
+			"armorAmount":           fmt.Sprintf("%.2f", player.armorAmount),
+			"chickenEquipped":       fmt.Sprintf("%t", player.Chicken.Equipped),
+			"health":                fmt.Sprintf("%.2f", player.actor.Health),
+			"grenadeEquipped":       fmt.Sprintf("%t", player.Grenade.Equipped),
+			"parusuEquipped":        fmt.Sprintf("%t", player.Parusu.Equipped),
+			"dblGrenadeEquipped":    fmt.Sprintf("%t", player.DblGrenade.Equipped),
+			"signEquipped":          fmt.Sprintf("%t", player.Sign.Equipped),
+			"airhornEquipped":       fmt.Sprintf("%t", player.Airhorn.Equipped),
+			"defenestratorEquipped": fmt.Sprintf("%t", player.Defenestrator.Equipped),
+			"clucksterEquipped":     fmt.Sprintf("%t", player.Cluckster.Equipped),
+			"keys":                  fmt.Sprintf("%d", player.keys),
 		},
-		Keys: player.keys,
 	}
-	if player.SelectedWeapon != nil {
-		equipment.SelectedWeapon = player.SelectedWeapon.Index
-	}
-	return equipment
+	return ent
 }
 
 func (player *Player) Update(deltaTime float32) {
@@ -179,7 +206,7 @@ func (player *Player) Update(deltaTime float32) {
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
 				NextMapPath: gWorld.impendingLevel,
-				Equipment:   player.Equipment(),
+				PlayerEnt:   new(player.ToTE3Ent()),
 			})
 		}
 	} else if player.actor.Health > 0 {
@@ -355,7 +382,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
 				NextMapPath: gWorld.GameMap.Name,
-				Equipment:   player.Equipment(),
+				PlayerEnt:   new(player.ToTE3Ent()),
 			})
 		} else if err != nil {
 			failure.LogErrWithLocation("failed to launch editor: %v", err)

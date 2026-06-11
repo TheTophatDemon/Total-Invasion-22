@@ -46,6 +46,14 @@ func (ent *Ent) FloatProperty(key string) (float32, error) {
 	return float32(valF64), nil
 }
 
+func (ent *Ent) FloatPropertyOr(key string, defaultValue float32) float32 {
+	f, err := ent.FloatProperty(key)
+	if err != nil {
+		return defaultValue
+	}
+	return f
+}
+
 func (ent *Ent) IntProperty(key string) (int, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {
@@ -58,12 +66,28 @@ func (ent *Ent) IntProperty(key string) (int, error) {
 	return int(valI64), nil
 }
 
+func (ent *Ent) IntPropertyOr(key string, defaultValue int) int {
+	i, err := ent.IntProperty(key)
+	if err != nil {
+		return defaultValue
+	}
+	return i
+}
+
 func (ent *Ent) BoolProperty(key string) (bool, error) {
 	prop, ok := ent.Properties[key]
 	if !ok {
 		return false, PropNotFoundError(key)
 	}
 	return strconv.ParseBool(prop)
+}
+
+func (ent *Ent) BoolPropertyOr(key string, defaultValue bool) bool {
+	b, err := ent.BoolProperty(key)
+	if err != nil {
+		return defaultValue
+	}
+	return b
 }
 
 func (ent *Ent) AnglesInRadians() mgl32.Vec3 {
