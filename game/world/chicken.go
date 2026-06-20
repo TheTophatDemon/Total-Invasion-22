@@ -1,11 +1,13 @@
 package world
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -41,6 +43,12 @@ func (chk *Chicken) Actor() *Actor {
 
 func (chk *Chicken) Body() *comps.Body {
 	return &chk.actor.body
+}
+
+func SpawnChickenFromTE3(ent te3.Ent) (id scene.Id[*Chicken], chk *Chicken, err error) {
+	id, chk, err = SpawnChicken(ent.Position, ent.Angles)
+	chk.actor.Health = ent.FloatPropertyOr("health", chk.actor.Health)
+	return
 }
 
 func SpawnChicken(position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chicken, err error) {
@@ -199,4 +207,20 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(chk.Body().Position)
 	}
 	return true
+}
+
+func (chk *Chicken) Save() te3.Ent {
+	ent := te3.Ent{
+		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(chk.actor.YawAngle))), 0.0},
+		Position: chk.actor.Position(),
+		Texture:  "assets/textures/sprites/chicken.png",
+		Radius:   0.7,
+		Display:  te3.ENT_DISPLAY_SPRITE,
+		Color:    [3]uint8{255, 255, 255},
+		Properties: map[string]string{
+			"type":   "chicken",
+			"health": fmt.Sprintf("%.2f", chk.actor.Health),
+		},
+	}
+	return ent
 }

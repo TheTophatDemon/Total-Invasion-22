@@ -91,7 +91,7 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 
 	settingsMenu.chooserChickens.Init("harmChickens", onOffChoices, OnOff(settings.Current.ChickenHarm))
 
-	settingsMenu.bindingItem.Init("bindings", func(MenuInputType) {
+	settingsMenu.bindingItem.Init("bindings", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(BindingsMenu).Init(app, settingsMenu),
 		})

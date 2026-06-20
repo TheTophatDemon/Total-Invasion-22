@@ -384,3 +384,9 @@ func (item *Item) OnUse(player *Player) {
 		item.animPlayer.PlayNewAnim(item.collectAnim)
 	}
 }
+
+func (item *Item) Save() te3.Ent {
+	return te3.Ent{
+		//TODO
+	}
+}

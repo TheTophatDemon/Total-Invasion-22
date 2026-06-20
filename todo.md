@@ -1,12 +1,13 @@
 # TODO
+- Checkpoints
+- Saving
+- Fix sickle sound continuing after switching weapons
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
 - E1M5
   - Super Armor
   - Song
-- Checkpoints
-- Saving
 - Game Difficulty Settings
   - Survey menu that appears after completing the first level
 - Limit the distance that blessings can travel

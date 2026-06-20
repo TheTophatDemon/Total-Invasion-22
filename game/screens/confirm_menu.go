@@ -33,7 +33,7 @@ func (menu *ConfirmMenu) Init(app engine.Observer, parent *SettingsMenu, next ui
 		nextScreen:       next,
 	}
 
-	menu.confirmItem.Init("confirm", func(mit MenuInputType) {
+	menu.confirmItem.Init("confirm", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		menu.app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: next,
 		})

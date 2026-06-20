@@ -4,11 +4,11 @@
 package world
 
 import (
+	"tophatdemon.com/total-invasion-ii/engine/scene"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
-	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
 /******************************
@@ -65,15 +65,15 @@ func (world *World) TearDownStores() {
  *******************************************************/
 
 type BodiesIter struct {
-	iterPlayers     scene.StorageIter[Player]
-	iterEnemies     scene.StorageIter[Enemy]
-	iterChickens    scene.StorageIter[Chicken]
-	iterWalls       scene.StorageIter[Wall]
+	iterPlayers scene.StorageIter[Player]
+	iterEnemies scene.StorageIter[Enemy]
+	iterChickens scene.StorageIter[Chicken]
+	iterWalls scene.StorageIter[Wall]
 	iterProjectiles scene.StorageIter[Projectile]
-	iterItems       scene.StorageIter[Item]
-	iterProps       scene.StorageIter[Prop]
-	storageIndex    int
-	capacity        int // Maximum number of elements iterated, based on storage size.
+	iterItems scene.StorageIter[Item]
+	iterProps scene.StorageIter[Prop]
+	storageIndex int
+	capacity int // Maximum number of elements iterated, based on storage size.
 }
 
 func (iter *BodiesIter) Next() (comps.HasBody, scene.Handle) {
@@ -82,41 +82,41 @@ func (iter *BodiesIter) Next() (comps.HasBody, scene.Handle) {
 	}
 	for ; iter.storageIndex < 7; iter.storageIndex++ {
 		switch iter.storageIndex {
-		case 0:
-			item, handle := iter.iterPlayers.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 1:
-			item, handle := iter.iterEnemies.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 2:
-			item, handle := iter.iterChickens.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 3:
-			item, handle := iter.iterWalls.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 4:
-			item, handle := iter.iterProjectiles.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 5:
-			item, handle := iter.iterItems.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 6:
-			item, handle := iter.iterProps.Next()
-			if item != nil {
-				return item, handle
-			}
+			case 0:
+				item, handle := iter.iterPlayers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterEnemies.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterChickens.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 3:
+				item, handle := iter.iterWalls.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 4:
+				item, handle := iter.iterProjectiles.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 5:
+				item, handle := iter.iterItems.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 6:
+				item, handle := iter.iterProps.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
 	}
 	return nil, scene.Handle{}
@@ -128,34 +128,34 @@ func (iter *BodiesIter) HasNext() bool {
 	}
 	for i := range 7 {
 		switch i {
-		case 0:
-			if iter.iterPlayers.HasNext() {
-				return true
-			}
-		case 1:
-			if iter.iterEnemies.HasNext() {
-				return true
-			}
-		case 2:
-			if iter.iterChickens.HasNext() {
-				return true
-			}
-		case 3:
-			if iter.iterWalls.HasNext() {
-				return true
-			}
-		case 4:
-			if iter.iterProjectiles.HasNext() {
-				return true
-			}
-		case 5:
-			if iter.iterItems.HasNext() {
-				return true
-			}
-		case 6:
-			if iter.iterProps.HasNext() {
-				return true
-			}
+			case 0:
+				if iter.iterPlayers.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterEnemies.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterChickens.HasNext() {
+					return true
+				}
+			case 3:
+				if iter.iterWalls.HasNext() {
+					return true
+				}
+			case 4:
+				if iter.iterProjectiles.HasNext() {
+					return true
+				}
+			case 5:
+				if iter.iterItems.HasNext() {
+					return true
+				}
+			case 6:
+				if iter.iterProps.HasNext() {
+					return true
+				}
 		}
 	}
 	return false
@@ -166,33 +166,32 @@ func (iter *BodiesIter) Capacity() int {
 }
 
 func (world *World) IterBodies() BodiesIter {
-	capacity := 0
-	capacity += world.Players.Capacity()
-	capacity += world.Enemies.Capacity()
-	capacity += world.Chickens.Capacity()
-	capacity += world.Walls.Capacity()
-	capacity += world.Projectiles.Capacity()
-	capacity += world.Items.Capacity()
+	capacity := 0 
+	capacity += world.Players.Capacity() 
+	capacity += world.Enemies.Capacity() 
+	capacity += world.Chickens.Capacity() 
+	capacity += world.Walls.Capacity() 
+	capacity += world.Projectiles.Capacity() 
+	capacity += world.Items.Capacity() 
 	capacity += world.Props.Capacity()
-	return BodiesIter{
-		iterPlayers:     world.Players.Iter(),
-		iterEnemies:     world.Enemies.Iter(),
-		iterChickens:    world.Chickens.Iter(),
-		iterWalls:       world.Walls.Iter(),
+	return BodiesIter {
+		iterPlayers: world.Players.Iter(),
+		iterEnemies: world.Enemies.Iter(),
+		iterChickens: world.Chickens.Iter(),
+		iterWalls: world.Walls.Iter(),
 		iterProjectiles: world.Projectiles.Iter(),
-		iterItems:       world.Items.Iter(),
-		iterProps:       world.Props.Iter(),
-		storageIndex:    0,
-		capacity:        capacity,
+		iterItems: world.Items.Iter(),
+		iterProps: world.Props.Iter(),
+		storageIndex: 0,
+		capacity: capacity,
 	}
 }
-
 type ActorsIter struct {
-	iterPlayers  scene.StorageIter[Player]
-	iterEnemies  scene.StorageIter[Enemy]
+	iterPlayers scene.StorageIter[Player]
+	iterEnemies scene.StorageIter[Enemy]
 	iterChickens scene.StorageIter[Chicken]
 	storageIndex int
-	capacity     int // Maximum number of elements iterated, based on storage size.
+	capacity int // Maximum number of elements iterated, based on storage size.
 }
 
 func (iter *ActorsIter) Next() (HasActor, scene.Handle) {
@@ -201,21 +200,21 @@ func (iter *ActorsIter) Next() (HasActor, scene.Handle) {
 	}
 	for ; iter.storageIndex < 3; iter.storageIndex++ {
 		switch iter.storageIndex {
-		case 0:
-			item, handle := iter.iterPlayers.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 1:
-			item, handle := iter.iterEnemies.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 2:
-			item, handle := iter.iterChickens.Next()
-			if item != nil {
-				return item, handle
-			}
+			case 0:
+				item, handle := iter.iterPlayers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterEnemies.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterChickens.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
 	}
 	return nil, scene.Handle{}
@@ -227,18 +226,18 @@ func (iter *ActorsIter) HasNext() bool {
 	}
 	for i := range 3 {
 		switch i {
-		case 0:
-			if iter.iterPlayers.HasNext() {
-				return true
-			}
-		case 1:
-			if iter.iterEnemies.HasNext() {
-				return true
-			}
-		case 2:
-			if iter.iterChickens.HasNext() {
-				return true
-			}
+			case 0:
+				if iter.iterPlayers.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterEnemies.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterChickens.HasNext() {
+					return true
+				}
 		}
 	}
 	return false
@@ -249,25 +248,24 @@ func (iter *ActorsIter) Capacity() int {
 }
 
 func (world *World) IterActors() ActorsIter {
-	capacity := 0
-	capacity += world.Players.Capacity()
-	capacity += world.Enemies.Capacity()
+	capacity := 0 
+	capacity += world.Players.Capacity() 
+	capacity += world.Enemies.Capacity() 
 	capacity += world.Chickens.Capacity()
-	return ActorsIter{
-		iterPlayers:  world.Players.Iter(),
-		iterEnemies:  world.Enemies.Iter(),
+	return ActorsIter {
+		iterPlayers: world.Players.Iter(),
+		iterEnemies: world.Enemies.Iter(),
 		iterChickens: world.Chickens.Iter(),
 		storageIndex: 0,
-		capacity:     capacity,
+		capacity: capacity,
 	}
 }
-
 type LinkablesIter struct {
-	iterWalls    scene.StorageIter[Wall]
+	iterWalls scene.StorageIter[Wall]
 	iterTriggers scene.StorageIter[Trigger]
-	iterCameras  scene.StorageIter[Camera]
+	iterCameras scene.StorageIter[Camera]
 	storageIndex int
-	capacity     int // Maximum number of elements iterated, based on storage size.
+	capacity int // Maximum number of elements iterated, based on storage size.
 }
 
 func (iter *LinkablesIter) Next() (Linkable, scene.Handle) {
@@ -276,21 +274,21 @@ func (iter *LinkablesIter) Next() (Linkable, scene.Handle) {
 	}
 	for ; iter.storageIndex < 3; iter.storageIndex++ {
 		switch iter.storageIndex {
-		case 0:
-			item, handle := iter.iterWalls.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 1:
-			item, handle := iter.iterTriggers.Next()
-			if item != nil {
-				return item, handle
-			}
-		case 2:
-			item, handle := iter.iterCameras.Next()
-			if item != nil {
-				return item, handle
-			}
+			case 0:
+				item, handle := iter.iterWalls.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterTriggers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterCameras.Next()
+				if item != nil {
+					return item, handle
+				}
 		}
 	}
 	return nil, scene.Handle{}
@@ -302,18 +300,18 @@ func (iter *LinkablesIter) HasNext() bool {
 	}
 	for i := range 3 {
 		switch i {
-		case 0:
-			if iter.iterWalls.HasNext() {
-				return true
-			}
-		case 1:
-			if iter.iterTriggers.HasNext() {
-				return true
-			}
-		case 2:
-			if iter.iterCameras.HasNext() {
-				return true
-			}
+			case 0:
+				if iter.iterWalls.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterTriggers.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterCameras.HasNext() {
+					return true
+				}
 		}
 	}
 	return false
@@ -324,18 +322,105 @@ func (iter *LinkablesIter) Capacity() int {
 }
 
 func (world *World) IterLinkables() LinkablesIter {
-	capacity := 0
-	capacity += world.Walls.Capacity()
-	capacity += world.Triggers.Capacity()
+	capacity := 0 
+	capacity += world.Walls.Capacity() 
+	capacity += world.Triggers.Capacity() 
 	capacity += world.Cameras.Capacity()
-	return LinkablesIter{
-		iterWalls:    world.Walls.Iter(),
+	return LinkablesIter {
+		iterWalls: world.Walls.Iter(),
 		iterTriggers: world.Triggers.Iter(),
-		iterCameras:  world.Cameras.Iter(),
+		iterCameras: world.Cameras.Iter(),
 		storageIndex: 0,
-		capacity:     capacity,
+		capacity: capacity,
 	}
 }
+type SavablesIter struct {
+	iterPlayers scene.StorageIter[Player]
+	iterEnemies scene.StorageIter[Enemy]
+	iterChickens scene.StorageIter[Chicken]
+	iterItems scene.StorageIter[Item]
+	storageIndex int
+	capacity int // Maximum number of elements iterated, based on storage size.
+}
+
+func (iter *SavablesIter) Next() (Saveable, scene.Handle) {
+	if iter == nil {
+		return nil, scene.Handle{}
+	}
+	for ; iter.storageIndex < 4; iter.storageIndex++ {
+		switch iter.storageIndex {
+			case 0:
+				item, handle := iter.iterPlayers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 1:
+				item, handle := iter.iterEnemies.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 2:
+				item, handle := iter.iterChickens.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 3:
+				item, handle := iter.iterItems.Next()
+				if item != nil {
+					return item, handle
+				}
+		}
+	}
+	return nil, scene.Handle{}
+}
+
+func (iter *SavablesIter) HasNext() bool {
+	if iter == nil {
+		return false
+	}
+	for i := range 4 {
+		switch i {
+			case 0:
+				if iter.iterPlayers.HasNext() {
+					return true
+				}
+			case 1:
+				if iter.iterEnemies.HasNext() {
+					return true
+				}
+			case 2:
+				if iter.iterChickens.HasNext() {
+					return true
+				}
+			case 3:
+				if iter.iterItems.HasNext() {
+					return true
+				}
+		}
+	}
+	return false
+}
+
+func (iter *SavablesIter) Capacity() int {
+	return iter.capacity
+}
+
+func (world *World) IterSavables() SavablesIter {
+	capacity := 0 
+	capacity += world.Players.Capacity() 
+	capacity += world.Enemies.Capacity() 
+	capacity += world.Chickens.Capacity() 
+	capacity += world.Items.Capacity()
+	return SavablesIter {
+		iterPlayers: world.Players.Iter(),
+		iterEnemies: world.Enemies.Iter(),
+		iterChickens: world.Chickens.Iter(),
+		iterItems: world.Items.Iter(),
+		storageIndex: 0,
+		capacity: capacity,
+	}
+}
+
 
 /******************************
  * SPHERE DETECTION ITERATORS *
@@ -358,7 +443,7 @@ func (iter *BodiesInSphereIter) Next() (comps.HasBody, scene.Handle) {
 			continue
 		}
 		body := ent.Body()
-
+		 
 		if body.Layers != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
 			return ent, id
 		}
@@ -379,9 +464,9 @@ func (iter *BodiesInSphereIter) Capacity() int {
 func (world *World) IterBodiesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception comps.HasBody) BodiesInSphereIter {
 	return BodiesInSphereIter{
 		innerIter: world.IterBodies(),
-		radius:    sphereRadius,
-		spherePos: spherePos,
-		exception: exception,
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
 	}
 }
 
@@ -402,7 +487,7 @@ func (iter *ActorsInSphereIter) Next() (HasActor, scene.Handle) {
 			continue
 		}
 		body := ent.Body()
-
+		 
 		if body.Layers != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
 			return ent, id
 		}
@@ -423,9 +508,9 @@ func (iter *ActorsInSphereIter) Capacity() int {
 func (world *World) IterActorsInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception HasActor) ActorsInSphereIter {
 	return ActorsInSphereIter{
 		innerIter: world.IterActors(),
-		radius:    sphereRadius,
-		spherePos: spherePos,
-		exception: exception,
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
 	}
 }
 
@@ -446,7 +531,7 @@ func (iter *ProjectilesInSphereIter) Next() (*Projectile, scene.Handle) {
 			continue
 		}
 		body := ent.Body()
-
+		 
 		if body.Layers != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
 			return ent, id
 		}
@@ -467,8 +552,9 @@ func (iter *ProjectilesInSphereIter) Capacity() int {
 func (world *World) IterProjectilesInSphere(spherePos mgl32.Vec3, sphereRadius float32, exception *Projectile) ProjectilesInSphereIter {
 	return ProjectilesInSphereIter{
 		innerIter: world.Projectiles.Iter(),
-		radius:    sphereRadius,
-		spherePos: spherePos,
-		exception: exception,
+		radius:     sphereRadius,
+		spherePos:  spherePos,
+		exception:  exception,
 	}
 }
+

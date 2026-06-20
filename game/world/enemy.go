@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 
@@ -455,5 +456,21 @@ func (enemy *Enemy) stalk(
 		if hit.Hit {
 			enemy.chaseTimer = moveTime
 		}
+	}
+}
+
+func (enemy *Enemy) Save() te3.Ent {
+	return te3.Ent{
+		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(enemy.actor.YawAngle))), 0.0},
+		Position: enemy.actor.Position(),
+		Texture:  "assets/textures/sprites/wraith.png",
+		Radius:   0.7,
+		Display:  te3.ENT_DISPLAY_SPRITE,
+		Color:    [3]uint8{255, 255, 255},
+		Properties: map[string]string{
+			"type":   "enemy",
+			"enemy":  enemy.variant.String(),
+			"health": fmt.Sprintf("%.2f", enemy.actor.Health),
+		},
 	}
 }

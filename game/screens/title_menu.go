@@ -15,22 +15,26 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 	*titleMenu = TitleMenu{
 		inGame: inGame,
 	}
-	titleMenu.resumeGame.Init("resumeGame", func(MenuInputType) {
+	titleMenu.resumeGame.Init("resumeGame", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.ResumeGameSignal{})
 	})
-	titleMenu.newGame.Init("newGame", func(MenuInputType) {
+	titleMenu.newGame.Init("newGame", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.MapChangeSignal{
-			NextMapPath: "assets/maps/e1m1.te3",
+			MapPath: "assets/maps/e1m1.te3",
 		})
 	})
-	titleMenu.loadGame.Init("loadGame", nil)
+	titleMenu.loadGame.Init("loadGame", func(m *Menu, mw MenuWidget, mit MenuInputType) {
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(LoadMenu).Init(app, titleMenu),
+		})
+	})
 	titleMenu.saveGame.Init("saveGame", nil)
-	titleMenu.options.Init("options", func(MenuInputType) {
+	titleMenu.options.Init("options", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(SettingsMenu).Init(app, titleMenu),
 		})
 	})
-	titleMenu.exit.Init("exit", func(MenuInputType) {
+	titleMenu.exit.Init("exit", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		engine.Shutdown()
 	})
 	menuItems := []MenuWidget{

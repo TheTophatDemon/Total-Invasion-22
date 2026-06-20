@@ -146,7 +146,7 @@ func (iter *{{ $sphereIterType }}) Next() ({{ .EntType }}, scene.Handle) {
 		}
 		body := ent.Body()
 		 
-		if body.Layer != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
+		if body.Layers != ColLayerNone && math2.Abs(body.Shape.DistanceFromPoint(body.Position, iter.spherePos)) < iter.radius {
 			return ent, id
 		}
 	}
@@ -289,6 +289,7 @@ func main() {
 			genIterParamsFor[comps.HasBody]("Bodies"),
 			genIterParamsFor[world.HasActor]("Actors"),
 			genIterParamsFor[world.Linkable]("Linkables"),
+			genIterParamsFor[world.Saveable]("Savables"),
 		},
 		SphereIterators: []SphereIterParams{
 			{

@@ -36,6 +36,10 @@ inputPrompt = "Выберите кнопку, джойстик, или движ�
 resizePrompt = "Это разрешение подходит? Отменится через %v..."
 confirm = "Утвердить"
 
+# Save / Load screens
+autoSaveFile = "Автоматическое Сохранение"
+saveFile = "Сохранение %d"
+
 # Input actions
 actionMenuDown = "Двигнуться Вниз в Меню"
 actionMenuUp = "Двигнуться Вверх в Меню"
@@ -141,6 +145,7 @@ armorBroken = "Броня разбита."
 
 # Etc
 foundSecret = "Обнаружен тайник."
+checkpoint = "Проходили контрольную точку!"
 geoffrey = "Кто же этот мудак?"
 familyTalk = "Они в безопасном месте..."
 puns="""

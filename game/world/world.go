@@ -1,10 +1,13 @@
 package world
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
@@ -84,7 +87,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	gWorld.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
 	gWorld.MapLayers = scene.NewStorageWithFuncs(1, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
 
-	te3File, err := te3.LoadTE3File(changeInfo.NextMapPath)
+	te3File, err := te3.LoadTE3File(changeInfo.MapPath)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +129,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		gWorld.GameMap.GridShape.SetShapeAtFlatIndex(id, shape, layer)
 	}
 
-	if levelFileName := path.Base(changeInfo.NextMapPath); len(levelFileName) >= 4 &&
+	if levelFileName := path.Base(changeInfo.MapPath); len(levelFileName) >= 4 &&
 		levelFileName[0] == 'e' &&
 		levelFileName[1] >= '0' && levelFileName[1] <= '9' &&
 		levelFileName[2] == 'm' &&
@@ -433,4 +436,21 @@ func (world *World) ProcessSignal(signal any) {
 		}
 		world.Hud.ProcessSignal(signal)
 	}
+}
+
+func (world *World) MarshalJSON() ([]byte, error) {
+	if world == nil || world.GameMap == nil {
+		return nil, fmt.Errorf("game map is nil")
+	}
+	savablesIter := world.IterSavables()
+	//TODO: Save victory screen stats
+	ents := make([]te3.Ent, 0, savablesIter.Capacity())
+	for savable, _ := savablesIter.Next(); savable != nil; savable, _ = savablesIter.Next() {
+		ents = append(ents, savable.Save())
+	}
+	return json.Marshal(game.MapChangeSignal{
+		MapPath:   world.GameMap.Name,
+		Ents:      ents,
+		Timestamp: time.Now(),
+	})
 }

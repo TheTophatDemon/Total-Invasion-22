@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
@@ -141,11 +143,30 @@ func (app *App) executeSignal(signal any) {
 			input.TrapMouse()
 			app.screen = nil
 		}
+	case game.SaveSignal:
+		log.Printf("saving game state to file %v\n", msg.Number)
+		if app.world == nil {
+			failure.LogErrWithLocation("game attempted to save, but there is no active world")
+			return
+		}
+		bytes, err := json.Marshal(app.world)
+		if err != nil {
+			failure.LogErrWithLocation("failed to save game state: %v", err)
+			return
+		}
+		saveFile, err := os.Create(fmt.Sprintf("save%v", msg.Number))
+		if err != nil {
+			failure.LogErrWithLocation("could not save game state to file: %v", err)
+			return
+		}
+		saveFile.Write(bytes)
+		saveFile.Close()
+		log.Println("saving successful")
 	}
 }
 
 func (app *App) LoadGame(sig game.MapChangeSignal) {
-	log.Println("Loading game at map ", sig.NextMapPath)
+	log.Println("Loading game at map ", sig.MapPath)
 
 	cache.Reset()
 
@@ -196,7 +217,7 @@ func main() {
 		tdaudio.QueueSong("assets/music/back_in_vasion.ogg", true, 0)
 	} else {
 		app.executeSignal(game.MapChangeSignal{
-			NextMapPath: mapName,
+			MapPath: mapName,
 		})
 	}
 	engine.Run(app)

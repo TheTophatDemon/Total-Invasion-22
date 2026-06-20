@@ -22,12 +22,13 @@ import (
 const triggerMaxContacts = 3
 
 const (
-	TriggerActionTeleport = "teleport"
-	TriggerActionDamage   = "damage"
-	TriggerActionEndLevel = "end level"
-	TriggerActionSecret   = "secret"
-	TriggerActionActivate = "activate"
-	TriggerActionMessage  = "message"
+	TriggerActionTeleport   = "teleport"
+	TriggerActionDamage     = "damage"
+	TriggerActionEndLevel   = "end level"
+	TriggerActionSecret     = "secret"
+	TriggerActionActivate   = "activate"
+	TriggerActionMessage    = "message"
+	TriggerActionCheckpoint = "checkpoint"
 )
 
 type Trigger struct {
@@ -89,6 +90,9 @@ func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err e
 	case TriggerActionMessage:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = messageAction
+	case TriggerActionCheckpoint:
+		tr.filter = playerOnlyFilter
+		tr.onEnter = checkpointAction
 	}
 
 	return
@@ -295,6 +299,16 @@ func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
 	if damageable, canDamage := scene.Get[Damageable](handle); canDamage {
 		damageable.OnDamage(tr, tr.damagePerSecond*deltaTime)
 	}
+}
+
+func checkpointAction(tr *Trigger, handle scene.Handle) {
+	gWorld.app.ProcessSignal(game.SaveSignal{
+		Number: 0,
+	})
+	tr.onEnter = nil // Prevent duplicate saves
+	gWorld.Hud.FlashScreen(color.Green, 0.5)
+	gWorld.Hud.ShowMessage(settings.Localize("checkpoint"), 20, color.Green)
+	cache.GetSfx("assets/sounds/checkpoint.wav").Play()
 }
 
 func liveActorsOnlyFilter(ent comps.HasBody) bool {

@@ -56,6 +56,23 @@ const (
 	EnemyTypeCount
 )
 
+func (et EnemyType) String() string {
+	switch et {
+	case EnemyTypeWraith:
+		return "wraith"
+	case EnemyTypeFireWraith:
+		return "fire wraith"
+	case EnemyTypeMotherWraith:
+		return "mother wraith"
+	case EnemyTypeDummkopf:
+		return "dummkopf"
+	case EnemyTypePrisrak:
+		return "prisrak"
+	default:
+		return "unknown"
+	}
+}
+
 /**============================================
  *               Armor
  *=============================================**/

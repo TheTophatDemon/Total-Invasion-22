@@ -40,7 +40,7 @@ type (
 	element  = ui.Element // This allows us to embed the type privately without colliding with the Element() method
 	MenuItem struct {
 		element
-		OnInput      func(MenuInputType)
+		OnInput      MenuItemCallback
 		restoreColor maybe.T[color.Color]
 	}
 	ReturnItem struct {
@@ -341,14 +341,16 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	queue.Add(&menu.title)
 }
 
-func (item *MenuItem) Init(stringKey string, callback func(MenuInputType)) *MenuItem {
+type MenuItemCallback func(*Menu, MenuWidget, MenuInputType)
+
+func (item *MenuItem) Init(stringKey string, callback MenuItemCallback) *MenuItem {
 	if item == nil {
 		return nil
 	}
 	return item.InitUnlocalized(settings.Localize(stringKey), callback)
 }
 
-func (item *MenuItem) InitUnlocalized(actualText string, callback func(MenuInputType)) *MenuItem {
+func (item *MenuItem) InitUnlocalized(actualText string, callback MenuItemCallback) *MenuItem {
 	if item == nil {
 		return nil
 	}
@@ -379,7 +381,7 @@ func (item *MenuItem) Blur() {
 
 func (item *MenuItem) Input(action MenuInputType, menu *Menu) {
 	if (action == MenuInputConfirm || action == MenuInputClick) && item.OnInput != nil {
-		item.OnInput(action)
+		item.OnInput(menu, item, action)
 		cache.GetSfx(SfxMenuHit).Play()
 	}
 }

@@ -22,9 +22,9 @@ func (lsm *LevelSelectMenu) Init(app engine.Observer) *LevelSelectMenu {
 	filepath.WalkDir("assets/maps", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".te3") {
 			fileName := filepath.Base(path[:len(path)-4])
-			menuItems = append(menuItems, new(MenuItem).InitUnlocalized(fileName, func(MenuInputType) {
+			menuItems = append(menuItems, new(MenuItem).InitUnlocalized(fileName, func(menu *Menu, item MenuWidget, mit MenuInputType) {
 				app.ProcessSignal(game.MapChangeSignal{
-					NextMapPath: path,
+					MapPath: path,
 				})
 			}))
 		}

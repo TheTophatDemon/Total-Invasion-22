@@ -158,7 +158,7 @@ func SpawnPlayerFromTE3(
 	return
 }
 
-func (player *Player) ToTE3Ent() te3.Ent {
+func (player *Player) Save() te3.Ent {
 	ent := te3.Ent{
 		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(player.actor.YawAngle))), 0.0},
 		Position: player.actor.Position(),
@@ -205,8 +205,8 @@ func (player *Player) Update(deltaTime float32) {
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath: gWorld.impendingLevel,
-				PlayerEnt:   new(player.ToTE3Ent()),
+				MapPath:   gWorld.impendingLevel,
+				PlayerEnt: new(player.Save()),
 			})
 		}
 	} else if player.actor.Health > 0 {
@@ -256,7 +256,7 @@ func (player *Player) Update(deltaTime float32) {
 		}
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 10.0 {
-			gWorld.app.ProcessSignal(game.MapChangeSignal{NextMapPath: gWorld.GameMap.Name})
+			gWorld.app.ProcessSignal(game.MapChangeSignal{MapPath: gWorld.GameMap.Name})
 		}
 	}
 
@@ -381,8 +381,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		err := cmd.Run()
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				NextMapPath: gWorld.GameMap.Name,
-				PlayerEnt:   new(player.ToTE3Ent()),
+				MapPath:   gWorld.GameMap.Name,
+				PlayerEnt: new(player.Save()),
 			})
 		} else if err != nil {
 			failure.LogErrWithLocation("failed to launch editor: %v", err)

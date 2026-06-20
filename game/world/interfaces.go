@@ -2,6 +2,7 @@ package world
 
 import (
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
@@ -29,5 +30,9 @@ type (
 		Damageable
 		engine.Observer
 		Actor() *Actor
+	}
+
+	Saveable interface {
+		Save() te3.Ent
 	}
 )
