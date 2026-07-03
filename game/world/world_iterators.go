@@ -338,6 +338,8 @@ type SavablesIter struct {
 	iterPlayers scene.StorageIter[Player]
 	iterEnemies scene.StorageIter[Enemy]
 	iterChickens scene.StorageIter[Chicken]
+	iterWalls scene.StorageIter[Wall]
+	iterTriggers scene.StorageIter[Trigger]
 	iterItems scene.StorageIter[Item]
 	storageIndex int
 	capacity int // Maximum number of elements iterated, based on storage size.
@@ -347,7 +349,7 @@ func (iter *SavablesIter) Next() (Saveable, scene.Handle) {
 	if iter == nil {
 		return nil, scene.Handle{}
 	}
-	for ; iter.storageIndex < 4; iter.storageIndex++ {
+	for ; iter.storageIndex < 6; iter.storageIndex++ {
 		switch iter.storageIndex {
 			case 0:
 				item, handle := iter.iterPlayers.Next()
@@ -365,6 +367,16 @@ func (iter *SavablesIter) Next() (Saveable, scene.Handle) {
 					return item, handle
 				}
 			case 3:
+				item, handle := iter.iterWalls.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 4:
+				item, handle := iter.iterTriggers.Next()
+				if item != nil {
+					return item, handle
+				}
+			case 5:
 				item, handle := iter.iterItems.Next()
 				if item != nil {
 					return item, handle
@@ -378,7 +390,7 @@ func (iter *SavablesIter) HasNext() bool {
 	if iter == nil {
 		return false
 	}
-	for i := range 4 {
+	for i := range 6 {
 		switch i {
 			case 0:
 				if iter.iterPlayers.HasNext() {
@@ -393,6 +405,14 @@ func (iter *SavablesIter) HasNext() bool {
 					return true
 				}
 			case 3:
+				if iter.iterWalls.HasNext() {
+					return true
+				}
+			case 4:
+				if iter.iterTriggers.HasNext() {
+					return true
+				}
+			case 5:
 				if iter.iterItems.HasNext() {
 					return true
 				}
@@ -410,11 +430,15 @@ func (world *World) IterSavables() SavablesIter {
 	capacity += world.Players.Capacity() 
 	capacity += world.Enemies.Capacity() 
 	capacity += world.Chickens.Capacity() 
+	capacity += world.Walls.Capacity() 
+	capacity += world.Triggers.Capacity() 
 	capacity += world.Items.Capacity()
 	return SavablesIter {
 		iterPlayers: world.Players.Iter(),
 		iterEnemies: world.Enemies.Iter(),
 		iterChickens: world.Chickens.Iter(),
+		iterWalls: world.Walls.Iter(),
+		iterTriggers: world.Triggers.Iter(),
 		iterItems: world.Items.Iter(),
 		storageIndex: 0,
 		capacity: capacity,

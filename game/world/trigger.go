@@ -34,7 +34,7 @@ const (
 type Trigger struct {
 	Radius          float32
 	Position        mgl32.Vec3
-	Yaw             float32
+	Yaw             math2.Radians
 	id              scene.Id[*Trigger]
 	particles       comps.ParticleRender
 	filter          func(comps.HasBody) bool
@@ -59,7 +59,7 @@ func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err e
 	tr.Radius = ent.Radius
 	tr.Position = ent.Position
 	trans := comps.TransformFromTE3Ent(ent, false, false)
-	tr.Yaw = trans.Yaw()
+	tr.Yaw = math2.Radians(trans.Yaw())
 	tr.linkNumber, _ = ent.IntProperty("link")
 	tr.entProperties = ent.Properties
 
@@ -302,13 +302,13 @@ func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
 }
 
 func checkpointAction(tr *Trigger, handle scene.Handle) {
-	gWorld.app.ProcessSignal(game.SaveSignal{
-		Number: 0,
-	})
-	tr.onEnter = nil // Prevent duplicate saves
+	tr.id.Remove() // Prevent duplicate saves
 	gWorld.Hud.FlashScreen(color.Green, 0.5)
 	gWorld.Hud.ShowMessage(settings.Localize("checkpoint"), 20, color.Green)
 	cache.GetSfx("assets/sounds/checkpoint.wav").Play()
+	gWorld.app.ProcessSignal(game.SaveSignal{
+		Number: 0,
+	})
 }
 
 func liveActorsOnlyFilter(ent comps.HasBody) bool {
@@ -322,4 +322,14 @@ func liveActorsOnlyFilter(ent comps.HasBody) bool {
 func playerOnlyFilter(ent comps.HasBody) bool {
 	_, isPlayer := ent.(*Player)
 	return isPlayer
+}
+
+func (trigger *Trigger) Save() te3.Ent {
+	return te3.Ent{
+		Position:   trigger.Position,
+		Radius:     trigger.Radius,
+		Display:    te3.ENT_DISPLAY_SPHERE,
+		Color:      [3]uint8{255, 0, 255},
+		Properties: trigger.entProperties,
+	}
 }

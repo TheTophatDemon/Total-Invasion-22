@@ -13,8 +13,8 @@ type Actor struct {
 	MaxSpeed, AccelRate, Friction   float32
 	GravityAccel                    float32
 	MaxFallSpeed                    float32
-	YawAngle                        float32 // Radians
-	Health, MaxHealth, TargetHealth float32 // Health cannot be more than MaxHealth but will gradually drop to TargetHealth if overhealed.
+	YawAngle                        math2.Radians // Radians
+	Health, MaxHealth, TargetHealth float32       // Health cannot be more than MaxHealth but will gradually drop to TargetHealth if overhealed.
 	NoClip                          bool
 	body                            comps.Body
 	inputForward, inputStrafe       float32
@@ -39,7 +39,7 @@ func (actor *Actor) Update(deltaTime float32) {
 	if input.LenSqr() != 0.0 {
 		input = input.Normalize()
 	}
-	moveDir := mgl32.TransformCoordinate(input, mgl32.HomogRotate3DY(actor.YawAngle))
+	moveDir := mgl32.TransformCoordinate(input, mgl32.HomogRotate3DY(float32(actor.YawAngle)))
 
 	// Apply acceleration
 	actor.body.Velocity = actor.body.Velocity.Add(moveDir.Mul(actor.AccelRate * deltaTime))
@@ -85,15 +85,15 @@ func (actor *Actor) Update(deltaTime float32) {
 	actor.body.TranslateV(movement)
 }
 
-func (actor *Actor) SetYaw(newYaw float32) {
+func (actor *Actor) SetYaw(newYaw math2.Radians) {
 	actor.YawAngle = newYaw
 }
 
 func (actor *Actor) FacingVec() mgl32.Vec3 {
 	return mgl32.Vec3{
-		-math2.Sin(actor.YawAngle),
+		float32(-math2.Sin(actor.YawAngle)),
 		0.0,
-		-math2.Cos(actor.YawAngle),
+		float32(-math2.Cos(actor.YawAngle)),
 	}
 }
 

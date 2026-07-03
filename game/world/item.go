@@ -45,7 +45,8 @@ type Item struct {
 	messageKey   string
 	messageColor color.Color
 
-	id scene.Id[*Item]
+	itemType string
+	id       scene.Id[*Item]
 }
 
 var _ comps.HasBody = (*Item)(nil)
@@ -107,6 +108,8 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 	default:
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}
+
+	item.itemType = itemType
 
 	if err != nil {
 		return
@@ -386,7 +389,16 @@ func (item *Item) OnUse(player *Player) {
 }
 
 func (item *Item) Save() te3.Ent {
+	// Mainly just saving the type of item and whether or not it exists.
 	return te3.Ent{
-		//TODO
+		Angles:   [3]math2.Degrees{},
+		Position: item.Body().Position,
+		Radius:   item.Body().Shape.Radius(),
+		Display:  te3.ENT_DISPLAY_SPHERE,
+		Color:    [3]uint8{255, 255, 255},
+		Properties: map[string]string{
+			"type": "item",
+			"item": item.itemType,
+		},
 	}
 }

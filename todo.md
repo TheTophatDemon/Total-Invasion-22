@@ -1,6 +1,8 @@
 # TODO
-- Checkpoints
-- Saving
+- Checkpoints / Saving
+ - Save level statistics
+ - After completing the level, a new autosave should be made.
+ - After dying, the previous checkpoint should be loaded
 - Fix sickle sound continuing after switching weapons
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model
@@ -10,6 +12,7 @@
   - Song
 - Game Difficulty Settings
   - Survey menu that appears after completing the first level
+  - Allow certain checkpoints and enemies to be removed on different difficulty levels
 - Limit the distance that blessings can travel
 - Make enemies able to hear player behind walls as long as space is connected.
 - Dialog Cutscene

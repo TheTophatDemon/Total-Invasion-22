@@ -47,23 +47,24 @@ const (
 
 // A moving wall. Could be a door, a switch, or any other dynamic level geometry.
 type Wall struct {
-	MeshRender         comps.MeshRender
-	AnimPlayer         comps.AnimationPlayer
-	Origin             mgl32.Vec3 // The position in global space that the wall starts in.
-	Destination        mgl32.Vec3 // The position in global space that the wall will move to.
-	WaitTime           float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
-	Speed              float32
-	id                 scene.Id[*Wall]
-	body               comps.Body
-	movePhase          MovePhase
-	switchState        SwitchState
-	key                game.Keys
-	activateSound      string
-	activateMessageKey string
-	disableUse         bool
-	waitTimer          float32
-	linkNumber         int
-	proxiedWall        scene.Id[*Wall]
+	MeshRender                     comps.MeshRender
+	AnimPlayer                     comps.AnimationPlayer
+	Origin                         mgl32.Vec3 // The position in global space that the wall starts in.
+	Destination                    mgl32.Vec3 // The position in global space that the wall will move to.
+	WaitTime                       float32    // Time the ent remains at its destination position before moving back. If it's less than 0, it waits forever.
+	Speed                          float32
+	id                             scene.Id[*Wall]
+	body                           comps.Body
+	movePhase                      MovePhase
+	switchState, targetSwitchState SwitchState
+	key                            game.Keys
+	activateSound                  string
+	activateMessageKey             string
+	disableUse                     bool
+	waitTimer                      float32
+	linkNumber                     int
+	proxiedWall                    scene.Id[*Wall]
+	ent                            te3.Ent
 }
 
 var _ Usable = (*Wall)(nil)
@@ -75,6 +76,7 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 	}
 
 	wall.id = id
+	wall.ent = ent
 
 	if ent.Display != te3.ENT_DISPLAY_MODEL {
 		return scene.Id[*Wall]{}, nil, fmt.Errorf("te3 ent display mode should be 'model'")
@@ -235,6 +237,13 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 		}
 	}
 
+	if ent.Properties["open"] == "true" {
+		// Force the door / pushwall to start in the open position if reloading from a save.
+		wall.Open()                    // Do this before the sound is loaded so it doesn't play.
+		wall.movePhase = MovePhaseOpen // Skip the transitional state
+		wall.body.Position = wall.Destination
+	}
+
 	if sfxStr, ok := ent.Properties["activateSound"]; ok {
 		if len(sfxStr) > 0 {
 			wall.activateSound = "assets/sounds/" + sfxStr
@@ -262,6 +271,7 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	wall.body.Layers |= ColLayerUsable
 
 	wall.switchState = SwitchOff
+	wall.targetSwitchState = SwitchOff
 	wall.Destination = wall.Origin
 	wall.linkNumber, err = ent.IntProperty("link")
 	if err != nil {
@@ -269,6 +279,16 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	}
 
 	wall.AnimPlayer = comps.NewAnimationPlayer(wall.MeshRender.Texture.GetDefaultAnimation(), false)
+
+	if ent.Properties["on"] == "true" {
+		wall.switchState = SwitchOn
+		wall.targetSwitchState = SwitchOn
+
+		// Play switch on animation but skip to the end
+		anim, _ := wall.MeshRender.Texture.GetAnimation("on")
+		wall.AnimPlayer.ChangeAnimation(anim)
+		wall.AnimPlayer.MoveToFrame(-1)
+	}
 
 	return nil
 }
@@ -306,16 +326,18 @@ func SpawnProxyWall(parentWall *Wall) (id scene.Id[*Wall], wall *Wall, err error
 
 func (wall *Wall) Update(deltaTime float32) {
 	wall.AnimPlayer.Update(deltaTime)
-	if wall.switchState != NotASwitch && wall.AnimPlayer.HitATriggerFrame() {
-		if wall.switchState == SwitchOff {
-			wall.switchState = SwitchOn
+	// Switch toggling logic
+	if wall.switchState != NotASwitch && wall.AnimPlayer.HitATriggerFrame() && wall.switchState != wall.targetSwitchState {
+		wall.switchState = wall.targetSwitchState
+		switch wall.targetSwitchState {
+		case SwitchOn:
 			gWorld.ActivateLinks(wall)
-		} else {
-			wall.switchState = SwitchOff
+		case SwitchOff:
 			gWorld.DeactivateLinks(wall)
 		}
 	}
 
+	// Manage proxy wall
 	if proxiedWall, isProxy := wall.proxiedWall.Get(); isProxy {
 		if proxiedWall.movePhase == MovePhaseClosed && wall.body.ExcludedLayers.On(ColLayerInvisible) {
 			wall.body.RestoreLayers()
@@ -326,6 +348,7 @@ func (wall *Wall) Update(deltaTime float32) {
 		}
 	}
 
+	// Manage movement
 	switch wall.movePhase {
 	case MovePhaseOpening:
 		targetDir := wall.Destination.Sub(wall.body.Position)
@@ -423,10 +446,12 @@ func (wall *Wall) OnUse(player *Player) {
 	}
 	switch true {
 	case wall.switchState == SwitchOff:
+		wall.targetSwitchState = SwitchOn
 		anim, _ := wall.MeshRender.Texture.GetAnimation("on")
 		wall.AnimPlayer.PlayNewAnim(anim)
 		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuatedV(wall.body.Position)
 	case wall.switchState == SwitchOn:
+		wall.targetSwitchState = SwitchOff
 		anim, _ := wall.MeshRender.Texture.GetAnimation("off")
 		wall.AnimPlayer.PlayNewAnim(anim)
 		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Position)
@@ -469,4 +494,14 @@ func (wall *Wall) Close() {
 			cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
 		}
 	}
+}
+
+func (wall *Wall) Save() te3.Ent {
+	ent := wall.ent
+	if ent.Properties == nil {
+		ent.Properties = make(map[string]string, 2)
+	}
+	ent.Properties["open"] = fmt.Sprintf("%t", wall.movePhase == MovePhaseOpen)
+	ent.Properties["on"] = fmt.Sprintf("%t", wall.switchState == SwitchOn)
+	return ent
 }

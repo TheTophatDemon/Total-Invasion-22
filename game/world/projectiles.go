@@ -193,7 +193,7 @@ func (proj *Projectile) eggCollide(movement mgl32.Vec3, otherEnt any, mask colli
 	chickenSpot := proj.body.Position.Add(backwards.Mul(1.5))
 	bodiesIter := gWorld.IterBodiesInSphere(chickenSpot, 0.5, nil)
 	if rand.Float32() < 0.3 && !bodiesIter.HasNext() && time.Since(timeSinceLastChicken).Seconds() > 10.0 {
-		SpawnChicken(chickenSpot, mgl32.Vec3{0.0, mgl32.RadToDeg(math2.Atan2(-backwards[0], backwards[2])), 0.0})
+		SpawnChicken(chickenSpot, [3]math2.Degrees{0.0, math2.ToDegrees(math2.Radians(math2.Atan2(-backwards[0], backwards[2]))), 0.0})
 		timeSinceLastChicken = time.Now()
 	}
 

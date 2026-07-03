@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	// Acts as both a message to change the map and to load saved entity data.
 	MapChangeSignal struct {
 		// File path to the map to change to, including the extension, relative to the game directory.
 		MapPath string

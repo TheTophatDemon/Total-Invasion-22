@@ -57,11 +57,11 @@ func TransformFromTE3Ent(ent te3.Ent, scaleByRadius, stayOnFloor bool) Transform
 			pos = pos.Add(mgl32.Vec3{0.0, ent.Radius - 1.0, 0.0})
 		}
 		return TransformFromTranslationAnglesScale(
-			pos, angles, mgl32.Vec3{ent.Radius, ent.Radius, ent.Radius},
+			pos, math2.AnglesVec3(angles), mgl32.Vec3{ent.Radius, ent.Radius, ent.Radius},
 		)
 	} else {
 		return TransformFromTranslationAngles(
-			ent.Position, angles,
+			ent.Position, math2.AnglesVec3(angles),
 		)
 	}
 }
@@ -111,8 +111,8 @@ func (t *Transform) TranslateV(offset mgl32.Vec3) {
 }
 
 // Sets the rotation in euler angles (radians)
-func (t *Transform) SetRotation(pitch, yaw, roll float32) {
-	t.rot = mgl32.Vec3{pitch, yaw, roll}
+func (t *Transform) SetRotation(pitch, yaw, roll math2.Radians) {
+	t.rot = mgl32.Vec3{float32(pitch), float32(yaw), float32(roll)}
 	t.upToDate = false
 }
 

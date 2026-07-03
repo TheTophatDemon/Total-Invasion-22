@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 type EntDisplay uint8
@@ -17,7 +17,7 @@ const (
 )
 
 type Ent struct {
-	Angles     [3]float32        `json:"angles"`
+	Angles     [3]math2.Degrees  `json:"angles"`
 	Color      [3]uint8          `json:"color"`
 	Position   [3]float32        `json:"position"`
 	Radius     float32           `json:"radius"`
@@ -90,8 +90,12 @@ func (ent *Ent) BoolPropertyOr(key string, defaultValue bool) bool {
 	return b
 }
 
-func (ent *Ent) AnglesInRadians() mgl32.Vec3 {
-	return mgl32.Vec3(ent.Angles).Mul(math.Pi / 180.0)
+func (ent *Ent) AnglesInRadians() [3]math2.Radians {
+	return [3]math2.Radians{
+		math2.Radians(ent.Angles[0]) * math.Pi / 180.0,
+		math2.Radians(ent.Angles[1]) * math.Pi / 180.0,
+		math2.Radians(ent.Angles[2]) * math.Pi / 180.0,
+	}
 }
 
 func (ent *Ent) GridPosition() [3]int {

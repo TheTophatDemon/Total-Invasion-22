@@ -107,9 +107,14 @@ func (ap *AnimationPlayer) MoveToRandomFrame() {
 	ap.frameTimer = 0.0
 }
 
+// Move the frame index of the current animation to the given frame number.
+// If the frame number is negative, it will start from the end of the animation.
 func (ap *AnimationPlayer) MoveToFrame(frame int) {
 	if len(ap.animation.Frames) == 0 {
 		return
+	}
+	for frame < 0 {
+		frame += len(ap.animation.Frames)
 	}
 	ap.currentIndex = frame % len(ap.animation.Frames)
 	ap.frameTimer = 0.0

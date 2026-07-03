@@ -35,8 +35,8 @@ type Enemy struct {
 	actor                                          Actor
 	id                                             scene.Id[*Enemy]
 	wakeTimer, chaseTimer, stateTimer, attackTimer float32
-	chaseStrafeDir                                 float32 // 1.0 to strafe right, -1.0 to strafe left while chasing player.
-	spriteAngle                                    float32 // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
+	chaseStrafeDir                                 float32       // 1.0 to strafe right, -1.0 to strafe left while chasing player.
+	spriteAngle                                    math2.Radians // Yaw angle on the Y axis determining where the sprite faces. Sometimes corresponds with actor.YawAngle
 	idleState, chaseState, stunState               enemyState
 	attackState, dodgeState, dieState, reviveState enemyState
 	state, previousState                           *enemyState
@@ -44,13 +44,16 @@ type Enemy struct {
 	spawnAmmo                                      game.AmmoType // Ammo type that will drop when enemy is killed
 	spawnAmmoChance                                float32       // Probability from 0 to 1
 	defaultCollisionFilters                        collision.Mask
+	spawnOffset                                    mgl32.Vec3 // Vector to add to enemy's position after spawning.
 
 	// Player or target tracking variables
 	targetHandle                scene.Handle
 	dirToTarget                 mgl32.Vec3
 	distToTarget                float32
 	canSeeTarget, canHearTarget bool
-	variant                     game.EnemyType
+
+	variant     game.EnemyType
+	framesAlive int
 }
 
 type enemyState struct {
@@ -67,6 +70,7 @@ type enemyConfig struct {
 	bloodColor  color.Color
 	texture     *textures.Texture
 	defaultAnim textures.Animation
+	spawnOffset maybe.T[mgl32.Vec3]
 }
 
 var enemyTypeConfigFuncs = [game.EnemyTypeCount]func(enemy *Enemy) enemyConfig{
@@ -94,7 +98,17 @@ func SpawnEnemyFromTE3(ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
 	default:
 		variant = game.EnemyTypeWraith
 	}
-	return SpawnEnemy(ent.Position, ent.AnglesInRadians(), variant)
+	id, enemy, err := SpawnEnemy(ent.Position, ent.AnglesInRadians(), variant)
+	if err != nil {
+		return id, enemy, err
+	}
+
+	enemy.actor.Health = ent.FloatPropertyOr("health", enemy.actor.TargetHealth)
+	if enemy.actor.Health <= 0 {
+		enemy.changeState(&enemy.dieState)
+	}
+
+	return id, enemy, err
 }
 
 func (enemy *Enemy) Actor() *Actor {
@@ -105,7 +119,7 @@ func (enemy *Enemy) Body() *comps.Body {
 	return &enemy.actor.body
 }
 
-func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.Id[*Enemy], enemy *Enemy, err error) {
+func SpawnEnemy(position mgl32.Vec3, angles [3]math2.Radians, variant game.EnemyType) (id scene.Id[*Enemy], enemy *Enemy, err error) {
 	id, enemy, err = gWorld.Enemies.New()
 	if err != nil {
 		return
@@ -117,7 +131,7 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 
 	enemy.actor = Actor{
 		body: comps.Body{
-			Position: mgl32.Vec3(position).Add(mgl32.Vec3{0.0, -0.1, 0.0}),
+			Position: mgl32.Vec3(position),
 			Shape:    collision.NewBoxShape(0.6, 0.7, 0.6),
 			Layers:   EnemyColLayers,
 		},
@@ -146,6 +160,9 @@ func SpawnEnemy(position, angles mgl32.Vec3, variant game.EnemyType) (id scene.I
 
 	enemy.SpriteRender = comps.NewSpriteRender(params.texture, nil, &mgl32.Vec2{0.9, 0.9})
 	enemy.AnimPlayer = comps.NewAnimationPlayer(params.defaultAnim, false)
+
+	enemy.spawnOffset = params.spawnOffset.Or(mgl32.Vec3{0.0, -0.1, 0.0})
+	enemy.Body().TranslateV(enemy.spawnOffset)
 
 	enemy.changeState(&enemy.idleState)
 
@@ -222,6 +239,8 @@ func (enemy *Enemy) Update(deltaTime float32) {
 
 	if enemy.actor.Health <= 0.0 && enemy.state != &enemy.reviveState {
 		enemy.changeState(&enemy.dieState)
+	} else {
+		enemy.framesAlive++
 	}
 
 	enemy.spriteAngle = enemy.actor.YawAngle
@@ -292,7 +311,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 
 	oldState := enemy.state
 
-	if oldState != nil {
+	if oldState != nil && enemy.framesAlive > 0 {
 		if oldState.leaveFunc != nil {
 			oldState.leaveFunc(enemy, newState)
 		} else if oldState == &enemy.dieState {
@@ -326,8 +345,11 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			} else {
 				enemy.AnimPlayer.PlayFromStart()
 			}
+			if enemy.framesAlive == 0 {
+				enemy.AnimPlayer.MoveToFrame(-1)
+			}
 		}
-		if newState.enterSound.IsValid() {
+		if newState.enterSound.IsValid() && enemy.framesAlive > 0 {
 			enemy.voice.Stop()
 			enemy.voice = newState.enterSound.PlayAttenuatedV(enemy.actor.Position())
 		}
@@ -338,11 +360,14 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			newState.enterFunc(enemy, enemy.state)
 		} else if newState == &enemy.dieState {
 			enemy.actor.body.ExcludeLayers(collision.MaskAll)
-			gWorld.Hud.VictoryScreen.EnemiesKilled++
-			enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
-			if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
-				SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
+			if enemy.framesAlive > 0 {
+				gWorld.Hud.VictoryScreen.EnemiesKilled++
+				enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
+
+				if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
+					SpawnAmmo(enemy.actor.Position().Add(enemy.actor.FacingVec().Mul(0.5)), enemy.spawnAmmo)
+				}
 			}
 		}
 	}
@@ -379,7 +404,7 @@ func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) bool {
 }
 
 func (enemy *Enemy) faceTarget() {
-	enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z())
+	enemy.actor.YawAngle = math2.Radians(math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z()))
 }
 
 func (enemy *Enemy) chase(
@@ -400,12 +425,12 @@ func (enemy *Enemy) chase(
 		if enemy.chaseStrafeDir == 0.0 {
 			enemy.chaseStrafeDir = ([2]float32{-0.7, 0.7})[rand.Intn(2)]
 		}
-		enemy.spriteAngle = enemy.actor.YawAngle - (math2.Signum(enemy.chaseStrafeDir) * math.Pi / 2.0)
+		enemy.spriteAngle = enemy.actor.YawAngle - math2.Radians(math2.Signum(enemy.chaseStrafeDir)*math.Pi/2.0)
 
 		// Cancel the turn if we are facing a wall
 		hit, _ := gWorld.Raycast(
 			enemy.actor.Position(),
-			mgl32.Vec3{-math2.Sin(enemy.spriteAngle), 0.0, -math2.Cos(enemy.spriteAngle)},
+			mgl32.Vec3{float32(-math2.Sin(enemy.spriteAngle)), 0.0, float32(-math2.Cos(enemy.spriteAngle))},
 			ColLayerMap|ColLayerActors|ColLayerInvisible,
 			wraithMeleeRange,
 			enemy.Body(),
@@ -435,13 +460,13 @@ func (enemy *Enemy) stalk(
 	if enemy.chaseTimer >= moveTime {
 		switch rand.Intn(4) {
 		case 0:
-			enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z())
+			enemy.actor.YawAngle = math2.Radians(math2.Atan2(-enemy.dirToTarget.X(), -enemy.dirToTarget.Z()))
 		case 1:
-			enemy.actor.YawAngle = math2.Atan2(enemy.dirToTarget.X(), enemy.dirToTarget.Z())
+			enemy.actor.YawAngle = math2.Radians(math2.Atan2(enemy.dirToTarget.X(), enemy.dirToTarget.Z()))
 		case 2:
-			enemy.actor.YawAngle = math2.Atan2(-enemy.dirToTarget.Z(), enemy.dirToTarget.X())
+			enemy.actor.YawAngle = math2.Radians(math2.Atan2(-enemy.dirToTarget.Z(), enemy.dirToTarget.X()))
 		case 3:
-			enemy.actor.YawAngle = math2.Atan2(enemy.dirToTarget.Z(), -enemy.dirToTarget.X())
+			enemy.actor.YawAngle = math2.Radians(math2.Atan2(enemy.dirToTarget.Z(), -enemy.dirToTarget.X()))
 		}
 		enemy.chaseTimer = 0.0
 	} else {
@@ -461,8 +486,8 @@ func (enemy *Enemy) stalk(
 
 func (enemy *Enemy) Save() te3.Ent {
 	return te3.Ent{
-		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(enemy.actor.YawAngle))), 0.0},
-		Position: enemy.actor.Position(),
+		Angles:   [3]math2.Degrees{0, math2.ToDegrees(enemy.actor.YawAngle), 0.0},
+		Position: enemy.actor.Position().Sub(enemy.spawnOffset),
 		Texture:  "assets/textures/sprites/wraith.png",
 		Radius:   0.7,
 		Display:  te3.ENT_DISPLAY_SPRITE,

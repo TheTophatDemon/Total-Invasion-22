@@ -227,9 +227,9 @@ var (
 						_, handle := gWorld.Raycast(
 							player.Body().Position,
 							mgl32.Vec3{
-								-math2.Sin(player.actor.YawAngle + float32(offset)),
+								float32(-math2.Sin(player.actor.YawAngle + offset)),
 								0.0,
-								-math2.Cos(player.actor.YawAngle + float32(offset)),
+								float32(-math2.Cos(player.actor.YawAngle + offset)),
 							},
 							ColLayerActors|ColLayerMap,
 							2.5,

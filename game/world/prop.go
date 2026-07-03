@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -31,7 +32,7 @@ type Prop struct {
 	entProperties map[string]string
 	updateFunc    func(deltaTime float32)
 	useFunc       func(player *Player)
-	yaw           float32
+	yaw           math2.Radians
 }
 
 func (prop *Prop) Body() *comps.Body {

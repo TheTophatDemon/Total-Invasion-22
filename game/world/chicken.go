@@ -33,6 +33,7 @@ type Chicken struct {
 	walkAnim, flyAnim, dieAnim textures.Animation
 	id                         scene.Id[*Chicken]
 	decomposeTimer             float32 // Time in seconds before the chicken's corpse disappears.
+	framesAlive                int
 }
 
 var _ HasActor = (*Chicken)(nil)
@@ -48,10 +49,12 @@ func (chk *Chicken) Body() *comps.Body {
 func SpawnChickenFromTE3(ent te3.Ent) (id scene.Id[*Chicken], chk *Chicken, err error) {
 	id, chk, err = SpawnChicken(ent.Position, ent.Angles)
 	chk.actor.Health = ent.FloatPropertyOr("health", chk.actor.Health)
+	// Prevent sound from playing after loading a save file
+	chk.voice.Stop()
 	return
 }
 
-func SpawnChicken(position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chicken, err error) {
+func SpawnChicken(position mgl32.Vec3, angles [3]math2.Degrees) (id scene.Id[*Chicken], chk *Chicken, err error) {
 	id, chk, err = gWorld.Chickens.New()
 	if err != nil {
 		return
@@ -74,7 +77,7 @@ func SpawnChicken(position, angles mgl32.Vec3) (id scene.Id[*Chicken], chk *Chic
 			Layers:   ColLayerActors | ColLayerNPCs,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors,
-		YawAngle:        mgl32.DegToRad(angles[1]),
+		YawAngle:        math2.ToRadians(angles[1]),
 		AccelRate:       80.0,
 		Friction:        20.0,
 		MaxSpeed:        2.5,
@@ -136,6 +139,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 	}
 
 	if chk.actor.Health > 0 {
+		chk.framesAlive++
 		chk.actor.inputForward = 1.0
 		chk.actor.inputStrafe = 0.0
 		if chk.actor.onGround {
@@ -149,7 +153,7 @@ func (chk *Chicken) Update(deltaTime float32) {
 		hit, closestBody := gWorld.Raycast(chkPos, chkDir, chk.actor.collisionFilter, 1.0, &chk.actor.body)
 		if hit.Hit && !closestBody.IsNil() {
 			// Turn around if we're about to hit a wall
-			chk.actor.YawAngle += math.Pi/2.0 + rand.Float32()*math.Pi/2.0
+			chk.actor.YawAngle += math2.Radians(math.Pi/2.0 + rand.Float32()*math.Pi/2.0)
 		}
 	} else {
 		chk.decomposeTimer -= deltaTime
@@ -163,13 +167,16 @@ func (chk *Chicken) Update(deltaTime float32) {
 		if !chk.AnimPlayer.IsPlayingAnim(chk.dieAnim) {
 			chk.AnimPlayer.ChangeAnimation(chk.dieAnim)
 			chk.AnimPlayer.PlayFromStart()
+			if chk.framesAlive == 0 {
+				chk.AnimPlayer.MoveToFrame(-1)
+			}
 		} else if chk.AnimPlayer.IsAtEnd() {
 			chk.bloodParticles.EmissionTimer = 0.0
 		} else {
 			chk.bloodParticles.EmissionTimer = 0.5
 		}
 
-		if math2.Vec3WithY(body.Velocity, 0.0).ApproxEqual(mgl32.Vec3{}) {
+		if chk.framesAlive == 0 || math2.Vec3WithY(body.Velocity, 0.0).ApproxEqual(mgl32.Vec3{}) {
 			body.Velocity = mgl32.Vec3{}
 			chk.actor.GravityAccel = 0.0
 			body.ExcludeLayers(body.Layers)
@@ -211,7 +218,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 
 func (chk *Chicken) Save() te3.Ent {
 	ent := te3.Ent{
-		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(chk.actor.YawAngle))), 0.0},
+		Angles:   [3]math2.Degrees{0, math2.ToDegrees(chk.actor.YawAngle), 0.0},
 		Position: chk.actor.Position(),
 		Texture:  "assets/textures/sprites/chicken.png",
 		Radius:   0.7,

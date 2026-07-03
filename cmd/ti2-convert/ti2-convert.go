@@ -222,7 +222,7 @@ func main() {
 				Radius:  1.0,
 				Model:   modelList[modelIndex],
 				Texture: textureList[textureIndex],
-				Angles:  [3]float32{0.0, float32(yaw * 90), 0.0},
+				Angles:  [3]math2.Degrees{0.0, math2.Degrees(yaw * 90), 0.0},
 				Color:   [3]uint8{255, 255, 255},
 				Position: [3]float32{
 					float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
@@ -442,8 +442,8 @@ func main() {
 
 		ent := te3.Ent{
 			Radius: 0.7,
-			Angles: [3]float32{
-				0.0, 270.0 - float32(angleIndex*45), 0.0,
+			Angles: [3]math2.Degrees{
+				0.0, 270.0 - math2.Degrees(angleIndex*45), 0.0,
 			},
 			Color: [3]uint8{255, 255, 255},
 			Position: [3]float32{

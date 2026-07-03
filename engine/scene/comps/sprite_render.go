@@ -62,7 +62,7 @@ func (sr *SpriteRender) Render(
 	position mgl32.Vec3,
 	animPlayer *AnimationPlayer,
 	context *render.Context,
-	yawAngle float32,
+	yawAngle math2.Radians,
 	locale string,
 ) bool {
 	if sr.meshRender.Shader == nil {
@@ -93,7 +93,7 @@ func (sr *SpriteRender) Render(
 		toCamera := cameraPos.Sub(position)
 		if toCamera.LenSqr() > mgl32.Epsilon {
 			toCamera = toCamera.Normalize()
-			ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(yawAngle).Mat4())
+			ourDirection := mgl32.TransformCoordinate(math2.Vec3Forward(), mgl32.Rotate3DY(float32(yawAngle)).Mat4())
 			dp := toCamera.Dot(ourDirection)
 			cross := toCamera.Cross(ourDirection)
 			radAngleDiff := math2.Acos(dp)

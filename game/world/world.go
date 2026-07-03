@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
@@ -65,6 +66,43 @@ type World struct {
 }
 
 var gWorld *World
+
+func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType string) {
+	entType = ent.Properties["type"]
+	var err error
+	switch entType {
+	case "enemy":
+		_, _, err = SpawnEnemyFromTE3(ent)
+	case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
+		_, _, err = SpawnWallFromTE3(ent)
+	case "prop":
+		_, _, err = SpawnPropFromTE3(ent)
+	case "trigger":
+		_, _, err = SpawnTriggerFromTE3(ent)
+	case "item":
+		_, _, err = SpawnItemFromTE3(ent)
+	case "camera":
+		_, _, err = SpawnCameraFromTE3(ent)
+	case "chicken":
+		_, _, err = SpawnChickenFromTE3(ent)
+	case "player":
+		gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(ent)
+		if err != nil {
+			log.Printf("error spawning player camera: %v\n", err)
+		}
+		if changeInfo.PlayerEnt != nil {
+			// Transfer properties from the previous level
+			ent.Properties = changeInfo.PlayerEnt.Properties
+			// But don't carry over keys
+			ent.Properties["keys"] = "0"
+		}
+		gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
+	}
+	if err != nil {
+		log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
+	}
+	return
+}
 
 func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, error) {
 	gWorld = &World{
@@ -142,6 +180,12 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	}
 
 	// Spawn entities
+	savedTypes := containers.NewSet[string](16)
+	for _, ent := range changeInfo.Ents {
+		typ := spawnEntBasedOnType(ent, changeInfo)
+		savedTypes.Add(typ)
+	}
+
 	for _, ent := range te3File.Ents {
 		if ent.Properties == nil {
 			continue
@@ -168,37 +212,11 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 			continue
 		}
 
-		entType := ent.Properties["type"]
-		var err error
-		switch entType {
-		case "enemy":
-			_, _, err = SpawnEnemyFromTE3(ent)
-		case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
-			_, _, err = SpawnWallFromTE3(ent)
-		case "prop":
-			_, _, err = SpawnPropFromTE3(ent)
-		case "trigger":
-			_, _, err = SpawnTriggerFromTE3(ent)
-		case "item":
-			_, _, err = SpawnItemFromTE3(ent)
-		case "camera":
-			_, _, err = SpawnCameraFromTE3(ent)
-		case "player":
-			gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(ent)
-			if err != nil {
-				log.Printf("error spawning player camera: %v\n", err)
-			}
-			if changeInfo.PlayerEnt != nil {
-				// Transfer properties from the previous level
-				ent.Properties = changeInfo.PlayerEnt.Properties
-				// But don't carry over keys
-				ent.Properties["keys"] = "0"
-			}
-			gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
+		if _, isSaved := savedTypes[ent.Properties["type"]]; isSaved {
+			continue
 		}
-		if err != nil {
-			log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
-		}
+
+		spawnEntBasedOnType(ent, changeInfo)
 	}
 
 	return gWorld, nil

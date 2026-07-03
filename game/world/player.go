@@ -78,7 +78,7 @@ func SpawnPlayerFromTE3(
 			Layers:   ColLayerActors | ColLayerPlayers,
 		},
 		collisionFilter: ColLayerMap | ColLayerActors | ColLayerInvisible,
-		YawAngle:        mgl32.DegToRad(ent.Angles[1]),
+		YawAngle:        math2.ToRadians(math2.Degrees(ent.Angles[1])),
 		AccelRate:       100.0,
 		Friction:        20.0,
 		MaxHealth:       200,
@@ -160,7 +160,7 @@ func SpawnPlayerFromTE3(
 
 func (player *Player) Save() te3.Ent {
 	ent := te3.Ent{
-		Angles:   [3]float32{0, float32(math2.ToRadians(math2.Degrees(player.actor.YawAngle))), 0.0},
+		Angles:   [3]math2.Degrees{0, math2.ToDegrees(player.actor.YawAngle), 0},
 		Position: player.actor.Position(),
 		Texture:  "assets/textures/sprites/segan.png",
 		Radius:   0.7,
@@ -391,7 +391,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 
 	// Spawn chicken
 	if settings.ActionSpawnChicken.JustPressed() {
-		SpawnChicken(player.Body().Position.Add(player.actor.FacingVec()), mgl32.Vec3{})
+		SpawnChicken(player.Body().Position.Add(player.actor.FacingVec()), [3]math2.Degrees{})
 	}
 
 	// Use key
@@ -479,7 +479,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		sensitivity := float32(0.005 * math2.Pow(10.0, (settings.Current.MouseSensitivity-1.0)/5.0))
 		normalLook := settings.Current.ActionLookLeft.Axis() - settings.Current.ActionLookRight.Axis()
 		fastLook := (settings.Current.ActionFastLookLeft.Axis() - settings.Current.ActionFastLookRight.Axis()) * 2.5
-		player.actor.YawAngle += (normalLook + fastLook) * sensitivity
+		player.actor.YawAngle += math2.Radians((normalLook + fastLook) * sensitivity)
 	}
 }
 

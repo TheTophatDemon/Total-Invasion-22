@@ -31,6 +31,14 @@ func ToDegrees(rad Radians) Degrees {
 	return Degrees(float32(rad) * 180.0 / math.Pi)
 }
 
+func AnglesVec3[U Radians | Degrees](array [3]U) mgl32.Vec3 {
+	return mgl32.Vec3{
+		float32(array[0]),
+		float32(array[1]),
+		float32(array[2]),
+	}
+}
+
 func Clamp[N Number](val, min, max N) N {
 	if val < min {
 		return min
