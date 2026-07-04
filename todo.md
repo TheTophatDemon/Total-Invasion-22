@@ -1,6 +1,5 @@
 # TODO
 - Checkpoints / Saving
- - Armor stands aren't loading for some reason
  - After completing the level, a new autosave should be made.
  - After dying, the previous checkpoint should be loaded
 - Fix sickle sound continuing after switching weapons

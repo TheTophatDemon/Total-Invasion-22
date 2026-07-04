@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -94,7 +95,6 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 		id, item, err = SpawnArmorStand(ent.Position, game.ArmorTypeBoring)
 		item.armorAmount = 100
 		item.flashColor = color.FromBytes(170, 85, 0, 180)
-		return
 	case "bulletarmor", "bullet armor", "bullet_armor":
 		id, item, err = SpawnArmorStand(ent.Position, game.ArmorTypeBullet)
 		item.armorAmount = 120
@@ -104,22 +104,32 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 			game.AmmoTypePlasma:  30,
 		}
 		item.flashColor = color.FromBytes(0, 113, 0, 180)
-		return
 	default:
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}
 
 	item.itemType = itemType
+	if collectAnim, ok := ent.Properties["collectAnim"]; ok {
+		item.collectAnim, ok = item.spriteRender.Texture().GetAnimation(collectAnim)
+		if ok {
+			item.animPlayer.PlayNewAnim(item.collectAnim)
+			item.animPlayer.MoveToFrame(ent.IntPropertyOr("collectAnimFrame", 0))
+		} else {
+			failure.LogErrWithLocation("saved item had collect animation named '%v' that was not found", collectAnim)
+		}
+	}
 
 	if err != nil {
 		return
 	}
 
-	// Put the item on the floor using a raycast
-	cast := gWorld.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0, ColLayerMap)
-	if cast.Hit {
-		item.body.Position = math2.Vec3WithY(cast.Position, cast.Position.Y()+item.spriteRender.Scale()[1])
-		item.onGround = true
+	if !item.onGround {
+		// Put the item on the floor using a raycast
+		cast := gWorld.GameMap.GridShape.Raycast(ent.Position, math2.Vec3Down(), 100.0, ColLayerMap)
+		if cast.Hit {
+			item.body.Position = math2.Vec3WithY(cast.Position, cast.Position.Y()+item.spriteRender.Scale()[1])
+			item.onGround = true
+		}
 	}
 
 	return
@@ -390,7 +400,7 @@ func (item *Item) OnUse(player *Player) {
 
 func (item *Item) Save() te3.Ent {
 	// Mainly just saving the type of item and whether or not it exists.
-	return te3.Ent{
+	ent := te3.Ent{
 		Angles:   [3]math2.Degrees{},
 		Position: item.Body().Position,
 		Radius:   item.Body().Shape.Radius(),
@@ -401,4 +411,9 @@ func (item *Item) Save() te3.Ent {
 			"item": item.itemType,
 		},
 	}
+	if !item.collectAnim.IsNil() && item.animPlayer.IsPlayingAnim(item.collectAnim) {
+		ent.Properties["collectAnim"] = item.collectAnim.Name
+		ent.Properties["collectAnimFrame"] = fmt.Sprintf("%d", item.animPlayer.Index())
+	}
+	return ent
 }

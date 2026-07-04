@@ -120,6 +120,11 @@ func (ap *AnimationPlayer) MoveToFrame(frame int) {
 	ap.frameTimer = 0.0
 }
 
+// Returns the current index into the animation data's frames array
+func (ap *AnimationPlayer) Index() int {
+	return ap.currentIndex
+}
+
 func (ap *AnimationPlayer) Play() {
 	ap.playing = true
 }
