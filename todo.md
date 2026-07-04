@@ -1,6 +1,5 @@
 # TODO
 - Checkpoints / Saving
- - Save level statistics
  - After completing the level, a new autosave should be made.
  - After dying, the previous checkpoint should be loaded
 - Fix sickle sound continuing after switching weapons

@@ -17,7 +17,9 @@ type (
 		// State of entities from a loaded save file, if applicable.
 		Ents []te3.Ent
 		// Time when the save was made.
-		Timestamp time.Time
+		Timestamp              time.Time
+		KillCount, SecretCount uint
+		TimeSoFar              time.Duration
 	}
 	ResumeGameSignal   struct{}
 	ChangeScreenSignal struct {

@@ -111,6 +111,10 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	}
 
 	gWorld.Hud.Init()
+	// Include stats from save file if applicable
+	gWorld.Hud.VictoryScreen.EnemiesKilled += changeInfo.KillCount
+	gWorld.Hud.VictoryScreen.SecretsFound += changeInfo.SecretCount
+	gWorld.Hud.VictoryScreen.levelStartTime = gWorld.Hud.VictoryScreen.levelStartTime.Add(-changeInfo.TimeSoFar)
 
 	gWorld.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
 	gWorld.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
@@ -461,14 +465,16 @@ func (world *World) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("game map is nil")
 	}
 	savablesIter := world.IterSavables()
-	//TODO: Save victory screen stats
 	ents := make([]te3.Ent, 0, savablesIter.Capacity())
 	for savable, _ := savablesIter.Next(); savable != nil; savable, _ = savablesIter.Next() {
 		ents = append(ents, savable.Save())
 	}
 	return json.Marshal(game.MapChangeSignal{
-		MapPath:   world.GameMap.Name,
-		Ents:      ents,
-		Timestamp: time.Now(),
+		MapPath:     world.GameMap.Name,
+		Ents:        ents,
+		Timestamp:   time.Now(),
+		KillCount:   world.Hud.VictoryScreen.EnemiesKilled,
+		SecretCount: world.Hud.VictoryScreen.SecretsFound,
+		TimeSoFar:   time.Since(world.Hud.VictoryScreen.levelStartTime),
 	})
 }
