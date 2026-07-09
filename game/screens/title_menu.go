@@ -20,7 +20,8 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 	})
 	titleMenu.newGame.Init("newGame", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.MapChangeSignal{
-			MapPath: "assets/maps/e1m1.te3",
+			MapPath:       "assets/maps/e1m1.te3",
+			SaveAfterLoad: true,
 		})
 	})
 	titleMenu.loadGame.Init("loadGame", func(m *Menu, mw MenuWidget, mit MenuInputType) {

@@ -55,6 +55,7 @@ type World struct {
 	MapLayers      scene.Storage[comps.MapLayer]
 	Props          scene.Storage[Prop]
 	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
+	MapTitleKey    string
 	CurrentPlayer  scene.Id[*Player]
 	CurrentCamera  scene.Id[*Camera]
 	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
@@ -177,15 +178,16 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		levelFileName[2] == 'm' &&
 		levelFileName[3] >= '0' && levelFileName[3] <= '9' {
 
+		gWorld.MapTitleKey = levelFileName[0:4] + "Title"
 		// Level files starting with e#m# activate the level intro.
-		gWorld.Hud.Intro.Init(settings.Localize(levelFileName[0:4]+"Title"), strings.ToUpper(levelFileName[0:4]))
+		gWorld.Hud.Intro.Init(settings.Localize(gWorld.MapTitleKey), strings.ToUpper(levelFileName[0:4]))
 	} else {
 		gWorld.Hud.Intro.Init("", "")
 	}
 
 	// Spawn entities
 	savedTypes := containers.NewSet[string](16)
-	for _, ent := range changeInfo.Ents {
+	for _, ent := range changeInfo.SavedEnts {
 		typ := spawnEntBasedOnType(ent, changeInfo)
 		savedTypes.Add(typ)
 	}
@@ -221,6 +223,13 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		}
 
 		spawnEntBasedOnType(ent, changeInfo)
+	}
+
+	// Create an autosave if this level is not being loaded
+	if changeInfo.SaveAfterLoad {
+		app.ProcessSignal(game.SaveSignal{
+			Number: 0,
+		})
 	}
 
 	return gWorld, nil
@@ -457,6 +466,13 @@ func (world *World) ProcessSignal(signal any) {
 			player.ProcessSignal(signal)
 		}
 		world.Hud.ProcessSignal(signal)
+	case game.SaveSignal:
+		// Triggered when reaching a checkpoint
+		playerIter := world.Players.Iter()
+		for player, _ := playerIter.Next(); player != nil; player, _ = playerIter.Next() {
+			player.ProcessSignal(signal)
+		}
+		world.app.ProcessSignal(signal)
 	}
 }
 
@@ -471,7 +487,8 @@ func (world *World) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(game.MapChangeSignal{
 		MapPath:     world.GameMap.Name,
-		Ents:        ents,
+		MapTitleKey: world.MapTitleKey,
+		SavedEnts:   ents,
 		Timestamp:   time.Now(),
 		KillCount:   world.Hud.VictoryScreen.EnemiesKilled,
 		SecretCount: world.Hud.VictoryScreen.SecretsFound,

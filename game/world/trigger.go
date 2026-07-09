@@ -306,7 +306,7 @@ func checkpointAction(tr *Trigger, handle scene.Handle) {
 	gWorld.Hud.FlashScreen(color.Green, 0.5)
 	gWorld.Hud.ShowMessage(settings.Localize("checkpoint"), 20, color.Green)
 	cache.GetSfx("assets/sounds/checkpoint.wav").Play()
-	gWorld.app.ProcessSignal(game.SaveSignal{
+	gWorld.ProcessSignal(game.SaveSignal{
 		Number: 0,
 	})
 }
@@ -320,8 +320,8 @@ func liveActorsOnlyFilter(ent comps.HasBody) bool {
 }
 
 func playerOnlyFilter(ent comps.HasBody) bool {
-	_, isPlayer := ent.(*Player)
-	return isPlayer
+	player, isPlayer := ent.(*Player)
+	return isPlayer && player.Actor().Health > 0
 }
 
 func (trigger *Trigger) Save() te3.Ent {

@@ -205,8 +205,9 @@ func (player *Player) Update(deltaTime float32) {
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				MapPath:   gWorld.impendingLevel,
-				PlayerEnt: new(player.Save()),
+				MapPath:       gWorld.impendingLevel,
+				PlayerEnt:     new(player.Save()),
+				SaveAfterLoad: true,
 			})
 		}
 	} else if player.actor.Health > 0 {
@@ -256,7 +257,11 @@ func (player *Player) Update(deltaTime float32) {
 		}
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 10.0 {
-			gWorld.app.ProcessSignal(game.MapChangeSignal{MapPath: gWorld.GameMap.Name})
+			// Reload the last autosave after dying.
+			gWorld.app.ProcessSignal(game.LoadSignal{
+				Number:     0,
+				RequireMap: gWorld.GameMap.Name,
+			})
 		}
 	}
 
@@ -493,6 +498,12 @@ func (player *Player) ProcessSignal(signal any) {
 		player.NextWeapon = player.SelectedWeapon
 		for weap := range player.Weapons() {
 			weap.Init(weap.WeaponDef, weap.Equipped)
+		}
+	case game.SaveSignal:
+		// Heal the player if her health is low so she doesn't get stuck dying over and over again from a bad save.
+		const minHealth = 50
+		if player.actor.Health < minHealth {
+			player.actor.Health = minHealth
 		}
 	}
 }

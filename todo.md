@@ -1,7 +1,6 @@
 # TODO
-- Checkpoints / Saving
- - After completing the level, a new autosave should be made.
- - After dying, the previous checkpoint should be loaded
+- Load menu previews for save files
+- Save menu
 - Fix sickle sound continuing after switching weapons
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model

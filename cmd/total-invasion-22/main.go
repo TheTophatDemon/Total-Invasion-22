@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -162,6 +163,38 @@ func (app *App) executeSignal(signal any) {
 		saveFile.Write(bytes)
 		saveFile.Close()
 		log.Println("saving successful")
+	case game.LoadSignal:
+		log.Printf("loading game state from file %v\n", msg.Number)
+		saveFile, err := os.Open(fmt.Sprintf("save%d", msg.Number))
+		if err != nil {
+			failure.LogErrWithLocation("failed to open save file %d: %d", msg.Number, err)
+			return
+		}
+		defer saveFile.Close()
+
+		saveBytes, err := io.ReadAll(saveFile)
+		if err != nil {
+			failure.LogErrWithLocation("failed to read from save file %d: %d", msg.Number, err)
+			return
+		}
+
+		var saveData game.MapChangeSignal
+		err = json.Unmarshal(saveBytes, &saveData)
+		if err != nil {
+			failure.LogErrWithLocation("failed to parse from save file %d: %d", msg.Number, err)
+			return
+		}
+
+		if len(msg.RequireMap) != 0 && saveData.MapPath != msg.RequireMap {
+			// The save file is from a different map, so we just want to reset the map we're on instead.
+			app.executeSignal(game.MapChangeSignal{
+				MapPath:       msg.RequireMap,
+				SaveAfterLoad: true,
+			})
+			return
+		}
+
+		app.executeSignal(saveData)
 	}
 }
 

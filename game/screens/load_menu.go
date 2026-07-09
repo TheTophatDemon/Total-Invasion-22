@@ -62,6 +62,8 @@ func (lm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
 			}
 			continue
 		}
+		defer saveFile.Close()
+
 		saveBytes, err := io.ReadAll(saveFile)
 		if err != nil {
 			failure.LogErrWithLocation("failed to read from save file %d: %d", i, err)
@@ -72,8 +74,6 @@ func (lm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
 			failure.LogErrWithLocation("failed to parse from save file %d: %d", i, err)
 			continue
 		}
-
-		defer saveFile.Close()
 	}
 
 	lm.Menu.Init(app, menuItems, parent)
