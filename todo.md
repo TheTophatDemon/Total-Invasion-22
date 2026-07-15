@@ -2,12 +2,12 @@
 - Load menu previews for save files
 - Save menu
 - Fix sickle sound continuing after switching weapons
+- Mysterious wall pushing noise in E1M5?
 - Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
 - E1M5
   - Super Armor
-  - Song
 - Game Difficulty Settings
   - Survey menu that appears after completing the first level
   - Allow certain checkpoints and enemies to be removed on different difficulty levels
