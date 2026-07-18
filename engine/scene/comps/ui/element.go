@@ -50,7 +50,7 @@ type Element struct {
 	Scissor                   math2.Rect
 	text                      string
 	textMesh                  *geom.Mesh
-	textConfig                maybe.T[TextConfig]
+	textConfig                TextConfig
 	textMatrix                mgl32.Mat4
 	sliceMatrices             [textures.SliceIndexCount]mgl32.Mat4
 	transform                 Transform
@@ -74,37 +74,6 @@ func NewColorBox(transform Transform, clr color.Color) Element {
 		BgMesh:    cache.QuadMesh,
 		BgColor:   maybe.Some(clr),
 		transform: transform,
-	}
-}
-
-func (el *Element) HasText() bool {
-	return el.textConfig.IsSome()
-}
-
-func (el *Element) SetText(text string) {
-	if !el.textConfig.IsSome() {
-		el.textConfig = maybe.Some(TextConfig{
-			Font: cache.DefaultFont,
-		})
-	}
-	if el.text != text {
-		el.text = text
-		el.textClean = false
-	}
-}
-
-func (el *Element) Text() string {
-	return el.text
-}
-
-func (el *Element) TextConfig() *maybe.T[TextConfig] {
-	return &el.textConfig
-}
-
-func (el *Element) SetTextConfig(config TextConfig) {
-	if el.textConfig != maybe.Some(config) {
-		el.textConfig = maybe.Some(config)
-		el.textClean = false
 	}
 }
 
@@ -215,20 +184,20 @@ func (el *Element) recalculateMatrices() {
 				el.Position()[1]+(el.Anchor()[1]*fHeight),
 				el.Depth(),
 			).Mul4(el.textMatrix)
+		}
 
-			// Calculate mesh boundaries
-			for _, vert := range [...]mgl32.Vec3{
-				{},
-				el.transform.Size.Vec3(0.0),
-				{el.transform.Size[0]},
-				{0.0, el.transform.Size[1]},
-			} {
-				vert = mgl32.TransformCoordinate(vert, el.textMatrix)
-				minX = min(minX, vert[0])
-				maxX = max(maxX, vert[0])
-				minY = min(minY, vert[1])
-				maxY = max(maxY, vert[1])
-			}
+		// Calculate mesh boundaries
+		for _, vert := range [...]mgl32.Vec3{
+			{},
+			el.transform.Size.Vec3(0.0),
+			{el.transform.Size[0]},
+			{0.0, el.transform.Size[1]},
+		} {
+			vert = mgl32.TransformCoordinate(vert, el.textMatrix)
+			minX = min(minX, vert[0])
+			maxX = max(maxX, vert[0])
+			minY = min(minY, vert[1])
+			maxY = max(maxY, vert[1])
 		}
 
 		el.onScreenBox = math2.Rect{
@@ -249,8 +218,7 @@ func (el *Element) MarkDirty() {
 }
 
 func (el *Element) TextMesh() *geom.Mesh {
-	_, hasTextConfig := el.textConfig.Get()
-	if hasTextConfig && (!el.transformClean || !el.textClean) {
+	if !el.transformClean || !el.textClean {
 		el.generateTextMesh()
 		el.textClean = true
 	}
@@ -477,18 +445,17 @@ func (el *Element) Render(context *render.Context) {
 		}
 	}
 
-	textConfig, hasTextConfig := el.textConfig.Get()
-	if el.TextMesh() != nil && hasTextConfig && textConfig.Font != nil {
+	if el.TextMesh() != nil && el.TextFont() != nil {
 		el.TextMesh().Bind()
 		failure.CheckOpenGLError()
 
-		cache.GetTexture(textConfig.Font.TexturePath()).Bind()
+		cache.GetTexture(el.TextFont().TexturePath()).Bind()
 		_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, el.AnimPlayer.FrameUV().Vec4())
 		failure.CheckOpenGLError()
 
 		// Draw drop shadow
-		if !textConfig.DisableShadow {
+		if !el.TextDisableShadow() {
 			shadowMatrix := mgl32.Translate3D(4.0, 4.0, 0.0).Mul4(el.textMatrix)
 			_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, shadowMatrix)
 			_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textShadowColor.Vector())
@@ -496,7 +463,7 @@ func (el *Element) Render(context *render.Context) {
 			el.TextMesh().DrawAll()
 		}
 
-		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, textConfig.Color.Or(color.White).Vector())
+		_ = shaders.UIShader.SetUniformVec4(shaders.UniformDiffuseColor, el.TextColor().Vector())
 		failure.CheckOpenGLError()
 
 		_ = shaders.UIShader.SetUniformMatrix(shaders.UniformModelMatrix, el.textMatrix)

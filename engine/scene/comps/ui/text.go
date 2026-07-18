@@ -13,7 +13,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
@@ -22,17 +21,167 @@ var GlobalTextScale float32 = 1.0
 
 type TextConfig struct {
 	Align         TextAlign
-	Color         maybe.T[color.Color]
+	Color         color.Color
 	DisableShadow bool
 	WrapWords     bool
 	Font          *fonts.Font
-	Scale         maybe.T[float32]
+	Scale         float32
+	Padding       mgl32.Vec2
+}
+
+func DefaultTextConfig() TextConfig {
+	return TextConfig{
+		Align:         TextAlignTopLeft,
+		Color:         color.White,
+		DisableShadow: false,
+		WrapWords:     true,
+		Font:          cache.DefaultFont,
+		Scale:         1,
+		Padding:       mgl32.Vec2{},
+	}
+}
+
+func (config TextConfig) SetAlign(value TextAlign) TextConfig {
+	config.Align = value
+	return config
+}
+func (config TextConfig) SetColor(value color.Color) TextConfig {
+	config.Color = value
+	return config
+}
+func (config TextConfig) SetDisableShadow(value bool) TextConfig {
+	config.DisableShadow = value
+	return config
+}
+func (config TextConfig) SetWrapWords(value bool) TextConfig {
+	config.WrapWords = value
+	return config
+}
+func (config TextConfig) SetFont(value *fonts.Font) TextConfig {
+	config.Font = value
+	return config
+}
+func (config TextConfig) SetScale(value float32) TextConfig {
+	config.Scale = value
+	return config
+}
+func (config TextConfig) SetPadding(value mgl32.Vec2) TextConfig {
+	config.Padding = value
+	return config
+}
+
+func (el *Element) IsText() bool {
+	return el.textConfig.Font != nil
+}
+
+func (el *Element) SetText(text string) {
+	if !el.IsText() {
+		el.textConfig = DefaultTextConfig()
+	}
+	if el.text != text {
+		el.text = text
+		el.textClean = false
+	}
+}
+
+func (el *Element) SetTextWith(text string, config TextConfig) {
+	el.textConfig = config
+	el.text = text
+	el.textClean = false
+}
+
+func (el *Element) Text() string {
+	return el.text
+}
+
+func (el *Element) TextAlign() TextAlign {
+	return el.textConfig.Align
+}
+
+func (el *Element) TextColor() color.Color {
+	return el.textConfig.Color
+}
+
+func (el *Element) TextDisableShadow() bool {
+	return el.textConfig.DisableShadow
+}
+
+func (el *Element) TextWrapWords() bool {
+	return el.textConfig.WrapWords
+}
+
+func (el *Element) TextFont() *fonts.Font {
+	return el.textConfig.Font
+}
+
+func (el *Element) TextScale() float32 {
+	return el.textConfig.Scale
+}
+
+func (el *Element) TextPadding() mgl32.Vec2 {
+	return el.textConfig.Padding
+}
+
+func (el *Element) SetTextAlign(value TextAlign) *Element {
+	if value != el.textConfig.Align {
+		el.textConfig.Align = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextColor(value color.Color) *Element {
+	if value != el.textConfig.Color {
+		el.textConfig.Color = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextDisableShadow(value bool) *Element {
+	if value != el.textConfig.DisableShadow {
+		el.textConfig.DisableShadow = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextWrapWords(value bool) *Element {
+	if value != el.textConfig.WrapWords {
+		el.textConfig.WrapWords = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextFont(value *fonts.Font) *Element {
+	if value != el.textConfig.Font {
+		el.textConfig.Font = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextScale(value float32) *Element {
+	if value != el.textConfig.Scale {
+		el.textConfig.Scale = value
+		el.textClean = false
+	}
+	return el
+}
+
+func (el *Element) SetTextPadding(value mgl32.Vec2) *Element {
+	if value != el.textConfig.Padding {
+		el.textConfig.Padding = value
+		el.textClean = false
+	}
+	return el
 }
 
 func NewText(transform Transform, text string, config TextConfig) Element {
 	elem := Element{
 		transform:  transform,
-		textConfig: maybe.Some(config),
+		textConfig: config,
 	}
 	elem.SetText(text)
 	return elem
@@ -46,17 +195,17 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 	boxes := make([]math2.Rect, 0, len(txt.text))
 	chars := make([]bmfont.Char, 0, cap(boxes))
 
-	config, hasConfig := txt.textConfig.Get()
-	if txt.text == "" || !hasConfig {
+	if txt.text == "" || txt.TextFont() == nil {
 		return boxes, chars
 	}
 
-	font := config.Font
+	font := txt.TextFont()
 	if font == nil {
 		font = cache.DefaultFont
 	}
 
-	scale := config.Scale.Or(1.0) * GlobalTextScale
+	scale := txt.TextScale() * GlobalTextScale
+	availableSpace := txt.Size().Sub(txt.TextPadding().Mul(2.0))
 
 	var scan scanner.Scanner
 	scan.Init(strings.NewReader(txt.text))
@@ -71,12 +220,12 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 		cursorX = 0.0
 		cursorY += float32(font.Common.LineHeight) * scale
 
-		if (config.Align&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
+		if (txt.TextAlign()&(TextAlignCenterH|TextAlignRight)) != 0 && len(boxes) > 0 {
 			// This will be the last box added to this line.
 			lastBox := boxes[len(boxes)-1]
 
-			shiftAmount := (txt.Size()[0] - (lastBox.X + lastBox.Width)) // Amount of remaining space within the text's bounds
-			if (config.Align & TextAlignCenterH) != 0 {
+			shiftAmount := (availableSpace[0] - (lastBox.X + lastBox.Width)) // Amount of remaining space within the text's bounds
+			if (txt.TextAlign() & TextAlignCenterH) != 0 {
 				shiftAmount *= 0.5
 			}
 
@@ -126,18 +275,18 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 			}
 
 			// Stop drawing when out of bounds
-			if charRect.Y+charRect.Height > txt.Size()[1] {
+			if charRect.Y+charRect.Height > availableSpace[1] {
 				break
 			}
 
-			if i == len(word)-runeWidth || !config.WrapWords {
+			if i == len(word)-runeWidth || !txt.TextWrapWords() {
 				// Determine if the word should go on a new line
-				overflowsBounds := (charRect.X+charRect.Width > txt.Size()[0])
+				overflowsBounds := (charRect.X+charRect.Width > availableSpace[0])
 				firstWordOnLine := (firstBox.X == 0.0)
 
 				if overflowsBounds && !firstWordOnLine {
 					// Remove the previous letters in this word
-					if config.WrapWords {
+					if txt.TextWrapWords() {
 						boxes = boxes[:len(boxes)-runeIndex]
 						chars = chars[:len(chars)-runeIndex]
 						numCharsInLine -= runeIndex
@@ -177,15 +326,22 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 		lastBox := boxes[len(boxes)-1]
 		charsHeight := lastBox.Height + lastBox.Y
 		// Apply vertical alignment
-		if (config.Align&TextAlignCenterV) != 0 && charsHeight < txt.Height() {
-			shift := (txt.Height() - charsHeight) / 2.0
+		if (txt.TextAlign()&TextAlignCenterV) != 0 && charsHeight < availableSpace[1] {
+			shift := (availableSpace[1] - charsHeight) / 2.0
 			for i := range boxes {
 				boxes[i].Y += shift
 			}
-		} else if (config.Align & TextAlignBottom) != 0 {
-			shift := txt.Height() - charsHeight
+		} else if (txt.TextAlign() & TextAlignBottom) != 0 {
+			shift := availableSpace[1] - charsHeight
 			for i := range boxes {
 				boxes[i].Y += shift
+			}
+		}
+		// Apply offset due to padding
+		if txt.TextPadding() != (mgl32.Vec2{}) {
+			for i := range boxes {
+				boxes[i].X += txt.TextPadding()[0]
+				boxes[i].Y += txt.TextPadding()[1]
 			}
 		}
 	}
@@ -196,12 +352,8 @@ func (txt *Element) generateTextBoxes() ([]math2.Rect, []bmfont.Char) {
 // Retrieves the mesh corresponding to the text, regenerating if there have been any changes.
 // Returns false and logs error if there is a failure.
 func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
-	config, hasConfig := txt.textConfig.Get()
-	if !hasConfig {
+	if txt.TextFont() == nil {
 		return nil, false
-	}
-	if config.Font == nil {
-		config.Font = cache.DefaultFont
 	}
 
 	if txt.textMesh != nil {
@@ -239,7 +391,7 @@ func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
 			mgl32.Vec3{charRect.X + charRect.Width, charRect.Y, 0.0},
 		)
 
-		pageW, pageH := float32(config.Font.Common.ScaleW), float32(config.Font.Common.ScaleH)
+		pageW, pageH := float32(txt.TextFont().Common.ScaleW), float32(txt.TextFont().Common.ScaleH)
 
 		srcRect := math2.Rect{
 			X:      float32(chars[b].X+chars[b].Width) / pageW,
@@ -270,7 +422,7 @@ func (txt *Element) generateTextMesh() (*geom.Mesh, bool) {
 }
 
 func (el *Element) FitText() {
-	if el.TextMesh() == nil || !el.HasText() {
+	if el.TextMesh() == nil || !el.IsText() {
 		return
 	}
 	// Expand the box first to fit all of the text in one line

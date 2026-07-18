@@ -40,3 +40,17 @@ func (m *T[Inner]) Unwrap() *Inner {
 	}
 	return &m.value
 }
+
+func IfNil[T any](pointer *T, defaultValue T) T {
+	if pointer == nil {
+		return defaultValue
+	}
+	return *pointer
+}
+
+func IfNilPtr[T any, TP *T](pointer, defaultPointer TP) TP {
+	if pointer == nil {
+		return defaultPointer
+	}
+	return pointer
+}

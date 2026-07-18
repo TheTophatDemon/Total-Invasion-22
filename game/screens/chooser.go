@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -30,10 +29,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 	ch.txtLabel = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, settings.Localize(labelKey)+": ", ui.TextConfig{
-		Color:     maybe.Some(color.White),
-		WrapWords: true,
-	})
+	}, settings.Localize(labelKey)+": ", ui.DefaultTextConfig())
 	ch.txtLabel.FitText()
 	if smallScreen && ch.txtLabel.Size()[0] >= 350.0 {
 		ch.txtLabel.SetSize(mgl32.Vec2{
@@ -46,10 +42,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{16, 24},
-	}, "<", ui.TextConfig{
-		Color: maybe.Some(color.Yellow),
-		Align: ui.TextAlignCenterV,
-	})
+	}, "<", ui.DefaultTextConfig().SetColor(color.Yellow).SetAlign(ui.TextAlignCenterV))
 
 	longestChoiceStr := choices[0].String()
 	for _, choice := range choices {
@@ -62,9 +55,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 	ch.txtValue = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, longestChoiceStr, ui.TextConfig{
-		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
-	})
+	}, longestChoiceStr, ui.DefaultTextConfig().SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV))
 	ch.txtValue.FitText()
 	ch.txtValue.SetText(choice.String())
 
@@ -72,10 +63,7 @@ func (ch *Chooser[T]) Init(labelKey string, choices []T, choice T) *Chooser[T] {
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{16, 24},
-	}, ">", ui.TextConfig{
-		Color: maybe.Some(color.Yellow),
-		Align: ui.TextAlignCenterV,
-	})
+	}, ">", ui.DefaultTextConfig().SetColor(color.Yellow).SetAlign(ui.TextAlignCenterV))
 	ch.choices = choices
 	ch.startingChoice = choice
 	ch.choiceIndex = -1
@@ -117,18 +105,12 @@ func (ch *Chooser[T]) Input(action MenuInputType, menu *Menu) {
 
 func (ch *Chooser[T]) Focus() {
 	ch.MenuItem.Focus()
-	configMaybe := ch.txtLabel.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		config.Color = maybe.Some(color.Yellow)
-	}
+	ch.SetTextColor(color.Yellow)
 }
 
 func (ch *Chooser[T]) Blur() {
 	ch.MenuItem.Blur()
-	configMaybe := ch.txtLabel.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		config.Color = maybe.Some(color.White)
-	}
+	ch.SetTextColor(color.White)
 }
 
 func (ch *Chooser[T]) Layout(queue *ui.RenderQueue, deltaTime float32) {

@@ -1,0 +1,38 @@
+package screens
+
+import (
+	"strings"
+
+	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
+	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/settings"
+)
+
+type SavePreview struct {
+	ui.Element
+	SaveData *game.MapChangeSignal
+}
+
+func (sp *SavePreview) Init() {
+	sp.Element = ui.NewBox(ui.Transform{
+		Depth: 1,
+	}, cache.GetTexture("assets/textures/ui/menu_background.png"))
+	sp.BgColor = maybe.Some(color.White.WithAlpha(0.75))
+	sp.SetTextWith("", ui.DefaultTextConfig().SetPadding(mgl32.Vec2{16.0, 16.0}))
+}
+
+func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	if sp == nil || sp.SaveData == nil {
+		return
+	}
+	formattedTime := sp.SaveData.Timestamp.Format(settings.Localize("saveTimeFormat"))
+	for _, month := range [...]string{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"} {
+		formattedTime = strings.Replace(formattedTime, month, settings.Localize("month"+month), 1)
+	}
+	sp.SetText(formattedTime)
+	queue.Add(&sp.Element)
+}

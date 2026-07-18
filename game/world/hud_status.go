@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -117,13 +116,12 @@ func (status *HudStatusBar) init() {
 	status.healthStat = ui.NewText(
 		fitToSlice(&status.leftPanel, "healthStat", 6.0),
 		"000",
-		ui.TextConfig{
-			Font:          counterFont,
-			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
-			DisableShadow: true,
-			Color:         maybe.Some(color.Red),
-			Scale:         maybe.Some[float32](2.0),
-		},
+		ui.DefaultTextConfig().
+			SetFont(counterFont).
+			SetAlign(ui.TextAlignCenterH|ui.TextAlignBottom).
+			SetDisableShadow(true).
+			SetColor(color.Red).
+			SetScale(2.0),
 	)
 
 	// Right HUD panel
@@ -149,13 +147,12 @@ func (status *HudStatusBar) init() {
 	status.ammoStat = ui.NewText(
 		fitToSlice(&status.rightPanel, "ammoStat", 6.0),
 		"000",
-		ui.TextConfig{
-			Font:          counterFont,
-			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
-			DisableShadow: true,
-			Color:         maybe.Some(color.Blue),
-			Scale:         maybe.Some[float32](2.0),
-		},
+		ui.DefaultTextConfig().
+			SetFont(counterFont).
+			SetAlign(ui.TextAlignCenterH|ui.TextAlignBottom).
+			SetDisableShadow(true).
+			SetColor(color.Blue).
+			SetScale(2.0),
 	)
 
 	// Armor icon
@@ -168,13 +165,12 @@ func (status *HudStatusBar) init() {
 	status.armorStat = ui.NewText(
 		fitToSlice(&status.rightPanel, "armorStat", 6.0),
 		"000",
-		ui.TextConfig{
-			Font:          counterFont,
-			Align:         ui.TextAlignCenterH | ui.TextAlignBottom,
-			DisableShadow: true,
-			Color:         maybe.Some(color.Green),
-			Scale:         maybe.Some[float32](2.0),
-		},
+		ui.DefaultTextConfig().
+			SetFont(counterFont).
+			SetAlign(ui.TextAlignCenterH|ui.TextAlignBottom).
+			SetDisableShadow(true).
+			SetColor(color.Green).
+			SetScale(2.0),
 	)
 
 	// Key icons
@@ -216,10 +212,10 @@ func (status *HudStatusBar) Layout(queue *ui.RenderQueue, deltaTime float32, pla
 	targetHealth := int(math2.Ceil(player.Actor().TargetHealth))
 	// Health stat
 	if health > targetHealth {
-		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.White)
+		status.healthStat.SetTextColor(color.White)
 		status.healthStat.SetText(fmt.Sprintf("+%d", health-targetHealth))
 	} else {
-		status.healthStat.TextConfig().Unwrap().Color = maybe.Some(color.Red)
+		status.healthStat.SetTextColor(color.Red)
 		status.healthStat.SetText(fmt.Sprintf("%03d", health))
 	}
 	queue.Add(&status.healthStat)

@@ -8,7 +8,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/game/settings"
@@ -43,10 +42,10 @@ func (screen *VictoryScreen) init() {
 		Anchor:   ui.Ratios{0.5, 0.0},
 		Position: mgl32.Vec2{0.0, 12.0},
 		Size:     mgl32.Vec2{settings.UIWidth(), 96.0},
-	}, settings.Localize("levelComplete"), ui.TextConfig{
-		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
-		Scale: maybe.Some[float32](3.0),
-	})
+	}, settings.Localize("levelComplete"), ui.DefaultTextConfig().
+		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
+		SetScale(3.0),
+	)
 
 	// Continue prompt
 	screen.txtContinue = ui.NewText(ui.Transform{
@@ -54,19 +53,17 @@ func (screen *VictoryScreen) init() {
 		Anchor:   ui.Ratios{0.5, 1.0},
 		Position: mgl32.Vec2{0.0, -64.0},
 		Size:     mgl32.Vec2{512.0, 48.0},
-	}, settings.Localize("fireContinue"), ui.TextConfig{
-		Color:     maybe.Some(color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}),
-		Align:     ui.TextAlignCenterH | ui.TextAlignCenterV,
-		WrapWords: true,
-	})
+	}, settings.Localize("fireContinue"), ui.DefaultTextConfig().
+		SetColor(color.Color{R: 0.9, G: 0.9, B: 0, A: 1.0}).
+		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
+		SetWrapWords(true),
+	)
 
 	// Stats text
 	screen.txtStats = ui.NewText(ui.Transform{
 		Position: mgl32.Vec2{64.0, 108.0},
 		Size:     mgl32.Vec2{512.0, 512.0},
-	}, "(filled in later)", ui.TextConfig{
-		Scale: maybe.Some[float32](2.0),
-	})
+	}, "(filled in later)", ui.DefaultTextConfig().SetScale(2.0))
 }
 
 func (screen *VictoryScreen) EndLevel() {

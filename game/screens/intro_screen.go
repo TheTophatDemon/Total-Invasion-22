@@ -42,10 +42,9 @@ func NewIntroScreen(app engine.Observer) *IntroScreen {
 				Position: mgl32.Vec2{0.0, -48.0},
 			},
 			settings.Localize("startPrompt"),
-			ui.TextConfig{
-				Align: ui.TextAlignCenterH,
-				Color: maybe.Some(color.Yellow),
-			},
+			ui.DefaultTextConfig().
+				SetAlign(ui.TextAlignCenterH).
+				SetColor(color.Yellow),
 		),
 	}
 	scr.flash.BgColor = maybe.Some(color.White.WithAlpha(0.0))

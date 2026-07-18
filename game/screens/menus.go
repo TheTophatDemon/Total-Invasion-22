@@ -41,7 +41,7 @@ type (
 	MenuItem struct {
 		element
 		OnInput      MenuItemCallback
-		restoreColor maybe.T[color.Color]
+		restoreColor color.Color
 	}
 	ReturnItem struct {
 		MenuItem
@@ -364,18 +364,12 @@ func (item *MenuItem) Element() *ui.Element {
 }
 
 func (item *MenuItem) Focus() {
-	configMaybe := item.element.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		item.restoreColor = config.Color
-		config.Color = maybe.Some(color.Yellow)
-	}
+	item.restoreColor = item.TextColor()
+	item.SetTextColor(color.Yellow)
 }
 
 func (item *MenuItem) Blur() {
-	configMaybe := item.element.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		config.Color = item.restoreColor
-	}
+	item.SetTextColor(item.restoreColor)
 	cache.GetSfx(SfxMenuMove).Play()
 }
 

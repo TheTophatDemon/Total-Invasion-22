@@ -60,11 +60,10 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		Position: mgl32.Vec2{0.0, 80.0},
 		Size:     mgl32.Vec2{float32(settings.Current.WindowWidth), 96.0},
 		Depth:    9.1,
-	}, levelTitle, ui.TextConfig{
-		Color: maybe.Some(color.White),
-		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
-		Scale: maybe.Some[float32](3.0),
-	})
+	}, levelTitle, ui.DefaultTextConfig().
+		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
+		SetScale(3.0),
+	)
 	intro.bannerTop.BgColor = maybe.Some(color.Blue)
 	intro.bannerTop.BgMesh = cache.QuadMesh
 
@@ -74,10 +73,10 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		Size:     mgl32.Vec2{448.0, 96.0},
 		Depth:    9.1,
 		Shear:    mgl32.Vec2{1.0, 0.0},
-	}, mapNumber, ui.TextConfig{
-		Align: ui.TextAlignCenterH | ui.TextAlignCenterV,
-		Scale: maybe.Some[float32](3),
-	})
+	}, mapNumber, ui.DefaultTextConfig().
+		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
+		SetScale(3.0),
+	)
 	intro.bannerBottom.BgMesh = cache.QuadMesh
 	intro.bannerBottom.BgColor = maybe.Some(color.Blue)
 

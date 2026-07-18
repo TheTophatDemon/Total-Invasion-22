@@ -49,12 +49,13 @@ func (messageBar *MessageBar) ShowMessage(text string, priority int, colr color.
 		}
 
 		messageBar.priority = priority
-		messageBar.text.SetText(text)
-		messageBar.text.SetTextConfig(ui.TextConfig{
-			Color:         maybe.Some(colr),
-			WrapWords:     false,
-			DisableShadow: true,
-		})
+		messageBar.text.SetTextWith(
+			text,
+			ui.DefaultTextConfig().
+				SetColor(colr).
+				SetWrapWords(false).
+				SetDisableShadow(true),
+		)
 		messageBar.flash = tween.Data{
 			StartValue: 1.0,
 			EndValue:   0.0,
@@ -76,7 +77,7 @@ func (messageBar *MessageBar) layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	flashAmt := messageBar.flash.Update(deltaTime).Value
-	txtColor := messageBar.text.TextConfig().Unwrap().Color.Or(color.White)
+	txtColor := messageBar.text.TextColor()
 	messageBar.text.BgColor = maybe.Some(color.Color{
 		R: (1.0 - txtColor.R) * flashAmt,
 		G: (1.0 - txtColor.G) * flashAmt,

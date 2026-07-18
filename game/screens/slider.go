@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
@@ -37,11 +36,11 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 	sl.txtLabel = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
-	}, settings.Localize(labelKey)+": ", ui.TextConfig{
-		Color:     maybe.Some(color.White),
-		WrapWords: true,
-		Align:     ui.TextAlignCenterV,
-	})
+	}, settings.Localize(labelKey)+": ", ui.DefaultTextConfig().
+		SetColor(color.White).
+		SetWrapWords(true).
+		SetAlign(ui.TextAlignCenterV),
+	)
 	sl.txtLabel.FitText()
 	if smallScreen && sl.txtLabel.Size()[0] >= 300.0 {
 		sl.txtLabel.SetSize(mgl32.Vec2{
@@ -54,10 +53,10 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 		Origin: ui.Ratios{0.0, 0.5},
 		Depth:  10,
 		Size:   mgl32.Vec2{16, 24},
-	}, "<", ui.TextConfig{
-		Color: maybe.Some(color.Yellow),
-		Align: ui.TextAlignCenterV,
-	})
+	}, "<", ui.DefaultTextConfig().
+		SetColor(color.Yellow).
+		SetAlign(ui.TextAlignCenterV),
+	)
 
 	sl.boxSlider = ui.NewBox(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -73,14 +72,15 @@ func (sl *Slider) Init(labelKey string, min, max, step, initialValue float64) *S
 	}, knobTex)
 	sl.boxKnob.AnimPlayer.ChangeAnimation(knobTex.GetDefaultAnimation())
 
-	sl.txtRight = ui.NewText(ui.Transform{
-		Origin: ui.Ratios{0.0, 0.5},
-		Depth:  10,
-		Size:   mgl32.Vec2{16, 24},
-	}, ">", ui.TextConfig{
-		Color: maybe.Some(color.Yellow),
-		Align: ui.TextAlignCenterV,
-	})
+	sl.txtRight = ui.NewText(
+		ui.Transform{
+			Origin: ui.Ratios{0.0, 0.5},
+			Depth:  10,
+			Size:   mgl32.Vec2{16, 24},
+		},
+		">",
+		ui.DefaultTextConfig().SetColor(color.Yellow).SetAlign(ui.TextAlignCenterV),
+	)
 
 	sl.txtValue = ui.NewText(ui.Transform{
 		Origin: ui.Ratios{0.0, 0.5},
@@ -124,18 +124,12 @@ func (sl *Slider) Input(action MenuInputType, menu *Menu) {
 
 func (sl *Slider) Focus() {
 	sl.MenuItem.Focus()
-	configMaybe := sl.txtLabel.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		config.Color = maybe.Some(color.Yellow)
-	}
+	sl.txtLabel.SetTextColor(color.Yellow)
 }
 
 func (sl *Slider) Blur() {
 	sl.MenuItem.Blur()
-	configMaybe := sl.txtLabel.TextConfig()
-	if config, ok := configMaybe.Get(); ok {
-		config.Color = maybe.Some(color.White)
-	}
+	sl.txtLabel.SetTextColor(color.White)
 }
 
 func (sl *Slider) Layout(queue *ui.RenderQueue, deltaTime float32) {

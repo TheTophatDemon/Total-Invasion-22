@@ -6,7 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 )
@@ -16,9 +15,7 @@ type DebugStats struct {
 }
 
 func (stats *DebugStats) init() {
-	config := ui.TextConfig{
-		Color: maybe.Some(color.Blue),
-	}
+	config := ui.DefaultTextConfig().SetColor(color.Blue)
 	stats.fpsCounter = ui.NewText(
 		ui.Transform{
 			Position: mgl32.Vec2{4.0, 52.0},
