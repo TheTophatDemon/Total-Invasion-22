@@ -53,6 +53,8 @@ monthSeptember = "Сентабрь"
 monthOctober = "Октябрь"
 monthNovember = "Ноябрь"
 monthDecember = "Декабрь"
+saveFileEmpty = "Тут ничего сохранено"
+afterCheckpoint = "После контрольной точки"
 
 # Input actions
 actionMenuDown = "Двигнуться Вниз в Меню"

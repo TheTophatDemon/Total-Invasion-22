@@ -307,7 +307,8 @@ func checkpointAction(tr *Trigger, handle scene.Handle) {
 	gWorld.Hud.ShowMessage(settings.Localize("checkpoint"), 20, color.Green)
 	cache.GetSfx("assets/sounds/checkpoint.wav").Play()
 	gWorld.ProcessSignal(game.SaveSignal{
-		Number: 0,
+		Number:          0,
+		AfterCheckpoint: true,
 	})
 }
 

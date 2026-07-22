@@ -12,6 +12,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+var MonthNames = [...]string{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}
+
 type SavePreview struct {
 	ui.Element
 	SaveData *game.MapChangeSignal
@@ -29,10 +31,25 @@ func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if sp == nil || sp.SaveData == nil {
 		return
 	}
-	formattedTime := sp.SaveData.Timestamp.Format(settings.Localize("saveTimeFormat"))
-	for _, month := range [...]string{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"} {
-		formattedTime = strings.Replace(formattedTime, month, settings.Localize("month"+month), 1)
+	if len(sp.SaveData.MapPath) == 0 {
+		sp.SetText(settings.Localize("saveFileEmpty"))
+	} else {
+		var summary strings.Builder
+		formattedTime := sp.SaveData.Timestamp.Format(settings.Localize("saveTimeFormat"))
+		for _, month := range MonthNames {
+			formattedTime = strings.Replace(formattedTime, month, settings.Localize("month"+month), 1)
+		}
+		summary.WriteString(formattedTime)
+		summary.WriteRune('\n')
+		summary.WriteString(strings.ToUpper(strings.TrimSuffix(sp.SaveData.MapTitleKey, "Title")))
+		summary.WriteString(" - ")
+		summary.WriteString(settings.Localize(sp.SaveData.MapTitleKey))
+		summary.WriteRune('\n')
+		if sp.SaveData.AfterCheckpoint {
+			summary.WriteString(settings.Localize("afterCheckpoint"))
+			summary.WriteRune('\n')
+		}
+		sp.SetText(summary.String())
 	}
-	sp.SetText(formattedTime)
 	queue.Add(&sp.Element)
 }

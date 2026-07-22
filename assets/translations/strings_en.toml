@@ -53,6 +53,8 @@ monthSeptember = "September"
 monthOctober = "October"
 monthNovember = "November"
 monthDecember = "December"
+saveFileEmpty = "Nothing is saved here"
+afterCheckpoint = "After checkpoint"
 
 # Input actions
 actionMenuDown = "Menu Navigate Down"

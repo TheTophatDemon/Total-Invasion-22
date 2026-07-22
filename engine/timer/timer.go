@@ -12,6 +12,9 @@ type Timer struct {
 
 // Updates the timer. Returns true if the timer ticked this frame.
 func (tmr *Timer) Update(deltaTime float32) bool {
+	if tmr == nil || tmr.Interval == 0.0 {
+		return false
+	}
 	tmr.Elapsed += deltaTime
 	if tmr.Elapsed > tmr.Interval {
 		tmr.Elapsed = math2.Mod(tmr.Elapsed, tmr.Interval)

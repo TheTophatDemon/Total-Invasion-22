@@ -64,6 +64,7 @@ type World struct {
 	bspTree        tree.BspTree    // The BSP tree built in the previous frame.
 	skyRender      comps.SkyRender
 	frameBuffer    render.Framebuffer // Contains the rendered texture of the game
+	hitCheckpoint  bool               // Turns true after the player hits a checkpoint
 }
 
 var gWorld *World
@@ -459,7 +460,7 @@ func (world *World) DeactivateLinks(source Linkable) {
 }
 
 func (world *World) ProcessSignal(signal any) {
-	switch signal.(type) {
+	switch sig := signal.(type) {
 	case game.ResumeGameSignal:
 		playerIter := world.Players.Iter()
 		for player, _ := playerIter.Next(); player != nil; player, _ = playerIter.Next() {
@@ -471,6 +472,9 @@ func (world *World) ProcessSignal(signal any) {
 		playerIter := world.Players.Iter()
 		for player, _ := playerIter.Next(); player != nil; player, _ = playerIter.Next() {
 			player.ProcessSignal(signal)
+		}
+		if sig.AfterCheckpoint {
+			world.hitCheckpoint = true
 		}
 		world.app.ProcessSignal(signal)
 	}
@@ -486,12 +490,13 @@ func (world *World) MarshalJSON() ([]byte, error) {
 		ents = append(ents, savable.Save())
 	}
 	return json.Marshal(game.MapChangeSignal{
-		MapPath:     world.GameMap.Name,
-		MapTitleKey: world.MapTitleKey,
-		SavedEnts:   ents,
-		Timestamp:   time.Now(),
-		KillCount:   world.Hud.VictoryScreen.EnemiesKilled,
-		SecretCount: world.Hud.VictoryScreen.SecretsFound,
-		TimeSoFar:   time.Since(world.Hud.VictoryScreen.levelStartTime),
+		MapPath:         world.GameMap.Name,
+		MapTitleKey:     world.MapTitleKey,
+		SavedEnts:       ents,
+		Timestamp:       time.Now(),
+		KillCount:       world.Hud.VictoryScreen.EnemiesKilled,
+		SecretCount:     world.Hud.VictoryScreen.SecretsFound,
+		TimeSoFar:       time.Since(world.Hud.VictoryScreen.levelStartTime),
+		AfterCheckpoint: world.hitCheckpoint,
 	})
 }

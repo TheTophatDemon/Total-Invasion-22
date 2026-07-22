@@ -1,5 +1,6 @@
 # TODO
 - Load menu previews for save files
+- WHY ARE THE KEYS DISAPPEARING??
 - Save menu
 - Fix sickle sound continuing after switching weapons
 - Mysterious wall pushing noise in E1M5?
