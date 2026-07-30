@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -173,7 +173,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		gWorld.GameMap.GridShape.SetShapeAtFlatIndex(id, shape, layer)
 	}
 
-	if levelFileName := path.Base(changeInfo.MapPath); len(levelFileName) >= 4 &&
+	if levelFileName := filepath.Base(changeInfo.MapPath); len(levelFileName) >= 4 &&
 		levelFileName[0] == 'e' &&
 		levelFileName[1] >= '0' && levelFileName[1] <= '9' &&
 		levelFileName[2] == 'm' &&
@@ -226,7 +226,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		spawnEntBasedOnType(ent, changeInfo)
 	}
 
-	// Create an autosave if this level is not being loaded
+	// Create an autosave if this level is not being loaded from a save file already
 	if changeInfo.SaveAfterLoad {
 		app.ProcessSignal(game.SaveSignal{
 			Number: 0,
