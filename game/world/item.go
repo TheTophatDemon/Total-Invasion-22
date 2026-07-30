@@ -254,6 +254,7 @@ func SpawnKeycard(position mgl32.Vec3, keyType game.Keys) (id scene.Id[*Item], i
 	item.floatSpeed = 2.0
 	item.floatAmplitude = 0.15
 	item.floatOrigin = position
+	item.itemType = keyType.Name() + "card"
 	return
 }
 
