@@ -44,3 +44,7 @@ type (
 func (ss SaveSignal) IsTemporary() bool {
 	return ss.Number == 0
 }
+
+func (mcs MapChangeSignal) IsNil() bool {
+	return len(mcs.MapPath) == 0
+}

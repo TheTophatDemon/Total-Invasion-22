@@ -31,7 +31,7 @@ func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if sp == nil || sp.SaveData == nil {
 		return
 	}
-	if len(sp.SaveData.MapPath) == 0 {
+	if sp.SaveData.IsNil() {
 		sp.SetText(settings.Localize("saveFileEmpty"))
 	} else {
 		var summary strings.Builder

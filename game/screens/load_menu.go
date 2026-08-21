@@ -55,6 +55,9 @@ func (item *SaveGameItem) Blur() {
 
 func handleLoadClick(menu *Menu, item MenuWidget, mit MenuInputType) {
 	saveItem := item.(*SaveGameItem)
+	if saveItem.SaveData.IsNil() {
+		return
+	}
 	menu.app.ProcessSignal(saveItem.SaveData)
 }
 
