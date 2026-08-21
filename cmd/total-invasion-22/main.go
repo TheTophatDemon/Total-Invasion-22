@@ -61,6 +61,7 @@ func (app *App) Update(deltaTime float32) {
 	case app.world != nil:
 		app.world.Update(deltaTime)
 		if settings.Current.ActionMenuCancel.JustPressed() {
+			tdaudio.StopAll()
 			input.UntrapMouse()
 			app.screen = new(screens.TitleMenu).Init(app, true)
 		}

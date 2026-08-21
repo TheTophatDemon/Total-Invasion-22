@@ -137,6 +137,14 @@ func (proj *Projectile) Render(context *render.Context) {
 	proj.SpriteRender.Render(proj.body.Position, &proj.AnimPlayer, context, 0.0, string(settings.Current.Locale))
 }
 
+func (proj *Projectile) Finalize() {
+	for _, voice := range proj.voices {
+		if voice.Sound().IsLooping() {
+			voice.Stop()
+		}
+	}
+}
+
 func (proj *Projectile) moveForward(deltaTime float32) {
 	proj.body.Velocity = proj.Facing.Mul(proj.forwardSpeed)
 }

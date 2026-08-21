@@ -283,6 +283,14 @@ void td_audio_stop_sound(td_voice_id voice) {
     ma_sound_stop(&player->voices[voice.id].sound);
 }
 
+void td_audio_stop_all() {
+    for (int i = 0; i < g_players.length; ++i) {
+        for (int v = 0; v < g_players.items[i].num_voices; ++v) {
+            ma_sound_stop(&g_players.items[i].voices[v].sound);
+        }
+    }
+}
+
 void td_audio_seek_sound(td_voice_id voice, uint64_t time_ms) {
     if (!td_audio_voice_is_valid(voice)) return;
     td_player *player = &g_players.items[voice.player.id];

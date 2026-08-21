@@ -76,6 +76,10 @@ func (voice VoiceId) GetTime() uint64 {
 	return uint64(C.td_audio_get_sound_time(C.td_voice_id(voice)))
 }
 
+func (voice VoiceId) Sound() SoundId {
+	return SoundId(voice.player)
+}
+
 // General audio functions
 
 func Init() bool {
@@ -114,6 +118,10 @@ func QueueSong(path string, looping bool, fadeoutMillis uint64) bool {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
 	return bool(C.td_audio_queue_song(cPath, C.bool(looping), C.uint64_t(fadeoutMillis)))
+}
+
+func StopAll() {
+	C.td_audio_stop_all()
 }
 
 func Update() {
