@@ -174,7 +174,7 @@ func (prop *Prop) eyeballUpdate(deltaTime float32) {
 			toCamera := camera.Position().Sub(prop.body.Position).Normalize()
 			if camera.Forward().Dot(toCamera) < -0.95 {
 				res, handle := gWorld.Raycast(prop.body.Position, toCamera, ColLayerMap|ColLayerNPCs|ColLayerPlayers, 7.5, prop.Body())
-				if _, isPlayer := scene.Get[*Player](handle); res.Hit && isPlayer {
+				if _, isPlayer := handle.Get[*Player](); res.Hit && isPlayer {
 					prop.stareTimer += deltaTime
 					eyeContact = true
 					if prop.AnimPlayer.IsPlayingAnim(idleAnim) {

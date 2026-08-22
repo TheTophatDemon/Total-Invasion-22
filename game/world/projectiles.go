@@ -73,7 +73,7 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 		decelerationRate = 100.0
 	}
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*decelerationRate)
-	if owner, ok := scene.Get[HasActor](proj.owner); ok {
+	if owner, ok := proj.owner.Get[HasActor](); ok {
 		if proj.forwardSpeed < 0.0 {
 			proj.hitOwner = true
 			ownerPos := owner.Body().Position
@@ -90,7 +90,7 @@ func (proj *Projectile) sickleMove(deltaTime float32) {
 
 func (proj *Projectile) introSickleMove(deltaTime float32) {
 	proj.forwardSpeed = max(-35.0, proj.forwardSpeed-deltaTime*50.0)
-	if owner, ok := scene.Get[HasActor](proj.owner); ok {
+	if owner, ok := proj.owner.Get[HasActor](); ok {
 		if proj.forwardSpeed < 0.0 {
 			proj.hitOwner = true
 			ownerPos := owner.Body().Position
@@ -106,7 +106,7 @@ func (proj *Projectile) introSickleMove(deltaTime float32) {
 }
 
 func (proj *Projectile) sickleCollide(movement mgl32.Vec3, otherEnt any, mask collision.Mask, result collision.Result, deltaTime float32) mgl32.Vec3 {
-	owner, hasOwner := scene.Get[HasActor](proj.owner)
+	owner, hasOwner := proj.owner.Get[HasActor]()
 
 	if bodyHaver, hasBody := otherEnt.(comps.HasBody); hasBody {
 		otherBody := bodyHaver.Body()

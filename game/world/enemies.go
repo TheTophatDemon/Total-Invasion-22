@@ -73,7 +73,7 @@ func wraithChaseUpdate(enemy *Enemy, deltaTime float32) {
 func wraithAttackUpdate(enemy *Enemy, deltaTime float32) {
 	enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 	if enemy.AnimPlayer.HitATriggerFrame() {
-		target, ok := scene.Get[HasActor](enemy.targetHandle)
+		target, ok := enemy.targetHandle.Get[HasActor]()
 		if !ok {
 			return
 		}

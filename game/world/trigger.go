@@ -103,7 +103,7 @@ func (tr *Trigger) Update(deltaTime float32) {
 	touchingNow := gWorld.IterBodiesInSphere(tr.Position, tr.Radius, nil)
 	var stillTouching [triggerMaxContacts]bool
 	for _, handle := touchingNow.Next(); !handle.IsNil(); _, handle = touchingNow.Next() {
-		bodyHaver, _ := scene.Get[comps.HasBody](handle)
+		bodyHaver, _ := handle.Get[comps.HasBody]()
 		if tr.filter == nil || tr.filter(bodyHaver) {
 			if added, index := tr.addToTouching(handle); added {
 				if tr.onEnter != nil {
@@ -167,7 +167,7 @@ func (tr *Trigger) addToTouching(handle scene.Handle) (bool, int) {
 }
 
 func teleportAction(tr *Trigger, handle scene.Handle) {
-	teleportingEnt, _ := scene.Get[HasActor](handle)
+	teleportingEnt, _ := handle.Get[HasActor]()
 	if teleportingEnt.Actor().Health <= 0 {
 		return
 	}
@@ -187,7 +187,7 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 					if actorHandle.IsNil() {
 						break
 					}
-					victimEnt, _ := scene.Get[HasActor](actorHandle)
+					victimEnt, _ := actorHandle.Get[HasActor]()
 					if player, isPlayer := victimEnt.(*Player); isPlayer && player != teleportingEnt {
 						// If the player is on the other side, kill the NPC instead.
 						teleportingEnt.(Damageable).OnDamage(tr, math2.Inf32())
@@ -296,7 +296,7 @@ func messageAction(tr *Trigger, handle scene.Handle) {
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
-	if damageable, canDamage := scene.Get[Damageable](handle); canDamage {
+	if damageable, canDamage := handle.Get[Damageable](); canDamage {
 		damageable.OnDamage(tr, tr.damagePerSecond*deltaTime)
 	}
 }

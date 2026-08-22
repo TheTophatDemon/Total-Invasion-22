@@ -7,7 +7,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
-	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -235,7 +234,7 @@ var (
 							2.5,
 							player.Body(),
 						)
-						if damageable, ok := scene.Get[Damageable](handle); ok {
+						if damageable, ok := handle.Get[Damageable](); ok {
 							damageable.OnDamage(player, 100.0)
 							cache.GetSfx("assets/sounds/weapon/sign_hit.wav").Play()
 							animPlayer.PlayNewAnim(hitAnim)

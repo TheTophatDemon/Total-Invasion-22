@@ -202,7 +202,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	if enemy.targetHandle.IsNil() {
 		enemy.targetHandle = gWorld.CurrentPlayer.Handle
 	}
-	if targetActor, ok := scene.Get[HasActor](enemy.targetHandle); ok && gWorld.IsOnPlayerCamera() {
+	if targetActor, ok := enemy.targetHandle.Get[HasActor](); ok && gWorld.IsOnPlayerCamera() {
 		vecToTarget = targetActor.Body().Position.Sub(enemyPos)
 		enemy.distToTarget = vecToTarget.Len()
 		if enemy.distToTarget != 0.0 {

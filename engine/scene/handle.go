@@ -9,7 +9,7 @@ func NewHandle(index, generation uint16, storage StorageOps) Handle {
 	return Handle{index, generation, storage}
 }
 
-func Get[T any](handle Handle) (T, bool) {
+func (handle Handle) Get[T any]() (T, bool) {
 	var empty T
 	if handle.IsNil() {
 		return empty, false

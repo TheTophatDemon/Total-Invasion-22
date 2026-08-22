@@ -358,7 +358,7 @@ func (world *World) InWinState() bool {
 func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.impendingLevel = nextLevel
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
-	camera, _ := scene.Get[*Camera](world.CurrentCamera.Handle)
+	camera, _ := world.CurrentCamera.Get()
 	camera.waitTime = 0.0
 	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
 	world.Hud.VictoryScreen.EndLevel()

@@ -77,7 +77,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 		// Detect intersections with bodies
 		bodies := gWorld.bspTree.PotentiallyTouchingEnts(proj.body.Position, proj.body.Shape)
 		for handle := range bodies {
-			collidingEnt, ok := scene.Get[comps.HasBody](handle)
+			collidingEnt, ok := handle.Get[comps.HasBody]()
 			if !ok {
 				continue
 			}
@@ -87,7 +87,7 @@ func (proj *Projectile) Update(deltaTime float32) {
 				continue
 			}
 
-			owner, hasOwner := scene.Get[comps.HasBody](proj.owner)
+			owner, hasOwner := proj.owner.Get[comps.HasBody]()
 			if !proj.hitOwner && hasOwner && otherBody == owner.Body() {
 				continue
 			}

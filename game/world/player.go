@@ -404,7 +404,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		const useDist float32 = 3.0
 		hit, closestBody := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerUsable, useDist, player.Body())
 		if hit.Hit && !closestBody.IsNil() {
-			if usable, isUsable := scene.Get[Usable](closestBody); isUsable {
+			if usable, isUsable := closestBody.Get[Usable](); isUsable {
 				usable.OnUse(player)
 			}
 		}
@@ -412,7 +412,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		// Use items by walking into them
 		ents := gWorld.bspTree.PotentiallyTouchingEnts(player.Body().Position, player.Body().Shape)
 		for handle := range ents {
-			item, ok := scene.Get[*Item](handle)
+			item, ok := handle.Get[*Item]()
 			if !ok || item.Body() == nil || !item.Body().OnLayer(ColLayerUsable) {
 				continue
 			}

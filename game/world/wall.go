@@ -368,7 +368,7 @@ func (wall *Wall) Update(deltaTime float32) {
 		ents := gWorld.bspTree.PotentiallyTouchingEnts(wall.Origin, wall.body.Shape)
 		obstructed := false
 		for ent := range ents {
-			if actorHaver, ok := scene.Get[HasActor](ent); ok {
+			if actorHaver, ok := ent.Get[HasActor](); ok {
 				if actorHaver.Body().Shape.Touches(actorHaver.Body().Position, wall.body.Position, wall.body.Shape) {
 					wall.body.Velocity = mgl32.Vec3{}
 					wall.movePhase = MovePhaseOpening

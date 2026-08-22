@@ -5,5 +5,5 @@ type Id[T any] struct {
 }
 
 func (id Id[T]) Get() (T, bool) {
-	return Get[T](id.Handle)
+	return id.Handle.Get[T]()
 }

@@ -69,7 +69,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 
 	var avgPos float32 = 0.0
 	for handle := range bodies {
-		bodyHaver, ok := scene.Get[comps.HasBody](handle)
+		bodyHaver, ok := handle.Get[comps.HasBody]()
 		if !ok {
 			continue
 		}
@@ -87,7 +87,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 	leftBodies := containers.NewSet[scene.Handle](len(bodies))
 	rightBodies := containers.NewSet[scene.Handle](len(bodies))
 	for handle := range bodies {
-		bodyHaver, ok := scene.Get[comps.HasBody](handle)
+		bodyHaver, ok := handle.Get[comps.HasBody]()
 		if !ok {
 			continue
 		}
@@ -169,7 +169,7 @@ func (tree *BspTree) ResolveCollisions(
 			Distance: math.MaxFloat32,
 		}
 		for _, handle := range obstacles {
-			if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+			if collidingEnt, ok := handle.Get[comps.HasBody](); ok {
 				otherBody := collidingEnt.Body()
 				if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
 					continue
@@ -197,7 +197,7 @@ func (tree *BspTree) ResolveCollisions(
 		nextPos := body.Position.Add(movement).Add(push)
 		obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(nextPos, body.Shape)))
 		for _, handle := range obstacles {
-			if collidingEnt, ok := scene.Get[comps.HasBody](handle); ok {
+			if collidingEnt, ok := handle.Get[comps.HasBody](); ok {
 				otherBody := collidingEnt.Body()
 				if otherBody == nil || body == otherBody || !otherBody.Layers.On(filter) {
 					continue
