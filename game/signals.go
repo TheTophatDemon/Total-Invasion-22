@@ -33,6 +33,7 @@ type (
 	SaveSignal          struct {
 		Number          int
 		AfterCheckpoint bool
+		WithData        *MapChangeSignal
 	}
 	LoadSignal struct {
 		Number int

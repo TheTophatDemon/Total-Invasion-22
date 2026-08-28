@@ -38,6 +38,10 @@ confirm = "Confirm"
 
 # Save / Load screens
 autoSaveFile = "Auto Save"
+yourProgress = "Your Progress: "
+fileProgress = "File Progress: "
+copyToFile = "Copy to file #%d"
+fileSaved = "Saved"
 saveFile = "Save File #%d"
 saveTime = "Time: "
 saveTimeFormat = "January 2 3:04:05PM 2006"

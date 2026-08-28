@@ -29,7 +29,11 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 			Screen: new(LoadMenu).Init(app, titleMenu),
 		})
 	})
-	titleMenu.saveGame.Init("saveGame", nil)
+	titleMenu.saveGame.Init("saveGame", func(m *Menu, mw MenuWidget, mit MenuInputType) {
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(SaveMenu).Init(app, titleMenu),
+		})
+	})
 	titleMenu.options.Init("options", func(menu *Menu, item MenuWidget, mit MenuInputType) {
 		app.ProcessSignal(game.ChangeScreenSignal{
 			Screen: new(SettingsMenu).Init(app, titleMenu),

@@ -25,27 +25,27 @@ type (
 		preview      SavePreview
 		previewTimer timer.Timer
 	}
-	SaveGameItem struct {
+	LoadGameItem struct {
 		MenuItem
 		SaveData game.MapChangeSignal
 		menu     *LoadMenu
 	}
 )
 
-func (item *SaveGameItem) Input(action MenuInputType, menu *Menu) {
+func (item *LoadGameItem) Input(action MenuInputType, menu *Menu) {
 	if (action == MenuInputConfirm || action == MenuInputClick) && item.OnInput != nil {
 		item.OnInput(menu, item, action)
 		cache.GetSfx(SfxMenuHit).Play()
 	}
 }
 
-func (item *SaveGameItem) Focus() {
+func (item *LoadGameItem) Focus() {
 	item.MenuItem.Focus()
 	item.menu.preview.SaveData = &item.SaveData
 	item.menu.previewTimer = timer.Timer{}
 }
 
-func (item *SaveGameItem) Blur() {
+func (item *LoadGameItem) Blur() {
 	item.MenuItem.Blur()
 	item.menu.previewTimer = timer.Timer{
 		Interval: 1.0,
@@ -54,17 +54,17 @@ func (item *SaveGameItem) Blur() {
 }
 
 func handleLoadClick(menu *Menu, item MenuWidget, mit MenuInputType) {
-	saveItem := item.(*SaveGameItem)
+	saveItem := item.(*LoadGameItem)
 	if saveItem.SaveData.IsNil() {
 		return
 	}
 	menu.app.ProcessSignal(saveItem.SaveData)
 }
 
-func (lm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
-	*lm = LoadMenu{}
+func (sm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
+	*sm = LoadMenu{}
 
-	lm.preview.Init()
+	sm.preview.Init("")
 
 	menuItems := make([]MenuWidget, SaveFileCount+1)
 	menuItems[0] = new(ReturnItem).Init()
@@ -75,9 +75,9 @@ func (lm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
 		} else {
 			saveName = fmt.Sprintf(settings.Localize("saveFile"), i)
 		}
-		menuItem := new(SaveGameItem)
+		menuItem := new(LoadGameItem)
 		menuItem.InitUnlocalized(saveName, handleLoadClick)
-		menuItem.menu = lm
+		menuItem.menu = sm
 		menuItems[i+1] = menuItem
 
 		saveFile, err := os.Open(fmt.Sprintf("save%d", i))
@@ -101,19 +101,19 @@ func (lm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
 		}
 	}
 
-	lm.Menu.Init(app, menuItems, parent)
-	return lm
+	sm.Menu.Init(app, menuItems, parent)
+	return sm
 }
 
-func (lm *LoadMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
-	lm.Menu.Layout(queue, deltaTime)
-	if lm.preview.SaveData != nil {
-		menuBounds := lm.Menu.background.OnScreenBox()
-		lm.preview.SetPosition(menuBounds.PosVec().Add(mgl32.Vec2{menuBounds.Width + 8, 0}))
-		lm.preview.SetSize(mgl32.Vec2{settings.UIWidth() - 16.0 - lm.preview.Position()[0], menuBounds.Height})
-		lm.preview.Layout(queue, deltaTime)
-		if lm.previewTimer.Update(deltaTime) {
-			lm.preview.SaveData = nil
+func (sm *LoadMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
+	sm.Menu.Layout(queue, deltaTime)
+	if sm.preview.SaveData != nil {
+		menuBounds := sm.Menu.background.OnScreenBox()
+		sm.preview.SetPosition(menuBounds.PosVec().Add(mgl32.Vec2{menuBounds.Width + 8, 0}))
+		sm.preview.SetSize(mgl32.Vec2{settings.UIWidth() - 16.0 - sm.preview.Position()[0], menuBounds.Height})
+		sm.preview.Layout(queue, deltaTime)
+		if sm.previewTimer.Update(deltaTime) {
+			sm.preview.SaveData = nil
 		}
 	}
 }

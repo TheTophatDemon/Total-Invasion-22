@@ -17,24 +17,31 @@ var MonthNames = [...]string{"January", "February", "March", "April", "May", "Ju
 type SavePreview struct {
 	ui.Element
 	SaveData *game.MapChangeSignal
+	LabelKey string
 }
 
-func (sp *SavePreview) Init() {
+func (sp *SavePreview) Init(labelKey string) {
 	sp.Element = ui.NewBox(ui.Transform{
 		Depth: 1,
 	}, cache.GetTexture("assets/textures/ui/menu_background.png"))
 	sp.BgColor = maybe.Some(color.White.WithAlpha(0.75))
 	sp.SetTextWith("", ui.DefaultTextConfig().SetPadding(mgl32.Vec2{16.0, 16.0}))
+	sp.LabelKey = labelKey
 }
 
 func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	if sp == nil || sp.SaveData == nil {
 		return
 	}
+	var summary strings.Builder
+	if len(sp.LabelKey) > 0 {
+		summary.WriteString(settings.Localize(sp.LabelKey))
+		summary.WriteRune('\n')
+		summary.WriteRune('\n')
+	}
 	if sp.SaveData.IsNil() {
-		sp.SetText(settings.Localize("saveFileEmpty"))
+		summary.WriteString(settings.Localize("saveFileEmpty"))
 	} else {
-		var summary strings.Builder
 		formattedTime := sp.SaveData.Timestamp.Format(settings.Localize("saveTimeFormat"))
 		for _, month := range MonthNames {
 			formattedTime = strings.Replace(formattedTime, month, settings.Localize("month"+month), 1)
@@ -49,7 +56,7 @@ func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
 			summary.WriteString(settings.Localize("afterCheckpoint"))
 			summary.WriteRune('\n')
 		}
-		sp.SetText(summary.String())
 	}
+	sp.SetText(summary.String())
 	queue.Add(&sp.Element)
 }

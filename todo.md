@@ -1,5 +1,4 @@
 # TODO
-- Save menu
 - Missing totals in victory screen
 - Mysterious wall pushing noise in E1M5?
 - Make larger font for level complete

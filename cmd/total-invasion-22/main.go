@@ -151,7 +151,13 @@ func (app *App) executeSignal(signal any) {
 			failure.LogErrWithLocation("game attempted to save, but there is no active world")
 			return
 		}
-		bytes, err := json.Marshal(app.world)
+		var bytes []byte
+		var err error
+		if msg.WithData == nil {
+			bytes, err = json.Marshal(app.world)
+		} else {
+			bytes, err = json.Marshal(msg.WithData)
+		}
 		if err != nil {
 			failure.LogErrWithLocation("failed to save game state: %v", err)
 			return
