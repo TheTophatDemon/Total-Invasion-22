@@ -474,6 +474,9 @@ func (wall *Wall) ToggleMovement() {
 }
 
 func (wall *Wall) Open() {
+	if wall.movePhase == MovePhaseOpening || wall.movePhase == MovePhaseOpen {
+		return
+	}
 	wall.movePhase = MovePhaseOpening
 	wall.waitTimer = 0
 	if len(wall.activateSound) > 0 {
