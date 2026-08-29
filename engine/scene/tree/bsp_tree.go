@@ -35,6 +35,12 @@ func (node bspNode) TouchesChild(shape collision.Shape, shapePosition mgl32.Vec3
 	return
 }
 
+func (node bspNode) TouchesRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) (touchesLeft, touchesRight bool) {
+	touchesRight = rayOrigin[node.splitAxis] >= node.planeOffset || rayOrigin[node.splitAxis]+rayDir[node.splitAxis]*maxDist >= node.planeOffset
+	touchesLeft = rayOrigin[node.splitAxis] <= node.planeOffset || rayOrigin[node.splitAxis]+rayDir[node.splitAxis]*maxDist <= node.planeOffset
+	return
+}
+
 func BuildBspTree(bodies containers.Set[scene.Handle]) BspTree {
 	tree := BspTree{
 		nodes: make([]bspNode, 0, len(bodies)),
@@ -143,6 +149,32 @@ func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.V
 	}
 	if node.leftChildIdx >= 0 && touchesLeft {
 		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.leftChildIdx], pos, shape) {
+			res.Add(handle)
+		}
+	}
+	return res
+}
+
+func (tree *BspTree) PotentiallyCrossingEnts(rayOrigin, rayDir mgl32.Vec3, maxDist float32) containers.Set[scene.Handle] {
+	if len(tree.nodes) == 0 {
+		return containers.Set[scene.Handle]{}
+	}
+	return tree.potentiallyCrossingEntsRecursive(&tree.nodes[0], rayOrigin, rayDir, maxDist)
+}
+
+func (tree *BspTree) potentiallyCrossingEntsRecursive(node *bspNode, rayOrigin, rayDir mgl32.Vec3, maxDist float32) containers.Set[scene.Handle] {
+	if node.IsLeaf() {
+		return node.objects
+	}
+	res := containers.NewSet[scene.Handle](0)
+	touchesLeft, touchesRight := node.TouchesRay(rayOrigin, rayDir, maxDist)
+	if node.rightChildIdx >= 0 && touchesRight {
+		for handle := range tree.potentiallyCrossingEntsRecursive(&tree.nodes[node.rightChildIdx], rayOrigin, rayDir, maxDist) {
+			res.Add(handle)
+		}
+	}
+	if node.leftChildIdx >= 0 && touchesLeft {
+		for handle := range tree.potentiallyCrossingEntsRecursive(&tree.nodes[node.leftChildIdx], rayOrigin, rayDir, maxDist) {
 			res.Add(handle)
 		}
 	}

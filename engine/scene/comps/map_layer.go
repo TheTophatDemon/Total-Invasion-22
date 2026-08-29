@@ -31,11 +31,11 @@ func NewMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, excludeFla
 
 	gridShape := collision.NewGrid(te3File.Tiles.Width, te3File.Tiles.Height, te3File.Tiles.Length, te3.GridSpacing)
 	gameMap := MapLayer{
-		Name:      te3File.FilePath(),
-		GridShape: gridShape,
+		Name:           te3File.FilePath(),
+		GridShape:      gridShape,
+		tileAnims:      make([]AnimationPlayer, mesh.GroupCount()),
+		groupRenderers: make([]MeshRender, mesh.GroupCount()),
 	}
-	gameMap.tileAnims = make([]AnimationPlayer, mesh.GroupCount())
-	gameMap.groupRenderers = make([]MeshRender, mesh.GroupCount())
 
 	for g, groupName := range mesh.GroupNames() {
 		tex := cache.GetTexture(groupName)

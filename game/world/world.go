@@ -387,10 +387,14 @@ func (world *World) Raycast(
 	closestHit.Distance = math.MaxFloat32
 
 	// Check bodies
-	//TODO: Could optimize this using bsp tree
-	iter := world.IterBodies()
-	for bodyEnt, bodyId := iter.Next(); bodyEnt != nil; bodyEnt, bodyId = iter.Next() {
-		body := bodyEnt.Body()
+
+	crossingBodies := world.bspTree.PotentiallyCrossingEnts(rayOrigin, rayDir, maxDist)
+	for bodyId := range crossingBodies {
+		bodyHaver, ok := bodyId.Get[comps.HasBody]()
+		if !ok {
+			continue
+		}
+		body := bodyHaver.Body()
 		if body == nil || body == excludeBody ||
 			!body.OnLayer(filter) ||
 			!body.Shape.Extents().Translate(body.Position).Intersects(rayBB) {

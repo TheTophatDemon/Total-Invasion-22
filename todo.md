@@ -3,15 +3,15 @@
   - Survey menu that appears after completing the first level
   - Allow certain checkpoints and enemies to be removed on different difficulty levels
 - Make enemies able to hear player behind walls as long as space is connected.
+- Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners
 - Jittering while walking across non-solid props sometimes??
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
-- Optimize world raycasts using the bsp tree
+- Optimize the memory usage of map loading to avoid GC stutters
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
-- Optimize the memory usage of map loading to avoid GC stutters
 - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 
 # TODO - Art
@@ -27,7 +27,9 @@
 
 # TODO - Levels
 - E1M5
-  - Super Armor
+- E1M6
+  - Song
+  - Double Grenade Launcher
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
