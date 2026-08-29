@@ -404,6 +404,7 @@ func SpawnBlessing(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		Damage:     15,
 		moveFunc:   proj.moveForwardAndRevive,
 		onCollide:  proj.blessingCollide,
+		maxLife:    1.5,
 	}
 
 	return

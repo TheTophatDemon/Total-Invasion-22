@@ -7,7 +7,6 @@
 - Game Difficulty Settings
   - Survey menu that appears after completing the first level
   - Allow certain checkpoints and enemies to be removed on different difficulty levels
-- Limit the distance that blessings can travel
 - Make enemies able to hear player behind walls as long as space is connected.
 - Dialog Cutscene
   - Song
