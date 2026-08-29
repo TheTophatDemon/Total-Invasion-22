@@ -65,6 +65,7 @@ func translateTextureName(category, ti2Name string) string {
 			"exitsign":             "exit_sign",
 			"boringarmor":          "boring_armor_stand",
 			"bulletarmor":          "bullet_armor_stand",
+			"superarmor":           "super_armor_stand",
 			"joel":                 "family",
 			"invasionchair":        "chair",
 			"invasiontable":        "table",
@@ -174,6 +175,9 @@ func main() {
 
 	for range wallCount {
 		tiScanner.Scan()
+		if err := tiScanner.Err(); err != nil {
+			panic(err)
+		}
 		tokens := strings.Split(tiScanner.Text(), ",")
 
 		x, err := strconv.ParseInt(tokens[0], 10, 64)
@@ -351,6 +355,9 @@ func main() {
 
 	for range floorCount {
 		tiScanner.Scan()
+		if err := tiScanner.Err(); err != nil {
+			panic(err)
+		}
 		tokens := strings.Split(tiScanner.Text(), ",")
 
 		x, err := strconv.ParseInt(tokens[0], 10, 64)
@@ -416,6 +423,9 @@ func main() {
 	cameraPosition := mgl32.Vec3{}
 	for range entCount {
 		tiScanner.Scan()
+		if err := tiScanner.Err(); err != nil {
+			panic(err)
+		}
 		tokens := strings.Split(tiScanner.Text(), ",")
 
 		x, err := strconv.ParseInt(tokens[0], 10, 64)

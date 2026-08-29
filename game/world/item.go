@@ -67,7 +67,7 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 		id, item, err = SpawnEggCarton(ent.Position)
 	case "grenades":
 		id, item, err = SpawnGrenades(ent.Position)
-	case "plasmavial", "plasma_vial", "plasma vial":
+	case "plasmavial", "plasma_vial", "plasma_vials", "plasma vial":
 		id, item, err = SpawnPlasmaVials(ent.Position)
 	case "chickencannon", "chickengun", "chicken_cannon", "chicken_gun":
 		id, item, err = SpawnChickenCannon(ent.Position)
@@ -91,11 +91,11 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 	case "browncard":
 		id, item, err = SpawnKeycard(ent.Position, game.KeysBrown)
 		return
-	case "boringarmor", "boring armor", "boring_armor":
+	case "boringarmor", "boring armor", "boring_armor", "boring_armor_stand":
 		id, item, err = SpawnArmorStand(ent.Position, game.ArmorTypeBoring)
 		item.armorAmount = 100
 		item.flashColor = color.FromBytes(170, 85, 0, 180)
-	case "bulletarmor", "bullet armor", "bullet_armor":
+	case "bulletarmor", "bullet armor", "bullet_armor", "bullet_armor_stand":
 		id, item, err = SpawnArmorStand(ent.Position, game.ArmorTypeBullet)
 		item.armorAmount = 120
 		item.giveAmmo = [game.AmmoTypeCount]int{
@@ -104,6 +104,10 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 			game.AmmoTypePlasma:  30,
 		}
 		item.flashColor = color.FromBytes(0, 113, 0, 180)
+	case "superarmor", "super armor", "super_armor", "super_armor_stand":
+		id, item, err = SpawnArmorStand(ent.Position, game.ArmorTypeSuper)
+		item.armorAmount = 100
+		item.flashColor = color.FromBytes(0, 65, 255, 180)
 	default:
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}

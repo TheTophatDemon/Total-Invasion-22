@@ -477,6 +477,11 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		}
 	}
 
+	// Speed up when wearing certain types of armor
+	if player.armorType.SpeedMultiplier() > 0 {
+		player.actor.MaxSpeed *= player.armorType.SpeedMultiplier()
+	}
+
 	if settings.Current.ActionWeaponWheel.Pressed() {
 		player.WeaponWheel.Openness = 1.0
 	}

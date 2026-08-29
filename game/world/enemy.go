@@ -224,6 +224,17 @@ func (enemy *Enemy) Update(deltaTime float32) {
 				enemy.canHearTarget = true
 			}
 		}
+
+		// Perform knockback damage from Super Armor
+		if player, isPlayer := targetActor.(*Player); isPlayer &&
+			enemy.state != &enemy.dieState &&
+			player.armorType == game.ArmorTypeSuper &&
+			enemy.distToTarget < player.armorType.KnockbackRange() &&
+			enemy.actor.knockbackForce == (mgl32.Vec3{}) &&
+			(player.actor.inputForward != 0.0 || player.actor.inputStrafe != 0.0) {
+			enemy.actor.knockbackForce = math2.Vec3WithY(vecToTarget.Mul(-1*player.armorType.KnockbackForce()), 0.0)
+			enemy.OnDamage(player, player.armorType.KnockbackDamage())
+		}
 	} else if enemy.state != &enemy.dieState {
 		enemy.wakeTimer = 0.0
 		enemy.changeState(&enemy.idleState)

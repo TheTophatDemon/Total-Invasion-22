@@ -80,16 +80,41 @@ func (et EnemyType) String() string {
 const MaxArmorAmount = 200
 
 type ArmorType struct {
-	name    string
-	defense float32 // Fraction of damaged absorbed
+	name            string
+	defense         float32 // Fraction of damaged absorbed
+	knockbackRange  float32 // Enemies will be damaged when touching you within this distance
+	knockbackDamage float32 // Each time you knock back an enemy, it will be damaged this much
+	knockbackForce  float32 // Multiplier for the force to knock back an enemy
+	speedMultiplier float32 // Multiplier for the player's max speed while wearing the armor
 }
 
 func (armor ArmorType) Name() string {
 	return armor.name
 }
 
+// Fraction of damaged absorbed
 func (armor ArmorType) Defense() float32 {
 	return armor.defense
+}
+
+// Enemies will be damaged when touching you within this distance
+func (armor ArmorType) KnockbackRange() float32 {
+	return armor.knockbackRange
+}
+
+// Each time you knock back an enemy, it will be damaged this much
+func (armor ArmorType) KnockbackDamage() float32 {
+	return armor.knockbackDamage
+}
+
+// Multiplier for the force to knock back an enemy
+func (armor ArmorType) KnockbackForce() float32 {
+	return armor.knockbackForce
+}
+
+// Multiplier for the player's max speed while wearing the armor
+func (armor ArmorType) SpeedMultiplier() float32 {
+	return armor.speedMultiplier
 }
 
 var (
@@ -103,8 +128,12 @@ var (
 		defense: 0.3,
 	}
 	ArmorTypeSuper = ArmorType{
-		name:    "super",
-		defense: 0.75,
+		name:            "super",
+		defense:         0.7,
+		knockbackRange:  2,
+		knockbackDamage: 20.0,
+		knockbackForce:  7,
+		speedMultiplier: 1.35,
 	}
 	ArmorTypeChronos = ArmorType{
 		name:    "chronos",
