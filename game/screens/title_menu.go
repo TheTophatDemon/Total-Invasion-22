@@ -19,9 +19,8 @@ func (titleMenu *TitleMenu) Init(app engine.Observer, inGame bool) *TitleMenu {
 		app.ProcessSignal(game.ResumeGameSignal{})
 	})
 	titleMenu.newGame.Init("newGame", func(menu *Menu, item MenuWidget, mit MenuInputType) {
-		app.ProcessSignal(game.MapChangeSignal{
-			MapPath:       "assets/maps/e1m1.te3",
-			SaveAfterLoad: true,
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: new(DifficultyMenu).Init(app, titleMenu),
 		})
 	})
 	titleMenu.loadGame.Init("loadGame", func(m *Menu, mw MenuWidget, mit MenuInputType) {

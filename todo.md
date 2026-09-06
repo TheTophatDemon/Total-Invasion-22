@@ -1,6 +1,6 @@
 # TODO - Development
 - Game Difficulty Settings
-  - Survey menu that appears after completing the first level
+  - Allow change of difficulty through settings menu
   - Allow certain checkpoints and enemies to be removed on different difficulty levels
 - Make enemies able to hear player behind walls as long as space is connected.
 - Double Grenade Launcher

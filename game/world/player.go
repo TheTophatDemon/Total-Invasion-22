@@ -205,9 +205,10 @@ func (player *Player) Update(deltaTime float32) {
 		player.transitionTimer += deltaTime
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
-				MapPath:       gWorld.impendingLevel,
-				PlayerEnt:     new(player.Save()),
-				SaveAfterLoad: true,
+				MapPath:         gWorld.impendingLevel,
+				PlayerEnt:       new(player.Save()),
+				SaveAfterLoad:   true,
+				DifficultyIndex: settings.Current.DifficultyIndex,
 			})
 		}
 	} else if player.actor.Health > 0 {

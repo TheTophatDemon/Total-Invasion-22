@@ -9,6 +9,14 @@ saveGame = "Сохранить Игру"
 options = "Настройки"
 exit = "Выйти"
 
+# Difficulty screen
+chooseDifficulty = "Выбрать уровень сложности:"
+difficulty0 = "О нет!"
+difficulty1 = "Я готов(а)."
+difficulty2 = "Не сдержите."
+difficulty3 = "Накажите меня!"
+changeDifficulty = "Можно переменить попозже в настройках."
+
 # Options Screen
 return = "Назад"
 screenResolution = "Разрешение Экрана"
@@ -27,6 +35,8 @@ fov = "Поле Зрения"
 fullscreen = "Полный Экран"
 textShadow = "Прозрачность Теней Текста"
 harmChickens = "Допустить Причинение Вреда Курицам"
+difficulty = "Сложность"
+difficultyWarning = "Перемена оказывает действие с момента смерти или победы."
 bindings = "Привязки Вводов"
 on = "Вклч."
 off = "Выклч."

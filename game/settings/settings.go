@@ -2,16 +2,12 @@ package settings
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"strings"
-	"text/template"
 
 	"github.com/BurntSushi/toml"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"tophatdemon.com/total-invasion-ii/engine"
-	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
@@ -20,22 +16,20 @@ import (
 )
 
 type (
-	Locale string
-	Action [2]input.Binding
-	Data   struct {
+	Data struct {
 		WindowWidth, WindowHeight uint16
 		Fullscreen, Vsync         bool
 		MouseSensitivity          float64
 		TextShadowTransparency    float64 // From 0 to 1
 		SfxVolume, MusicVolume    float64 // From 0 to 1
 		Locale                    Locale
+		DifficultyIndex           int     `json:"-"` // Index into Difficulties array.
 		Fov                       float64 // Measured in degrees
 		ChickenHarm               bool    // Allow harm to chickens
 		Debug                     struct {
 			StartMap string
 		}
-		DifficultyIndex int
-		Pixelization    int
+		Pixelization int
 		// Menu actions
 		ActionMenuDown      Action
 		ActionMenuUp        Action
@@ -56,31 +50,10 @@ type (
 	}
 )
 
-const (
-	LocaleEnglish    Locale = "en"
-	LocaleRussian    Locale = "ru"
-	settingsFilePath        = "game_settings.toml"
-)
+const settingsFilePath = "game_settings.toml"
 
 var (
 	Default, Current Data
-
-	// Cheat codes
-	ActionNoclip  = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP) //TDCLIP
-	ActionGodMode = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD)            //TDDQD
-	ActionMarySue = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM)            //TDMSM
-	ActionDie     = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE,
-	) //TDUNALIVE
-	ActionKillEnemies = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE, glfw.KeyM,
-	) //TDNUKEM
-	ActionCastBlessing = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO,
-	) //TDWOLOLO
-	ActionLaunchEditor = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT) //TDJOMT
-	ActionSpawnChicken = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC)            //TDKFC
-	ActionLevelSelect  = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV) //TDCLEV
 )
 
 func init() {
@@ -89,13 +62,13 @@ func init() {
 		Pixelization:           2,
 		Fullscreen:             false,
 		Vsync:                  true,
+		DifficultyIndex:        1,
 		MouseSensitivity:       6.0,
 		TextShadowTransparency: 0.5,
 		SfxVolume:              1.0, MusicVolume: 1.0,
 		Locale:              LocaleEnglish,
 		Fov:                 70.0,
 		ChickenHarm:         true,
-		DifficultyIndex:     len(Difficulties) - 1,
 		ActionMenuDown:      Action{input.NewKeyBinding(glfw.KeyDown), input.NewKeyBinding(glfw.KeyS)},
 		ActionMenuUp:        Action{input.NewKeyBinding(glfw.KeyUp), input.NewKeyBinding(glfw.KeyW)},
 		ActionMenuConfirm:   Action{input.NewKeyBinding(glfw.KeyEnter)},
@@ -189,82 +162,11 @@ func Save() {
 	}
 }
 
-func Localize(key string) string {
-	return LocalizeWith(key, Current.Locale, "")
-}
-
-func LocalizeWith(key string, locale Locale, grammarCase string) string {
-	trans, err := cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", string(locale)))
-	if err != nil {
-		failure.LogErrWithLocation("failed to retrieve strings in %v for key %v: %v", locale, key, err)
-		return "ERROR"
-	}
-	localizedText, ok := (*trans)[key+grammarCase]
-	if !ok && len(grammarCase) > 0 {
-		// When the key is not found with this grammar case, use the key by itself.
-		localizedText, ok = (*trans)[key]
-	}
-	if !ok {
-		// Fall back to English
-		trans, err = cache.GetTranslation(fmt.Sprintf("assets/translations/strings_%v.toml", string(LocaleEnglish)))
-		if err != nil {
-			failure.LogErrWithLocation("failed to retrieve English fallback for localization key %v: %v", key, err)
-			return "ERROR"
-		}
-		localizedText = (*trans)[key]
-		if localizedText == "" {
-			// There's no English translation, so it should show the key verbatim instead.
-			// This is needed for things like Keyboard key bindings to show up correctly.
-			return key
-		}
-	}
-
-	// Parse as a text template in order to substitute control names and such.
-	templ, err := template.New(key).
-		Funcs(template.FuncMap{
-			"acc": func(input any) string {
-				switch in := input.(type) {
-				case Action:
-					return LocalizeWith(in.LocalizationKey(), locale, "Accusative")
-				case string:
-					return LocalizeWith(in, locale, "Accusative")
-				}
-				return "ERROR"
-			},
-		}).
-		Parse(localizedText)
-
-	if err != nil {
-		failure.LogErrWithLocation("failed to parse template for key %v in lang %v: %v", key, locale, err)
-		return "ERROR"
-	}
-
-	var finalText strings.Builder
-	err = templ.Execute(&finalText, Current)
-	if err != nil {
-		failure.LogErrWithLocation("failed to execute template for key %v in lang %v: %v", key, locale, err)
-		return "ERROR"
-	}
-
-	return finalText.String()
-}
-
-// Deprecated: UI Elements should not normally be scaled with the screen size.
-func UIScale() float32 {
-	return float32(Current.WindowHeight) / 480
-}
-
 func (settings *Data) TextScale() float32 {
 	if settings == nil || settings.WindowWidth > 800 {
 		return 1.0
 	}
 	return 0.5
-}
-
-// Deprecated: Use hud.SpriteScale instead
-// Returns the size the sprites on the HUD should be scaled to.
-func SpriteScale() float32 {
-	return float32(Current.WindowHeight) / 240
 }
 
 func UIWidth() float32 {
@@ -273,117 +175,4 @@ func UIWidth() float32 {
 
 func UIHeight() float32 {
 	return float32(Current.WindowHeight)
-}
-
-func (locale Locale) String() string {
-	return LocalizeWith("myLang", locale, "")
-}
-
-func (action Action) Axis() float32 {
-	for _, binding := range action {
-		if binding != nil {
-			if axis := binding.Axis(); axis != 0.0 {
-				return axis
-			}
-		}
-	}
-	return 0.0
-}
-
-func (action Action) Pressed() bool {
-	for _, binding := range action {
-		if binding != nil && binding.Pressed() {
-			return true
-		}
-	}
-	return false
-}
-
-func (action Action) JustPressed() bool {
-	for _, binding := range action {
-		if binding != nil && binding.JustPressed() {
-			return true
-		}
-	}
-	return false
-}
-
-func (action Action) JustReleased() bool {
-	for _, binding := range action {
-		if binding != nil && binding.JustReleased() {
-			return true
-		}
-	}
-	return false
-}
-
-func (action Action) LocalizationKey() string {
-	for _, binding := range action {
-		if binding != nil {
-			return binding.LocalizationKey()
-		}
-	}
-	return "???"
-}
-
-func (action Action) String() string {
-	return Localize(action.LocalizationKey())
-}
-
-func (action Action) MarshalTOML() ([]byte, error) {
-	var builder strings.Builder
-	builder.WriteString("[\n")
-	encoder := toml.NewEncoder(&builder)
-	for _, binding := range action {
-		if binding != nil {
-			builder.WriteRune('\t')
-			err := encoder.Encode(binding)
-			if err != nil {
-				return nil, err
-			}
-			builder.WriteString(",\n")
-		}
-	}
-	builder.WriteRune(']')
-	return []byte(builder.String()), nil
-}
-
-func (action *Action) UnmarshalTOML(data any) error {
-	clear(action[:])
-	dataSlice, ok := data.([]any)
-	if !ok {
-		return fmt.Errorf("action must be an array")
-	}
-	if len(dataSlice) > len(action) {
-		return fmt.Errorf("too many bindings (%v) assigned to an action; maximum is %v", len(dataSlice), len(action))
-	}
-	for i, bindingData := range dataSlice {
-		bindingMap, isMap := bindingData.(map[string]any)
-		if !isMap || bindingMap == nil {
-			return fmt.Errorf("binding at index %v should be a map", i)
-		}
-		if value, hasKey := bindingMap["Key"]; hasKey {
-			if keyNumber, ok := value.(int64); ok {
-				action[i] = input.NewKeyBinding(glfw.Key(keyNumber))
-			} else {
-				return fmt.Errorf("binding Key value must be an integer")
-			}
-		} else if value, hasMouseButton := bindingMap["MouseButton"]; hasMouseButton {
-			if buttonNumber, ok := value.(int64); ok {
-				action[i] = input.NewMouseButtonBinding(glfw.MouseButton(buttonNumber))
-			} else {
-				return fmt.Errorf("binding MouseButton value must be an integer")
-			}
-		} else if value, hasMouseAxis := bindingMap["MouseAxis"]; hasMouseAxis {
-			var axisNumber int64
-			var ok bool
-			if axisNumber, ok = value.(int64); !ok {
-				return fmt.Errorf("binding MouseAxis value must be an integer")
-			}
-			action[i] = input.NewMouseMovementBinding(input.MouseAxis(axisNumber))
-		} else {
-			return fmt.Errorf("this type of binding is unsupported")
-		}
-	}
-	return nil
 }

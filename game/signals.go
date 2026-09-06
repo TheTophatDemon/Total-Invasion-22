@@ -21,9 +21,11 @@ type (
 		Timestamp              time.Time
 		KillCount, SecretCount uint
 		TimeSoFar              time.Duration
+		AfterCheckpoint        bool
+		DifficultyIndex        int
+
 		// Indicates that the world should make a new autosave after it loads
-		SaveAfterLoad   bool `json:"-"`
-		AfterCheckpoint bool
+		SaveAfterLoad bool `json:"-"`
 	}
 	ResumeGameSignal   struct{}
 	ChangeScreenSignal struct {

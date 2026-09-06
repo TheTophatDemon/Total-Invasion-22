@@ -9,6 +9,14 @@ saveGame = "Save Game"
 options = "Options"
 exit = "Exit"
 
+# Difficulty screen
+chooseDifficulty = "Choose difficulty level:"
+difficulty0 = "Oh no!"
+difficulty1 = "I am prepared."
+difficulty2 = "Don't hold back."
+difficulty3 = "Punish me!"
+changeDifficulty = "This can be changed later in the settings"
+
 # Options screen
 return = "Return"
 screenResolution = "Screen Resolution"
@@ -27,6 +35,8 @@ fov = "FOV"
 fullscreen = "Fullscreen"
 textShadow = "Text Shadow Transparency"
 harmChickens = "Enable Harm to Chickens"
+difficulty = "Difficulty"
+difficultyWarning = "Changes will take effect after the next level or death."
 bindings = "Input Bindings"
 on = "On"
 off = "Off"

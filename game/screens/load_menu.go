@@ -58,6 +58,7 @@ func handleLoadClick(menu *Menu, item MenuWidget, mit MenuInputType) {
 	if saveItem.SaveData.IsNil() {
 		return
 	}
+	settings.Current.DifficultyIndex = saveItem.SaveData.DifficultyIndex
 	menu.app.ProcessSignal(saveItem.SaveData)
 }
 

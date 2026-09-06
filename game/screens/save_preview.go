@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -51,6 +52,11 @@ func (sp *SavePreview) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		summary.WriteString(strings.ToUpper(strings.TrimSuffix(sp.SaveData.MapTitleKey, "Title")))
 		summary.WriteString(" - ")
 		summary.WriteString(settings.Localize(sp.SaveData.MapTitleKey))
+		summary.WriteRune('\n')
+		summary.WriteString(settings.Localize("difficulty"))
+		summary.WriteString(": \"")
+		summary.WriteString(settings.Localize(fmt.Sprintf("difficulty%d", sp.SaveData.DifficultyIndex)))
+		summary.WriteRune('"')
 		summary.WriteRune('\n')
 		if sp.SaveData.AfterCheckpoint {
 			summary.WriteString(settings.Localize("afterCheckpoint"))

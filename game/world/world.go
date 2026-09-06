@@ -502,5 +502,6 @@ func (world *World) MarshalJSON() ([]byte, error) {
 		SecretCount:     world.Hud.VictoryScreen.SecretsFound,
 		TimeSoFar:       time.Since(world.Hud.VictoryScreen.levelStartTime),
 		AfterCheckpoint: world.hitCheckpoint,
+		DifficultyIndex: settings.Current.DifficultyIndex,
 	})
 }

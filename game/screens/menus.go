@@ -322,11 +322,12 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 
 	if menu.menuSelection >= 0 {
 		menu.cursor.SetSize(mgl32.Vec2{32, 32}.Mul(settings.Current.TextScale()))
+		selectedElem := menu.menuItems[menu.menuSelection].Element()
 		// Draw cursor in front of menu items
 		halfHeight := menu.cursor.Height() / 2.0
 		target := mgl32.Vec2{
 			menu.position[0] + (menu.cursor.Width() / 4.0),
-			max(scissorTopY+halfHeight, min(scissorBottomY-halfHeight, menu.menuItems[menu.menuSelection].Element().Position()[1])),
+			max(scissorTopY+halfHeight, min(scissorBottomY-halfHeight, selectedElem.Position()[1])),
 		}
 		diff := target.Sub(menu.cursor.Position())
 		if diff.Len() > 2048.0 {
