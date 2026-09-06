@@ -12,7 +12,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/game"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 /**============================================
@@ -86,7 +85,7 @@ func wraithAttackUpdate(enemy *Enemy, deltaTime float32) {
 		rightOrigin := enemy.actor.Position().Sub(sideOfs)
 		rightCast, rightHandle := gWorld.Raycast(rightOrigin, target.Body().Position.Sub(rightOrigin).Normalize(), ColLayerMap|ColLayerActors, wraithMeleeRange, enemy.Body())
 		if (leftCast.Hit && leftHandle.Equals(enemy.targetHandle)) || (rightCast.Hit && rightHandle.Equals(enemy.targetHandle)) {
-			target.OnDamage(enemy, settings.CurrDifficulty().WraithMeleeDamage)
+			target.OnDamage(enemy, gWorld.Difficulty().WraithMeleeDamage)
 		} else if enemy.distToTarget > wraithMeleeRange {
 			enemy.changeState(&enemy.chaseState)
 		}

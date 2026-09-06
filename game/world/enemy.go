@@ -155,7 +155,7 @@ func SpawnEnemy(position mgl32.Vec3, angles [3]math2.Radians, variant game.Enemy
 
 	enemy.bloodParticles = BloodParticles(15, params.bloodColor, 0.5)
 	enemy.bloodParticles.Init()
-	enemy.actor.MaxHealth *= settings.CurrDifficulty().EnemyHealthMultiplier
+	enemy.actor.MaxHealth *= gWorld.Difficulty().EnemyHealthMultiplier
 	enemy.actor.Health, enemy.actor.TargetHealth = enemy.actor.MaxHealth, enemy.actor.MaxHealth
 
 	enemy.SpriteRender = comps.NewSpriteRender(params.texture, nil, &mgl32.Vec2{0.9, 0.9})

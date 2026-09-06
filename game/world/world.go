@@ -41,30 +41,31 @@ const (
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
-	Hud            Hud
-	Players        scene.Storage[Player]
-	Enemies        scene.Storage[Enemy]
-	Chickens       scene.Storage[Chicken]
-	Walls          scene.Storage[Wall]
-	Triggers       scene.Storage[Trigger]
-	Projectiles    scene.Storage[Projectile]
-	Effects        scene.Storage[Effect]
-	Items          scene.Storage[Item]
-	DebugShapes    scene.Storage[DebugShape]
-	Cameras        scene.Storage[Camera]
-	MapLayers      scene.Storage[comps.MapLayer]
-	Props          scene.Storage[Prop]
-	GameMap        *comps.MapLayer // An easy access pointer to the main map layer
-	MapTitleKey    string
-	CurrentPlayer  scene.Id[*Player]
-	CurrentCamera  scene.Id[*Camera]
-	removalQueue   []scene.Handle  // Holds entities to be removed at the end of the frame.
-	app            engine.Observer // Communicates with the main application
-	impendingLevel string          // Path to the next level. Set once the player reaches an exit.
-	bspTree        tree.BspTree    // The BSP tree built in the previous frame.
-	skyRender      comps.SkyRender
-	frameBuffer    render.Framebuffer // Contains the rendered texture of the game
-	hitCheckpoint  bool               // Turns true after the player hits a checkpoint
+	Hud             Hud
+	Players         scene.Storage[Player]
+	Enemies         scene.Storage[Enemy]
+	Chickens        scene.Storage[Chicken]
+	Walls           scene.Storage[Wall]
+	Triggers        scene.Storage[Trigger]
+	Projectiles     scene.Storage[Projectile]
+	Effects         scene.Storage[Effect]
+	Items           scene.Storage[Item]
+	DebugShapes     scene.Storage[DebugShape]
+	Cameras         scene.Storage[Camera]
+	MapLayers       scene.Storage[comps.MapLayer]
+	Props           scene.Storage[Prop]
+	GameMap         *comps.MapLayer // An easy access pointer to the main map layer
+	MapTitleKey     string
+	CurrentPlayer   scene.Id[*Player]
+	CurrentCamera   scene.Id[*Camera]
+	difficultyIndex int
+	removalQueue    []scene.Handle  // Holds entities to be removed at the end of the frame.
+	app             engine.Observer // Communicates with the main application
+	impendingLevel  string          // Path to the next level. Set once the player reaches an exit.
+	bspTree         tree.BspTree    // The BSP tree built in the previous frame.
+	skyRender       comps.SkyRender
+	frameBuffer     render.Framebuffer // Contains the rendered texture of the game
+	hitCheckpoint   bool               // Turns true after the player hits a checkpoint
 }
 
 var gWorld *World
@@ -108,8 +109,9 @@ func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType 
 
 func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, error) {
 	gWorld = &World{
-		removalQueue: make([]scene.Handle, 0, 8),
-		app:          app,
+		removalQueue:    make([]scene.Handle, 0, 8),
+		app:             app,
+		difficultyIndex: settings.Current.DifficultyIndex,
 	}
 
 	gWorld.Hud.Init()
@@ -353,6 +355,10 @@ func (world *World) QueueRemoval(entHandle scene.Handle) {
 
 func (world *World) InWinState() bool {
 	return len(world.impendingLevel) != 0
+}
+
+func (world *World) Difficulty() settings.Difficulty {
+	return settings.Difficulties[world.difficultyIndex]
 }
 
 func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {

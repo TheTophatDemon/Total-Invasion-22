@@ -11,7 +11,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
-	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type Effect struct {
@@ -96,7 +95,7 @@ func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect
 			distanceToExplosion -= actorHaver.Body().Shape.Extents().Max[0]
 			var damage float32
 			if _, isPlayer := damageable.(*Player); isPlayer {
-				difficulty := settings.CurrDifficulty()
+				difficulty := gWorld.Difficulty()
 				damage = math2.Lerp(difficulty.ExplosionMaxDamage, difficulty.ExplosionMinDamage, distanceToExplosion/damageRadius)
 			} else {
 				damage = math2.Lerp(minEnemyDamage, maxEnemyDamage, 1.0-(distanceToExplosion/damageRadius))

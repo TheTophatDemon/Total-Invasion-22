@@ -19,20 +19,21 @@ type (
 	OnOff        bool
 	SettingsMenu struct {
 		Menu
-		chooserLanguage     Chooser[settings.Locale]
-		chooserScreenSize   Chooser[Resolution]
-		chooserPixelization Chooser[Pixelization]
-		chooserFullscreen   Chooser[OnOff]
-		chooserVsync        Chooser[OnOff]
-		sliderSfxVolume     Slider
-		sliderMusicVolume   Slider
-		sliderFOV           Slider
-		sliderSensitivity   Slider
-		sliderTextShadow    Slider
-		chooserChickens     Chooser[OnOff]
-		bindingItem         MenuItem
-		reinitNextFrame     bool
-		wraith              ui.Element
+		chooserDifficulty              Chooser[settings.Difficulty]
+		chooserLanguage                Chooser[settings.Locale]
+		chooserScreenSize              Chooser[Resolution]
+		chooserPixelization            Chooser[Pixelization]
+		chooserFullscreen              Chooser[OnOff]
+		chooserVsync                   Chooser[OnOff]
+		sliderSfxVolume                Slider
+		sliderMusicVolume              Slider
+		sliderFOV                      Slider
+		sliderSensitivity              Slider
+		sliderTextShadow               Slider
+		chooserChickens                Chooser[OnOff]
+		bindingItem                    MenuItem
+		reinitNextFrame                bool
+		wraith, difficultyWarningLabel ui.Element
 	}
 )
 
@@ -63,7 +64,21 @@ func (onOff OnOff) String() string {
 }
 
 func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *SettingsMenu {
+
 	*settingsMenu = SettingsMenu{}
+
+	inGame := parent.(*TitleMenu).inGame
+	if inGame {
+		settingsMenu.chooserDifficulty.Init("difficulty", settings.Difficulties[:], settings.CurrDifficulty())
+		settingsMenu.difficultyWarningLabel = ui.NewText(
+			ui.Transform{
+				Depth: 20,
+			},
+			settings.Localize("difficultyWarning"),
+			ui.DefaultTextConfig().SetAlign(ui.TextAlignCenterH).SetColor(color.Red),
+		)
+		settingsMenu.difficultyWarningLabel.FitText()
+	}
 
 	settingsMenu.chooserLanguage.Init("language", []settings.Locale{settings.LocaleEnglish, settings.LocaleRussian}, settings.Current.Locale)
 
@@ -97,25 +112,27 @@ func (settingsMenu *SettingsMenu) Init(app engine.Observer, parent ui.Screen) *S
 		})
 	})
 
-	settingsMenu.Menu.Init(
-		app,
-		[]MenuWidget{
-			new(ReturnItem).Init(),
-			&settingsMenu.chooserLanguage,
-			&settingsMenu.chooserScreenSize,
-			&settingsMenu.chooserPixelization,
-			&settingsMenu.chooserFullscreen,
-			&settingsMenu.chooserVsync,
-			&settingsMenu.sliderSfxVolume,
-			&settingsMenu.sliderMusicVolume,
-			&settingsMenu.sliderFOV,
-			&settingsMenu.sliderSensitivity,
-			&settingsMenu.sliderTextShadow,
-			&settingsMenu.chooserChickens,
-			&settingsMenu.bindingItem,
-		},
-		parent,
+	widgets := make([]MenuWidget, 0, 14)
+	widgets = append(widgets, new(ReturnItem).Init())
+	if inGame {
+		widgets = append(widgets, &settingsMenu.chooserDifficulty)
+	}
+	widgets = append(widgets,
+		&settingsMenu.chooserLanguage,
+		&settingsMenu.chooserScreenSize,
+		&settingsMenu.chooserPixelization,
+		&settingsMenu.chooserFullscreen,
+		&settingsMenu.chooserVsync,
+		&settingsMenu.sliderSfxVolume,
+		&settingsMenu.sliderMusicVolume,
+		&settingsMenu.sliderFOV,
+		&settingsMenu.sliderSensitivity,
+		&settingsMenu.sliderTextShadow,
+		&settingsMenu.chooserChickens,
+		&settingsMenu.bindingItem,
 	)
+
+	settingsMenu.Menu.Init(app, widgets, parent)
 
 	wraithTex := cache.GetTexture("assets/textures/sprites/wraith.png")
 	if headbangAnim, ok := wraithTex.GetAnimation("headbang"); ok {
@@ -154,12 +171,22 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 		settings.Current.Locale = menu.chooserLanguage.Choice()
 		menu.reinitNextFrame = true
 	}
+
+	if len(menu.chooserDifficulty.choices) > 0 && menu.chooserDifficulty.Choice().Index != settings.Current.DifficultyIndex {
+		menu.difficultyWarningLabel.SetPosition(bounds.PosVec().Add(mgl32.Vec2{48.0, 8.0}))
+		menu.difficultyWarningLabel.SetWidth(bounds.Width - 96.0)
+		menu.difficultyWarningLabel.SetHeight(64.0)
+		queue.Add(&menu.difficultyWarningLabel)
+	}
 }
 
 func (menu *SettingsMenu) Enter() {
 }
 
 func (menu *SettingsMenu) Exit() {
+	if len(menu.chooserDifficulty.choices) > 0 {
+		settings.Current.DifficultyIndex = menu.chooserDifficulty.Choice().Index
+	}
 	settings.Current.Locale = menu.chooserLanguage.Choice()
 	settings.Current.Vsync = bool(menu.chooserVsync.Choice())
 	settings.Current.SfxVolume = menu.sliderSfxVolume.FractionValue()

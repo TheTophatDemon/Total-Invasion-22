@@ -44,8 +44,9 @@ func (stats *DebugStats) Layout(queue *ui.RenderQueue) {
 
 func (stats *DebugStats) UpdateCounters(renderContext *render.Context) {
 	stats.drawCounters.SetText(
-		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v",
+		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v\nDifficulty: '%s'",
 			renderContext.DrawnSpriteCount,
 			renderContext.DrawnWallCount,
-			renderContext.DrawnParticlesCount))
+			renderContext.DrawnParticlesCount,
+			gWorld.Difficulty()))
 }
