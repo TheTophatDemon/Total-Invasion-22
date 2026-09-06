@@ -1,6 +1,5 @@
 # TODO - Development
-- Game Difficulty Settings
-  - Allow certain checkpoints and enemies to be removed on different difficulty levels
+- Make entity properties strongly typed and reject unknown properties
 - Make enemies able to hear player behind walls as long as space is connected.
 - Double Grenade Launcher
 - Chicken cannon secondary attack
@@ -25,7 +24,13 @@
 - Re-record enemy voices
 
 # TODO - Levels
+- Rebalance based on difficulty levels
+  - E1M2
+  - E1M3
+  - E1M4
 - E1M5
+  - Refurbish after auto generation
+  - Expand length of level
 - E1M6
   - Song
   - Double Grenade Launcher

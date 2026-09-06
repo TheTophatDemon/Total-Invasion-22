@@ -71,6 +71,24 @@ type World struct {
 var gWorld *World
 
 func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType string) {
+	minDifficulty := ent.IntPropertyOr("min difficulty", 0)
+	maxDifficulty := ent.IntPropertyOr("max difficulty", len(settings.Difficulties)-1)
+	if minDifficulty > maxDifficulty {
+		failure.LogWarningWithLocation("cannot spawn entity with min difficulty %v > max difficulty %v", minDifficulty, maxDifficulty)
+		return
+	}
+	if minDifficulty >= len(settings.Difficulties) || minDifficulty < 0 {
+		failure.LogWarningWithLocation("invalid difficulty index for min difficulty: %v", minDifficulty)
+		return
+	}
+	if maxDifficulty >= len(settings.Difficulties) || maxDifficulty < 0 {
+		failure.LogWarningWithLocation("invalid difficulty index for max difficulty: %v", maxDifficulty)
+		return
+	}
+	if gWorld.difficultyIndex < minDifficulty || gWorld.difficultyIndex > maxDifficulty {
+		return
+	}
+
 	entType = ent.Properties["type"]
 	var err error
 	switch entType {
