@@ -7,9 +7,11 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 type (
@@ -25,7 +27,6 @@ type (
 		IsShooter                  bool
 		Name                       string // Weapon name, same as localization key.
 		NoiseLevel                 float32
-		RestOffset                 mgl32.Vec2  // Offset from the bottom center of the screen where the sprite will be after equipping
 		SwayExtents                mgl32.Vec2  // Defines a rectangle on screen within which the weapon will sway
 		SwaySpeed                  mgl32.Vec2  // Defines the speed at which the weapon will sway in each axis
 		WheelColor                 color.Color // Color of weapon wheel frame
@@ -65,7 +66,6 @@ var (
 		SwaySpeed:     mgl32.Vec2{0.75, 1.5},
 		AmmoType:      game.AmmoTypeSickle,
 		AmmoCost:      1,
-		RestOffset:    mgl32.Vec2{320.0, 0.0},
 		WheelColor:    color.FromBytes(138, 138, 138, 255),
 		WheelIconPath: "assets/textures/sprites/sickle.png",
 		NoiseLevel:    10.0,
@@ -76,7 +76,7 @@ var (
 		InitFunc: func(sickle *Weapon) {
 			sickleTex := cache.GetTexture("assets/textures/ui/sickle_hud.png")
 			sickle.Sprite = ui.NewBox(ui.Transform{
-				Position: mgl32.Vec2{320.0, 0.0},
+				Position: mgl32.Vec2{settings.UIWidth() * 0.25, 0.0},
 				Origin:   ui.Ratios{0.5, 1.0},
 				Anchor:   ui.Ratios{0.5, 1.0},
 			}, sickleTex)
@@ -208,7 +208,7 @@ var (
 		InitFunc: func(sign *Weapon) {
 			signTex := cache.GetTexture("assets/textures/ui/sign_hud.png")
 			sign.Sprite = ui.NewBox(ui.Transform{
-				Position: mgl32.Vec2{128.0, 0.0},
+				Position: mgl32.Vec2{settings.UIWidth() * 0.1, 0.0},
 				Origin:   ui.Ratios{0.5, 1.0},
 				Anchor:   ui.Ratios{0.5, 1.0},
 			}, signTex)
@@ -264,7 +264,7 @@ var (
 		InitFunc: func(airhorn *Weapon) {
 			airhornTex := cache.GetTexture("assets/textures/ui/airhorn_hud.png")
 			airhorn.Sprite = ui.NewBox(ui.Transform{
-				Position: mgl32.Vec2{213.0, 0.0},
+				Position: mgl32.Vec2{settings.UIWidth() * 0.16, 0.0},
 				Origin:   ui.Ratios{0.5, 1.0},
 				Anchor:   ui.Ratios{0.5, 1.0},
 			}, airhornTex)
@@ -280,16 +280,16 @@ var (
 		},
 		FireFunc: func(airhorn *Weapon, player *Player, deltaTime float32, justPressed bool) {
 			if justPressed {
-				//TODO: It would probably be more efficient to use the BSP tree here
-				enemyIter := gWorld.Enemies.Iter()
-				for {
-					enemy, _ := enemyIter.Next()
-					if enemy == nil {
-						break
+				handles := gWorld.bspTree.PotentiallyTouchingEnts(player.actor.Position(), collision.NewBoxShape(3.0, 3.0, 3.0))
+				for handle := range handles {
+					enemy, ok := handle.Get[*Enemy]()
+					if !ok {
+						continue
 					}
 					if enemy.actor.Health > 0 && enemy.state != &enemy.stunState {
 						diff := enemy.actor.Position().Sub(player.actor.Position())
 						dist := diff.Len()
+						// Enemies that the player is facing within 3 units of distance get their ears hurt
 						if dist > 0.0 && dist < 3.0 && diff.Mul(1.0/dist).Dot(player.actor.FacingVec()) > 0.9 {
 							enemy.OnDamage(player, 1.0)
 							enemy.changeState(&enemy.stunState)
