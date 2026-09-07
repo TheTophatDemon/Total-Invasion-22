@@ -1,11 +1,9 @@
 package world
 
 import (
-	"strconv"
-
-	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 type Camera struct {
@@ -17,28 +15,16 @@ type Camera struct {
 
 var _ Linkable = (*Camera)(nil)
 
-func SpawnCameraFromTE3(ent te3.Ent) (id scene.Id[*Camera], camera *Camera, err error) {
-	id, camera, err = SpawnCamera(comps.TransformFromTE3Ent(ent, false, false))
+func SpawnCameraFromTE3(ent game.EntDef) (id scene.Id[*Camera], camera *Camera, err error) {
+	id, camera, err = SpawnCamera(comps.TransformFromTE3Ent(ent.Ent, false, false))
 	if err != nil {
 		return
 	}
 	camera.id = id
-	if linkStr, ok := ent.Properties["link"]; ok {
-		var linkNo int64
-		linkNo, err = strconv.ParseInt(linkStr, 10, 32)
-		if err != nil {
-			return
-		}
-		camera.linkNumber = int(linkNo)
-	}
-	if waitStr, ok := ent.Properties["wait"]; ok {
-		if waitStr != "inf" && waitStr != "infinity" && waitStr != "-1" {
-			var waitTime float64
-			waitTime, err = strconv.ParseFloat(waitStr, 32)
-			if err != nil {
-				return
-			}
-			camera.waitTime = float32(waitTime)
+	camera.linkNumber = ent.Properties.Link.Or(-1)
+	if waitNum, ok := ent.Properties.Wait.Get(); ok {
+		if *waitNum >= 0 {
+			camera.waitTime = *waitNum
 		}
 	} else {
 		camera.waitTime = 2.0

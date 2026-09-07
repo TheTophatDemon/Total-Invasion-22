@@ -2,7 +2,7 @@ package assets
 
 import (
 	_ "embed"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"io"
 	"os"
@@ -50,7 +50,7 @@ func GetFileNamesFromDir(directory, withExtension string) ([]string, error) {
 }
 
 // Loads a JSON file from the given asset-path and returns the json.Unmarshal result as type T.
-func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
+func LoadAndUnmarshalJSON[T any](assetPath string, opts ...json.Options) (*T, error) {
 	file, err := GetFile(assetPath)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func LoadAndUnmarshalJSON[T any](assetPath string) (*T, error) {
 	}
 
 	t := new(T)
-	err = json.Unmarshal(fileBytes, t)
+	err = json.Unmarshal(fileBytes, t, opts...)
 
 	return t, err
 }

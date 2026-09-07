@@ -49,7 +49,7 @@ func TransformFromTranslationAnglesScale(position, angles, scale mgl32.Vec3) Tra
 	}
 }
 
-func TransformFromTE3Ent(ent te3.Ent, scaleByRadius, stayOnFloor bool) Transform {
+func TransformFromTE3Ent[EntType any](ent te3.Ent[EntType], scaleByRadius, stayOnFloor bool) Transform {
 	angles := ent.AnglesInRadians()
 	if scaleByRadius {
 		pos := mgl32.Vec3(ent.Position)

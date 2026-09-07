@@ -14,6 +14,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -29,7 +30,7 @@ type Prop struct {
 	isSeen        bool
 	radius        float32
 	stareTimer    float32
-	entProperties map[string]string
+	entProperties game.EntProps
 	updateFunc    func(deltaTime float32)
 	useFunc       func(player *Player)
 	yaw           math2.Radians
@@ -45,13 +46,13 @@ func (prop *Prop) OnUse(player *Player) {
 	}
 }
 
-func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
+func SpawnPropFromTE3(ent game.EntDef) (id scene.Id[*Prop], prop *Prop, err error) {
 	if ent.Display != te3.ENT_DISPLAY_SPHERE && ent.Display != te3.ENT_DISPLAY_SPRITE {
 		err = fmt.Errorf("te3 ent display mode should be 'sprite' or 'sphere'")
 		return
 	}
 
-	texturePath, ok := ent.Properties["texture"]
+	texturePath, ok := ent.Properties.Texture.Value()
 	if !ok && len(ent.Texture) == 0 {
 		err = fmt.Errorf("prop is missing texture")
 		return
@@ -75,10 +76,10 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 		prop.AnimPlayer = comps.NewAnimationPlayer(anim, true)
 	}
 
-	prop.radius, err = ent.FloatProperty("radius")
-	if err != nil {
+	var hasRadius bool
+	prop.radius, hasRadius = ent.Properties.Radius.Value()
+	if !hasRadius {
 		prop.radius = 0.5
-		err = nil
 	}
 
 	prop.body = comps.Body{
@@ -93,7 +94,7 @@ func SpawnPropFromTE3(ent te3.Ent) (id scene.Id[*Prop], prop *Prop, err error) {
 
 	spriteScale := mgl32.Vec2{ent.Radius, ent.Radius}
 
-	switch strings.ToLower(ent.Properties["prop"]) {
+	switch strings.ToLower(ent.Properties.Prop.Or("")) {
 	case "geoffrey":
 		prop.updateFunc = prop.geoffreyUpdate
 		prop.useFunc = prop.geoffreyUse
@@ -159,7 +160,7 @@ func (prop *Prop) geoffreyUpdate(deltaTime float32) {
 
 func (prop *Prop) eyeballUse(player *Player) {
 	_ = player
-	gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties["messageKey"]), 50, color.Magenta)
+	gWorld.Hud.ShowMessage(settings.Localize(prop.entProperties.MessageKey.Or("")), 50, color.Magenta)
 }
 
 func (prop *Prop) eyeballUpdate(deltaTime float32) {

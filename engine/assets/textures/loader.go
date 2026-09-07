@@ -1,6 +1,7 @@
 package textures
 
 import (
+	"encoding/json/v2"
 	"fmt"
 	"image"
 	"log"
@@ -77,7 +78,7 @@ func LoadTexture(assetPath string) (*Texture, error) {
 
 	// Look for metadata file
 	metaPath := strings.TrimSuffix(assetPath, ".png") + ".json"
-	metadata, err := assets.LoadAndUnmarshalJSON[aseSpriteSheet](metaPath)
+	metadata, err := assets.LoadAndUnmarshalJSON[aseSpriteSheet](metaPath, json.MatchCaseInsensitiveNames(true))
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
 		failure.LogErrWithLocation("could not parse metadata for %s: %s", assetPath, err)

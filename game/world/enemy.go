@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -84,9 +83,9 @@ var enemyTypeConfigFuncs = [game.EnemyTypeCount]func(enemy *Enemy) enemyConfig{
 var _ HasActor = (*Enemy)(nil)
 var _ comps.HasBody = (*Enemy)(nil)
 
-func SpawnEnemyFromTE3(ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
+func SpawnEnemyFromTE3(ent game.EntDef) (scene.Id[*Enemy], *Enemy, error) {
 	var variant game.EnemyType
-	switch ent.Properties["enemy"] {
+	switch ent.Properties.Enemy.Or("") {
 	case "fire wraith":
 		variant = game.EnemyTypeFireWraith
 	case "mother wraith":
@@ -103,7 +102,7 @@ func SpawnEnemyFromTE3(ent te3.Ent) (scene.Id[*Enemy], *Enemy, error) {
 		return id, enemy, err
 	}
 
-	enemy.actor.Health = ent.FloatPropertyOr("health", enemy.actor.TargetHealth)
+	enemy.actor.Health = ent.Properties.Health.Or(enemy.actor.TargetHealth)
 	if enemy.actor.Health <= 0 {
 		enemy.changeState(&enemy.dieState)
 	}
@@ -495,18 +494,18 @@ func (enemy *Enemy) stalk(
 	}
 }
 
-func (enemy *Enemy) Save() te3.Ent {
-	return te3.Ent{
+func (enemy *Enemy) Save() game.EntDef {
+	return game.EntDef{
 		Angles:   [3]math2.Degrees{0, math2.ToDegrees(enemy.actor.YawAngle), 0.0},
 		Position: enemy.actor.Position().Sub(enemy.spawnOffset),
 		Texture:  "assets/textures/sprites/wraith.png",
 		Radius:   0.7,
 		Display:  te3.ENT_DISPLAY_SPRITE,
-		Color:    [3]uint8{255, 255, 255},
-		Properties: map[string]string{
-			"type":   "enemy",
-			"enemy":  enemy.variant.String(),
-			"health": fmt.Sprintf("%.2f", enemy.actor.Health),
+		Color:    [3]int{255, 255, 255},
+		Properties: game.EntProps{
+			Type:   te3.SomeString("enemy"),
+			Enemy:  te3.SomeString(enemy.variant.String()),
+			Health: te3.SomeFloat(enemy.actor.Health),
 		},
 	}
 }

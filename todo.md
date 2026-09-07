@@ -1,5 +1,4 @@
 # TODO - Development
-- Make entity properties strongly typed and reject unknown properties
 - Make enemies able to hear player behind walls as long as space is connected.
 - Double Grenade Launcher
 - Chicken cannon secondary attack

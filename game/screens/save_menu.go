@@ -1,7 +1,7 @@
 package screens
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -94,7 +94,7 @@ func (sm *SaveMenu) Init(app engine.Observer, parent ui.Screen) *SaveMenu {
 				continue
 			}
 
-			err = json.Unmarshal(saveBytes, &saveData)
+			err = json.Unmarshal(saveBytes, &saveData, game.SaveFileParseOptions())
 			if err != nil {
 				failure.LogErrWithLocation("failed to parse from save file %d: %d", i, err)
 				continue

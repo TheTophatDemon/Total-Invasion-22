@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"iter"
 	"math"
 	"math/rand"
@@ -63,7 +62,7 @@ func (player *Player) Body() *comps.Body {
 }
 
 func SpawnPlayerFromTE3(
-	ent te3.Ent,
+	ent game.EntDef,
 	camera scene.Id[*Camera],
 ) (id scene.Id[*Player], player *Player, err error) {
 	id, player, err = gWorld.Players.New()
@@ -83,7 +82,7 @@ func SpawnPlayerFromTE3(
 		Friction:        20.0,
 		MaxHealth:       200,
 		TargetHealth:    100,
-		Health:          ent.FloatPropertyOr("health", 100),
+		Health:          ent.Properties.Health.Or(100),
 	}
 	player.Camera = camera
 	player.RunSpeed = 12.0
@@ -109,10 +108,10 @@ func SpawnPlayerFromTE3(
 
 	// Initialize armor and ammo
 	player.ammo[game.AmmoTypeSickle] = 0
-	player.ammo[game.AmmoTypeEgg] = ent.IntPropertyOr("ammoEgg", 0)
-	player.ammo[game.AmmoTypeGrenade] = ent.IntPropertyOr("ammoGrenade", 0)
-	player.ammo[game.AmmoTypePlasma] = ent.IntPropertyOr("ammoPlasma", 0)
-	switch ent.Properties["armor"] {
+	player.ammo[game.AmmoTypeEgg] = ent.Properties.AmmoEgg.Or(0)
+	player.ammo[game.AmmoTypeGrenade] = ent.Properties.AmmoGrenade.Or(0)
+	player.ammo[game.AmmoTypePlasma] = ent.Properties.AmmoPlasma.Or(0)
+	switch ent.Properties.Armor.Or("") {
 	case "boring":
 		player.armorType = game.ArmorTypeBoring
 	case "bullet":
@@ -122,29 +121,29 @@ func SpawnPlayerFromTE3(
 	case "chronos":
 		player.armorType = game.ArmorTypeChronos
 	}
-	player.armorAmount = ent.FloatPropertyOr("armorAmount", 0.0)
+	player.armorAmount = ent.Properties.ArmorAmount.Or(0.0)
 
-	player.keys = game.Keys(ent.IntPropertyOr("keys", 0))
+	player.keys = game.Keys(ent.Properties.Keys.Or(0))
 
 	// Initialize weapons
 	player.Sickle.Init(&WeaponSickle, true)
 	player.SelectedWeapon = &player.Sickle
 	player.Sickle.State = WeaponStateIntro
-	chickenEquipped := ent.BoolPropertyOr("chickenEquipped", false)
+	chickenEquipped := ent.Properties.ChickenEquipped.Or(false)
 	player.Chicken.Init(&WeaponChicken, chickenEquipped)
-	grenadeEquipped := ent.BoolPropertyOr("grenadeEquipped", false)
+	grenadeEquipped := ent.Properties.GrenadeEquipped.Or(false)
 	player.Grenade.Init(&WeaponGrenade, grenadeEquipped)
-	parusuEquipped := ent.BoolPropertyOr("parusuEquipped", false)
+	parusuEquipped := ent.Properties.ParusuEquipped.Or(false)
 	player.Parusu.Init(&WeaponParusu, parusuEquipped)
-	dblGrenadeEquipped := ent.BoolPropertyOr("dblGrenadeEquipped", false)
+	dblGrenadeEquipped := ent.Properties.DoubleGrenadeEquipped.Or(false)
 	player.DblGrenade.Init(&WeaponDblGrenade, dblGrenadeEquipped)
-	signEquipped := ent.BoolPropertyOr("signEquipped", false)
+	signEquipped := ent.Properties.SignEquipped.Or(false)
 	player.Sign.Init(&WeaponSign, signEquipped)
-	airhornEquipped := ent.BoolPropertyOr("airhornEquipped", false)
+	airhornEquipped := ent.Properties.AirhornEquipped.Or(false)
 	player.Airhorn.Init(&WeaponAirhorn, airhornEquipped)
-	defenestratorEquipped := ent.BoolPropertyOr("defenestratorEquipped", false)
+	defenestratorEquipped := ent.Properties.DefenestratorEquipped.Or(false)
 	player.Defenestrator.Init(&WeaponDefenestrator, defenestratorEquipped)
-	clucksterEquipped := ent.BoolPropertyOr("clucksterEquipped", false)
+	clucksterEquipped := ent.Properties.ClucksterEquipped.Or(false)
 	player.Cluckster.Init(&WeaponCluckster, clucksterEquipped)
 
 	if gWorld.Hud.Intro.TimeLeft() > 0.0 {
@@ -158,31 +157,31 @@ func SpawnPlayerFromTE3(
 	return
 }
 
-func (player *Player) Save() te3.Ent {
-	ent := te3.Ent{
+func (player *Player) Save() game.EntDef {
+	ent := game.EntDef{
 		Angles:   [3]math2.Degrees{0, math2.ToDegrees(player.actor.YawAngle), 0},
 		Position: player.actor.Position(),
 		Texture:  "assets/textures/sprites/segan.png",
 		Radius:   0.7,
 		Display:  te3.ENT_DISPLAY_SPRITE,
-		Color:    [3]uint8{255, 255, 255},
-		Properties: map[string]string{
-			"type":                  "player",
-			"ammoEgg":               fmt.Sprintf("%d", player.ammo[game.AmmoTypeEgg]),
-			"ammoGrenade":           fmt.Sprintf("%d", player.ammo[game.AmmoTypeGrenade]),
-			"ammoPlasma":            fmt.Sprintf("%d", player.ammo[game.AmmoTypePlasma]),
-			"armor":                 player.armorType.Name(),
-			"armorAmount":           fmt.Sprintf("%.2f", player.armorAmount),
-			"chickenEquipped":       fmt.Sprintf("%t", player.Chicken.Equipped),
-			"health":                fmt.Sprintf("%.2f", player.actor.Health),
-			"grenadeEquipped":       fmt.Sprintf("%t", player.Grenade.Equipped),
-			"parusuEquipped":        fmt.Sprintf("%t", player.Parusu.Equipped),
-			"dblGrenadeEquipped":    fmt.Sprintf("%t", player.DblGrenade.Equipped),
-			"signEquipped":          fmt.Sprintf("%t", player.Sign.Equipped),
-			"airhornEquipped":       fmt.Sprintf("%t", player.Airhorn.Equipped),
-			"defenestratorEquipped": fmt.Sprintf("%t", player.Defenestrator.Equipped),
-			"clucksterEquipped":     fmt.Sprintf("%t", player.Cluckster.Equipped),
-			"keys":                  fmt.Sprintf("%d", player.keys),
+		Color:    [3]int{255, 255, 255},
+		Properties: game.EntProps{
+			Type:                  te3.SomeString("player"),
+			AmmoEgg:               te3.SomeInt(player.ammo[game.AmmoTypeEgg]),
+			AmmoGrenade:           te3.SomeInt(player.ammo[game.AmmoTypeGrenade]),
+			AmmoPlasma:            te3.SomeInt(player.ammo[game.AmmoTypePlasma]),
+			Armor:                 te3.SomeString(player.armorType.Name()),
+			ArmorAmount:           te3.SomeFloat(player.armorAmount),
+			ChickenEquipped:       te3.SomeBool(player.Chicken.Equipped),
+			Health:                te3.SomeFloat(player.actor.Health),
+			GrenadeEquipped:       te3.SomeBool(player.Grenade.Equipped),
+			ParusuEquipped:        te3.SomeBool(player.Parusu.Equipped),
+			DoubleGrenadeEquipped: te3.SomeBool(player.DblGrenade.Equipped),
+			SignEquipped:          te3.SomeBool(player.Sign.Equipped),
+			AirhornEquipped:       te3.SomeBool(player.Airhorn.Equipped),
+			DefenestratorEquipped: te3.SomeBool(player.Defenestrator.Equipped),
+			ClucksterEquipped:     te3.SomeBool(player.Cluckster.Equipped),
+			Keys:                  te3.SomeInt(int(player.keys)),
 		},
 	}
 	return ent

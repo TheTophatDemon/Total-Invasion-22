@@ -1,7 +1,8 @@
 package world
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"log"
 	"math"
@@ -70,9 +71,9 @@ type World struct {
 
 var gWorld *World
 
-func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType string) {
-	minDifficulty := ent.IntPropertyOr("min difficulty", 0)
-	maxDifficulty := ent.IntPropertyOr("max difficulty", len(settings.Difficulties)-1)
+func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entType string) {
+	minDifficulty := ent.Properties.MinDifficulty.Or(0)
+	maxDifficulty := ent.Properties.MaxDifficulty.Or(len(settings.Difficulties) - 1)
 	if minDifficulty > maxDifficulty {
 		failure.LogWarningWithLocation("cannot spawn entity with min difficulty %v > max difficulty %v", minDifficulty, maxDifficulty)
 		return
@@ -89,7 +90,7 @@ func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType 
 		return
 	}
 
-	entType = ent.Properties["type"]
+	entType = ent.Properties.Type.Or("")
 	var err error
 	switch entType {
 	case "enemy":
@@ -115,7 +116,7 @@ func spawnEntBasedOnType(ent te3.Ent, changeInfo game.MapChangeSignal) (entType 
 			// Transfer properties from the previous level
 			ent.Properties = changeInfo.PlayerEnt.Properties
 			// But don't carry over keys
-			ent.Properties["keys"] = "0"
+			ent.Properties.Keys = te3.SomeInt(0)
 		}
 		gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
 	}
@@ -151,7 +152,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	gWorld.Cameras = scene.NewStorageWithFuncs(64, (*Camera).Update, nil)
 	gWorld.MapLayers = scene.NewStorageWithFuncs(1, gWorld.UpdateMapLayer, (*comps.MapLayer).Render)
 
-	te3File, err := te3.LoadTE3File(changeInfo.MapPath)
+	te3File, err := te3.LoadTE3File[game.EntDef](changeInfo.MapPath)
 	if err != nil {
 		return nil, err
 	}
@@ -214,21 +215,17 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	}
 
 	for _, ent := range te3File.Ents {
-		if ent.Properties == nil {
-			continue
-		}
-
 		// Read level properties
-		if ent.Properties["name"] == "level properties" {
-			if songPath, hasSong := ent.Properties["song"]; hasSong {
+		if ent.Properties.Name.Or("") == "level properties" {
+			if songPath, hasSong := ent.Properties.Song.Get(); hasSong {
 				// Play the song
-				tdaudio.QueueSong("assets/music/"+songPath+".ogg", true, 0)
+				tdaudio.QueueSong("assets/music/"+*songPath+".ogg", true, 0)
 			}
 
-			if skyPath, hasSky := ent.Properties["sky"]; hasSky {
+			if skyPath, hasSky := ent.Properties.Sky.Get(); hasSky {
 				// Create sky model
 				skyMesh, meshErr := cache.GetMesh("assets/models/sky.obj")
-				skyTex := cache.GetTexture("assets/textures/skies/" + skyPath + ".png")
+				skyTex := cache.GetTexture("assets/textures/skies/" + *skyPath + ".png")
 				if meshErr != nil {
 					failure.LogErrWithLocation("Error loading sky: %v\n", meshErr)
 				} else {
@@ -239,7 +236,8 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 			continue
 		}
 
-		if _, isSaved := savedTypes[ent.Properties["type"]]; isSaved {
+		entType := ent.Properties.Type.Or("")
+		if _, isSaved := savedTypes[entType]; isSaved {
 			continue
 		}
 
@@ -508,16 +506,16 @@ func (world *World) ProcessSignal(signal any) {
 	}
 }
 
-func (world *World) MarshalJSON() ([]byte, error) {
+func (world *World) MarshalJSONTo(encoder *jsontext.Encoder) error {
 	if world == nil || world.GameMap == nil {
-		return nil, fmt.Errorf("game map is nil")
+		return fmt.Errorf("game map is nil")
 	}
 	savablesIter := world.IterSavables()
-	ents := make([]te3.Ent, 0, savablesIter.Capacity())
+	ents := make([]game.EntDef, 0, savablesIter.Capacity())
 	for savable, _ := savablesIter.Next(); savable != nil; savable, _ = savablesIter.Next() {
 		ents = append(ents, savable.Save())
 	}
-	return json.Marshal(game.MapChangeSignal{
+	return json.MarshalEncode(encoder, game.MapChangeSignal{
 		MapPath:         world.GameMap.Name,
 		MapTitleKey:     world.MapTitleKey,
 		SavedEnts:       ents,

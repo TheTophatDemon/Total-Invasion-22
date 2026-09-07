@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"image"
 	_ "image/png"
@@ -17,6 +17,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
+	"tophatdemon.com/total-invasion-ii/game"
 )
 
 func removeTextureTags(textureName string) string {
@@ -158,7 +159,7 @@ func main() {
 	}
 
 	tilesToAdd := make([]tileToAdd, 0, 1024)
-	entsToAdd := make([]te3.Ent, 0, 256)
+	entsToAdd := make([]game.EntDef, 0, 256)
 
 	tiScanner := bufio.NewScanner(tiFile)
 	tiScanner.Scan() // TILES
@@ -221,89 +222,88 @@ func main() {
 
 		if flag > 0 && flag != 6 && flag != 7 {
 			// Add dynamic tile entities
-			ent := te3.Ent{
+			ent := game.EntDef{
 				Display: te3.ENT_DISPLAY_MODEL,
 				Radius:  1.0,
 				Model:   modelList[modelIndex],
 				Texture: textureList[textureIndex],
 				Angles:  [3]math2.Degrees{0.0, math2.Degrees(yaw * 90), 0.0},
-				Color:   [3]uint8{255, 255, 255},
+				Color:   [3]int{255, 255, 255},
 				Position: [3]float32{
 					float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
 					te3.GridSpacing * 2.5,
 					float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 				},
-				Properties: map[string]string{},
 			}
 
 			switch flag {
 			case 1, 2, 5, 8, 9, 10: // Moving door like objects
-				ent.Properties["type"] = "door"
+				ent.Properties.Type = te3.SomeString("door")
 				if link > 0 {
-					ent.Properties["link"] = strconv.FormatInt(link, 10)
+					ent.Properties.Link = te3.SomeInt(int(link))
 				}
 				switch flag {
 				case 1, 8, 2, 9: // Doors
 					if strings.Contains(tokens[3], "spacedoor") {
 						// Space doors move up instead of to the side
-						ent.Properties["direction"] = "up"
+						ent.Properties.Direction = te3.SomeString("up")
 					} else {
-						ent.Properties["direction"] = "right"
+						ent.Properties.Direction = te3.SomeString("right")
 					}
 
 					if flag == 8 || flag == 9 {
 						// Assign keys to locked doors
 						switch link {
 						case 0:
-							ent.Properties["key"] = "blue"
+							ent.Properties.Key = te3.SomeString("blue")
 						case 1:
-							ent.Properties["key"] = "brown"
+							ent.Properties.Key = te3.SomeString("brown")
 						case 2:
-							ent.Properties["key"] = "yellow"
+							ent.Properties.Key = te3.SomeString("yellow")
 						case 3:
-							ent.Properties["key"] = "gray"
+							ent.Properties.Key = te3.SomeString("gray")
 						}
-						delete(ent.Properties, "link")
+						ent.Properties.Link = te3.NoneInt()
 					}
 				case 5: // Push walls
-					ent.Properties["type"] = "pushwall"
-					delete(ent.Properties, "link")
+					ent.Properties.Type = te3.SomeString("pushwall")
+					ent.Properties.Link = te3.NoneInt()
 
 					backAngle := float32(yaw) * math.Pi / 2.0
 					// Spawn a secret trigger behind it
-					entsToAdd = append(entsToAdd, te3.Ent{
+					entsToAdd = append(entsToAdd, game.EntDef{
 						Display: te3.ENT_DISPLAY_SPHERE,
 						Radius:  2.0,
-						Color:   [3]uint8{255, 0, 255},
+						Color:   [3]int{255, 0, 255},
 						Position: [3]float32{
 							(float32(x) + 0.5 + math2.Sin(backAngle)) * te3.GridSpacing,
 							te3.GridSpacing * 2.5,
 							(float32(z) + 0.5 + math2.Cos(backAngle)) * te3.GridSpacing,
 						},
-						Properties: map[string]string{
-							"type":   "trigger",
-							"action": "secret",
+						Properties: game.EntProps{
+							Type:   te3.SomeString("trigger"),
+							Action: te3.SomeString("secret"),
 						},
 					})
 				case 10: // Disappearing walls
-					ent.Properties["direction"] = "down"
-					ent.Properties["type"] = "pushwall"
+					ent.Properties.Direction = te3.SomeString("down")
+					ent.Properties.Type = te3.SomeString("pushwall")
 				}
 			case 3: // Switch
-				ent.Properties["type"] = "switch"
-				ent.Properties["link"] = strconv.FormatInt(link, 10)
+				ent.Properties.Type = te3.SomeString("switch")
+				ent.Properties.Link = te3.SomeInt(int(link))
 			case 4, 11, 12, 13: // Invisible trigger volumes
-				ent.Properties["type"] = "trigger"
-				ent.Properties["link"] = strconv.FormatInt(link, 10)
+				ent.Properties.Type = te3.SomeString("trigger")
+				ent.Properties.Link = te3.SomeInt(int(link))
 				switch flag {
 				case 4: // Teleporter
-					ent.Properties["action"] = "teleport"
+					ent.Properties.Action = te3.SomeString("teleport")
 				case 11: // Trigger for doors / secrets
 					if link == 255 {
-						ent.Properties["action"] = "secret"
-						delete(ent.Properties, "link")
+						ent.Properties.Action = te3.SomeString("secret")
+						ent.Properties.Link = te3.NoneInt()
 					} else {
-						ent.Properties["action"] = "activate"
+						ent.Properties.Action = te3.SomeString("activate")
 					}
 				case 12: // Level exit
 					var nextMapCode string
@@ -312,11 +312,11 @@ func main() {
 					} else {
 						nextMapCode = fmt.Sprintf("e%vm%v", episodeNumber, link)
 					}
-					ent.Properties["action"] = "end level"
-					ent.Properties["level"] = nextMapCode
-					delete(ent.Properties, "link")
+					ent.Properties.Action = te3.SomeString("end level")
+					ent.Properties.Level = te3.SomeString(nextMapCode)
+					ent.Properties.Link = te3.NoneInt()
 				case 13: // Conveyor belt
-					ent.Properties["action"] = "push"
+					ent.Properties.Action = te3.SomeString("push")
 					var dir string
 					switch link {
 					case 0:
@@ -328,7 +328,7 @@ func main() {
 					case 3:
 						dir = "left"
 					}
-					ent.Properties["direction"] = dir
+					ent.Properties.Direction = te3.SomeString(dir)
 				}
 			}
 
@@ -450,19 +450,18 @@ func main() {
 			panic(err)
 		}
 
-		ent := te3.Ent{
+		ent := game.EntDef{
 			Radius: 0.7,
 			Angles: [3]math2.Degrees{
 				0.0, 270.0 - math2.Degrees(angleIndex*45), 0.0,
 			},
-			Color: [3]uint8{255, 255, 255},
+			Color: [3]int{255, 255, 255},
 			Position: [3]float32{
 				float32(x)*te3.GridSpacing + te3.HalfGridSpacing,
 				te3.GridSpacing * 2.5,
 				float32(z)*te3.GridSpacing + te3.HalfGridSpacing,
 			},
-			Display:    te3.ENT_DISPLAY_SPHERE,
-			Properties: map[string]string{},
+			Display: te3.ENT_DISPLAY_SPHERE,
 		}
 
 		entType, err := strconv.ParseInt(tokens[2], 10, 64)
@@ -478,65 +477,65 @@ func main() {
 		case 0: // Player
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/segan.png"
-			ent.Properties["type"] = "player"
+			ent.Properties.Type = te3.SomeString("player")
 			cameraPosition = mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, 12.0, 4.0})
 		case 1: // Prop
-			ent.Properties["type"] = "prop"
-			ent.Properties["prop"] = texName
+			ent.Properties.Type = te3.SomeString("prop")
+			ent.Properties.Prop = te3.SomeString(texName)
 			shouldBeSprite = true
 		case 2, 3: // Item or weapon
-			ent.Properties["type"] = "item"
-			ent.Properties["item"] = texName
+			ent.Properties.Type = te3.SomeString("item")
+			ent.Properties.Item = te3.SomeString(texName)
 			shouldBeSprite = true
 		case 4: // Wraith
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "wraith"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/wraith.png"
 		case 5: // Fire wraith
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "fire wraith"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("fire wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/fire_wraith.png"
 		case 6, 14: // Dummkopf
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "dummkopf"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("dummkopf")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/dummkopf.png"
 		case 7: // Mother wraith / Caco wraith
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "mother wraith"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("mother wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/mother_wraith.png"
 		case 8: // Prisrak
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "prisrak"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("prisrak")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/prisrak.png"
 		case 9: // Providence
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "providence"
-			ent.Properties["name"] = "providence"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("providence")
+			ent.Properties.Name = te3.SomeString("providence")
 		case 10: // Fundie
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "fundie"
-			ent.Properties["name"] = "fundie"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("fundie")
+			ent.Properties.Name = te3.SomeString("fundie")
 		case 11: // Banshee
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "banshee"
-			ent.Properties["name"] = "banshee"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("banshee")
+			ent.Properties.Name = te3.SomeString("banshee")
 		case 12: // Mutant wraith
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "mutant wraith"
-			ent.Properties["name"] = "mutant wraith"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("mutant wraith")
+			ent.Properties.Name = te3.SomeString("mutant wraith")
 		case 13: // Mecha
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "mecha wraith"
-			ent.Properties["name"] = "mecha wraith"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("mecha wraith")
+			ent.Properties.Name = te3.SomeString("mecha wraith")
 		case 15: // Tophat demon
-			ent.Properties["type"] = "enemy"
-			ent.Properties["enemy"] = "tophat demon"
-			ent.Properties["name"] = "tophat demon"
+			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Enemy = te3.SomeString("tophat demon")
+			ent.Properties.Name = te3.SomeString("tophat demon")
 		default:
 			// Discard unused entity types
 			continue
@@ -559,14 +558,14 @@ func main() {
 
 				ent.Texture = texPath
 			} else {
-				ent.Properties["name"] = texName
+				ent.Properties.Name = te3.SomeString(texName)
 			}
 		}
 
 		entsToAdd = append(entsToAdd, ent)
 	}
 
-	te3Map := te3.TE3File{
+	te3Map := te3.TE3File[game.EntDef]{
 		EditorCamera: te3.EditorCamera{
 			Position:    cameraPosition,
 			EulerAngles: mgl32.Vec3{-68.0},

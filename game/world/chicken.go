@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -16,6 +15,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -46,9 +46,9 @@ func (chk *Chicken) Body() *comps.Body {
 	return &chk.actor.body
 }
 
-func SpawnChickenFromTE3(ent te3.Ent) (id scene.Id[*Chicken], chk *Chicken, err error) {
+func SpawnChickenFromTE3(ent game.EntDef) (id scene.Id[*Chicken], chk *Chicken, err error) {
 	id, chk, err = SpawnChicken(ent.Position, ent.Angles)
-	chk.actor.Health = ent.FloatPropertyOr("health", chk.actor.Health)
+	chk.actor.Health = ent.Properties.Health.Or(chk.actor.Health)
 	// Prevent sound from playing after loading a save file
 	chk.voice.Stop()
 	return
@@ -216,17 +216,17 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	return true
 }
 
-func (chk *Chicken) Save() te3.Ent {
-	ent := te3.Ent{
+func (chk *Chicken) Save() game.EntDef {
+	ent := game.EntDef{
 		Angles:   [3]math2.Degrees{0, math2.ToDegrees(chk.actor.YawAngle), 0.0},
 		Position: chk.actor.Position(),
 		Texture:  "assets/textures/sprites/chicken.png",
 		Radius:   0.7,
 		Display:  te3.ENT_DISPLAY_SPRITE,
-		Color:    [3]uint8{255, 255, 255},
-		Properties: map[string]string{
-			"type":   "chicken",
-			"health": fmt.Sprintf("%.2f", chk.actor.Health),
+		Color:    [3]int{255, 255, 255},
+		Properties: game.EntProps{
+			Type:   te3.SomeString("chicken"),
+			Health: te3.SomeFloat(chk.actor.Health),
 		},
 	}
 	return ent

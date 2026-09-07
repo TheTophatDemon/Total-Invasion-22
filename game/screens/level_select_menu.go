@@ -24,7 +24,8 @@ func (lsm *LevelSelectMenu) Init(app engine.Observer) *LevelSelectMenu {
 			fileName := filepath.Base(path[:len(path)-4])
 			menuItems = append(menuItems, new(MenuItem).InitUnlocalized(fileName, func(menu *Menu, item MenuWidget, mit MenuInputType) {
 				app.ProcessSignal(game.MapChangeSignal{
-					MapPath: path,
+					MapPath:       path,
+					SaveAfterLoad: true,
 				})
 			}))
 		}

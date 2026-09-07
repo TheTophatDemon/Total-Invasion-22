@@ -52,13 +52,13 @@ type Item struct {
 
 var _ comps.HasBody = (*Item)(nil)
 
-func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
-	itemType, isItem := ent.Properties["item"]
+func SpawnItemFromTE3(ent game.EntDef) (id scene.Id[*Item], item *Item, err error) {
+	itemType, isItem := ent.Properties.Item.Get()
 	if !isItem {
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item is missing 'item' property")
 	}
 
-	switch itemType {
+	switch *itemType {
 	case "medkit":
 		id, item, err = SpawnMedkit(ent.Position)
 	case "stimpack":
@@ -112,12 +112,12 @@ func SpawnItemFromTE3(ent te3.Ent) (id scene.Id[*Item], item *Item, err error) {
 		return scene.Id[*Item]{}, nil, fmt.Errorf("item type '%v' is not implemented yet", itemType)
 	}
 
-	item.itemType = itemType
-	if collectAnim, ok := ent.Properties["collectAnim"]; ok {
-		item.collectAnim, ok = item.spriteRender.Texture().GetAnimation(collectAnim)
+	item.itemType = *itemType
+	if collectAnim, ok := ent.Properties.CollectAnim.Get(); ok {
+		item.collectAnim, ok = item.spriteRender.Texture().GetAnimation(*collectAnim)
 		if ok {
 			item.animPlayer.PlayNewAnim(item.collectAnim)
-			item.animPlayer.MoveToFrame(ent.IntPropertyOr("collectAnimFrame", 0))
+			item.animPlayer.MoveToFrame(ent.Properties.CollectAnimFrame.Or(0))
 		} else {
 			failure.LogErrWithLocation("saved item had collect animation named '%v' that was not found", collectAnim)
 		}
@@ -403,22 +403,22 @@ func (item *Item) OnUse(player *Player) {
 	}
 }
 
-func (item *Item) Save() te3.Ent {
+func (item *Item) Save() game.EntDef {
 	// Mainly just saving the type of item and whether or not it exists.
-	ent := te3.Ent{
+	ent := game.EntDef{
 		Angles:   [3]math2.Degrees{},
 		Position: item.Body().Position,
 		Radius:   item.Body().Shape.Radius(),
 		Display:  te3.ENT_DISPLAY_SPHERE,
-		Color:    [3]uint8{255, 255, 255},
-		Properties: map[string]string{
-			"type": "item",
-			"item": item.itemType,
+		Color:    [3]int{255, 255, 255},
+		Properties: game.EntProps{
+			Type: te3.SomeString("item"),
+			Item: te3.SomeString(item.itemType),
 		},
 	}
 	if !item.collectAnim.IsNil() && item.animPlayer.IsPlayingAnim(item.collectAnim) {
-		ent.Properties["collectAnim"] = item.collectAnim.Name
-		ent.Properties["collectAnimFrame"] = fmt.Sprintf("%d", item.animPlayer.Index())
+		ent.Properties.CollectAnim = te3.SomeString(item.collectAnim.Name)
+		ent.Properties.CollectAnimFrame = te3.SomeInt(item.animPlayer.Index())
 	}
 	return ent
 }

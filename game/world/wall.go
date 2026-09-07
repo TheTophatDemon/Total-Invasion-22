@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -64,12 +63,12 @@ type Wall struct {
 	waitTimer                      float32
 	linkNumber                     int
 	proxiedWall                    scene.Id[*Wall]
-	ent                            te3.Ent
+	ent                            game.EntDef
 }
 
 var _ Usable = (*Wall)(nil)
 
-func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
+func SpawnWallFromTE3(ent game.EntDef) (id scene.Id[*Wall], wall *Wall, err error) {
 	id, wall, err = gWorld.Walls.New()
 	if err != nil {
 		return
@@ -88,7 +87,7 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 		if err != nil {
 			return scene.Id[*Wall]{}, nil, err
 		}
-		transform := comps.TransformFromTE3Ent(ent, false, false)
+		transform := comps.TransformFromTE3Ent(ent.Ent, false, false)
 		bbox = wall.MeshRender.Mesh.TransformedAABB(transform.Matrix().Mat3().Mat4())
 
 		transform.SetPosition(0, 0, 0)
@@ -109,7 +108,7 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 		Layers:   ColLayerMap,
 	}
 
-	if typ, ok := ent.Properties["type"]; !ok {
+	if typ, ok := ent.Properties.Type.Value(); !ok {
 		return scene.Id[*Wall]{}, nil, fmt.Errorf("no type property")
 	} else {
 		switch strings.ToLower(typ) {
@@ -128,30 +127,28 @@ func SpawnWallFromTE3(ent te3.Ent) (id scene.Id[*Wall], wall *Wall, err error) {
 	return
 }
 
-func (wall *Wall) configureForMover(ent te3.Ent) error {
+func (wall *Wall) configureForMover(ent game.EntDef) error {
 	if wall == nil {
 		return nil
 	}
 
 	wall.body.Layers |= ColLayerUsable
 
-	isPushWall := strings.ToLower(ent.Properties["type"]) == WallTypePushWall
+	isPushWall := strings.ToLower(ent.Properties.Type.Or("")) == WallTypePushWall
 
 	// Determine the door's destination position
-	unopenable, _ := ent.BoolProperty("unopenable")
+	unopenable, _ := ent.Properties.Unopenable.Value()
 	if !unopenable {
-		dist, err := ent.FloatProperty("distance")
-		if _, notFound := err.(te3.PropNotFoundError); notFound {
+		dist, hasDist := ent.Properties.Distance.Value()
+		if !hasDist {
 			if isPushWall {
 				dist = 4.0
 			} else {
 				dist = 1.8
 			}
-		} else if err != nil {
-			return err
 		}
 
-		dirStr, ok := ent.Properties["direction"]
+		dirStr, ok := ent.Properties.Direction.Value()
 		if !ok {
 			if isPushWall {
 				dirStr = "backward"
@@ -180,14 +177,8 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 		wall.Destination = wall.Origin.Add(moveOffset)
 
 		// Get waiting time
-		if waitStr, ok := ent.Properties["wait"]; ok {
-			if l := strings.ToLower(waitStr); l == "inf" || l == "infinity" || l == "-1" {
-				wall.WaitTime = -1.0
-			} else if wait, err := ent.FloatProperty("wait"); err != nil {
-				wall.WaitTime = wait
-			} else {
-				wall.WaitTime = 0.0
-			}
+		if waitVal, ok := ent.Properties.Wait.Value(); ok {
+			wall.WaitTime = waitVal
 		} else if isPushWall {
 			wall.WaitTime = -1.0
 		} else {
@@ -195,31 +186,23 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 		}
 
 		// Get speed
-		if speed, err := ent.FloatProperty("speed"); err == nil {
-			wall.Speed = speed
-		} else {
-			wall.Speed = 4.0
-		}
+		wall.Speed = ent.Properties.Speed.Or(4.0)
 
 		// Get key
-		if keyName, ok := ent.Properties["key"]; ok {
+		if keyName, ok := ent.Properties.Key.Value(); ok {
 			wall.key = game.KeyTypeFromName(keyName)
 		}
 
-		if linkStr, ok := ent.Properties["link"]; ok {
-			if linkNum, err := strconv.ParseInt(linkStr, 10, 32); err == nil {
-				wall.linkNumber = int(linkNum)
-				if !isPushWall {
-					wall.activateMessageKey = "doorSwitch"
-				}
-				wall.disableUse = true
-			} else {
-				return fmt.Errorf("could not parse link number; %v", err)
+		if linkNum, ok := ent.Properties.Link.Value(); ok {
+			wall.linkNumber = linkNum
+			if !isPushWall {
+				wall.activateMessageKey = "doorSwitch"
 			}
+			wall.disableUse = true
 		}
 
 		if !isPushWall {
-			_, _, err = SpawnProxyWall(wall)
+			_, _, err := SpawnProxyWall(wall)
 			if err != nil {
 				return fmt.Errorf("could not spawn proxy wall: %v", err)
 			}
@@ -237,14 +220,14 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 		}
 	}
 
-	if ent.Properties["open"] == "true" {
+	if ent.Properties.Open.Or(false) {
 		// Force the door / pushwall to start in the open position if reloading from a save.
 		wall.Open()                    // Do this before the sound is loaded so it doesn't play.
 		wall.movePhase = MovePhaseOpen // Skip the transitional state
 		wall.body.Position = wall.Destination
 	}
 
-	if sfxStr, ok := ent.Properties["activateSound"]; ok {
+	if sfxStr, ok := ent.Properties.ActivateSound.Value(); ok {
 		if len(sfxStr) > 0 {
 			wall.activateSound = "assets/sounds/" + sfxStr
 		}
@@ -261,7 +244,7 @@ func (wall *Wall) configureForMover(ent te3.Ent) error {
 	return nil
 }
 
-func (wall *Wall) configureForSwitch(ent te3.Ent) error {
+func (wall *Wall) configureForSwitch(ent game.EntDef) error {
 	var err error
 
 	if wall == nil {
@@ -273,14 +256,15 @@ func (wall *Wall) configureForSwitch(ent te3.Ent) error {
 	wall.switchState = SwitchOff
 	wall.targetSwitchState = SwitchOff
 	wall.Destination = wall.Origin
-	wall.linkNumber, err = ent.IntProperty("link")
-	if err != nil {
-		return err
+	var ok bool
+	wall.linkNumber, ok = ent.Properties.Link.Value()
+	if !ok {
+		return fmt.Errorf("switch is missing link number")
 	}
 
 	wall.AnimPlayer = comps.NewAnimationPlayer(wall.MeshRender.Texture.GetDefaultAnimation(), false)
 
-	if ent.Properties["on"] == "true" {
+	if ent.Properties.On.Or(false) {
 		wall.switchState = SwitchOn
 		wall.targetSwitchState = SwitchOn
 
@@ -499,12 +483,9 @@ func (wall *Wall) Close() {
 	}
 }
 
-func (wall *Wall) Save() te3.Ent {
+func (wall *Wall) Save() game.EntDef {
 	ent := wall.ent
-	if ent.Properties == nil {
-		ent.Properties = make(map[string]string, 2)
-	}
-	ent.Properties["open"] = fmt.Sprintf("%t", wall.movePhase == MovePhaseOpen)
-	ent.Properties["on"] = fmt.Sprintf("%t", wall.switchState == SwitchOn)
+	ent.Properties.Open = te3.SomeBool(wall.movePhase == MovePhaseOpen)
+	ent.Properties.On = te3.SomeBool(wall.switchState == SwitchOn)
 	return ent
 }

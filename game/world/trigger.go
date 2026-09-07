@@ -1,16 +1,10 @@
 package world
 
 import (
-	"log"
-	"math"
-	"strconv"
-	"strings"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
-	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
@@ -44,12 +38,12 @@ type Trigger struct {
 	linkNumber      int
 	touching        [triggerMaxContacts]scene.Handle
 	damagePerSecond float32
-	entProperties   map[string]string // Properties on the te3 entity used to spawn this trigger.
+	entProperties   game.EntProps // Properties on the te3 entity used to spawn this trigger.
 }
 
 var _ Linkable = (*Trigger)(nil)
 
-func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err error) {
+func SpawnTriggerFromTE3(ent game.EntDef) (id scene.Id[*Trigger], tr *Trigger, err error) {
 	id, tr, err = gWorld.Triggers.New()
 	if err != nil {
 		return
@@ -58,12 +52,12 @@ func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err e
 	tr.id = id
 	tr.Radius = ent.Radius
 	tr.Position = ent.Position
-	trans := comps.TransformFromTE3Ent(ent, false, false)
+	trans := comps.TransformFromTE3Ent(ent.Ent, false, false)
 	tr.Yaw = math2.Radians(trans.Yaw())
-	tr.linkNumber, _ = ent.IntProperty("link")
+	tr.linkNumber, _ = ent.Properties.Link.Value()
 	tr.entProperties = ent.Properties
 
-	switch ent.Properties["action"] {
+	switch ent.Properties.Action.Or("") {
 	case TriggerActionTeleport:
 		tr.filter = liveActorsOnlyFilter
 		tr.onEnter = teleportAction
@@ -72,11 +66,7 @@ func SpawnTriggerFromTE3(ent te3.Ent) (id scene.Id[*Trigger], tr *Trigger, err e
 	case TriggerActionDamage:
 		tr.filter = liveActorsOnlyFilter
 		tr.whileTouching = damageWhileTouching
-		damageRate, err := strconv.ParseFloat(ent.Properties["damagePerSecond"], 32)
-		if err != nil || math.IsNaN(damageRate) {
-			damageRate = 0.0
-		}
-		tr.damagePerSecond = float32(damageRate)
+		tr.damagePerSecond = ent.Properties.DamagePerSecond.Or(0.0)
 	case TriggerActionEndLevel:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = exitLevelAction
@@ -236,7 +226,7 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 		cameraHandle = gWorld.CurrentCamera.Handle
 	}
 
-	gWorld.EnterWinState("assets/maps/"+tr.entProperties["level"]+".te3", cameraHandle)
+	gWorld.EnterWinState("assets/maps/"+tr.entProperties.Level.Or("")+".te3", cameraHandle)
 }
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
@@ -251,48 +241,15 @@ func activateAction(tr *Trigger, handle scene.Handle) {
 }
 
 func messageAction(tr *Trigger, handle scene.Handle) {
-	timeStr := tr.entProperties["messageTime"]
-	if timeStr != "" {
-		log.Println("Warning: 'messageTime' property for triggers is obsolete")
-	}
-
-	priorityStr := tr.entProperties["messagePriority"]
-	priority, err := strconv.ParseInt(priorityStr, 10, 32)
-	if err != nil {
-		if len(priorityStr) != 0 {
-			failure.LogErrWithLocation("invalid message priority specified: %v", priorityStr)
-		}
-		priority = 10
-	}
+	priority := tr.entProperties.MessagePriority.Or(10)
 
 	colr := color.Color{A: 1.0}
-	colrStrs := strings.Split(tr.entProperties["messageColor"], ",")
-	if len(colrStrs) == 3 {
-		for i, str := range colrStrs {
-			val, err := strconv.ParseInt(str, 10, 32)
-			if err != nil {
-				colr = color.Color{}
-				break
-			}
-			floatVal := float32(val) / 255.0
-			switch i {
-			case 0:
-				colr.R = floatVal
-			case 1:
-				colr.G = floatVal
-			case 2:
-				colr.B = floatVal
-			}
-		}
-	}
-	if colr == (color.Color{}) {
-		if len(colrStrs) != 0 {
-			failure.LogErrWithLocation("invalid message color specified: %v", colrStrs)
-		}
-		colr = color.White
-	}
+	colorVec := tr.entProperties.MessageColor.Or(mgl32.Vec3{255, 255, 255})
+	colr.R = colorVec[0] / 255.0
+	colr.G = colorVec[1] / 255.0
+	colr.B = colorVec[2] / 255.0
 
-	gWorld.Hud.ShowMessage(settings.Localize(tr.entProperties["messageKey"]), int(priority), colr)
+	gWorld.Hud.ShowMessage(settings.Localize(tr.entProperties.MessageKey.Or("")), priority, colr)
 }
 
 func damageWhileTouching(tr *Trigger, handle scene.Handle, deltaTime float32) {
@@ -325,12 +282,12 @@ func playerOnlyFilter(ent comps.HasBody) bool {
 	return isPlayer && player.Actor().Health > 0
 }
 
-func (trigger *Trigger) Save() te3.Ent {
-	return te3.Ent{
+func (trigger *Trigger) Save() game.EntDef {
+	return game.EntDef{
 		Position:   trigger.Position,
 		Radius:     trigger.Radius,
 		Display:    te3.ENT_DISPLAY_SPHERE,
-		Color:      [3]uint8{255, 0, 255},
+		Color:      [3]int{255, 0, 255},
 		Properties: trigger.entProperties,
 	}
 }

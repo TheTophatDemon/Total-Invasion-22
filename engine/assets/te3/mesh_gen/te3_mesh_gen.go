@@ -35,7 +35,7 @@ func transformedTileTriangle(gridX, gridY, gridZ int, triangle math2.Triangle, r
 }
 
 // Returns true if the triangle happens to match with one from a neighboring tile.
-func shouldCull(file *te3.TE3File, gridX, gridY, gridZ int, triangle math2.Triangle, tileCache []cullInfo) bool {
+func shouldCull[EntType any](file *te3.TE3File[EntType], gridX, gridY, gridZ int, triangle math2.Triangle, tileCache []cullInfo) bool {
 	plane := triangle.Plane()
 
 	// Determine the grid position of the tile neighboring this face.
@@ -84,7 +84,7 @@ func shouldCull(file *te3.TE3File, gridX, gridY, gridZ int, triangle math2.Trian
 
 // Creates a mesh from the tiles in the map. The result is not cached, so don't call this too often.
 // The excludeTags parameter is used to provide a list of texture flags that will not generate any geometry.
-func BuildMeshFromTE3Map(file *te3.TE3File, excludeFlags []string) (*geom.Mesh, error) {
+func BuildMeshFromTE3Map[EntType any](file *te3.TE3File[EntType], excludeFlags []string) (*geom.Mesh, error) {
 	var err error
 
 	// cpuProfile, err := os.Create("buildMesh.pprof")

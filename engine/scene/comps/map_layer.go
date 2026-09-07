@@ -22,7 +22,7 @@ type MapLayer struct {
 // Creates a map layer that renders geometry.
 // `collisionLayer` is assigned to the map's GridShape.
 // `excludeFlags` specifies texture flags that will be invisible.
-func NewMapLayer(te3File *te3.TE3File, collisionLayer collision.Mask, excludeFlags []string) (MapLayer, error) {
+func NewMapLayer[EntType any](te3File *te3.TE3File[EntType], collisionLayer collision.Mask, excludeFlags []string) (MapLayer, error) {
 	mesh, err := mesh_gen.BuildMeshFromTE3Map(te3File, excludeFlags)
 	if err != nil {
 		return MapLayer{}, err

@@ -1,5 +1,10 @@
 package maybe
 
+import (
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+)
+
 type T[Inner any] struct {
 	value   Inner
 	present bool
@@ -27,6 +32,14 @@ func (m *T[Inner]) Get() (*Inner, bool) {
 	return nil, false
 }
 
+func (m *T[Inner]) Value() (Inner, bool) {
+	if m.present {
+		return m.value, true
+	}
+	var zero Inner
+	return zero, false
+}
+
 func (m *T[Inner]) Or(defaultItem Inner) Inner {
 	if m.present {
 		return m.value
@@ -39,6 +52,27 @@ func (m *T[Inner]) Unwrap() *Inner {
 		panic("unwrapped Maybe with no value")
 	}
 	return &m.value
+}
+
+func (m *T[Inner]) UnwrapValue() Inner {
+	if !m.present {
+		panic("unwrapped Maybe with no value")
+	}
+	return m.value
+}
+
+func (m *T[Inner]) MarshalJSONTo(encoder *jsontext.Encoder) error {
+	value, ok := m.Get()
+	if !ok {
+		omitZero, _ := json.GetOption(encoder.Options(), json.OmitZeroStructFields)
+		if omitZero {
+			// Don't write anything
+		} else {
+			encoder.WriteToken(jsontext.Null)
+		}
+		return nil
+	}
+	return json.MarshalEncode(encoder, value)
 }
 
 func IfNil[T any](pointer *T, defaultValue T) T {

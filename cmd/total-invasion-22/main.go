@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"log"
@@ -147,16 +147,17 @@ func (app *App) executeSignal(signal any) {
 		}
 	case game.SaveSignal:
 		log.Printf("saving game state to file %v\n", msg.Number)
-		if app.world == nil {
-			failure.LogErrWithLocation("game attempted to save, but there is no active world")
-			return
-		}
 		var bytes []byte
 		var err error
+		marshalOpts := game.SaveFileParseOptions()
 		if msg.WithData == nil {
-			bytes, err = json.Marshal(app.world)
+			if app.world == nil {
+				failure.LogErrWithLocation("game attempted to save, but there is no active world")
+				return
+			}
+			bytes, err = json.Marshal(app.world, marshalOpts)
 		} else {
-			bytes, err = json.Marshal(msg.WithData)
+			bytes, err = json.Marshal(msg.WithData, marshalOpts)
 		}
 		if err != nil {
 			failure.LogErrWithLocation("failed to save game state: %v", err)
@@ -172,23 +173,33 @@ func (app *App) executeSignal(signal any) {
 		log.Println("saving successful")
 	case game.LoadSignal:
 		log.Printf("loading game state from file %v\n", msg.Number)
+
+		fail := func(errorMessage string, err error) bool {
+			if err != nil {
+				errorString := fmt.Sprintf("%v %v: %v", errorMessage, msg.Number, err.Error())
+				failure.LogErrWithLocation("%v", errorString)
+				app.ProcessSignal(game.ChangeScreenSignal{
+					Screen: screens.NewErrorScreen(app, fmt.Errorf("%v", errorString)),
+				})
+				return true
+			}
+			return false
+		}
+
 		saveFile, err := os.Open(fmt.Sprintf("save%d", msg.Number))
-		if err != nil {
-			failure.LogErrWithLocation("failed to open save file %d: %d", msg.Number, err)
+		if fail("failed to open save file", err) {
 			return
 		}
 		defer saveFile.Close()
 
 		saveBytes, err := io.ReadAll(saveFile)
-		if err != nil {
-			failure.LogErrWithLocation("failed to read from save file %d: %d", msg.Number, err)
+		if fail("failed to read from save file", err) {
 			return
 		}
 
 		var saveData game.MapChangeSignal
-		err = json.Unmarshal(saveBytes, &saveData)
-		if err != nil {
-			failure.LogErrWithLocation("failed to parse from save file %d: %d", msg.Number, err)
+		err = json.Unmarshal(saveBytes, &saveData, game.SaveFileParseOptions())
+		if fail("failed to parse from save file", err) {
 			return
 		}
 
@@ -212,7 +223,9 @@ func (app *App) LoadGame(sig game.MapChangeSignal) {
 
 	world, err := world.NewWorld(app, sig)
 	if err != nil {
-		panic(err)
+		app.ProcessSignal(game.ChangeScreenSignal{
+			Screen: screens.NewErrorScreen(app, err),
+		})
 	}
 
 	input.TrapMouse()

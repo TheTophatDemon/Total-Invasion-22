@@ -1,7 +1,7 @@
 package screens
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -58,6 +58,7 @@ func handleLoadClick(menu *Menu, item MenuWidget, mit MenuInputType) {
 	if saveItem.SaveData.IsNil() {
 		return
 	}
+	saveItem.SaveData.SaveAfterLoad = true
 	settings.Current.DifficultyIndex = saveItem.SaveData.DifficultyIndex
 	menu.app.ProcessSignal(saveItem.SaveData)
 }
@@ -95,7 +96,7 @@ func (sm *LoadMenu) Init(app engine.Observer, parent ui.Screen) *LoadMenu {
 			failure.LogErrWithLocation("failed to read from save file %d: %d", i, err)
 			continue
 		}
-		err = json.Unmarshal(saveBytes, &menuItem.SaveData)
+		err = json.Unmarshal(saveBytes, &menuItem.SaveData, game.SaveFileParseOptions())
 		if err != nil {
 			failure.LogErrWithLocation("failed to parse from save file %d: %d", i, err)
 			continue

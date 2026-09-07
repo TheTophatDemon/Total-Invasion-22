@@ -1,6 +1,8 @@
 package game
 
 import (
+	jsonv1 "encoding/json"
+	"encoding/json/v2"
 	"time"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
@@ -14,9 +16,9 @@ type (
 		MapPath     string
 		MapTitleKey string
 		// This will override the state of the player after she is loaded, superceding what is in the SavedEnts array.
-		PlayerEnt *te3.Ent
+		PlayerEnt *EntDef
 		// State of entities from a loaded save file, if applicable.
-		SavedEnts []te3.Ent
+		SavedEnts []EntDef
 		// Time when the save was made.
 		Timestamp              time.Time
 		KillCount, SecretCount uint
@@ -50,4 +52,9 @@ func (ss SaveSignal) IsTemporary() bool {
 
 func (mcs MapChangeSignal) IsNil() bool {
 	return len(mcs.MapPath) == 0
+}
+
+// Returns options that should be used when parsing a save file as JSON
+func SaveFileParseOptions() json.Options {
+	return json.JoinOptions(te3.ParseOptions(), jsonv1.FormatDurationAsNano(true))
 }
