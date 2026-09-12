@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 const TEMPLATE = `info face="{{.FontName}}" size={{.FontSize}} bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=0 aa=1 padding=0,0,0,0 spacing={{index .Spacing 0}},{{index .Spacing 1}} outline=0
@@ -32,6 +33,7 @@ type Char struct {
 
 func main() {
 	generateMainFont()
+	generateChungusFont()
 	generateHudFont()
 }
 
@@ -83,6 +85,59 @@ func generateMainFont() {
 
 	// Write
 	file, err := os.Create("assets/textures/ui/font.fnt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	_, _ = file.WriteString(builder.String())
+}
+
+func generateChungusFont() {
+	imgWidth := 512
+
+	chars := make([]Char, 0)
+
+	for i, roon := range [...]rune{
+		' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
+		'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+		'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
+		'`', '{', '|', '}', '~', 'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й',
+		'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ',
+		'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+	} {
+		bigchar := Char{
+			ID:     uint(roon),
+			X:      ((i * 32) % int(imgWidth)),
+			Y:      ((i * 32) / int(imgWidth)) * 48,
+			Width:  32,
+			Height: 48,
+		}
+		chars = append(chars, bigchar)
+		if unicode.IsUpper(roon) {
+			lilchar := bigchar
+			lilchar.ID = uint(unicode.ToLower(roon))
+			chars = append(chars, lilchar)
+		}
+	}
+
+	tpl := template.Must(template.New("BMFont").Parse(TEMPLATE))
+	builder := &strings.Builder{}
+	err := tpl.Execute(builder, TemplParams{
+		FontName:   "Total Invasion 22 Chungus Font",
+		ImagePath:  "chungus_font.png",
+		ImageWidth: 512, ImageHeight: 336,
+		LineHeight: 48, Base: 0, FontSize: 32,
+		Spacing: [2]int{2, 2},
+		Chars:   chars,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Write
+	file, err := os.Create("assets/textures/ui/chungus_font.fnt")
 	if err != nil {
 		panic(err)
 	}

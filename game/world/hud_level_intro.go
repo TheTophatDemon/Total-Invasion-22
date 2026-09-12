@@ -55,6 +55,11 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		Depth:  8.9,
 	})
 
+	chungusFont, err := cache.GetFont("assets/textures/ui/chungus_font.fnt")
+	if err != nil {
+		chungusFont = cache.DefaultFont
+	}
+
 	// Top banner
 	intro.bannerTop = ui.NewText(ui.Transform{
 		Position: mgl32.Vec2{0.0, 80.0},
@@ -62,7 +67,7 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 		Depth:    9.1,
 	}, levelTitle, ui.DefaultTextConfig().
 		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
-		SetScale(3.0),
+		SetScale(2.0).SetFont(chungusFont),
 	)
 	intro.bannerTop.BgColor = maybe.Some(color.Blue)
 	intro.bannerTop.BgMesh = cache.QuadMesh
@@ -70,12 +75,12 @@ func (intro *LevelIntro) Init(levelTitle, mapNumber string) {
 	// Bottom banner
 	intro.bannerBottom = ui.NewText(ui.Transform{
 		Position: mgl32.Vec2{-96.0, settings.UIHeight() - 224.0},
-		Size:     mgl32.Vec2{448.0, 96.0},
+		Size:     mgl32.Vec2{496.0, 96.0},
 		Depth:    9.1,
 		Shear:    mgl32.Vec2{1.0, 0.0},
 	}, mapNumber, ui.DefaultTextConfig().
 		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
-		SetScale(3.0),
+		SetScale(2.0).SetFont(chungusFont),
 	)
 	intro.bannerBottom.BgMesh = cache.QuadMesh
 	intro.bannerBottom.BgColor = maybe.Some(color.Blue)
@@ -162,7 +167,7 @@ func (intro *LevelIntro) Layout(queue *ui.RenderQueue, deltaTime float32) {
 
 	if sickleXRes.SequenceDone {
 		// Move banners off screen at the end
-		delta := mgl32.Vec2{deltaTime * settings.UIWidth() * 2.0, 0}
+		delta := mgl32.Vec2{deltaTime * settings.UIWidth() * 3.0, 0}
 		intro.bannerTop.Translate(delta)
 		intro.bannerBottom.Translate(delta.Mul(-1))
 	}

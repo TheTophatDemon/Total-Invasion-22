@@ -122,7 +122,7 @@ fireContinue = 'Нажмите любую кнопку чтобы продолж
 statTime = "Время"
 statKills = "Убито"
 statSecrets = "Тайники"
-levelComplete = "Уровень Завершён"
+levelComplete = "УРОВЕНЬ ЗАВЕРШЁН"
 
 # Weapons
 sickle = "Серп"

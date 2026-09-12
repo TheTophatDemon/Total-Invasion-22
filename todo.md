@@ -12,7 +12,6 @@
 - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 
 # TODO - Art
-- Make larger font for level complete
 - Modify loading screen graphic to be more on-model
 - Exit screen
 - Make checkpoint effects less harsh

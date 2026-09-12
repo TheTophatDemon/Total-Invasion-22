@@ -36,6 +36,11 @@ func (screen *VictoryScreen) init() {
 		currentCounter: &screen.timeCounter,
 	}
 
+	chungusFont, err := cache.GetFont("assets/textures/ui/chungus_font.fnt")
+	if err != nil {
+		chungusFont = cache.DefaultFont
+	}
+
 	// Level complete text
 	screen.txtComplete = ui.NewText(ui.Transform{
 		Origin:   ui.Ratios{0.5, 0.0},
@@ -44,7 +49,7 @@ func (screen *VictoryScreen) init() {
 		Size:     mgl32.Vec2{settings.UIWidth(), 96.0},
 	}, settings.Localize("levelComplete"), ui.DefaultTextConfig().
 		SetAlign(ui.TextAlignCenterH|ui.TextAlignCenterV).
-		SetScale(3.0),
+		SetScale(2.0).SetFont(chungusFont),
 	)
 
 	// Continue prompt

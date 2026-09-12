@@ -129,7 +129,7 @@ fireContinue = "Press any key to continue."
 statTime = "Time"
 statKills = "Kills"
 statSecrets = "Secrets"
-levelComplete = "Level Complete"
+levelComplete = "LEVEL COMPLETE"
 
 # Weapons
 sickle = "Sickle"
