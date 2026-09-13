@@ -42,31 +42,32 @@ const (
 
 //go:generate go run ../../cmd/world_gen_iters/world_gen_iters.go
 type World struct {
-	Hud             Hud
-	Players         scene.Storage[Player]
-	Enemies         scene.Storage[Enemy]
-	Chickens        scene.Storage[Chicken]
-	Walls           scene.Storage[Wall]
-	Triggers        scene.Storage[Trigger]
-	Projectiles     scene.Storage[Projectile]
-	Effects         scene.Storage[Effect]
-	Items           scene.Storage[Item]
-	DebugShapes     scene.Storage[DebugShape]
-	Cameras         scene.Storage[Camera]
-	MapLayers       scene.Storage[comps.MapLayer]
-	Props           scene.Storage[Prop]
-	GameMap         *comps.MapLayer // An easy access pointer to the main map layer
-	MapTitleKey     string
-	CurrentPlayer   scene.Id[*Player]
-	CurrentCamera   scene.Id[*Camera]
-	difficultyIndex int
-	removalQueue    []scene.Handle  // Holds entities to be removed at the end of the frame.
-	app             engine.Observer // Communicates with the main application
-	impendingLevel  string          // Path to the next level. Set once the player reaches an exit.
-	bspTree         tree.BspTree    // The BSP tree built in the previous frame.
-	skyRender       comps.SkyRender
-	frameBuffer     render.Framebuffer // Contains the rendered texture of the game
-	hitCheckpoint   bool               // Turns true after the player hits a checkpoint
+	Hud                 Hud
+	Players             scene.Storage[Player]
+	Enemies             scene.Storage[Enemy]
+	Chickens            scene.Storage[Chicken]
+	Walls               scene.Storage[Wall]
+	Triggers            scene.Storage[Trigger]
+	Projectiles         scene.Storage[Projectile]
+	Effects             scene.Storage[Effect]
+	Items               scene.Storage[Item]
+	DebugShapes         scene.Storage[DebugShape]
+	Cameras             scene.Storage[Camera]
+	MapLayers           scene.Storage[comps.MapLayer]
+	Props               scene.Storage[Prop]
+	GameMap             *comps.MapLayer // An easy access pointer to the main map layer
+	MapTitleKey         string
+	CurrentPlayer       scene.Id[*Player]
+	CurrentCamera       scene.Id[*Camera]
+	difficultyIndex     int
+	removalQueue        []scene.Handle  // Holds entities to be removed at the end of the frame.
+	app                 engine.Observer // Communicates with the main application
+	impendingLevel      string          // Path to the next level. Set once the player reaches an exit.
+	bspTree             tree.BspTree    // The BSP tree built in the previous frame.
+	skyRender           comps.SkyRender
+	frameBuffer         render.Framebuffer // Contains the rendered texture of the game
+	hitCheckpoint       bool               // Turns true after the player hits a checkpoint
+	gameplayLayerNumber int                // Y coordinate on the level grid that the game actors are on
 }
 
 var gWorld *World
@@ -118,7 +119,9 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 			// But don't carry over keys
 			ent.Properties.Keys = te3.SomeInt(0)
 		}
-		gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
+		var player *Player
+		gWorld.CurrentPlayer, player, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
+		_, gWorld.gameplayLayerNumber, _ = gWorld.GameMap.GridShape.WorldToGridPos(player.Actor().Position())
 	}
 	if err != nil {
 		log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
@@ -128,9 +131,10 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 
 func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, error) {
 	gWorld = &World{
-		removalQueue:    make([]scene.Handle, 0, 8),
-		app:             app,
-		difficultyIndex: settings.Current.DifficultyIndex,
+		removalQueue:        make([]scene.Handle, 0, 8),
+		app:                 app,
+		difficultyIndex:     settings.Current.DifficultyIndex,
+		gameplayLayerNumber: 2,
 	}
 
 	gWorld.Hud.Init()
@@ -243,6 +247,8 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 
 		spawnEntBasedOnType(ent, changeInfo)
 	}
+
+	gWorld.GameMap.GridShape.MarkZonesXZ(gWorld.gameplayLayerNumber)
 
 	// Create an autosave if this level is not being loaded from a save file already
 	if changeInfo.SaveAfterLoad {

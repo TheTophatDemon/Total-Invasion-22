@@ -466,7 +466,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		ammoBefore := player.ammo
 		if !cast.Hit && player.SelectedWeapon.AttemptFire(player, deltaTime, settings.Current.ActionFire.JustPressed()) {
 			player.punTimer.Reset()
-			player.actor.NoiseLevel = 0.5
+			player.actor.NoiseLevel = player.SelectedWeapon.NoiseLevel
 
 			if player.armorType == game.ArmorTypeBullet && player.SelectedWeapon != &player.Sickle {
 				player.ammo = ammoBefore

@@ -1,5 +1,5 @@
 # TODO - Development
-- Make enemies able to hear player behind walls as long as space is connected.
+- Connect sound zones when doors are open
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners

@@ -43,10 +43,18 @@ func (stats *DebugStats) Layout(queue *ui.RenderQueue) {
 }
 
 func (stats *DebugStats) UpdateCounters(renderContext *render.Context) {
+	var soundZone int
+	if player, ok := gWorld.CurrentPlayer.Get(); ok {
+		x, y, z := gWorld.GameMap.GridShape.WorldToGridPos(player.Actor().Position())
+		soundZone = gWorld.GameMap.GridShape.GetZoneAt(x, y, z)
+	}
 	stats.drawCounters.SetText(
-		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v\nDifficulty: '%s'",
+		fmt.Sprintf("Sprites drawn: %v\nWalls drawn: %v\nParticles drawn: %v\nDifficulty: '%s'\nSound Zone: %v",
 			renderContext.DrawnSpriteCount,
 			renderContext.DrawnWallCount,
 			renderContext.DrawnParticlesCount,
-			gWorld.Difficulty()))
+			gWorld.Difficulty(),
+			soundZone,
+		),
+	)
 }

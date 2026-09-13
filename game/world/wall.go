@@ -124,6 +124,10 @@ func SpawnWallFromTE3(ent game.EntDef) (id scene.Id[*Wall], wall *Wall, err erro
 		}
 	}
 
+	// Set the grid to block sound at this wall's tile.
+	gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
+	gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
+
 	return
 }
 

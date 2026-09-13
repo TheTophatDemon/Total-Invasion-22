@@ -1,16 +1,19 @@
 package collision
 
 import (
+	"iter"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 )
 
 type GridCell struct {
 	ShapeId int  // Index into the shapes array
 	Layer   Mask // Collision layer. Will be 0 for an empty tile.
+	ZoneId  int
 }
 
 type Grid struct {
@@ -21,6 +24,8 @@ type Grid struct {
 	spacing               float32
 	celsChecked           map[[3]int]bool // Pre-allocated map for tracking cels visited when walking the grid.
 	visitBuffer           [][3]int        // Pre-allocated slice of coordinates for keeping track of cels to visit when walking the grid.
+	zoneConnections       []bool          // Holds a matrix mapping zones that are connected to each other by a doorway.
+	zoneCount             int             // Number of distinct zone IDs in the grid
 }
 
 func NewGrid(width, height, length int, spacing float32) Grid {
@@ -92,12 +97,55 @@ func (grid *Grid) SetShapeAt(x, y, z int, shape Shape, layer Mask) {
 	}
 }
 
+func (grid *Grid) SetZoneAt(x, y, z int, zone int) {
+	if !grid.AreCoordsValid(x, y, z) {
+		return
+	}
+	grid.cells[grid.FlattenGridPos(x, y, z)].ZoneId = zone
+}
+
+func (grid *Grid) SetZoneAtFlatIndex(index int, zone int) {
+	if index >= 0 && index < len(grid.cells) {
+		grid.cells[index].ZoneId = zone
+	}
+}
+
+func (grid *Grid) GetZoneAt(x, y, z int) int {
+	if !grid.AreCoordsValid(x, y, z) {
+		return -1
+	}
+	return grid.cells[grid.FlattenGridPos(x, y, z)].ZoneId
+}
+
+// Iterates over valid zone ids that are intersecting with the given bounding box in world space.
+func (grid *Grid) ZonesTouching(bbox math2.Box) iter.Seq[int] {
+	return func(yield func(int) bool) {
+		minX, minY, minZ := grid.WorldToGridPos(bbox.Min)
+		maxX, maxY, maxZ := grid.WorldToGridPos(bbox.Max)
+		for y := minY; y <= maxY; y++ {
+			for x := minX; x <= maxX; x++ {
+				for z := minZ; z <= maxZ; z++ {
+					if zone := grid.GetZoneAt(x, y, z); zone > 0 {
+						if !yield(zone) {
+							return
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 func (grid *Grid) SetShapeAtFlatIndex(index int, shape Shape, layer Mask) {
-	if index > 0 && index < len(grid.cells) {
-		grid.cells[index] = GridCell{
+	if index >= 0 && index < len(grid.cells) {
+		cell := GridCell{
 			ShapeId: grid.ShapeIndex(shape),
 			Layer:   layer,
 		}
+		if shape.pointCount > 0 {
+			cell.ZoneId = -1
+		}
+		grid.cells[index] = cell
 	}
 }
 
@@ -408,3 +456,180 @@ func (grid *Grid) OtherBodyTouches(myPosition, theirPosition mgl32.Vec3, theirSh
 
 	return false
 }
+
+// Walks contiguous 2D areas of the grid at the given y coordinate that are not marked with zone ID -1 and gives them each a unique zone ID.
+// This can be used, for instance, to detect sounds from within the same room.
+func (grid *Grid) MarkZonesXZ(y int) {
+	nRows := grid.Length()
+	nCols := grid.Width()
+
+	nextZoneId := 1
+	for z := range nRows {
+		for x := range nCols {
+			if grid.GetZoneAt(x, y, z) == 0 {
+				grid.floodFillZone(x, y, z, x, y, z, nextZoneId)
+				nextZoneId++
+			}
+		}
+	}
+	zoneCount := nextZoneId - 1
+	grid.zoneConnections = make([]bool, zoneCount*zoneCount)
+	grid.zoneCount = zoneCount
+	for i := range zoneCount {
+		// Mark all zones as connected to themselves.
+		grid.ConnectZones(i+1, i+1)
+	}
+}
+
+func (grid *Grid) ConnectZones(zone1, zone2 int) {
+	if grid.zoneConnections == nil {
+		failure.LogErrWithLocation("tried to connect zones before zones were initialized")
+		return
+	}
+	if zone1 < 1 || zone2 < 1 || zone1 > grid.zoneCount || zone2 > grid.zoneCount {
+		failure.LogErrWithLocation("cannot connect zones %v and %v", zone1, zone2)
+		return
+	}
+	grid.zoneConnections[(zone1-1)+((zone2-1)*grid.zoneCount)] = true
+}
+
+func (grid *Grid) DisconnectZones(zone1, zone2 int) {
+	if grid.zoneConnections == nil {
+		failure.LogErrWithLocation("tried to connect zones before zones were initialized")
+		return
+	}
+	if zone1 < 1 || zone2 < 1 || zone1 > grid.zoneCount || zone2 > grid.zoneCount {
+		failure.LogErrWithLocation("cannot disconnect zones %v and %v", zone1, zone2)
+		return
+	}
+	grid.zoneConnections[(zone1-1)+((zone2-1)*grid.zoneCount)] = false
+}
+
+func (grid *Grid) AreZonesConnected(zone1, zone2 int) bool {
+	if grid.zoneConnections == nil {
+		failure.LogErrWithLocation("tried to query zones before zones were initialized")
+		return false
+	}
+	if zone1 < 1 || zone2 < 1 || zone1 > grid.zoneCount || zone2 > grid.zoneCount {
+		failure.LogErrWithLocation("cannot query zones %v and %v", zone1, zone2)
+		return false
+	}
+	return grid.zoneConnections[(zone1-1)+((zone2-1)*grid.zoneCount)]
+}
+
+func (grid *Grid) floodFillZone(x, y, z, px, py, pz, zoneId int) {
+	if !grid.AreCoordsValid(x, y, z) || grid.GetZoneAt(x, y, z) != 0 {
+		return
+	}
+	grid.SetZoneAt(x, y, z, zoneId)
+	nx, ny, nz := x-1, y, z
+	if nx != px || ny != py || nz != pz {
+		grid.floodFillZone(nx, ny, nz, x, y, z, zoneId)
+	}
+	nx, ny, nz = x+1, y, z
+	if nx != px || ny != py || nz != pz {
+		grid.floodFillZone(nx, ny, nz, x, y, z, zoneId)
+	}
+	nx, ny, nz = x, y, z-1
+	if nx != px || ny != py || nz != pz {
+		grid.floodFillZone(nx, ny, nz, x, y, z, zoneId)
+	}
+	nx, ny, nz = x, y, z+1
+	if nx != px || ny != py || nz != pz {
+		grid.floodFillZone(nx, ny, nz, x, y, z, zoneId)
+	}
+}
+
+// func (grid *Grid) MarkZones(y int) {
+// 	type zoneSpan struct {
+// 		startX, endX int
+// 		z            int
+// 		id           int
+// 		parentId     int
+// 	}
+// 	nRows := grid.Length()
+// 	nCols := grid.Width()
+
+// 	// Find contiguous horizontal spans on each row of the tile map
+// 	spans := make([]zoneSpan, 0, nRows*2)
+// 	for z := range nRows {
+// 		currSpan := maybe.None[zoneSpan]()
+// 		for x := range nCols {
+// 			if grid.GetZoneAt(x, y, z) == 0 {
+// 				span, ok := currSpan.Get()
+// 				if ok {
+// 					span.endX = x
+// 					grid.SetZoneAt(x, y, z, span.id)
+// 				} else {
+// 					newSpan := zoneSpan{startX: x, z: z, id: len(spans) + 1}
+// 					currSpan = maybe.Some(newSpan)
+// 					grid.SetZoneAt(x, y, z, newSpan.id)
+// 				}
+// 			} else if span, ok := currSpan.Value(); ok {
+// 				spans = append(spans, span)
+// 				currSpan = maybe.None[zoneSpan]()
+// 			}
+// 		}
+// 		if span, ok := currSpan.Value(); ok {
+// 			span.endX = nCols - 1
+// 			spans = append(spans, span)
+// 		}
+// 	}
+
+// 	// for _, span := range spans {
+// 	// 	fmt.Printf("horizontal span #%v at z %v spans from %v to %v\n", span.id, span.z, span.startX, span.endX)
+// 	// }
+
+// 	// Connect spans from top to bottom
+// 	for _, span := range spans {
+// 		if span.z >= nRows-1 {
+// 			continue
+// 		}
+// 		for x := span.startX; x <= span.endX; x++ {
+// 			zBelow := span.z + 1
+// 			if zoneBelow := grid.GetZoneAt(x, y, zBelow); zoneBelow > 0 && zoneBelow <= len(spans) {
+// 				spanBelow := &spans[zoneBelow-1]
+// 				if spanBelow.parentId == 0 {
+// 					spanBelow.parentId = span.id
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// fmt.Println("after top to bottom assimilation:")
+// 	// for _, span := range spans {
+// 	// 	fmt.Printf("horizontal span #%v at z %v spans from %v to %v\n", span.id, span.z, span.startX, span.endX)
+// 	// }
+
+// 	// Connect spans from bottom up
+// 	for _, span := range slices.Backward(spans) {
+// 		if span.z <= 0 {
+// 			continue
+// 		}
+// 		for x := span.startX; x <= span.endX; x++ {
+// 			zAbove := span.z - 1
+// 			if zoneAbove := grid.GetZoneAt(x, y, zAbove); zoneAbove > 0 && zoneAbove <= len(spans) {
+// 				spanAbove := &spans[zoneAbove-1]
+// 				if spanAbove.parentId == 0 {
+// 					spanAbove.parentId = span.id
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// fmt.Println("after bottom to top assimilation:")
+// 	// for _, span := range spans {
+// 	// 	fmt.Printf("horizontal span #%v at z %v spans from %v to %v\n", span.id, span.z, span.startX, span.endX)
+// 	// }
+
+// 	// Go over the tiles marked by the spans and set their zone IDs to the earliest ancestor's.
+// 	for _, span := range spans {
+// 		rootSpan := span
+// 		for rootSpan.parentId != 0 {
+// 			rootSpan = spans[span.parentId-1]
+// 		}
+// 		for x := span.startX; x <= span.endX; x++ {
+// 			grid.SetZoneAt(x, y, span.z, rootSpan.id)
+// 		}
+// 	}
+// }

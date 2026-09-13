@@ -151,6 +151,7 @@ textureLoop:
 			// Determine triangle orientations
 			rotMatrix := tile.GetRotationMatrix()
 			gridX, gridY, gridZ := file.Tiles.UnflattenGridPos(t)
+			//TODO: Should set the capacity on tileTriangles[t] to the number of triangles in the mesh
 			shapeTriIter := shapeMeshes[tile.ShapeID].IterTriangles()
 			for shapeTriIter.HasNext() {
 				tileTriangles[t] = append(tileTriangles[t], transformedTileTriangle(gridX, gridY, gridZ, shapeTriIter.Next(), rotMatrix))

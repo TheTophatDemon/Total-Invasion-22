@@ -194,49 +194,63 @@ func (enemy *Enemy) Update(deltaTime float32) {
 		enemy.voice.SetPositionV(enemyPos)
 	}
 
-	// Check if the player is in view and not obstructed
-	enemy.canSeeTarget = false
-	enemy.canHearTarget = false
-	var vecToTarget mgl32.Vec3
-	if enemy.targetHandle.IsNil() {
-		enemy.targetHandle = gWorld.CurrentPlayer.Handle
-	}
-	if targetActor, ok := enemy.targetHandle.Get[HasActor](); ok && gWorld.IsOnPlayerCamera() {
-		vecToTarget = targetActor.Body().Position.Sub(enemyPos)
-		enemy.distToTarget = vecToTarget.Len()
-		if enemy.distToTarget != 0.0 {
-			enemy.dirToTarget = vecToTarget.Normalize()
+	if enemy.state != &enemy.dieState {
+		// Check if the player is in view and not obstructed
+		enemy.canSeeTarget = false
+		enemy.canHearTarget = false
+		var vecToTarget mgl32.Vec3
+		if enemy.targetHandle.IsNil() {
+			enemy.targetHandle = gWorld.CurrentPlayer.Handle
 		}
-
-		inHearingRange := enemy.distToTarget < targetActor.Actor().NoiseLevel
-
-		const enemyFovRads = math.Pi
-		inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < enemyFovRads/2.0
-		const wakeProximity = 1.7
-		const noticeProximity = 25.0
-		if enemy.distToTarget < wakeProximity {
-			enemy.canSeeTarget = true
-		} else if inHearingRange || inFieldOfView {
-			res, _ := gWorld.Raycast(enemyPos, enemy.dirToTarget, ColLayerMap, enemy.distToTarget, nil)
-			if !res.Hit && enemy.distToTarget < noticeProximity {
-				enemy.canSeeTarget = true
-				enemy.canHearTarget = true
+		if targetActor, ok := enemy.targetHandle.Get[HasActor](); ok && gWorld.IsOnPlayerCamera() {
+			vecToTarget = targetActor.Body().Position.Sub(enemyPos)
+			enemy.distToTarget = vecToTarget.Len()
+			if enemy.distToTarget != 0.0 {
+				enemy.dirToTarget = vecToTarget.Normalize()
 			}
-		}
 
-		// Perform knockback damage from Super Armor
-		if player, isPlayer := targetActor.(*Player); isPlayer &&
-			enemy.state != &enemy.dieState &&
-			player.armorType == game.ArmorTypeSuper &&
-			enemy.distToTarget < player.armorType.KnockbackRange() &&
-			enemy.actor.knockbackForce == (mgl32.Vec3{}) &&
-			(player.actor.inputForward != 0.0 || player.actor.inputStrafe != 0.0) {
-			enemy.actor.knockbackForce = math2.Vec3WithY(vecToTarget.Mul(-1*player.armorType.KnockbackForce()), 0.0)
-			enemy.OnDamage(player, player.armorType.KnockbackDamage())
+			const enemyFovRads = math.Pi
+			inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < enemyFovRads/2.0
+			const wakeProximity = 1.7
+			const noticeProximity = 25.0
+			if enemy.distToTarget < wakeProximity {
+				enemy.canSeeTarget = true
+			} else if inFieldOfView {
+				res, _ := gWorld.Raycast(enemyPos, enemy.dirToTarget, ColLayerMap, enemy.distToTarget, nil)
+				if !res.Hit && enemy.distToTarget < noticeProximity {
+					enemy.canSeeTarget = true
+				}
+			}
+
+			inHearingRange := enemy.distToTarget < targetActor.Actor().NoiseLevel
+			if inHearingRange && !enemy.canHearTarget {
+				targetBbox := targetActor.Body().Shape.Extents().Translate(targetActor.Body().Position)
+				myBbox := enemy.Body().Shape.Extents().Translate(enemyPos)
+			zoneCheck:
+				for targetZone := range gWorld.GameMap.GridShape.ZonesTouching(targetBbox) {
+					for myZone := range gWorld.GameMap.GridShape.ZonesTouching(myBbox) {
+						if gWorld.GameMap.GridShape.AreZonesConnected(targetZone, myZone) {
+							enemy.canHearTarget = true
+							break zoneCheck
+						}
+					}
+				}
+			}
+
+			// Perform knockback damage from Super Armor
+			if player, isPlayer := targetActor.(*Player); isPlayer &&
+				enemy.state != &enemy.dieState &&
+				player.armorType == game.ArmorTypeSuper &&
+				enemy.distToTarget < player.armorType.KnockbackRange() &&
+				enemy.actor.knockbackForce == (mgl32.Vec3{}) &&
+				(player.actor.inputForward != 0.0 || player.actor.inputStrafe != 0.0) {
+				enemy.actor.knockbackForce = math2.Vec3WithY(vecToTarget.Mul(-1*player.armorType.KnockbackForce()), 0.0)
+				enemy.OnDamage(player, player.armorType.KnockbackDamage())
+			}
+		} else {
+			enemy.wakeTimer = 0.0
+			enemy.changeState(&enemy.idleState)
 		}
-	} else if enemy.state != &enemy.dieState {
-		enemy.wakeTimer = 0.0
-		enemy.changeState(&enemy.idleState)
 	}
 
 	if enemy.canHearTarget {
