@@ -27,7 +27,7 @@ func (menu *ConfirmMenu) Init(app engine.Observer, parent *SettingsMenu, next ui
 	*menu = ConfirmMenu{
 		timer: timer.Timer{
 			Interval: 1.0,
-			MaxTicks: 3,
+			MaxTicks: 10,
 		},
 		previousSettings: previousSettings,
 		nextScreen:       next,
