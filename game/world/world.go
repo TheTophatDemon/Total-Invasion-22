@@ -108,7 +108,7 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 		_, _, err = SpawnCameraFromTE3(ent)
 	case "chicken":
 		_, _, err = SpawnChickenFromTE3(ent)
-	case "player":
+	case EntTypePlayer:
 		gWorld.CurrentCamera, _, err = SpawnCameraFromTE3(ent)
 		if err != nil {
 			log.Printf("error spawning player camera: %v\n", err)
@@ -119,9 +119,7 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 			// But don't carry over keys
 			ent.Properties.Keys = te3.SomeInt(0)
 		}
-		var player *Player
-		gWorld.CurrentPlayer, player, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
-		_, gWorld.gameplayLayerNumber, _ = gWorld.GameMap.GridShape.WorldToGridPos(player.Actor().Position())
+		gWorld.CurrentPlayer, _, err = SpawnPlayerFromTE3(ent, gWorld.CurrentCamera)
 	}
 	if err != nil {
 		log.Printf("%v entity at %v caused an error: %v\n", entType, ent.GridPosition(), err)
@@ -217,6 +215,8 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
 			gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(ent.Position)
 			gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
+		case EntTypePlayer:
+			_, gWorld.gameplayLayerNumber, _ = gWorld.GameMap.GridShape.WorldToGridPos(ent.Position)
 		}
 	}
 

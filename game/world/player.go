@@ -24,6 +24,8 @@ import (
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
+const EntTypePlayer = "player"
+
 type (
 	Player struct {
 		Camera                                   scene.Id[*Camera]
@@ -166,7 +168,7 @@ func (player *Player) Save() game.EntDef {
 		Display:  te3.ENT_DISPLAY_SPRITE,
 		Color:    [3]int{255, 255, 255},
 		Properties: game.EntProps{
-			Type:                  te3.SomeString("player"),
+			Type:                  te3.SomeString(EntTypePlayer),
 			AmmoEgg:               te3.SomeInt(player.ammo[game.AmmoTypeEgg]),
 			AmmoGrenade:           te3.SomeInt(player.ammo[game.AmmoTypeGrenade]),
 			AmmoPlasma:            te3.SomeInt(player.ammo[game.AmmoTypePlasma]),
