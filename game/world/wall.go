@@ -64,6 +64,7 @@ type Wall struct {
 	linkNumber                     int
 	proxiedWall                    scene.Id[*Wall]
 	ent                            game.EntDef
+	connectedZones                 [2]int
 }
 
 var _ Usable = (*Wall)(nil)
@@ -123,10 +124,6 @@ func SpawnWallFromTE3(ent game.EntDef) (id scene.Id[*Wall], wall *Wall, err erro
 			return scene.Id[*Wall]{}, nil, err
 		}
 	}
-
-	// Set the grid to block sound at this wall's tile.
-	gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
-	gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
 
 	return
 }
@@ -224,6 +221,18 @@ func (wall *Wall) configureForMover(ent game.EntDef) error {
 		}
 	}
 
+	// Find sound zones that this moving wall connects
+	gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
+	leftZone := gWorld.GameMap.GridShape.GetZoneAt(gridX-1, gridY, gridZ)
+	rightZone := gWorld.GameMap.GridShape.GetZoneAt(gridX+1, gridY, gridZ)
+	frontZone := gWorld.GameMap.GridShape.GetZoneAt(gridX, gridY, gridZ-1)
+	backZone := gWorld.GameMap.GridShape.GetZoneAt(gridX, gridY, gridZ+1)
+	if leftZone > 0 && rightZone > 0 && leftZone != rightZone {
+		wall.connectedZones = [2]int{leftZone, rightZone}
+	} else if frontZone > 0 && backZone > 0 && frontZone != backZone {
+		wall.connectedZones = [2]int{frontZone, backZone}
+	}
+
 	if ent.Properties.Open.Or(false) {
 		// Force the door / pushwall to start in the open position if reloading from a save.
 		wall.Open()                    // Do this before the sound is loaded so it doesn't play.
@@ -314,6 +323,7 @@ func SpawnProxyWall(parentWall *Wall) (id scene.Id[*Wall], wall *Wall, err error
 
 func (wall *Wall) Update(deltaTime float32) {
 	wall.AnimPlayer.Update(deltaTime)
+
 	// Switch toggling logic
 	if wall.switchState != NotASwitch && wall.AnimPlayer.HitATriggerFrame() && wall.switchState != wall.targetSwitchState {
 		wall.switchState = wall.targetSwitchState
@@ -337,6 +347,7 @@ func (wall *Wall) Update(deltaTime float32) {
 	}
 
 	// Manage movement
+moveSwitch:
 	switch wall.movePhase {
 	case MovePhaseOpening:
 		targetDir := wall.Destination.Sub(wall.body.Position)
@@ -354,19 +365,14 @@ func (wall *Wall) Update(deltaTime float32) {
 
 		// Detect if something is standing in the way
 		ents := gWorld.bspTree.PotentiallyTouchingEnts(wall.Origin, wall.body.Shape)
-		obstructed := false
 		for ent := range ents {
 			if actorHaver, ok := ent.Get[HasActor](); ok {
 				if actorHaver.Body().Shape.Touches(actorHaver.Body().Position, wall.body.Position, wall.body.Shape) {
 					wall.body.Velocity = mgl32.Vec3{}
-					wall.movePhase = MovePhaseOpening
-					obstructed = true
-					break
+					wall.Open()
+					break moveSwitch
 				}
 			}
-		}
-		if obstructed {
-			break
 		}
 
 		if targetDist <= wall.Speed*deltaTime {
@@ -379,7 +385,7 @@ func (wall *Wall) Update(deltaTime float32) {
 	case MovePhaseOpen:
 		wall.waitTimer += deltaTime
 		if wall.waitTimer > wall.WaitTime && wall.WaitTime >= 0.0 {
-			wall.movePhase = MovePhaseClosing
+			wall.Close()
 			wall.waitTimer = 0.0
 		}
 		wall.body.Velocity = mgl32.Vec3{}
@@ -470,20 +476,34 @@ func (wall *Wall) Open() {
 	if len(wall.activateSound) > 0 {
 		cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
 	}
+	gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
 	if wall.body.ExcludedLayers != 0 {
 		wall.body.RestoreLayers()
 		// Clear out any map cells that may be blocking the wall's area.
-		gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
 		gWorld.GameMap.GridShape.SetShapeAt(gridX, gridY, gridZ, collision.Shape{}, 0)
+	}
+	if wall.connectedZones[0] > 0 {
+		gWorld.GameMap.GridShape.ConnectZones(wall.connectedZones[0], wall.connectedZones[1])
+		// Set the zone occupied by the door so sound can be heard from inside the open door.
+		gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, wall.connectedZones[0])
 	}
 }
 
 func (wall *Wall) Close() {
+	if wall.movePhase == MovePhaseClosed || wall.movePhase == MovePhaseClosing {
+		return
+	}
 	if wall.WaitTime >= 0.0 {
 		wall.movePhase = MovePhaseClosing
 		if len(wall.activateSound) > 0 {
 			cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
 		}
+	}
+	if wall.connectedZones[0] > 0 {
+		gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
+		gWorld.GameMap.GridShape.DisconnectZones(wall.connectedZones[0], wall.connectedZones[1])
+		// Set the zone occupied by the door to block sound again
+		gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
 	}
 }
 

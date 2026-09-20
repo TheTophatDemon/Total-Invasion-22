@@ -477,11 +477,14 @@ func (grid *Grid) MarkZonesXZ(y int) {
 	grid.zoneCount = zoneCount
 	for i := range zoneCount {
 		// Mark all zones as connected to themselves.
-		grid.ConnectZones(i+1, i+1)
+		grid.zoneConnections[i+(i*grid.zoneCount)] = true
 	}
 }
 
 func (grid *Grid) ConnectZones(zone1, zone2 int) {
+	if zone1 == zone2 {
+		return
+	}
 	if grid.zoneConnections == nil {
 		failure.LogErrWithLocation("tried to connect zones before zones were initialized")
 		return
@@ -494,6 +497,9 @@ func (grid *Grid) ConnectZones(zone1, zone2 int) {
 }
 
 func (grid *Grid) DisconnectZones(zone1, zone2 int) {
+	if zone1 == zone2 {
+		return
+	}
 	if grid.zoneConnections == nil {
 		failure.LogErrWithLocation("tried to connect zones before zones were initialized")
 		return
@@ -506,6 +512,9 @@ func (grid *Grid) DisconnectZones(zone1, zone2 int) {
 }
 
 func (grid *Grid) AreZonesConnected(zone1, zone2 int) bool {
+	if zone1 == zone2 {
+		return true
+	}
 	if grid.zoneConnections == nil {
 		failure.LogErrWithLocation("tried to query zones before zones were initialized")
 		return false

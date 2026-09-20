@@ -211,6 +211,18 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		gWorld.Hud.Intro.Init("", "")
 	}
 
+	// Go over entities that might block sound zones and mark their tiles as blocking sound
+	for _, ent := range te3File.Ents {
+		switch ent.Properties.Type.Or("") {
+		case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
+			gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(ent.Position)
+			gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
+		}
+	}
+
+	// Generate sound zones
+	gWorld.GameMap.GridShape.MarkZonesXZ(gWorld.gameplayLayerNumber)
+
 	// Spawn entities
 	savedTypes := containers.NewSet[string](16)
 	for _, ent := range changeInfo.SavedEnts {
@@ -247,8 +259,6 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 
 		spawnEntBasedOnType(ent, changeInfo)
 	}
-
-	gWorld.GameMap.GridShape.MarkZonesXZ(gWorld.gameplayLayerNumber)
 
 	// Create an autosave if this level is not being loaded from a save file already
 	if changeInfo.SaveAfterLoad {

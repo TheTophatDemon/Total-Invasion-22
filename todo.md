@@ -1,5 +1,4 @@
 # TODO - Development
-- Connect sound zones when doors are open
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners
