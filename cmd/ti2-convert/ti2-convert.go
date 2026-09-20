@@ -18,6 +18,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/world"
 )
 
 func removeTextureTags(textureName string) string {
@@ -238,7 +239,7 @@ func main() {
 
 			switch flag {
 			case 1, 2, 5, 8, 9, 10: // Moving door like objects
-				ent.Properties.Type = te3.SomeString("door")
+				ent.Properties.Type = te3.SomeString(world.WallTypeDoor)
 				if link > 0 {
 					ent.Properties.Link = te3.SomeInt(int(link))
 				}
@@ -281,29 +282,29 @@ func main() {
 							(float32(z) + 0.5 + math2.Cos(backAngle)) * te3.GridSpacing,
 						},
 						Properties: game.EntProps{
-							Type:   te3.SomeString("trigger"),
-							Action: te3.SomeString("secret"),
+							Type:   te3.SomeString(world.EntTypeTrigger),
+							Action: te3.SomeString(world.TriggerActionSecret),
 						},
 					})
 				case 10: // Disappearing walls
 					ent.Properties.Direction = te3.SomeString("down")
-					ent.Properties.Type = te3.SomeString("pushwall")
+					ent.Properties.Type = te3.SomeString(world.WallTypePushWall)
 				}
 			case 3: // Switch
-				ent.Properties.Type = te3.SomeString("switch")
+				ent.Properties.Type = te3.SomeString(world.WallTypeSwitch)
 				ent.Properties.Link = te3.SomeInt(int(link))
 			case 4, 11, 12, 13: // Invisible trigger volumes
-				ent.Properties.Type = te3.SomeString("trigger")
+				ent.Properties.Type = te3.SomeString(world.EntTypeTrigger)
 				ent.Properties.Link = te3.SomeInt(int(link))
 				switch flag {
 				case 4: // Teleporter
-					ent.Properties.Action = te3.SomeString("teleport")
+					ent.Properties.Action = te3.SomeString(world.TriggerActionTeleport)
 				case 11: // Trigger for doors / secrets
 					if link == 255 {
-						ent.Properties.Action = te3.SomeString("secret")
+						ent.Properties.Action = te3.SomeString(world.TriggerActionSecret)
 						ent.Properties.Link = te3.NoneInt()
 					} else {
-						ent.Properties.Action = te3.SomeString("activate")
+						ent.Properties.Action = te3.SomeString(world.TriggerActionActivate)
 					}
 				case 12: // Level exit
 					var nextMapCode string
@@ -477,7 +478,7 @@ func main() {
 		case 0: // Player
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/segan.png"
-			ent.Properties.Type = te3.SomeString("player")
+			ent.Properties.Type = te3.SomeString(world.EntTypePlayer)
 			cameraPosition = mgl32.Vec3(ent.Position).Add(mgl32.Vec3{0.0, 12.0, 4.0})
 		case 1: // Prop
 			ent.Properties.Type = te3.SomeString("prop")
@@ -488,52 +489,52 @@ func main() {
 			ent.Properties.Item = te3.SomeString(texName)
 			shouldBeSprite = true
 		case 4: // Wraith
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/wraith.png"
 		case 5: // Fire wraith
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("fire wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/fire_wraith.png"
 		case 6, 14: // Dummkopf
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("dummkopf")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/dummkopf.png"
 		case 7: // Mother wraith / Caco wraith
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("mother wraith")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/mother_wraith.png"
 		case 8: // Prisrak
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("prisrak")
 			ent.Display = te3.ENT_DISPLAY_SPRITE
 			ent.Texture = "assets/textures/sprites/prisrak.png"
 		case 9: // Providence
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("providence")
 			ent.Properties.Name = te3.SomeString("providence")
 		case 10: // Fundie
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("fundie")
 			ent.Properties.Name = te3.SomeString("fundie")
 		case 11: // Banshee
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("banshee")
 			ent.Properties.Name = te3.SomeString("banshee")
 		case 12: // Mutant wraith
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("mutant wraith")
 			ent.Properties.Name = te3.SomeString("mutant wraith")
 		case 13: // Mecha
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("mecha wraith")
 			ent.Properties.Name = te3.SomeString("mecha wraith")
 		case 15: // Tophat demon
-			ent.Properties.Type = te3.SomeString("enemy")
+			ent.Properties.Type = te3.SomeString(world.EntTypeEnemy)
 			ent.Properties.Enemy = te3.SomeString("tophat demon")
 			ent.Properties.Name = te3.SomeString("tophat demon")
 		default:

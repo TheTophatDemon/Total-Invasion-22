@@ -21,7 +21,7 @@ type (
 		SavedEnts []EntDef
 		// Time when the save was made.
 		Timestamp              time.Time
-		KillCount, SecretCount uint
+		KillCount, SecretCount int
 		TimeSoFar              time.Duration
 		AfterCheckpoint        bool
 		DifficultyIndex        int

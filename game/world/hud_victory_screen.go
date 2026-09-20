@@ -18,10 +18,6 @@ type counter struct {
 }
 
 type VictoryScreen struct {
-	EnemiesKilled, EnemiesTotal uint
-	SecretsFound, SecretsTotal  uint
-
-	levelStartTime, levelEndTime            time.Time
 	timeCounter, killCounter, secretCounter counter
 	currentCounter                          *counter // Refers to which of the above counters are being counted
 	countTimer                              float32  // Seconds between counting the stats on the victory screen
@@ -32,7 +28,6 @@ type VictoryScreen struct {
 
 func (screen *VictoryScreen) init() {
 	*screen = VictoryScreen{
-		levelStartTime: time.Now(),
 		currentCounter: &screen.timeCounter,
 	}
 
@@ -72,17 +67,16 @@ func (screen *VictoryScreen) init() {
 }
 
 func (screen *VictoryScreen) EndLevel() {
-	screen.levelEndTime = time.Now()
 	screen.timeCounter = counter{
-		max:  screen.levelEndTime.Sub(screen.levelStartTime).Milliseconds(),
+		max:  gWorld.levelEndTime.Sub(gWorld.levelStartTime).Milliseconds(),
 		step: 12_000,
 	}
 	screen.killCounter = counter{
-		max:  int64(screen.EnemiesKilled),
+		max:  int64(gWorld.enemiesKilled),
 		step: 1,
 	}
 	screen.secretCounter = counter{
-		max:  int64(screen.SecretsFound),
+		max:  int64(gWorld.secretsFound),
 		step: 1,
 	}
 }
@@ -128,9 +122,9 @@ func (screen *VictoryScreen) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	statsText.WriteString(settings.Localize("statTime"))
 	fmt.Fprintf(&statsText, ": %02d:%05.2f\n", int(timeStat.Minutes()), math2.Mod(timeStat.Seconds(), 60.0))
 	statsText.WriteString(settings.Localize("statKills"))
-	fmt.Fprintf(&statsText, ": %02d/%02d\n", screen.killCounter.count, screen.EnemiesTotal)
+	fmt.Fprintf(&statsText, ": %02d/%02d\n", screen.killCounter.count, gWorld.enemiesTotal)
 	statsText.WriteString(settings.Localize("statSecrets"))
-	fmt.Fprintf(&statsText, ": %02d/%02d", screen.secretCounter.count, screen.SecretsTotal)
+	fmt.Fprintf(&statsText, ": %02d/%02d", screen.secretCounter.count, gWorld.secretsTotal)
 	screen.txtStats.SetText(statsText.String())
 	queue.Add(&screen.txtStats)
 }

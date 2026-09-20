@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	EntTypeEnemy   = "enemy"
 	EnemyColLayers = ColLayerActors | ColLayerNPCs
 )
 
@@ -124,7 +125,6 @@ func SpawnEnemy(position mgl32.Vec3, angles [3]math2.Radians, variant game.Enemy
 		return
 	}
 
-	gWorld.Hud.VictoryScreen.EnemiesTotal++
 	enemy.variant = variant
 	enemy.id = id
 
@@ -351,7 +351,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 				}
 			}
 
-			gWorld.Hud.VictoryScreen.EnemiesKilled--
+			gWorld.enemiesKilled--
 			enemy.actor.body.RestoreLayers()
 			enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 		}
@@ -386,7 +386,7 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			enemy.actor.body.ExcludeLayers(collision.MaskAll)
 
 			if enemy.framesAlive > 0 {
-				gWorld.Hud.VictoryScreen.EnemiesKilled++
+				gWorld.enemiesKilled++
 				enemy.bloodParticles.EmissionTimer = newState.anim.Duration()
 
 				if enemy.spawnAmmo != game.AmmoTypeNone && rand.Float32() < enemy.spawnAmmoChance {
@@ -517,7 +517,7 @@ func (enemy *Enemy) Save() game.EntDef {
 		Display:  te3.ENT_DISPLAY_SPRITE,
 		Color:    [3]int{255, 255, 255},
 		Properties: game.EntProps{
-			Type:   te3.SomeString("enemy"),
+			Type:   te3.SomeString(EntTypeEnemy),
 			Enemy:  te3.SomeString(enemy.variant.String()),
 			Health: te3.SomeFloat(enemy.actor.Health),
 		},

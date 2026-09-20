@@ -1,7 +1,4 @@
 # TODO - Development
-- Bug: Sometimes the secrets total is 0
-  - Happened on E1M2 after reloading from a checkpoint after dying
-  - Can't recreate
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners

@@ -68,6 +68,11 @@ type World struct {
 	frameBuffer         render.Framebuffer // Contains the rendered texture of the game
 	hitCheckpoint       bool               // Turns true after the player hits a checkpoint
 	gameplayLayerNumber int                // Y coordinate on the level grid that the game actors are on
+
+	// Victory stats
+	enemiesKilled, enemiesTotal  int
+	secretsFound, secretsTotal   int
+	levelStartTime, levelEndTime time.Time
 }
 
 var gWorld *World
@@ -94,13 +99,13 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 	entType = ent.Properties.Type.Or("")
 	var err error
 	switch entType {
-	case "enemy":
+	case EntTypeEnemy:
 		_, _, err = SpawnEnemyFromTE3(ent)
 	case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
 		_, _, err = SpawnWallFromTE3(ent)
 	case "prop":
 		_, _, err = SpawnPropFromTE3(ent)
-	case "trigger":
+	case EntTypeTrigger:
 		_, _, err = SpawnTriggerFromTE3(ent)
 	case "item":
 		_, _, err = SpawnItemFromTE3(ent)
@@ -137,9 +142,8 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 
 	gWorld.Hud.Init()
 	// Include stats from save file if applicable
-	gWorld.Hud.VictoryScreen.EnemiesKilled += changeInfo.KillCount
-	gWorld.Hud.VictoryScreen.SecretsFound += changeInfo.SecretCount
-	gWorld.Hud.VictoryScreen.levelStartTime = gWorld.Hud.VictoryScreen.levelStartTime.Add(-changeInfo.TimeSoFar)
+	gWorld.enemiesKilled += changeInfo.KillCount
+	gWorld.secretsFound += changeInfo.SecretCount
 
 	gWorld.Players = scene.NewStorageWithFuncs(8, (*Player).Update, (*Player).Render)
 	gWorld.Enemies = scene.NewStorageWithFuncs(256, (*Enemy).Update, (*Enemy).Render)
@@ -210,11 +214,18 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 	}
 
 	// Go over entities that might block sound zones and mark their tiles as blocking sound
+	// Also keep track of level stats, which should be independent of the saved state of the entities.
 	for _, ent := range te3File.Ents {
 		switch ent.Properties.Type.Or("") {
 		case WallTypeDoor, WallTypePushWall, WallTypeSwitch:
 			gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(ent.Position)
 			gWorld.GameMap.GridShape.SetZoneAt(gridX, gridY, gridZ, -1)
+		case EntTypeTrigger:
+			if ent.Properties.Action.Or("") == TriggerActionSecret {
+				gWorld.secretsTotal++
+			}
+		case EntTypeEnemy:
+			gWorld.enemiesTotal++
 		case EntTypePlayer:
 			_, gWorld.gameplayLayerNumber, _ = gWorld.GameMap.GridShape.WorldToGridPos(ent.Position)
 		}
@@ -266,6 +277,8 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 			Number: 0,
 		})
 	}
+
+	gWorld.levelStartTime = time.Now().Add(-changeInfo.TimeSoFar)
 
 	return gWorld, nil
 }
@@ -399,6 +412,7 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	camera, _ := world.CurrentCamera.Get()
 	camera.waitTime = 0.0
 	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
+	gWorld.levelEndTime = time.Now()
 	world.Hud.VictoryScreen.EndLevel()
 }
 
@@ -536,9 +550,9 @@ func (world *World) MarshalJSONTo(encoder *jsontext.Encoder) error {
 		MapTitleKey:     world.MapTitleKey,
 		SavedEnts:       ents,
 		Timestamp:       time.Now(),
-		KillCount:       world.Hud.VictoryScreen.EnemiesKilled,
-		SecretCount:     world.Hud.VictoryScreen.SecretsFound,
-		TimeSoFar:       time.Since(world.Hud.VictoryScreen.levelStartTime),
+		KillCount:       world.enemiesKilled,
+		SecretCount:     world.secretsFound,
+		TimeSoFar:       time.Since(world.levelStartTime),
 		AfterCheckpoint: world.hitCheckpoint,
 		DifficultyIndex: settings.Current.DifficultyIndex,
 	})

@@ -16,6 +16,7 @@ import (
 const triggerMaxContacts = 3
 
 const (
+	EntTypeTrigger          = "trigger"
 	TriggerActionTeleport   = "teleport"
 	TriggerActionDamage     = "damage"
 	TriggerActionEndLevel   = "end level"
@@ -73,7 +74,6 @@ func SpawnTriggerFromTE3(ent game.EntDef) (id scene.Id[*Trigger], tr *Trigger, e
 	case TriggerActionSecret:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = secretAreaAction
-		gWorld.Hud.VictoryScreen.SecretsTotal++
 	case TriggerActionActivate:
 		tr.filter = playerOnlyFilter
 		tr.onEnter = activateAction
@@ -230,7 +230,7 @@ func exitLevelAction(tr *Trigger, handle scene.Handle) {
 }
 
 func secretAreaAction(tr *Trigger, handle scene.Handle) {
-	gWorld.Hud.VictoryScreen.SecretsFound++
+	gWorld.secretsFound++
 	gWorld.Hud.ShowMessage(settings.Localize("foundSecret"), 50, color.Red)
 	cache.GetSfx("assets/sounds/secret_chime.wav").Play()
 	gWorld.QueueRemoval(tr.id.Handle)

@@ -63,7 +63,7 @@ func (hud *Hud) Update(deltaTime float32, player *Player) {
 	if !hud.Intro.Done() {
 		hud.Intro.Layout(&hud.renderQueue, deltaTime)
 	}
-	if hud.VictoryScreen.levelEndTime.IsZero() {
+	if gWorld.levelEndTime.IsZero() {
 		if gWorld.CurrentCamera.Equals(player.Camera.Handle) {
 			hud.StatusBar.Layout(&hud.renderQueue, deltaTime, player)
 			hud.MessageBar.layout(&hud.renderQueue, deltaTime)
