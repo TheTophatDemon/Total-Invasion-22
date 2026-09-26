@@ -212,7 +212,7 @@ func (enemy *Enemy) Update(deltaTime float32) {
 			const enemyFovRads = math.Pi
 			inFieldOfView := math2.Acos(enemy.dirToTarget.Dot(enemyDir)) < enemyFovRads/2.0
 			const wakeProximity = 1.7
-			const noticeProximity = 25.0
+			const noticeProximity = 50.0
 			if enemy.distToTarget < wakeProximity {
 				enemy.canSeeTarget = true
 			} else if inFieldOfView {

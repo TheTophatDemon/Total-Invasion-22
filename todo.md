@@ -1,4 +1,5 @@
 # TODO - Development
+- Stop enemies from forgetting the player after turning around
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners
@@ -24,9 +25,6 @@
 - Rebalance based on difficulty levels
   - E1M3
   - E1M4
-- E1M5
-  - Refurbish after auto generation
-  - Expand length of level
 - E1M6
   - Song
   - Double Grenade Launcher
