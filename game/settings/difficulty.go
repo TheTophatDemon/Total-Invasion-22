@@ -8,6 +8,7 @@ type (
 	Difficulty struct {
 		Index                                  int
 		EnemyHealthMultiplier                  float32
+		EnemyWakeTime                          float32
 		WraithMeleeDamage                      float32
 		ExplosionMaxDamage, ExplosionMinDamage float32
 	}
@@ -18,12 +19,14 @@ var (
 		{
 			Index:                 0,
 			EnemyHealthMultiplier: 0.5,
+			EnemyWakeTime:         0.5,
 			WraithMeleeDamage:     8.0,
 			ExplosionMaxDamage:    25.0,
 			ExplosionMinDamage:    0.0,
 		},
 		{
 			Index:                 1,
+			EnemyWakeTime:         0.5,
 			EnemyHealthMultiplier: 0.75,
 			WraithMeleeDamage:     12.0,
 			ExplosionMaxDamage:    35.0,
@@ -31,6 +34,7 @@ var (
 		},
 		{
 			Index:                 2,
+			EnemyWakeTime:         0.3,
 			EnemyHealthMultiplier: 1.0,
 			WraithMeleeDamage:     15.0,
 			ExplosionMaxDamage:    50.0,
@@ -38,6 +42,7 @@ var (
 		},
 		{
 			Index:                 3,
+			EnemyWakeTime:         0.1,
 			EnemyHealthMultiplier: 1.5,
 			WraithMeleeDamage:     20.0,
 			ExplosionMaxDamage:    75,

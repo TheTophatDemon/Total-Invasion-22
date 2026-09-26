@@ -1,5 +1,6 @@
 # TODO - Development
-- Stop enemies from forgetting the player after turning around
+- Changing difficulty does not update level layout after loading save
+  - Is this worth fixing?
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners

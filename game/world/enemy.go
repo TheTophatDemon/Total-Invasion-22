@@ -22,13 +22,12 @@ import (
 const (
 	EntTypeEnemy   = "enemy"
 	EnemyColLayers = ColLayerActors | ColLayerNPCs
+	EnemyWakeLimit = 30.0 // Maximum number of seconds after losing sight of player before giving up.
 )
 
 type Enemy struct {
 	SpriteRender                                   comps.SpriteRender
 	AnimPlayer                                     comps.AnimationPlayer
-	WakeTime                                       float32 // Number of seconds player must be in sight before enemy begins to pursue.
-	WakeLimit                                      float32 // Maximum number of seconds after losing sight of player before giving up.
 	StunTime                                       float32 // Number of seconds the enemy stays in the 'stunned' state after getting hurt.
 	StunChance                                     float32 // The probability from 0 to 1 of the enemy getting stunned when hurt.
 	bloodParticles                                 comps.ParticleRender
@@ -139,8 +138,6 @@ func SpawnEnemy(position mgl32.Vec3, angles [3]math2.Radians, variant game.Enemy
 		Friction:  20.0,
 		MaxSpeed:  5.5,
 	}
-	enemy.WakeTime = 0.5
-	enemy.WakeLimit = 5.0
 	enemy.StunChance = 1.0
 	enemy.StunTime = 0.5
 	enemy.chaseTimer = rand.Float32() * 10.0
@@ -254,11 +251,11 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	}
 
 	if enemy.canHearTarget {
-		enemy.wakeTimer = enemy.WakeLimit
+		enemy.wakeTimer = EnemyWakeLimit
 	} else if !enemy.canSeeTarget {
 		enemy.wakeTimer = max(0.0, enemy.wakeTimer-deltaTime)
 	} else {
-		enemy.wakeTimer = min(enemy.WakeLimit, enemy.wakeTimer+deltaTime)
+		enemy.wakeTimer = min(EnemyWakeLimit, enemy.wakeTimer+deltaTime)
 	}
 
 	if enemy.actor.Health <= 0.0 && enemy.state != &enemy.reviveState {
@@ -272,19 +269,19 @@ func (enemy *Enemy) Update(deltaTime float32) {
 	// Default state updates
 	switch enemy.state {
 	case &enemy.idleState:
-		if enemy.wakeTimer >= enemy.WakeTime {
+		if enemy.wakeTimer >= settings.CurrDifficulty().EnemyWakeTime {
 			enemy.changeState(&enemy.chaseState)
 		}
 		enemy.actor.inputForward = 0.0
 		enemy.actor.inputStrafe = 0.0
 	case &enemy.chaseState:
-		if enemy.wakeTimer <= 0.0 && !enemy.canSeeTarget {
+		if enemy.wakeTimer <= 0.0 && !enemy.canSeeTarget && !enemy.canHearTarget {
 			enemy.changeState(&enemy.idleState)
 		}
 	case &enemy.stunState:
 		enemy.actor.inputForward, enemy.actor.inputStrafe = 0.0, 0.0
 		if enemy.stateTimer > enemy.StunTime {
-			enemy.wakeTimer = enemy.WakeLimit
+			enemy.wakeTimer = EnemyWakeLimit
 			enemy.changeState(&enemy.chaseState)
 		}
 	case &enemy.dieState:
@@ -320,9 +317,7 @@ func (enemy *Enemy) ProcessSignal(signal any) {
 }
 
 func (enemy *Enemy) OnPlayerVictory() {
-	enemy.WakeTime = math2.Inf32()
-	enemy.WakeLimit = 0.0
-	enemy.wakeTimer = 0.0
+	enemy.wakeTimer = -math2.Inf32()
 	if enemy.actor.Health > 0 {
 		enemy.changeState(&enemy.idleState)
 	}
@@ -394,6 +389,9 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 				}
 			}
 		}
+		if newState == &enemy.chaseState {
+			enemy.wakeTimer = EnemyWakeLimit
+		}
 	}
 
 	enemy.stateTimer = 0.0
@@ -418,7 +416,7 @@ func (enemy *Enemy) OnDamage(sourceEntity any, damage float32) bool {
 		if rand.Float32() < enemy.StunChance*sourceStunChance {
 			enemy.changeState(&enemy.stunState)
 		} else {
-			enemy.wakeTimer = enemy.WakeLimit
+			enemy.wakeTimer = EnemyWakeLimit
 			if enemy.state == &enemy.idleState {
 				enemy.changeState(&enemy.chaseState)
 			}
