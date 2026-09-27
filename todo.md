@@ -1,6 +1,13 @@
 # TODO - Development
 - Changing difficulty does not update level layout after loading save
-  - Is this worth fixing?
+  - Reload the whole level when changing the difficulty setting, preserve equipment
+- Why is E1M5 laggy on "Don't hold back" and above?
+- Punish Me difficulty
+  - Disable overhealing
+  - Make enemies revive?
+  - Allow enemies to open doors
+  - Hide menu option until you hover over it
+- No ammo indicator for weapon wheel
 - Double Grenade Launcher
 - Chicken cannon secondary attack
 - Fix jittering in corners
@@ -23,9 +30,6 @@
 - Re-record enemy voices
 
 # TODO - Levels
-- Rebalance based on difficulty levels
-  - E1M3
-  - E1M4
 - E1M6
   - Song
   - Double Grenade Launcher
