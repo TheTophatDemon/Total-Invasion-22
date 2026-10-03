@@ -288,7 +288,7 @@ func (world *World) Update(deltaTime float32) {
 
 	// Create BSP tree
 	it := world.IterBodies()
-	world.bspTree = tree.BuildBspTree(scene.CollectSet(&it))
+	world.bspTree = tree.BuildBspTree(scene.Collect(&it))
 
 	// Update entities
 	world.UpdateStores(deltaTime)

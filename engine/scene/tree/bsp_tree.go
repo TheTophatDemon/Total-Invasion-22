@@ -1,12 +1,11 @@
 package tree
 
 import (
-	"maps"
+	"iter"
 	"math"
 	"slices"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
@@ -14,13 +13,14 @@ import (
 
 // A BSP tree that splits objects into sections on the X and Z axes to speed up collision detection.
 type BspTree struct {
-	nodes []bspNode
+	nodes   []bspNode
+	visited map[scene.Handle]bool
 }
 
 type bspNode struct {
 	splitAxis                   int
 	planeOffset                 float32
-	objects                     containers.Set[scene.Handle]
+	objects                     []scene.Handle
 	leftChildIdx, rightChildIdx int
 }
 
@@ -41,9 +41,10 @@ func (node bspNode) TouchesRay(rayOrigin, rayDir mgl32.Vec3, maxDist float32) (t
 	return
 }
 
-func BuildBspTree(bodies containers.Set[scene.Handle]) BspTree {
+func BuildBspTree(bodies []scene.Handle) BspTree {
 	tree := BspTree{
-		nodes: make([]bspNode, 0, len(bodies)),
+		nodes:   make([]bspNode, 0, len(bodies)),
+		visited: make(map[scene.Handle]bool, len(bodies)),
 	}
 
 	// Uncomment this to put all the objects in the root node in order
@@ -59,7 +60,7 @@ func BuildBspTree(bodies containers.Set[scene.Handle]) BspTree {
 	return tree
 }
 
-func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[scene.Handle]) {
+func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies []scene.Handle) {
 	const maxDepth = 10
 	const minObjects = 2
 	if len(bodies) <= minObjects || depth >= maxDepth {
@@ -74,7 +75,7 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 	}
 
 	var avgPos float32 = 0.0
-	for handle := range bodies {
+	for _, handle := range bodies {
 		bodyHaver, ok := handle.Get[comps.HasBody]()
 		if !ok {
 			continue
@@ -90,9 +91,9 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 		rightChildIdx: -1,
 	}
 
-	leftBodies := containers.NewSet[scene.Handle](len(bodies))
-	rightBodies := containers.NewSet[scene.Handle](len(bodies))
-	for handle := range bodies {
+	leftBodies := make([]scene.Handle, 0)
+	rightBodies := make([]scene.Handle, 0)
+	for _, handle := range bodies {
 		bodyHaver, ok := handle.Get[comps.HasBody]()
 		if !ok {
 			continue
@@ -100,10 +101,10 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 
 		touchesLeft, touchesRight := node.TouchesChild(bodyHaver.Body().Shape, bodyHaver.Body().Position)
 		if touchesLeft {
-			leftBodies.Add(handle)
+			leftBodies = append(leftBodies, handle)
 		}
 		if touchesRight {
-			rightBodies.Add(handle)
+			rightBodies = append(rightBodies, handle)
 		}
 	}
 
@@ -129,56 +130,74 @@ func (tree *BspTree) buildBvhNode(splitAxis, depth int, bodies containers.Set[sc
 
 // Returns handles to entities with physics bodies that are in the leaves of the BSP tree where the given
 // collision shape is residing.
-func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
-	if len(tree.nodes) == 0 {
-		return containers.Set[scene.Handle]{}
+func (tree *BspTree) PotentiallyTouchingEnts(pos mgl32.Vec3, shape collision.Shape) iter.Seq[scene.Handle] {
+	return func(yield func(scene.Handle) bool) {
+		if tree == nil || len(tree.nodes) == 0 {
+			return
+		}
+		clear(tree.visited)
+		stack := make([]bspNode, 0, 16)
+		stack = append(stack, tree.nodes[0])
+		for len(stack) > 0 {
+			last := len(stack) - 1
+			node := stack[last]
+			stack = stack[:last]
+			if node.IsLeaf() {
+				for _, handle := range node.objects {
+					if tree.visited[handle] {
+						continue
+					}
+					tree.visited[handle] = true
+					if !yield(handle) {
+						return
+					}
+				}
+			} else {
+				touchesLeft, touchesRight := node.TouchesChild(shape, pos)
+				if node.rightChildIdx >= 0 && touchesRight {
+					stack = append(stack, tree.nodes[node.rightChildIdx])
+				}
+				if node.leftChildIdx >= 0 && touchesLeft {
+					stack = append(stack, tree.nodes[node.leftChildIdx])
+				}
+			}
+		}
 	}
-	return tree.potentiallyTouchingEntsRecursive(&tree.nodes[0], pos, shape)
 }
 
-func (tree *BspTree) potentiallyTouchingEntsRecursive(node *bspNode, pos mgl32.Vec3, shape collision.Shape) containers.Set[scene.Handle] {
-	if node.IsLeaf() {
-		return node.objects
-	}
-	res := containers.NewSet[scene.Handle](0)
-	touchesLeft, touchesRight := node.TouchesChild(shape, pos)
-	if node.rightChildIdx >= 0 && touchesRight {
-		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.rightChildIdx], pos, shape) {
-			res.Add(handle)
+func (tree *BspTree) PotentiallyCrossingEnts(rayOrigin, rayDir mgl32.Vec3, maxDist float32) iter.Seq[scene.Handle] {
+	return func(yield func(scene.Handle) bool) {
+		if tree == nil || len(tree.nodes) == 0 {
+			return
+		}
+		clear(tree.visited)
+		stack := make([]bspNode, 0, 16)
+		stack = append(stack, tree.nodes[0])
+		for len(stack) > 0 {
+			last := len(stack) - 1
+			node := stack[last]
+			stack = stack[:last]
+			if node.IsLeaf() {
+				for _, handle := range node.objects {
+					if tree.visited[handle] {
+						continue
+					}
+					tree.visited[handle] = true
+					if !yield(handle) {
+						return
+					}
+				}
+			} else {
+				touchesLeft, touchesRight := node.TouchesRay(rayOrigin, rayDir, maxDist)
+				if node.rightChildIdx >= 0 && touchesRight {
+					stack = append(stack, tree.nodes[node.rightChildIdx])
+				}
+				if node.leftChildIdx >= 0 && touchesLeft {
+					stack = append(stack, tree.nodes[node.leftChildIdx])
+				}
+			}
 		}
 	}
-	if node.leftChildIdx >= 0 && touchesLeft {
-		for handle := range tree.potentiallyTouchingEntsRecursive(&tree.nodes[node.leftChildIdx], pos, shape) {
-			res.Add(handle)
-		}
-	}
-	return res
-}
-
-func (tree *BspTree) PotentiallyCrossingEnts(rayOrigin, rayDir mgl32.Vec3, maxDist float32) containers.Set[scene.Handle] {
-	if len(tree.nodes) == 0 {
-		return containers.Set[scene.Handle]{}
-	}
-	return tree.potentiallyCrossingEntsRecursive(&tree.nodes[0], rayOrigin, rayDir, maxDist)
-}
-
-func (tree *BspTree) potentiallyCrossingEntsRecursive(node *bspNode, rayOrigin, rayDir mgl32.Vec3, maxDist float32) containers.Set[scene.Handle] {
-	if node.IsLeaf() {
-		return node.objects
-	}
-	res := containers.NewSet[scene.Handle](0)
-	touchesLeft, touchesRight := node.TouchesRay(rayOrigin, rayDir, maxDist)
-	if node.rightChildIdx >= 0 && touchesRight {
-		for handle := range tree.potentiallyCrossingEntsRecursive(&tree.nodes[node.rightChildIdx], rayOrigin, rayDir, maxDist) {
-			res.Add(handle)
-		}
-	}
-	if node.leftChildIdx >= 0 && touchesLeft {
-		for handle := range tree.potentiallyCrossingEntsRecursive(&tree.nodes[node.leftChildIdx], rayOrigin, rayDir, maxDist) {
-			res.Add(handle)
-		}
-	}
-	return res
 }
 
 // Returns the vector that needs to be added to the body's movement to avoid obstacles in the tree.
@@ -196,7 +215,7 @@ func (tree *BspTree) ResolveCollisions(
 
 	{
 		shrinkyShape := body.Shape.ShrunkenBy(0.1)
-		obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(body.Position, body.Shape)))
+		obstacles := slices.Collect(tree.PotentiallyTouchingEnts(body.Position, body.Shape))
 		smallestRes := collision.Result{
 			Distance: math.MaxFloat32,
 		}
@@ -227,7 +246,7 @@ func (tree *BspTree) ResolveCollisions(
 		smallestPush := mgl32.Vec3{}
 		smallestPushLenSq := float32(math.MaxFloat32)
 		nextPos := body.Position.Add(movement).Add(push)
-		obstacles := slices.Collect(maps.Keys(tree.PotentiallyTouchingEnts(nextPos, body.Shape)))
+		obstacles := slices.Collect(tree.PotentiallyTouchingEnts(nextPos, body.Shape))
 		for _, handle := range obstacles {
 			if collidingEnt, ok := handle.Get[comps.HasBody](); ok {
 				otherBody := collidingEnt.Body()
