@@ -390,9 +390,7 @@ func (returnItem *ReturnItem) Init() *ReturnItem {
 		return nil
 	}
 	*returnItem = ReturnItem{
-		MenuItem: MenuItem{
-			element: ui.NewText(ui.Transform{}, settings.Localize("return"), ui.TextConfig{}),
-		},
+		element: ui.NewText(ui.Transform{}, settings.Localize("return"), ui.TextConfig{}),
 	}
 	return returnItem
 }

@@ -108,6 +108,9 @@ func endCaptureInput() {
 }
 
 func MousePosition() mgl32.Vec2 {
+	if glfw.GetCurrentContext().GetAttrib(glfw.Focused) != glfw.True {
+		return mgl32.Vec2{-10000.0, -10000.0}
+	}
 	x, y := glfw.GetCurrentContext().GetCursorPos()
 	return mgl32.Vec2{float32(x), float32(y)}
 }

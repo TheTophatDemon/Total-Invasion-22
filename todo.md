@@ -1,16 +1,18 @@
 # TODO - Development
-- Changing difficulty does not update level layout after loading save
-  - Reload the whole level when changing the difficulty setting, preserve equipment
+- Bug
+  - Changing difficulty does not update level layout after loading save
+    - Reload the whole level when changing the difficulty setting, preserve equipment
+  - Fix jittering in corners
+  - Jittering while walking across non-solid props sometimes??
+  - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 - Punish Me difficulty
   - Disable overhealing
   - Make enemies revive?
   - Allow enemies to open doors
   - Hide menu option until you hover over it
-- No ammo indicator for weapon wheel
+- Need ammo indicator for weapon wheel
 - Double Grenade Launcher
 - Chicken cannon secondary attack
-- Fix jittering in corners
-- Jittering while walking across non-solid props sometimes??
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
 - Replace GLFW bindings with purego bindings to reduce CGO overhead
@@ -18,7 +20,6 @@
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
-- When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 
 # TODO - Art
 - Modify loading screen graphic to be more on-model
