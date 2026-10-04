@@ -1,40 +1,66 @@
 package tdaudio
 
-/*
-#include "./td_audio.h"
-#include <stdlib.h>
-*/
-import "C"
 import (
 	"log"
-	"unsafe"
+	"structs"
+
+	"github.com/ebitengine/purego"
+	"tophatdemon.com/total-invasion-ii/engine/failure"
 )
 
 type (
-	SoundId C.td_player_id
-	VoiceId C.td_voice_id
+	SoundId struct {
+		_  structs.HostLayout
+		Id uint32
+	}
+	VoiceId struct {
+		_             structs.HostLayout
+		Player        SoundId
+		Id, PlayCount uint32
+	}
+)
+
+var (
+	loadSound              func(path string, polyphony uint8, looping bool, rolloff float32, noRetrigger bool) SoundId
+	isLooped               func(soundId SoundId) bool
+	playSound              func(soundId SoundId, x, y, z float32, attenuate bool) VoiceId
+	isPlaying              func(voiceId VoiceId) bool
+	setSoundPosition       func(voiceId VoiceId, x, y, z float32)
+	voiceIsValid           func(voiceId VoiceId) bool
+	stopSound              func(voiceId VoiceId)
+	seekSound              func(voiceId VoiceId, ms uint64)
+	getSoundTime           func(voiceId VoiceId) uint64
+	initTdAudio            func() bool
+	setListenerOrientation func(posX, posY, posZ, dirX, dirY, dirZ float32)
+	setSfxVolume           func(volume float32)
+	getSfxVolume           func() float32
+	setMusicVolume         func(volume float32)
+	getMusicVolume         func() float32
+	queueSong              func(path string, looping bool, fadeoutMs uint64) bool
+	stopAll                func()
+	update                 func()
+	teardown               func()
+	freeSounds             func()
 )
 
 // Sound functions
 
 func LoadSound(path string, polyphony uint8, looping bool, rolloff float32, noRetrigger bool) SoundId {
 	log.Println("Loading sound at ", path)
-	cPath := C.CString(path)
-	defer C.free(unsafe.Pointer(cPath))
-	cSound := C.td_audio_load_sound(cPath, C.uint8_t(polyphony), C.bool(looping), C.float(rolloff), C.bool(noRetrigger))
+	cSound := loadSound(path, polyphony, looping, rolloff, noRetrigger)
 	return SoundId(cSound)
 }
 
 func (sound SoundId) IsLooping() bool {
-	return bool(C.td_audio_sound_is_looped(C.td_player_id(sound)))
+	return isLooped(sound)
 }
 
 func (sound SoundId) Play() VoiceId {
-	return VoiceId(C.td_audio_play_sound(C.td_player_id(sound), C.float(0), C.float(0), C.float(0), C.bool(false)))
+	return playSound(sound, 0, 0, 0, false)
 }
 
 func (sound SoundId) PlayAttenuated(x, y, z float32) VoiceId {
-	return VoiceId(C.td_audio_play_sound(C.td_player_id(sound), C.float(x), C.float(y), C.float(z), C.bool(true)))
+	return playSound(sound, x, y, z, true)
 }
 
 func (sound SoundId) PlayAttenuatedV(pos [3]float32) VoiceId {
@@ -42,17 +68,17 @@ func (sound SoundId) PlayAttenuatedV(pos [3]float32) VoiceId {
 }
 
 func (sound SoundId) IsValid() bool {
-	return uint32(sound.id) != 0
+	return sound.Id != 0
 }
 
 // Voice functions
 
 func (voice VoiceId) IsPlaying() bool {
-	return bool(C.td_audio_sound_is_playing(C.td_voice_id(voice)))
+	return isPlaying(voice)
 }
 
 func (voice VoiceId) SetPosition(x, y, z float32) {
-	C.td_audio_set_sound_position(C.td_voice_id(voice), C.float(x), C.float(y), C.float(z))
+	setSoundPosition(voice, x, y, z)
 }
 
 func (voice VoiceId) SetPositionV(pos [3]float32) {
@@ -60,34 +86,57 @@ func (voice VoiceId) SetPositionV(pos [3]float32) {
 }
 
 func (voice VoiceId) IsValid() bool {
-	return bool(C.td_audio_voice_is_valid(C.td_voice_id(voice)))
+	return voiceIsValid(voice)
 }
 
 func (voice VoiceId) Stop() {
-	C.td_audio_stop_sound(C.td_voice_id(voice))
+	stopSound(voice)
 }
 
 func (voice VoiceId) Seek(timeMs uint64) {
-	C.td_audio_seek_sound(C.td_voice_id(voice), C.uint64_t(timeMs))
+	seekSound(voice, timeMs)
 }
 
 // Returns the current audio track time in milliseconds.
 func (voice VoiceId) GetTime() uint64 {
-	return uint64(C.td_audio_get_sound_time(C.td_voice_id(voice)))
+	return getSoundTime(voice)
 }
 
 func (voice VoiceId) Sound() SoundId {
-	return SoundId(voice.player)
+	return SoundId(voice.Player)
 }
 
-// General audio functions
-
 func Init() bool {
-	return bool(C.td_audio_init())
+	lib, err := openLibrary()
+	if err != nil {
+		failure.LogErrWithLocation("error loading TD audio dll: %v", err)
+		return false
+	}
+	purego.RegisterLibFunc(&loadSound, lib, "td_audio_load_sound")
+	purego.RegisterLibFunc(&isLooped, lib, "td_audio_sound_is_looped")
+	purego.RegisterLibFunc(&playSound, lib, "td_audio_play_sound")
+	purego.RegisterLibFunc(&isPlaying, lib, "td_audio_sound_is_playing")
+	purego.RegisterLibFunc(&setSoundPosition, lib, "td_audio_set_sound_position")
+	purego.RegisterLibFunc(&voiceIsValid, lib, "td_audio_voice_is_valid")
+	purego.RegisterLibFunc(&stopSound, lib, "td_audio_stop_sound")
+	purego.RegisterLibFunc(&seekSound, lib, "td_audio_seek_sound")
+	purego.RegisterLibFunc(&getSoundTime, lib, "td_audio_get_sound_time")
+	purego.RegisterLibFunc(&initTdAudio, lib, "td_audio_init")
+	purego.RegisterLibFunc(&setListenerOrientation, lib, "td_audio_set_listener_orientation")
+	purego.RegisterLibFunc(&setSfxVolume, lib, "td_audio_set_sfx_volume")
+	purego.RegisterLibFunc(&getSfxVolume, lib, "td_audio_get_sfx_volume")
+	purego.RegisterLibFunc(&setMusicVolume, lib, "td_audio_set_music_volume")
+	purego.RegisterLibFunc(&getMusicVolume, lib, "td_audio_get_music_volume")
+	purego.RegisterLibFunc(&queueSong, lib, "td_audio_queue_song")
+	purego.RegisterLibFunc(&stopAll, lib, "td_audio_stop_all")
+	purego.RegisterLibFunc(&update, lib, "td_audio_update")
+	purego.RegisterLibFunc(&teardown, lib, "td_audio_teardown")
+	purego.RegisterLibFunc(&freeSounds, lib, "td_audio_free_sounds")
+	return initTdAudio()
 }
 
 func SetListenerOrientation(posX, posY, posZ, dirX, dirY, dirZ float32) {
-	C.td_audio_set_listener_orientation(C.float(posX), C.float(posY), C.float(posZ), C.float(dirX), C.float(dirY), C.float(dirZ))
+	setListenerOrientation(posX, posY, posZ, dirX, dirY, dirZ)
 }
 
 func SetListenerOrientationV(pos, dir [3]float32) {
@@ -95,43 +144,41 @@ func SetListenerOrientationV(pos, dir [3]float32) {
 }
 
 func SetSfxVolume(newVolume float32) {
-	C.td_audio_set_sfx_volume(C.float(newVolume))
+	setSfxVolume(newVolume)
 }
 
 func SfxVolume() float32 {
-	return float32(C.td_audio_get_sfx_volume())
+	return getSfxVolume()
 }
 
 func SetMusicVolume(newVolume float32) {
-	C.td_audio_set_music_volume(C.float(newVolume))
+	setMusicVolume(newVolume)
 }
 
 func MusicVolume() float32 {
-	return float32(C.td_audio_get_music_volume())
+	return getMusicVolume()
 }
 
 func QueueSong(path string, looping bool, fadeoutMillis uint64) bool {
 	if len(path) == 0 {
-		return bool(C.td_audio_queue_song(nil, C.bool(looping), C.uint64_t(fadeoutMillis)))
+		return queueSong("", looping, fadeoutMillis)
 	}
 	log.Println("Loading song at ", path)
-	cPath := C.CString(path)
-	defer C.free(unsafe.Pointer(cPath))
-	return bool(C.td_audio_queue_song(cPath, C.bool(looping), C.uint64_t(fadeoutMillis)))
+	return queueSong(path, looping, fadeoutMillis)
 }
 
 func StopAll() {
-	C.td_audio_stop_all()
+	stopAll()
 }
 
 func Update() {
-	C.td_audio_update()
+	update()
 }
 
 func FreeSounds() {
-	C.td_audio_free_sounds()
+	freeSounds()
 }
 
 func Teardown() {
-	C.td_audio_teardown()
+	teardown()
 }
