@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 )
 
@@ -16,7 +17,7 @@ type (
 		MapPath     string
 		MapTitleKey string
 		// This will override the state of the player after she is loaded, superceding what is in the SavedEnts array.
-		PlayerEnt *EntDef
+		PlayerEnt maybe.T[EntDef]
 		// State of entities from a loaded save file, if applicable.
 		SavedEnts []EntDef
 		// Time when the save was made.
@@ -43,6 +44,8 @@ type (
 		Number int
 		// The path to the map file that will stop the loading process if it does not match.
 		RequireMap string
+		// If provided, the level will be reloaded to the version of the given difficulty. Player equipment will be preserved.
+		ResetDifficulty maybe.T[int]
 	}
 )
 

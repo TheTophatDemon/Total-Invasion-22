@@ -118,9 +118,9 @@ func spawnEntBasedOnType(ent game.EntDef, changeInfo game.MapChangeSignal) (entT
 		if err != nil {
 			log.Printf("error spawning player camera: %v\n", err)
 		}
-		if changeInfo.PlayerEnt != nil {
+		if playerEnt, ok := changeInfo.PlayerEnt.Value(); ok {
 			// Transfer properties from the previous level
-			ent.Properties = changeInfo.PlayerEnt.Properties
+			ent.Properties = playerEnt.Properties
 			// But don't carry over keys
 			ent.Properties.Keys = te3.SomeInt(0)
 		}

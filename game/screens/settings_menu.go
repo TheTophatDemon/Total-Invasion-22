@@ -7,6 +7,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -184,8 +185,12 @@ func (menu *SettingsMenu) Enter() {
 }
 
 func (menu *SettingsMenu) Exit() {
-	if len(menu.chooserDifficulty.choices) > 0 {
+	if len(menu.chooserDifficulty.choices) > 0 && settings.Current.DifficultyIndex != menu.chooserDifficulty.Choice().Index {
 		settings.Current.DifficultyIndex = menu.chooserDifficulty.Choice().Index
+		menu.app.ProcessSignal(game.LoadSignal{
+			Number: 0,
+			ResetDifficulty: maybe.Some(settings.Current.DifficultyIndex),
+		})
 	}
 	settings.Current.Locale = menu.chooserLanguage.Choice()
 	settings.Current.Vsync = bool(menu.chooserVsync.Choice())

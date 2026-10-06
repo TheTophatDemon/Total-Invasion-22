@@ -13,6 +13,7 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/render"
@@ -210,6 +211,22 @@ func (app *App) executeSignal(signal any) {
 				SaveAfterLoad: true,
 			})
 			return
+		}
+
+		if newDifficulty, ok := msg.ResetDifficulty.Value(); ok {
+			// Reset progress and difficulty level
+			saveData.DifficultyIndex = newDifficulty
+			saveData.AfterCheckpoint = false
+			saveData.SaveAfterLoad = true
+
+			// Wipe all the entities except for the player so they can be respawned based on difficulty
+			for _, ent := range saveData.SavedEnts {
+				if entType, ok := ent.Properties.Type.Value(); ok && entType == world.EntTypePlayer {
+					saveData.PlayerEnt = maybe.Some(ent)
+					break
+				}
+			}
+			saveData.SavedEnts = nil
 		}
 
 		app.executeSignal(saveData)

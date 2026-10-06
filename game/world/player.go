@@ -11,6 +11,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/color"
+	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -207,7 +208,7 @@ func (player *Player) Update(deltaTime float32) {
 		if (player.transitionTimer > 2.0 && input.IsAnythingPressed()) || player.transitionTimer > 35.0 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
 				MapPath:         gWorld.impendingLevel,
-				PlayerEnt:       new(player.Save()),
+				PlayerEnt:       maybe.Some(player.Save()),
 				SaveAfterLoad:   true,
 				DifficultyIndex: settings.Current.DifficultyIndex,
 			})
@@ -389,7 +390,7 @@ func (player *Player) takeUserInput(deltaTime float32) {
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 100 {
 			gWorld.app.ProcessSignal(game.MapChangeSignal{
 				MapPath:   gWorld.GameMap.Name,
-				PlayerEnt: new(player.Save()),
+				PlayerEnt: maybe.Some(player.Save()),
 			})
 		} else if err != nil {
 			failure.LogErrWithLocation("failed to launch editor: %v", err)

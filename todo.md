@@ -1,7 +1,5 @@
 # TODO - Development
-- Bug
-  - Changing difficulty does not update level layout after loading save
-    - Reload the whole level when changing the difficulty setting, preserve equipment
+- Bugs
   - Fix jittering in corners
   - Jittering while walking across non-solid props sometimes??
   - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
