@@ -24,3 +24,4 @@ game_settings.toml
 /ti2-convert
 /save*
 *.o
+*.so

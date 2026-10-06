@@ -8,24 +8,29 @@ import (
 )
 
 func main() {
-	const sourceDir = "./engine/tdaudio/c/"
-	// Compile to object files
-	cmd := exec.Command("gcc", "-c", sourceDir+"td_audio.c", sourceDir+"stb_vorbis.c")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		panic(err)
-	}
-
 	var libExt string
+	compileArgs := []string{"-c"}
 	switch runtime.GOOS {
 	case "windows":
 		libExt = "dll"
 	case "linux":
 		libExt = "so"
+		compileArgs = append(compileArgs, "-fPIC")
 	default:
 		panic(fmt.Sprintf("unsupported OS %v", runtime.GOOS))
+	}
+
+	const sourceDir = "./engine/tdaudio/c/"
+
+	compileArgs = append(compileArgs, sourceDir+"td_audio.c", sourceDir+"stb_vorbis.c")
+
+	// Compile to object files
+	cmd := exec.Command("gcc", compileArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
 	}
 
 	// Link into library file

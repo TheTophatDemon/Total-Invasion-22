@@ -16,7 +16,6 @@
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
 - Replace GLFW bindings with purego bindings to reduce CGO overhead
-  - Would it be worth it to do the same with tdaudio?
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities
