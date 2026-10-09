@@ -1,5 +1,6 @@
 # TODO - Development
 - Bugs
+  - Something wrong with setting mouse sensitivity
   - Fix jittering in corners
   - Jittering while walking across non-solid props sometimes??
   - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.

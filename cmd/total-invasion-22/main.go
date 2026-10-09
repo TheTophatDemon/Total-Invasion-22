@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"slices"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -252,15 +253,15 @@ func (app *App) LoadGame(sig game.MapChangeSignal) {
 }
 
 func main() {
-	// cpuProfile, err := os.Create("cpuProfile.pprof")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer cpuProfile.Close()
-	// if err := pprof.StartCPUProfile(cpuProfile); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer pprof.StopCPUProfile()
+	cpuProfile, err := os.Create("cpuProfile.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cpuProfile.Close()
+	if err := pprof.StartCPUProfile(cpuProfile); err != nil {
+		log.Fatal(err)
+	}
+	defer pprof.StopCPUProfile()
 
 	settings.LoadOrInit()
 

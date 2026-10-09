@@ -3,8 +3,8 @@ package input
 import (
 	"math"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/glfw"
 )
 
 type (

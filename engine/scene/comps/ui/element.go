@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -14,6 +13,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
+	"tophatdemon.com/total-invasion-ii/engine/glfw"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"tophatdemon.com/total-invasion-ii/engine/glfw"
 )
 
 type (

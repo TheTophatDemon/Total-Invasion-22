@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
+	"tophatdemon.com/total-invasion-ii/engine/glfw"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
