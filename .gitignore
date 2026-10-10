@@ -25,3 +25,7 @@ game_settings.toml
 /save*
 *.o
 *.so
+*.exp
+*.lib
+*.pdb
+*.rdi

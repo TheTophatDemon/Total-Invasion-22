@@ -21,7 +21,7 @@ type sfxMetadata struct {
 
 func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	if !strings.HasSuffix(soundPath, ".wav") {
-		return tdaudio.SoundId{}, fmt.Errorf("%v is not a wav file", soundPath)
+		return tdaudio.SoundId(0), fmt.Errorf("%v is not a wav file", soundPath)
 	}
 
 	// Look for metadata file
@@ -29,7 +29,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	metadata, err := assets.LoadAndUnmarshalTOML[sfxMetadata](metaPath)
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
-		return tdaudio.SoundId{}, fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
+		return tdaudio.SoundId(0), fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
 	}
 
 	polyphony := uint8(4)

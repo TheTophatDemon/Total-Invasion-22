@@ -9,10 +9,7 @@ import (
 )
 
 type (
-	SoundId struct {
-		_  structs.HostLayout
-		Id uint32
-	}
+	SoundId uint32
 	VoiceId struct {
 		_             structs.HostLayout
 		Player        SoundId
@@ -30,14 +27,14 @@ var (
 	stopSound              func(voiceId VoiceId)
 	seekSound              func(voiceId VoiceId, ms uint64)
 	getSoundTime           func(voiceId VoiceId) uint64
-	initTdAudio            func() bool
+	initAudio              func() bool
 	setListenerOrientation func(posX, posY, posZ, dirX, dirY, dirZ float32)
 	setSfxVolume           func(volume float32)
 	getSfxVolume           func() float32
 	setMusicVolume         func(volume float32)
 	getMusicVolume         func() float32
 	queueSong              func(path string, looping bool, fadeoutMs uint64) bool
-	stopAll                func()
+	stopAllSounds          func()
 	update                 func()
 	teardown               func()
 	freeSounds             func()
@@ -68,7 +65,7 @@ func (sound SoundId) PlayAttenuatedV(pos [3]float32) VoiceId {
 }
 
 func (sound SoundId) IsValid() bool {
-	return sound.Id != 0
+	return int(sound) != 0
 }
 
 // Voice functions
@@ -112,27 +109,27 @@ func Init() bool {
 		failure.LogErrWithLocation("error loading TD audio dll: %v", err)
 		return false
 	}
-	purego.RegisterLibFunc(&loadSound, lib, "td_audio_load_sound")
-	purego.RegisterLibFunc(&isLooped, lib, "td_audio_sound_is_looped")
-	purego.RegisterLibFunc(&playSound, lib, "td_audio_play_sound")
-	purego.RegisterLibFunc(&isPlaying, lib, "td_audio_sound_is_playing")
-	purego.RegisterLibFunc(&setSoundPosition, lib, "td_audio_set_sound_position")
-	purego.RegisterLibFunc(&voiceIsValid, lib, "td_audio_voice_is_valid")
-	purego.RegisterLibFunc(&stopSound, lib, "td_audio_stop_sound")
-	purego.RegisterLibFunc(&seekSound, lib, "td_audio_seek_sound")
-	purego.RegisterLibFunc(&getSoundTime, lib, "td_audio_get_sound_time")
-	purego.RegisterLibFunc(&initTdAudio, lib, "td_audio_init")
-	purego.RegisterLibFunc(&setListenerOrientation, lib, "td_audio_set_listener_orientation")
-	purego.RegisterLibFunc(&setSfxVolume, lib, "td_audio_set_sfx_volume")
-	purego.RegisterLibFunc(&getSfxVolume, lib, "td_audio_get_sfx_volume")
-	purego.RegisterLibFunc(&setMusicVolume, lib, "td_audio_set_music_volume")
-	purego.RegisterLibFunc(&getMusicVolume, lib, "td_audio_get_music_volume")
-	purego.RegisterLibFunc(&queueSong, lib, "td_audio_queue_song")
-	purego.RegisterLibFunc(&stopAll, lib, "td_audio_stop_all")
-	purego.RegisterLibFunc(&update, lib, "td_audio_update")
-	purego.RegisterLibFunc(&teardown, lib, "td_audio_teardown")
-	purego.RegisterLibFunc(&freeSounds, lib, "td_audio_free_sounds")
-	return initTdAudio()
+	purego.RegisterLibFunc(&loadSound, lib, "load_sound")
+	purego.RegisterLibFunc(&isLooped, lib, "sound_is_looped")
+	purego.RegisterLibFunc(&playSound, lib, "play_sound")
+	purego.RegisterLibFunc(&isPlaying, lib, "sound_is_playing")
+	purego.RegisterLibFunc(&setSoundPosition, lib, "sound_set_position")
+	purego.RegisterLibFunc(&voiceIsValid, lib, "voice_is_valid")
+	purego.RegisterLibFunc(&stopSound, lib, "stop_sound")
+	purego.RegisterLibFunc(&seekSound, lib, "seek_sound")
+	purego.RegisterLibFunc(&getSoundTime, lib, "get_sound_time")
+	purego.RegisterLibFunc(&initAudio, lib, "audio_init")
+	purego.RegisterLibFunc(&setListenerOrientation, lib, "set_listener_orientation")
+	purego.RegisterLibFunc(&setSfxVolume, lib, "set_sfx_volume")
+	purego.RegisterLibFunc(&getSfxVolume, lib, "get_sfx_volume")
+	purego.RegisterLibFunc(&setMusicVolume, lib, "set_music_volume")
+	purego.RegisterLibFunc(&getMusicVolume, lib, "get_music_volume")
+	purego.RegisterLibFunc(&queueSong, lib, "queue_song")
+	purego.RegisterLibFunc(&stopAllSounds, lib, "stop_all_sounds")
+	purego.RegisterLibFunc(&update, lib, "audio_update")
+	purego.RegisterLibFunc(&teardown, lib, "audio_teardown")
+	purego.RegisterLibFunc(&freeSounds, lib, "free_sounds")
+	return initAudio()
 }
 
 func SetListenerOrientation(posX, posY, posZ, dirX, dirY, dirZ float32) {
@@ -168,7 +165,7 @@ func QueueSong(path string, looping bool, fadeoutMillis uint64) bool {
 }
 
 func StopAll() {
-	stopAll()
+	stopAllSounds()
 }
 
 func Update() {
