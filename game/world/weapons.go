@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"math/rand/v2"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -185,12 +186,43 @@ var (
 		},
 	}
 	WeaponDblGrenade = WeaponDef{
-		// NOT IMPLEMENTED
 		Name:          "doubleGrenadeLauncher",
 		Index:         game.WeaponIndexDblGrenade,
 		NoiseLevel:    80,
 		WheelColor:    color.FromBytes(255, 130, 0, 255),
 		WheelIconPath: "assets/textures/sprites/double_grenade_launcher.png",
+		Cooldown:      0.4,
+		SwayExtents:   mgl32.Vec2{16.0, 8.0},
+		SwaySpeed:     mgl32.Vec2{0.75, 1.25},
+		AmmoType:      game.AmmoTypeGrenade,
+		AmmoCost:      1,
+		IsShooter:     true,
+		IdleAnimName:  "idle",
+		FireAnimName:  "fire",
+		FireSoundPath: "assets/sounds/weapon/grenadelaunch.wav",
+		InitFunc: func(grenade *Weapon) {
+			grenadeTex := cache.GetTexture("assets/textures/ui/double_grenade_launcher_hud.png")
+			grenade.Sprite = ui.NewBox(ui.Transform{
+				Origin: ui.Ratios{0.5, 1.0},
+				Anchor: ui.Ratios{0.5, 1.0},
+			}, grenadeTex)
+		},
+		FireFunc: func(grenade *Weapon, player *Player, deltaTime float32, heldDown bool) {
+			sideVec := player.actor.FacingVec().Cross(math2.Vec3Up()).Mul(0.7)
+			if grenade.Sprite.BgFlippedHorz {
+				sideVec = sideVec.Mul(-1)
+			}
+			grenade.Sprite.BgFlippedHorz = !grenade.Sprite.BgFlippedHorz
+			firePos := player.Body().Position.Add(player.actor.FacingVec().Add(mgl32.Vec3{0.0, 0.15, 0.0}).Add(sideVec))
+
+			yawAngle := player.actor.YawAngle + math2.Radians((rand.Float32()*0.4)-0.2)
+
+			SpawnGrenade(firePos, mgl32.Vec3{
+				float32(-math2.Sin(yawAngle)),
+				0.0,
+				float32(-math2.Cos(yawAngle)),
+			}, player.id.Handle)
+		},
 	}
 	WeaponSign = WeaponDef{
 		Name:          "signOfMadness",

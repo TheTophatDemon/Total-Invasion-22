@@ -393,7 +393,8 @@ func (el *Element) Render(context *render.Context) {
 	failure.CheckOpenGLError()
 	_ = shaders.UIShader.SetUniformInt(shaders.UniformTex, 0)
 	failure.CheckOpenGLError()
-
+	_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
+	failure.CheckOpenGLError()
 	if el.BgMesh != nil {
 		el.BgMesh.Bind()
 
@@ -452,6 +453,9 @@ func (el *Element) Render(context *render.Context) {
 		cache.GetTexture(el.TextFont().TexturePath()).Bind()
 		_ = shaders.UIShader.SetUniformBool(shaders.UniformNoTexture, false)
 		_ = shaders.UIShader.SetUniformVec4(shaders.UniformSrcRect, el.AnimPlayer.FrameUV().Vec4())
+		failure.CheckOpenGLError()
+
+		_ = shaders.UIShader.SetUniformBool(shaders.UniformFlipHorz, false)
 		failure.CheckOpenGLError()
 
 		// Draw drop shadow

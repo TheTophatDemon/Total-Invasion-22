@@ -1,4 +1,6 @@
 # TODO - Development
+- Double Grenade Launcher
+  - Make grenades less likely to clip through walls
 - Bugs
   - Fix jittering in corners
   - Jittering while walking across non-solid props sometimes??
@@ -9,7 +11,6 @@
   - Allow enemies to open doors
   - Hide menu option until you hover over it
 - Need ammo indicator for weapon wheel
-- Double Grenade Launcher
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
