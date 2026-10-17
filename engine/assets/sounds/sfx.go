@@ -1,4 +1,4 @@
-package audio
+package sounds
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 )
 
 const ERROR_SFX_PATH = "assets/sounds/error.wav"
@@ -19,9 +19,9 @@ type sfxMetadata struct {
 	NoRetrigger bool
 }
 
-func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
+func LoadSfx(soundPath string) (audio.SoundId, error) {
 	if !strings.HasSuffix(soundPath, ".wav") {
-		return tdaudio.SoundId(0), fmt.Errorf("%v is not a wav file", soundPath)
+		return audio.SoundId(0), fmt.Errorf("%v is not a wav file", soundPath)
 	}
 
 	// Look for metadata file
@@ -29,7 +29,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 	metadata, err := assets.LoadAndUnmarshalTOML[sfxMetadata](metaPath)
 	if _, ok := err.(*os.PathError); err != nil && !ok {
 		// The file is optional, so print errors that aren't 'file not found'.
-		return tdaudio.SoundId(0), fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
+		return audio.SoundId(0), fmt.Errorf("could not parse metadata for %s; %s", soundPath, err)
 	}
 
 	polyphony := uint8(4)
@@ -46,7 +46,7 @@ func LoadSfx(soundPath string) (tdaudio.SoundId, error) {
 		}
 		noRetrig = metadata.NoRetrigger
 	}
-	soundHandle := tdaudio.LoadSound(soundPath, polyphony, looped, rolloff, noRetrig)
+	soundHandle := audio.LoadSound(soundPath, polyphony, looped, rolloff, noRetrig)
 	log.Printf("Sfx loaded at %v.\n", soundPath)
 	return soundHandle, nil
 }

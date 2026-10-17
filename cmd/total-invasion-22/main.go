@@ -14,12 +14,12 @@ import (
 
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/engine/timer"
 	"tophatdemon.com/total-invasion-ii/game"
 
@@ -63,7 +63,7 @@ func (app *App) Update(deltaTime float32) {
 	case app.world != nil:
 		app.world.Update(deltaTime)
 		if settings.Current.ActionMenuCancel.JustPressed() {
-			tdaudio.StopAll()
+			audio.StopAll()
 			input.UntrapMouse()
 			app.screen = new(screens.TitleMenu).Init(app, true)
 		}
@@ -285,7 +285,7 @@ func main() {
 	mapName := settings.Current.Debug.StartMap
 	if len(mapName) == 0 {
 		app.screen = screens.NewIntroScreen(app)
-		tdaudio.QueueSong("assets/music/back_in_vasion.ogg", true, 0)
+		audio.QueueSong("assets/music/back_in_vasion.ogg", true, 0)
 	} else {
 		app.executeSignal(game.MapChangeSignal{
 			MapPath: mapName,

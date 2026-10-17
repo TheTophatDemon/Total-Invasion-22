@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -14,7 +15,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -39,7 +39,7 @@ type Enemy struct {
 	idleState, chaseState, stunState               enemyState
 	attackState, dodgeState, dieState, reviveState enemyState
 	state, previousState                           *enemyState
-	voice                                          tdaudio.VoiceId
+	voice                                          audio.VoiceId
 	spawnAmmo                                      game.AmmoType // Ammo type that will drop when enemy is killed
 	spawnAmmoChance                                float32       // Probability from 0 to 1
 	defaultCollisionFilters                        collision.Mask
@@ -58,7 +58,7 @@ type Enemy struct {
 type enemyState struct {
 	anim                   textures.Animation
 	stopAnim               bool // Set to true to leave the animation on its first frame without playing it.
-	enterSound, leaveSound tdaudio.SoundId
+	enterSound, leaveSound audio.SoundId
 	collisionFilters       maybe.T[collision.Mask]
 	updateFunc             func(enemy *Enemy, deltaTime float32)
 	enterFunc              func(enemy *Enemy, oldState *enemyState)

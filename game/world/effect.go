@@ -5,12 +5,12 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type Effect struct {
@@ -19,7 +19,7 @@ type Effect struct {
 
 	id        scene.Id[*Effect]
 	particles comps.ParticleRender
-	voice     tdaudio.VoiceId
+	voice     audio.VoiceId
 }
 
 func SpawnEffect(position mgl32.Vec3, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {

@@ -1,33 +1,35 @@
 package input
 
-type Binding interface {
-	// Returns true if the input is being activated during this frame
-	Pressed() bool
-	// Returns true if the input just started activating on this frame
-	JustPressed() bool
-	// Returns true if the input just stopped activating on this frame
-	JustReleased() bool
-	// Returns the input state as a float from -1 to 1
-	Axis() float32
-	// Key for the display name of the binding.
-	LocalizationKey() string
-}
+import "structs"
 
-type bindingBase struct {
+type Binding struct {
+	_                                     structs.HostLayout
 	wasPressed, justPressed, justReleased bool
 	lastUpdatedFrame                      uint64
+	variant                               [2]byte
 }
 
-func (binding *bindingBase) updatePressStates(isPressed bool) bool {
-	if IsCapturingInput() {
-		binding.justPressed, binding.justReleased, binding.wasPressed = false, false, false
-		return false
-	}
-	if binding.lastUpdatedFrame != inputFrameNumber {
-		binding.justPressed = isPressed && !binding.wasPressed
-		binding.justReleased = !isPressed && binding.wasPressed
-		binding.wasPressed = isPressed
-		binding.lastUpdatedFrame = inputFrameNumber
-	}
-	return isPressed
+// Returns true if the input is being activated during this frame
+func (binding *Binding) Pressed() bool {
+	return inputBindingPressed(binding)
+}
+
+// Returns true if the input just started activating on this frame
+func (binding *Binding) JustPressed() bool {
+	return inputBindingJustPressed(binding)
+}
+
+// Returns true if the input just stopped activating on this frame
+func (binding *Binding) JustReleased() bool {
+	return inputBindingJustReleased(binding)
+}
+
+// Returns the input state as a float from -1 to 1
+func (binding *Binding) Axis() float32 {
+	return inputBindingAxis(binding)
+}
+
+// Key for the display name of the binding.
+func (binding *Binding) LocalizationKey() string {
+	return "" //TODO
 }

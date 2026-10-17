@@ -8,12 +8,12 @@ import (
 )
 
 type (
-	Key                 int
-	Action              int
-	ModifierKey         int
-	MouseButton         int
-	Hint                int
-	InputMode           int
+	Key                 int32
+	Action              int32
+	ModifierKey         int32
+	MouseButton         int32
+	Hint                int32
+	InputMode           int32
 	Monitor             struct{}
 	Window              struct{}
 	KeyCallback         func(w *Window, key Key, scancode int, action Action, mods ModifierKey)

@@ -6,10 +6,10 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -161,8 +161,8 @@ func (menu *SettingsMenu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	menu.wraith.AnimPlayer.Update(deltaTime)
 	queue.Add(&menu.wraith)
 
-	tdaudio.SetSfxVolume(float32(menu.sliderSfxVolume.FractionValue()))
-	tdaudio.SetMusicVolume(float32(menu.sliderMusicVolume.FractionValue()))
+	audio.SetSfxVolume(float32(menu.sliderSfxVolume.FractionValue()))
+	audio.SetMusicVolume(float32(menu.sliderMusicVolume.FractionValue()))
 
 	newTrans := menu.sliderTextShadow.FractionValue()
 	settings.Current.TextShadowTransparency = newTrans
@@ -188,7 +188,7 @@ func (menu *SettingsMenu) Exit() {
 	if len(menu.chooserDifficulty.choices) > 0 && settings.Current.DifficultyIndex != menu.chooserDifficulty.Choice().Index {
 		settings.Current.DifficultyIndex = menu.chooserDifficulty.Choice().Index
 		menu.app.ProcessSignal(game.LoadSignal{
-			Number: 0,
+			Number:          0,
 			ResetDifficulty: maybe.Some(settings.Current.DifficultyIndex),
 		})
 	}

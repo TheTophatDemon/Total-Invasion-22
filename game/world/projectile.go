@@ -3,12 +3,12 @@ package world
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
@@ -30,7 +30,7 @@ type Projectile struct {
 	onDie                                          func(deltaTime float32)
 	forwardSpeed, fallSpeed, maxFallSpeed, gravity float32
 	knockbackForce                                 float32
-	voices                                         [4]tdaudio.VoiceId
+	voices                                         [4]audio.VoiceId
 	maxLife, lifeTimer                             float32
 	dieAnim                                        textures.Animation
 

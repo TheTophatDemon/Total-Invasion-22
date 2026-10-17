@@ -8,11 +8,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -37,7 +37,7 @@ func SpawnSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*
 		},
 		Facing:       facing,
 		forwardSpeed: 35.0,
-		voices: [4]tdaudio.VoiceId{
+		voices: [4]audio.VoiceId{
 			0: cache.GetSfx("assets/sounds/weapon/sickle.wav").PlayAttenuatedV(position),
 		},
 		StunChance: 0.1,
@@ -223,7 +223,7 @@ func SpawnFireball(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.375, 0.375}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 35.0,
-		voices: [4]tdaudio.VoiceId{
+		voices: [4]audio.VoiceId{
 			cache.GetSfx("assets/sounds/fireball.wav").PlayAttenuatedV(position),
 		},
 		StunChance: 0.1,
@@ -397,7 +397,7 @@ func SpawnBlessing(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 15.0,
-		voices: [4]tdaudio.VoiceId{
+		voices: [4]audio.VoiceId{
 			cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position),
 		},
 		StunChance: 0.0,

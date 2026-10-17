@@ -66,11 +66,11 @@ func (item *bindingItem) Input(inputType MenuInputType, menu *Menu) {
 		return
 	}
 	cache.GetSfx(SfxMenuHit).Play()
-	*item.binding = nil
+	*item.binding = input.Binding{}
 	if !item.clear {
-		input.CaptureInput(func(newBinding input.Binding, extraData any) {
-			*item.binding = newBinding
-		}, item)
+		input.CaptureInput(func(newBinding *input.Binding, extraData uintptr) {
+			*item.binding = *newBinding
+		}, nil)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 
 func main() {
 	var libExt string
-	compileArgs := []string{"build", "./cooler-engine", "-build-mode:shared", "-reloc-mode:pic"}
+	compileArgs := []string{"build", "./evil-engine", "-build-mode:shared", "-reloc-mode:pic"}
 	if slices.Contains(os.Args, "debug") {
 		compileArgs = append(compileArgs, "-debug")
 	}
@@ -23,7 +23,7 @@ func main() {
 		panic(fmt.Sprintf("unsupported OS %v", runtime.GOOS))
 	}
 
-	compileArgs = append(compileArgs, "-out:cooler_engine."+libExt)
+	compileArgs = append(compileArgs, "-out:evil_engine."+libExt)
 
 	// Compile to object files
 	cmd := exec.Command("odin", compileArgs...)

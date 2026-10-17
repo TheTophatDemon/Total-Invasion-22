@@ -7,10 +7,10 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/clock"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 func init() {
@@ -131,7 +131,7 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 
 	input.Init()
 
-	tdaudio.Init()
+	audio.Init()
 
 	cache.InitBuiltInAssets()
 }
@@ -143,7 +143,7 @@ func Run(app App) {
 		for range numUpdates {
 			app.Update(1.0 / float32(clock.TPS()))
 			input.PostUpdate()
-			tdaudio.Update()
+			audio.Update()
 		}
 
 		if numUpdates > 0 {
@@ -167,5 +167,5 @@ func Run(app App) {
 func DeInit() {
 	cache.FreeAll()
 	glfw.Terminate()
-	tdaudio.Teardown()
+	audio.Teardown()
 }

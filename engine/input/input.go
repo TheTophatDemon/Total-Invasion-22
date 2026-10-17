@@ -1,186 +1,145 @@
 package input
 
 import (
-	"math"
+	"runtime"
+	"unsafe"
 
+	"github.com/ebitengine/purego"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/evil"
 	"tophatdemon.com/total-invasion-ii/engine/glfw"
 )
 
 type (
-	InputCaptureCallback func(newBinding Binding, extraData any)
+	InputCaptureCallback func(newBinding *Binding, extraData uintptr)
 )
 
-var anythingPressed bool
-var wasAnyMouseButtonPressed bool
-
-// Holds the callback that assigns the captured input to a binding
-var captureCallback InputCaptureCallback = nil
-
-// Extra data for the capture callback
-var captureData any = nil
-
-// Holds the binding of the input action that was captured
-var capturedBinding Binding = nil
-
-var lastKeyPressed glfw.Key = glfw.KeyUnknown
-var inputFrameNumber uint64
-var mousePrevX, mousePrevY float64
-var mouseDeltaX, mouseDeltaY float64
-var mouseScrollY, mousePrevScrollY float32
-
-func init() {
-	mousePrevX, mousePrevY = math.NaN(), math.NaN()
-}
+var (
+	inputInit                      func()
+	inputPostUpdate                func()
+	inputTrapMouse                 func()
+	inputUntrapMouse               func()
+	inputIsMouseTrapped            func() bool
+	inputCaptureInput              func(callback uintptr, extraData uintptr)
+	inputIsCapturingInput          func() bool
+	inputCaptureExtraData          func() uintptr
+	inputMousePosition             func() [2]float32
+	inputMouseDelta                func() [2]float32
+	inputMouseScroll               func() float32
+	inputMouseScrollDelta          func() float32
+	inputSetMousePosition          func(x, y float32)
+	inputIsMouseButtonDown         func(button glfw.MouseButton) bool
+	inputAnyMouseButtonPressed     func() bool
+	inputAnyMouseButtonJustPressed func() bool
+	inputIsAnythingPressed         func() bool
+	inputBindingPressed            func(binding *Binding) bool
+	inputBindingJustPressed        func(binding *Binding) bool
+	inputBindingJustReleased       func(binding *Binding) bool
+	inputBindingAxis               func(binding *Binding) float32
+	inputNewKeyBinding             func(key glfw.Key) Binding
+	inputNewMouseButtonBinding     func(mouseButton glfw.MouseButton) Binding
+	inputNewMouseMovementBinding   func(axis MouseAxis) Binding
+	inputNewCharSequenceBinding    func(keys *glfw.Key, count int) Binding
+)
 
 func Init() {
-	glfw.GetCurrentContext().SetKeyCallback(keyCallback)
-	glfw.GetCurrentContext().SetMouseButtonCallback(mouseCallback)
-	glfw.GetCurrentContext().SetScrollCallback(scrollCallback)
+	lib := evil.Library()
+	purego.RegisterLibFunc(&inputInit, lib, "input_init")
+	purego.RegisterLibFunc(&inputPostUpdate, lib, "input_post_update")
+	purego.RegisterLibFunc(&inputTrapMouse, lib, "input_trap_mouse")
+	purego.RegisterLibFunc(&inputUntrapMouse, lib, "input_untrap_mouse")
+	purego.RegisterLibFunc(&inputIsMouseTrapped, lib, "input_is_mouse_trapped")
+	purego.RegisterLibFunc(&inputCaptureInput, lib, "input_capture_input")
+	purego.RegisterLibFunc(&inputIsCapturingInput, lib, "input_is_capturing_input")
+	purego.RegisterLibFunc(&inputCaptureExtraData, lib, "input_capture_extra_data")
+	purego.RegisterLibFunc(&inputMousePosition, lib, "input_mouse_position")
+	purego.RegisterLibFunc(&inputMouseDelta, lib, "input_mouse_delta")
+	purego.RegisterLibFunc(&inputMouseScroll, lib, "input_mouse_scroll")
+	purego.RegisterLibFunc(&inputMouseScrollDelta, lib, "input_mouse_scroll_delta")
+	purego.RegisterLibFunc(&inputSetMousePosition, lib, "input_set_mouse_position")
+	purego.RegisterLibFunc(&inputIsMouseButtonDown, lib, "input_is_mouse_button_down")
+	purego.RegisterLibFunc(&inputAnyMouseButtonPressed, lib, "input_any_mouse_button_pressed")
+	purego.RegisterLibFunc(&inputAnyMouseButtonJustPressed, lib, "input_any_mouse_button_just_pressed")
+	purego.RegisterLibFunc(&inputIsAnythingPressed, lib, "input_is_anything_pressed")
+	purego.RegisterLibFunc(&inputBindingPressed, lib, "input_binding_pressed")
+	purego.RegisterLibFunc(&inputBindingJustPressed, lib, "input_binding_just_pressed")
+	purego.RegisterLibFunc(&inputBindingJustReleased, lib, "input_binding_just_released")
+	purego.RegisterLibFunc(&inputBindingAxis, lib, "input_binding_axis")
+	purego.RegisterLibFunc(&inputNewKeyBinding, lib, "input_new_key_binding")
+	purego.RegisterLibFunc(&inputNewMouseButtonBinding, lib, "input_new_mouse_button_binding")
+	purego.RegisterLibFunc(&inputNewMouseMovementBinding, lib, "input_new_mouse_movement_binding")
+	purego.RegisterLibFunc(&inputNewCharSequenceBinding, lib, "input_new_char_sequence_binding")
+
+	inputInit()
 }
 
 func PostUpdate() {
-	inputFrameNumber += 1
-	anythingPressed = false
-	wasAnyMouseButtonPressed = AnyMouseButtonPressed()
-	lastKeyPressed = glfw.KeyUnknown
-	mousePosX, mousePosY := glfw.GetCurrentContext().GetCursorPos()
-	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
-		mouseDeltaX = mousePosX - mousePrevX
-		mouseDeltaY = mousePosY - mousePrevY
-		movedAxis := MouseAxisNone
-		const moveThreshold = 5.0
-		switch true {
-		case mouseDeltaX > moveThreshold:
-			movedAxis = MouseAxisPosX
-		case mouseDeltaX < -moveThreshold:
-			movedAxis = MouseAxisNegX
-		case mouseDeltaY > moveThreshold:
-			movedAxis = MouseAxisPosY
-		case mouseDeltaY < -moveThreshold:
-			movedAxis = MouseAxisNegY
-		}
-		if movedAxis != MouseAxisNone && IsCapturingInput() {
-			capturedBinding = NewMouseMovementBinding(movedAxis)
-			endCaptureInput()
-		}
-	}
-	mousePrevX, mousePrevY = mousePosX, mousePosY
-	mousePrevScrollY = mouseScrollY
+	inputPostUpdate()
 }
 
 func TrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-	mousePrevX, mousePrevY = glfw.GetCurrentContext().GetCursorPos()
+	inputTrapMouse()
 }
 
 func UntrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+	inputUntrapMouse()
 }
 
 func IsMouseTrapped() bool {
-	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
+	return inputIsMouseTrapped()
 }
 
-func CaptureInput(callback InputCaptureCallback, extraData any) {
-	captureCallback = callback
-	captureData = extraData
+func CaptureInput(callback InputCaptureCallback, extraData unsafe.Pointer) {
+	var pin runtime.Pinner
+	pin.Pin(extraData)
+	pureCallback := purego.NewCallback(func(newBinding *Binding, extraData uintptr) int {
+		callback(newBinding, extraData)
+		pin.Unpin()
+		return 1
+	})
+	inputCaptureInput(pureCallback, uintptr(extraData))
 }
 
 func IsCapturingInput() bool {
-	return captureCallback != nil
+	return inputIsCapturingInput()
 }
 
 func CaptureExtraData() any {
-	if captureCallback != nil {
-		return captureData
-	}
-	return nil
-}
-
-func endCaptureInput() {
-	if captureCallback != nil {
-		captureCallback(capturedBinding, captureData)
-		captureCallback = nil
-		captureData = nil
-		capturedBinding = nil
-	}
+	return inputCaptureExtraData()
 }
 
 func MousePosition() mgl32.Vec2 {
-	if glfw.GetCurrentContext().GetAttrib(glfw.Focused) != glfw.True {
-		return mgl32.Vec2{-10000.0, -10000.0}
-	}
-	x, y := glfw.GetCurrentContext().GetCursorPos()
-	return mgl32.Vec2{float32(x), float32(y)}
+	return mgl32.Vec2(inputMousePosition())
 }
 
 func MouseDelta() mgl32.Vec2 {
-	return mgl32.Vec2{float32(mouseDeltaX), float32(mouseDeltaY)}
+	return mgl32.Vec2(inputMouseDelta())
 }
 
 func MouseScroll() float32 {
-	return mouseScrollY
+	return inputMouseScroll()
 }
 
 func MouseScrollDelta() float32 {
-	return mouseScrollY - mousePrevScrollY
+	return inputMouseScrollDelta()
 }
 
 func SetMousePosition(x, y float32) {
-	mousePrevX = float64(x)
-	mousePrevY = float64(y)
-	mouseDeltaX, mouseDeltaY = 0, 0
-	glfw.GetCurrentContext().SetCursorPos(mousePrevX, mousePrevY)
+	inputSetMousePosition(x, y)
 }
 
 func IsMouseButtonDown(button glfw.MouseButton) bool {
-	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press && !IsCapturingInput()
+	return inputIsMouseButtonDown(button)
 }
 
 func AnyMouseButtonPressed() bool {
-	return IsMouseButtonDown(glfw.MouseButton1) || IsMouseButtonDown(glfw.MouseButton2) || IsMouseButtonDown(glfw.MouseButton3)
+	return inputAnyMouseButtonPressed()
 }
 
 func AnyMouseButtonJustPressed() bool {
-	return AnyMouseButtonPressed() && !wasAnyMouseButtonPressed && !IsCapturingInput()
+	return inputAnyMouseButtonJustPressed()
 }
 
 func IsAnythingPressed() bool {
-	return anythingPressed && !IsCapturingInput()
-}
-
-func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	switch action {
-	case glfw.Press:
-		if IsCapturingInput() {
-			capturedBinding = NewKeyBinding(key)
-		} else {
-			anythingPressed = true
-			lastKeyPressed = key
-		}
-	case glfw.Release:
-		if IsCapturingInput() && capturedBinding != nil {
-			endCaptureInput()
-		}
-	}
-}
-
-func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	switch action {
-	case glfw.Press:
-		if IsCapturingInput() {
-			capturedBinding = NewMouseButtonBinding(button)
-		} else {
-			anythingPressed = true
-		}
-	case glfw.Release:
-		if IsCapturingInput() && capturedBinding != nil {
-			endCaptureInput()
-		}
-	}
-}
-
-func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
-	mouseScrollY += float32(yoff)
+	return inputIsAnythingPressed()
 }

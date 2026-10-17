@@ -7,12 +7,12 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"tophatdemon.com/total-invasion-ii/engine"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/glfw"
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type (
@@ -112,8 +112,8 @@ func (data Data) Apply() {
 	ui.SetTextShadowColor(color.Black.WithAlpha(float32(data.TextShadowTransparency)))
 
 	engine.SetVsync(data.Vsync)
-	tdaudio.SetSfxVolume(float32(data.SfxVolume))
-	tdaudio.SetMusicVolume(float32(data.MusicVolume))
+	audio.SetSfxVolume(float32(data.SfxVolume))
+	audio.SetMusicVolume(float32(data.MusicVolume))
 }
 
 func LoadOrInit() {

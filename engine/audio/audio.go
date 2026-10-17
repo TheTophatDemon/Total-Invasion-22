@@ -1,11 +1,11 @@
-package tdaudio
+package audio
 
 import (
 	"log"
 	"structs"
 
 	"github.com/ebitengine/purego"
-	"tophatdemon.com/total-invasion-ii/engine/failure"
+	"tophatdemon.com/total-invasion-ii/engine/evil"
 )
 
 type (
@@ -104,31 +104,27 @@ func (voice VoiceId) Sound() SoundId {
 }
 
 func Init() bool {
-	lib, err := openLibrary()
-	if err != nil {
-		failure.LogErrWithLocation("error loading TD audio dll: %v", err)
-		return false
-	}
-	purego.RegisterLibFunc(&loadSound, lib, "load_sound")
-	purego.RegisterLibFunc(&isLooped, lib, "sound_is_looped")
-	purego.RegisterLibFunc(&playSound, lib, "play_sound")
-	purego.RegisterLibFunc(&isPlaying, lib, "sound_is_playing")
-	purego.RegisterLibFunc(&setSoundPosition, lib, "sound_set_position")
-	purego.RegisterLibFunc(&voiceIsValid, lib, "voice_is_valid")
-	purego.RegisterLibFunc(&stopSound, lib, "stop_sound")
-	purego.RegisterLibFunc(&seekSound, lib, "seek_sound")
-	purego.RegisterLibFunc(&getSoundTime, lib, "get_sound_time")
+	lib := evil.Library()
+	purego.RegisterLibFunc(&loadSound, lib, "audio_load_sound")
+	purego.RegisterLibFunc(&isLooped, lib, "audio_sound_is_looped")
+	purego.RegisterLibFunc(&playSound, lib, "audio_play_sound")
+	purego.RegisterLibFunc(&isPlaying, lib, "audio_sound_is_playing")
+	purego.RegisterLibFunc(&setSoundPosition, lib, "audio_sound_set_position")
+	purego.RegisterLibFunc(&voiceIsValid, lib, "audio_voice_is_valid")
+	purego.RegisterLibFunc(&stopSound, lib, "audio_stop_sound")
+	purego.RegisterLibFunc(&seekSound, lib, "audio_seek_sound")
+	purego.RegisterLibFunc(&getSoundTime, lib, "audio_get_sound_time")
 	purego.RegisterLibFunc(&initAudio, lib, "audio_init")
-	purego.RegisterLibFunc(&setListenerOrientation, lib, "set_listener_orientation")
-	purego.RegisterLibFunc(&setSfxVolume, lib, "set_sfx_volume")
-	purego.RegisterLibFunc(&getSfxVolume, lib, "get_sfx_volume")
-	purego.RegisterLibFunc(&setMusicVolume, lib, "set_music_volume")
-	purego.RegisterLibFunc(&getMusicVolume, lib, "get_music_volume")
-	purego.RegisterLibFunc(&queueSong, lib, "queue_song")
-	purego.RegisterLibFunc(&stopAllSounds, lib, "stop_all_sounds")
+	purego.RegisterLibFunc(&setListenerOrientation, lib, "audio_set_listener_orientation")
+	purego.RegisterLibFunc(&setSfxVolume, lib, "audio_set_sfx_volume")
+	purego.RegisterLibFunc(&getSfxVolume, lib, "audio_get_sfx_volume")
+	purego.RegisterLibFunc(&setMusicVolume, lib, "audio_set_music_volume")
+	purego.RegisterLibFunc(&getMusicVolume, lib, "audio_get_music_volume")
+	purego.RegisterLibFunc(&queueSong, lib, "audio_queue_song")
+	purego.RegisterLibFunc(&stopAllSounds, lib, "audio_stop_all_sounds")
 	purego.RegisterLibFunc(&update, lib, "audio_update")
 	purego.RegisterLibFunc(&teardown, lib, "audio_teardown")
-	purego.RegisterLibFunc(&freeSounds, lib, "free_sounds")
+	purego.RegisterLibFunc(&freeSounds, lib, "audio_free_sounds")
 	return initAudio()
 }
 

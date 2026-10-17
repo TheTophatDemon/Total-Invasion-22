@@ -2,7 +2,6 @@ package input
 
 import (
 	"fmt"
-	"math"
 
 	"tophatdemon.com/total-invasion-ii/engine/glfw"
 )
@@ -17,44 +16,8 @@ const (
 )
 
 type (
-	MouseButtonBinding struct {
-		bindingBase
-		MouseButton glfw.MouseButton
-	}
-	MouseMovementBinding struct {
-		bindingBase
-		MouseAxis MouseAxis
-	}
 	MouseAxis uint8
 )
-
-// MOUSE BUTTON BINDING
-
-func NewMouseButtonBinding(butt glfw.MouseButton) *MouseButtonBinding {
-	return new(MouseButtonBinding{MouseButton: butt})
-}
-
-func (mbb *MouseButtonBinding) Pressed() bool {
-	return mbb.updatePressStates(glfw.GetCurrentContext().GetMouseButton(mbb.MouseButton) == glfw.Press)
-}
-
-func (mbb *MouseButtonBinding) JustPressed() bool {
-	mbb.Pressed()
-	return mbb.justPressed
-}
-
-func (mbb *MouseButtonBinding) JustReleased() bool {
-	mbb.Pressed()
-	return mbb.justReleased
-}
-
-func (mbb *MouseButtonBinding) Axis() float32 {
-	if mbb.Pressed() {
-		return 1.0
-	} else {
-		return 0.0
-	}
-}
 
 func (mbb *MouseButtonBinding) LocalizationKey() string {
 	switch mbb.MouseButton {
@@ -82,32 +45,6 @@ func (mbb *MouseButtonBinding) MarshalTOML() ([]byte, error) {
 	return fmt.Appendf(nil, "{ MouseButton = %v }", mbb.MouseButton), nil
 }
 
-// MOUSE MOVEMENT BINDING
-
-func NewMouseMovementBinding(axis MouseAxis) *MouseMovementBinding {
-	return new(MouseMovementBinding{MouseAxis: axis})
-}
-
-func (mmb *MouseMovementBinding) Pressed() bool {
-	return mmb.updatePressStates(math.Abs(float64(mmb.Axis())) > MouseDeadZone)
-}
-
-func (mmb *MouseMovementBinding) Axis() float32 {
-	scaledX := mouseDeltaX / 10.0
-	scaledY := mouseDeltaY / 10.0
-	switch mmb.MouseAxis {
-	case MouseAxisPosX:
-		return max(0.0, float32(scaledX))
-	case MouseAxisNegX:
-		return -min(0.0, float32(scaledX))
-	case MouseAxisPosY:
-		return max(0.0, float32(scaledY))
-	case MouseAxisNegY:
-		return -min(0.0, float32(scaledY))
-	}
-	return 0.0
-}
-
 func (mmb *MouseMovementBinding) LocalizationKey() string {
 	switch mmb.MouseAxis {
 	case MouseAxisPosX:
@@ -120,16 +57,6 @@ func (mmb *MouseMovementBinding) LocalizationKey() string {
 		return "mouseNegY"
 	}
 	return "???"
-}
-
-func (mmb *MouseMovementBinding) JustPressed() bool {
-	mmb.Pressed()
-	return mmb.justPressed
-}
-
-func (mmb *MouseMovementBinding) JustReleased() bool {
-	mmb.Pressed()
-	return mmb.justReleased
 }
 
 func (mmb *MouseMovementBinding) MarshalTOML() ([]byte, error) {

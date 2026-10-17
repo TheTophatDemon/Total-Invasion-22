@@ -16,6 +16,7 @@ SAMPLE_RATE :: 44100
 N_CHANNELS :: 2
 
 Player_Id :: distinct u32
+
 Voice_Id :: struct {
 	player: Player_Id,
 	id, play_count: u32,
@@ -47,7 +48,7 @@ from_ma_vec3f :: proc "c" (ma_vec: ma.vec3f) -> [3]f32 {
 	return {ma_vec.x, ma_vec.y, ma_vec.z}
 }
 
-@(export)
+
 free_sounds :: proc "c" () {
 	context = runtime.default_context()
 	for &player in g_players {
@@ -59,7 +60,7 @@ free_sounds :: proc "c" () {
 	clear(&g_players)
 }
 
-@(export)
+
 voice_is_valid :: proc "c" (voice_id: Voice_Id) -> bool {
 	context = runtime.default_context()
 	if voice_id.player == 0 || int(voice_id.player) >= len(g_players) {
@@ -72,7 +73,7 @@ voice_is_valid :: proc "c" (voice_id: Voice_Id) -> bool {
 	return true
 }
 
-@(export)
+
 load_sound :: proc "c" (path: cstring, polyphony: u8, looping: bool, rolloff: f32, no_retrigger: bool) -> Player_Id {
 	context = runtime.default_context()
 	assert(path != nil)
@@ -104,7 +105,7 @@ load_sound :: proc "c" (path: cstring, polyphony: u8, looping: bool, rolloff: f3
 	return new_id
 }
 
-@(export)
+
 sound_is_looped :: proc "c" (player_id: Player_Id) -> bool {
 	if int(player_id) >= len(g_players) do return false
 	player := g_players[player_id]
@@ -112,7 +113,7 @@ sound_is_looped :: proc "c" (player_id: Player_Id) -> bool {
 	return bool(ma.sound_is_looping(&player.voices[0].sound))
 }
 
-@(export)
+
 audio_init :: proc "c" () -> bool {
 	context = runtime.default_context()
 	// Resource manager init
@@ -173,7 +174,7 @@ audio_init :: proc "c" () -> bool {
 
 // Attempts to play the sound using one of the available voices. Returns a zeroed voice ID if sound was not played.
 // `x`, `y`, and `z` are the spatial coordinates of the sound in world space. If `attenuated` is false, then those parameters don't do anything.
-@(export)
+
 play_sound :: proc "c" (player_id: Player_Id, x, y, z: f32, attenuated: bool) -> Voice_Id {
 	context = runtime.default_context()
 	assert(int(player_id) < len(g_players))
@@ -237,14 +238,14 @@ play_sound :: proc "c" (player_id: Player_Id, x, y, z: f32, attenuated: bool) ->
 	return {}
 }
 
-@(export)
+
 sound_is_playing :: proc "c" (voice: Voice_Id) -> bool {
     if !voice_is_valid(voice) do return false
     player := &g_players[voice.player]
     return bool(ma.sound_is_playing(&player.voices[voice.id].sound))
 }
 
-@(export)
+
 sound_set_position :: proc "c" (voice: Voice_Id, x, y, z: f32) {
 	if !voice_is_valid(voice) do return
 	player := &g_players[voice.player]
@@ -253,14 +254,14 @@ sound_set_position :: proc "c" (voice: Voice_Id, x, y, z: f32) {
 	ma.sound_set_position(ma_player, x, y, z)
 }
 
-@(export)
+
 stop_sound :: proc "c" (voice: Voice_Id) {
 	if !voice_is_valid(voice) do return
 	player := &g_players[voice.player]
 	ma.sound_stop(&player.voices[voice.id].sound)
 }
 
-@(export)
+
 stop_all_sounds :: proc "c" () {
 	for &player in g_players {
 		for &voice in player.voices {
@@ -269,7 +270,7 @@ stop_all_sounds :: proc "c" () {
 	}
 }
 
-@(export)
+
 seek_sound :: proc "c" (voice: Voice_Id, time_ms: u64) {
 	context = runtime.default_context()
 	if !voice_is_valid(voice) do return
@@ -286,7 +287,7 @@ seek_sound :: proc "c" (voice: Voice_Id, time_ms: u64) {
 	}
 }
 
-@(export)
+
 get_sound_time :: proc "c" (voice: Voice_Id) -> u64 {
 	if !voice_is_valid(voice) do return 0
 	player := &g_players[voice.player]
@@ -294,33 +295,33 @@ get_sound_time :: proc "c" (voice: Voice_Id) -> u64 {
 	return ma.sound_get_time_in_milliseconds(ma_player)
 }
 
-@(export)
+
 set_listener_orientation :: proc "c" (pos_x, pos_y, pos_z, dir_x, dir_y, dir_z: f32) {
 	ma.engine_listener_set_position(&g_engine, 0, pos_x, pos_y, pos_z)
 	ma.engine_listener_set_direction(&g_engine, 0, dir_x, dir_y, dir_z)
 }
 
-@(export)
+
 set_sfx_volume :: proc "c" (new_volume: f32) {
 	ma.sound_group_set_volume(&g_sfx_group, new_volume)
 }
 
-@(export)
+
 get_sfx_volume :: proc "c" () -> f32 {
 	return ma.sound_group_get_volume(&g_sfx_group)
 }
 
-@(export)
+
 set_music_volume :: proc "c" (new_volume: f32) {
 	ma.sound_group_set_volume(&g_music_group, new_volume)
 }
 
-@(export)
+
 get_music_volume :: proc "c" () -> f32 {
 	return ma.sound_group_get_volume(&g_music_group)
 }
 
-@(export)
+
 queue_song :: proc "c" (path: cstring, looping: bool, fadeout_millis: u64) -> bool {
 	context = runtime.default_context()
 	happy_path: {
@@ -390,7 +391,7 @@ queue_song :: proc "c" (path: cstring, looping: bool, fadeout_millis: u64) -> bo
 	return false
 }
 
-@(export)
+
 audio_update :: proc "c" () {
 	context = runtime.default_context()
 	// Swap out the music track with the next one when ready.
@@ -406,7 +407,7 @@ audio_update :: proc "c" () {
 	}
 } 
 
-@(export)
+
 audio_teardown :: proc "c" () {
 	free_sounds()
 	ma.engine_uninit(&g_engine)
