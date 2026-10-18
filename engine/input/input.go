@@ -3,8 +3,8 @@ package input
 import (
 	"math"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 )
 
 type (
@@ -23,31 +23,31 @@ var captureData any = nil
 // Holds the binding of the input action that was captured
 var capturedBinding Binding = nil
 
-var lastKeyPressed glfw.Key = glfw.KeyUnknown
+var lastKeyPressed rgfw.Key = rgfw.KEY_NULL
 var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
 var mouseScrollY, mousePrevScrollY float32
 
+var window *rgfw.Window
+
 func init() {
 	mousePrevX, mousePrevY = math.NaN(), math.NaN()
 }
 
-func Init() {
-	glfw.GetCurrentContext().SetKeyCallback(keyCallback)
-	glfw.GetCurrentContext().SetMouseButtonCallback(mouseCallback)
-	glfw.GetCurrentContext().SetScrollCallback(scrollCallback)
+func Init(win *rgfw.Window) {
+	window = win
 }
 
 func PostUpdate() {
 	inputFrameNumber += 1
 	anythingPressed = false
 	wasAnyMouseButtonPressed = AnyMouseButtonPressed()
-	lastKeyPressed = glfw.KeyUnknown
-	mousePosX, mousePosY := glfw.GetCurrentContext().GetCursorPos()
+	lastKeyPressed = rgfw.KEY_NULL
+	mousePosX, mousePosY := window.GetMousePosition()
 	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
-		mouseDeltaX = mousePosX - mousePrevX
-		mouseDeltaY = mousePosY - mousePrevY
+		mouseDeltaX = float64(mousePosX) - mousePrevX
+		mouseDeltaY = float64(mousePosY) - mousePrevY
 		movedAxis := MouseAxisNone
 		const moveThreshold = 5.0
 		switch true {
@@ -65,21 +65,52 @@ func PostUpdate() {
 			endCaptureInput()
 		}
 	}
-	mousePrevX, mousePrevY = mousePosX, mousePosY
+	mousePrevX, mousePrevY = float64(mousePosX), float64(mousePosY)
+
+	_, mouseScrollY = rgfw.GetMouseScroll()
 	mousePrevScrollY = mouseScrollY
+
+	for {
+		event, hasEvent := window.CheckEvent()
+		if !hasEvent {
+			break
+		}
+		switch event.Type {
+		case rgfw.EVENT_KEY_PRESSED:
+			keyEvent, _ := event.Key()
+			if IsCapturingInput() {
+				capturedBinding = NewKeyBinding(keyEvent.Value)
+			} else {
+				anythingPressed = true
+				lastKeyPressed = keyEvent.Value
+			}
+		case rgfw.EVENT_MOUSE_BUTTON_PRESSED:
+			mouseEvent, _ := event.MouseButton()
+			if IsCapturingInput() {
+				capturedBinding = NewMouseButtonBinding(mouseEvent.Value)
+			} else {
+				anythingPressed = true
+			}
+		case rgfw.EVENT_KEY_RELEASED, rgfw.EVENT_MOUSE_BUTTON_RELEASED:
+			if IsCapturingInput() && capturedBinding != nil {
+				endCaptureInput()
+			}
+		}
+	}
 }
 
 func TrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-	mousePrevX, mousePrevY = glfw.GetCurrentContext().GetCursorPos()
+	window.SetCaptureMouse(true)
+	mx, my := window.GetMousePosition()
+	mousePrevX, mousePrevY = float64(mx), float64(my)
 }
 
 func UntrapMouse() {
-	glfw.GetCurrentContext().SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+	window.SetCaptureMouse(false)
 }
 
 func IsMouseTrapped() bool {
-	return glfw.GetCurrentContext().GetInputMode(glfw.CursorMode) == glfw.CursorDisabled
+	return window.IsMouseCaptured()
 }
 
 func CaptureInput(callback InputCaptureCallback, extraData any) {
@@ -108,10 +139,10 @@ func endCaptureInput() {
 }
 
 func MousePosition() mgl32.Vec2 {
-	if glfw.GetCurrentContext().GetAttrib(glfw.Focused) != glfw.True {
+	if !window.IsInFocus() {
 		return mgl32.Vec2{-10000.0, -10000.0}
 	}
-	x, y := glfw.GetCurrentContext().GetCursorPos()
+	x, y := window.GetMousePosition()
 	return mgl32.Vec2{float32(x), float32(y)}
 }
 
@@ -131,15 +162,15 @@ func SetMousePosition(x, y float32) {
 	mousePrevX = float64(x)
 	mousePrevY = float64(y)
 	mouseDeltaX, mouseDeltaY = 0, 0
-	glfw.GetCurrentContext().SetCursorPos(mousePrevX, mousePrevY)
+	window.MoveMouse(int(mousePrevX), int(mousePrevY))
 }
 
-func IsMouseButtonDown(button glfw.MouseButton) bool {
-	return glfw.GetCurrentContext().GetMouseButton(button) == glfw.Press && !IsCapturingInput()
+func IsMouseButtonDown(button rgfw.MouseButton) bool {
+	return window.IsMouseDown(button) && !IsCapturingInput()
 }
 
 func AnyMouseButtonPressed() bool {
-	return IsMouseButtonDown(glfw.MouseButton1) || IsMouseButtonDown(glfw.MouseButton2) || IsMouseButtonDown(glfw.MouseButton3)
+	return IsMouseButtonDown(rgfw.MOUSE_BUTTON_LEFT) || IsMouseButtonDown(rgfw.MOUSE_BUTTON_RIGHT) || IsMouseButtonDown(rgfw.MOUSE_BUTTON_MIDDLE)
 }
 
 func AnyMouseButtonJustPressed() bool {
@@ -148,39 +179,4 @@ func AnyMouseButtonJustPressed() bool {
 
 func IsAnythingPressed() bool {
 	return anythingPressed && !IsCapturingInput()
-}
-
-func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	switch action {
-	case glfw.Press:
-		if IsCapturingInput() {
-			capturedBinding = NewKeyBinding(key)
-		} else {
-			anythingPressed = true
-			lastKeyPressed = key
-		}
-	case glfw.Release:
-		if IsCapturingInput() && capturedBinding != nil {
-			endCaptureInput()
-		}
-	}
-}
-
-func mouseCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	switch action {
-	case glfw.Press:
-		if IsCapturingInput() {
-			capturedBinding = NewMouseButtonBinding(button)
-		} else {
-			anythingPressed = true
-		}
-	case glfw.Release:
-		if IsCapturingInput() && capturedBinding != nil {
-			endCaptureInput()
-		}
-	}
-}
-
-func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
-	mouseScrollY += float32(yoff)
 }

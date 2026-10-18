@@ -5,29 +5,29 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 )
 
 type Action [2]input.Binding
 
 var (
 	// Cheat codes
-	ActionNoclip  = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyI, glfw.KeyP) //TDCLIP
-	ActionGodMode = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyD, glfw.KeyQ, glfw.KeyD)            //TDDQD
-	ActionMarySue = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyM, glfw.KeyS, glfw.KeyM)            //TDMSM
+	ActionNoclip  = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_C, rgfw.KEY_L, rgfw.KEY_I, rgfw.KEY_P) //TDCLIP
+	ActionGodMode = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_D, rgfw.KEY_Q, rgfw.KEY_D)             //TDDQD
+	ActionMarySue = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_M, rgfw.KEY_S, rgfw.KEY_M)             //TDMSM
 	ActionDie     = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyU, glfw.KeyN, glfw.KeyA, glfw.KeyL, glfw.KeyI, glfw.KeyV, glfw.KeyE,
+		rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_U, rgfw.KEY_N, rgfw.KEY_A, rgfw.KEY_L, rgfw.KEY_I, rgfw.KEY_V, rgfw.KEY_E,
 	) //TDUNALIVE
 	ActionKillEnemies = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyN, glfw.KeyU, glfw.KeyK, glfw.KeyE, glfw.KeyM,
+		rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_N, rgfw.KEY_U, rgfw.KEY_K, rgfw.KEY_E, rgfw.KEY_M,
 	) //TDNUKEM
 	ActionCastBlessing = input.NewCharSequenceBinding(
-		glfw.KeyT, glfw.KeyD, glfw.KeyW, glfw.KeyO, glfw.KeyL, glfw.KeyO, glfw.KeyL, glfw.KeyO,
+		rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_W, rgfw.KEY_O, rgfw.KEY_L, rgfw.KEY_O, rgfw.KEY_L, rgfw.KEY_O,
 	) //TDWOLOLO
-	ActionLaunchEditor = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyJ, glfw.KeyO, glfw.KeyM, glfw.KeyT) //TDJOMT
-	ActionSpawnChicken = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyK, glfw.KeyF, glfw.KeyC)            //TDKFC
-	ActionLevelSelect  = input.NewCharSequenceBinding(glfw.KeyT, glfw.KeyD, glfw.KeyC, glfw.KeyL, glfw.KeyE, glfw.KeyV) //TDCLEV
+	ActionLaunchEditor = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_J, rgfw.KEY_O, rgfw.KEY_M, rgfw.KEY_T) //TDJOMT
+	ActionSpawnChicken = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_K, rgfw.KEY_F, rgfw.KEY_C)             //TDKFC
+	ActionLevelSelect  = input.NewCharSequenceBinding(rgfw.KEY_T, rgfw.KEY_D, rgfw.KEY_C, rgfw.KEY_L, rgfw.KEY_E, rgfw.KEY_V) //TDCLEV
 )
 
 func (action Action) Axis() float32 {
@@ -115,13 +115,13 @@ func (action *Action) UnmarshalTOML(data any) error {
 		}
 		if value, hasKey := bindingMap["Key"]; hasKey {
 			if keyNumber, ok := value.(int64); ok {
-				action[i] = input.NewKeyBinding(glfw.Key(keyNumber))
+				action[i] = input.NewKeyBinding(rgfw.Key(keyNumber))
 			} else {
 				return fmt.Errorf("binding Key value must be an integer")
 			}
 		} else if value, hasMouseButton := bindingMap["MouseButton"]; hasMouseButton {
 			if buttonNumber, ok := value.(int64); ok {
-				action[i] = input.NewMouseButtonBinding(glfw.MouseButton(buttonNumber))
+				action[i] = input.NewMouseButtonBinding(rgfw.MouseButton(buttonNumber))
 			} else {
 				return fmt.Errorf("binding MouseButton value must be an integer")
 			}

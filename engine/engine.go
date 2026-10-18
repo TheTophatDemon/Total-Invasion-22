@@ -4,12 +4,12 @@ import (
 	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/clock"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
@@ -23,7 +23,8 @@ type App interface {
 }
 
 var debugMode bool
-var window *glfw.Window
+var window *rgfw.Window
+var glContext *rgfw.OpenGLContext
 
 // We're tracking this ourselves so that switching to fullscreen doesn't mess up the UI
 var gScreenWidth, gScreenHeight int = 1280, 720
@@ -46,7 +47,7 @@ func ScreenSize() (width, height int) {
 }
 
 func IsFullscreen() bool {
-	return window.GetMonitor() != nil
+	return window.IsFullscreen()
 }
 
 func IsVsync() bool {
@@ -56,9 +57,9 @@ func IsVsync() bool {
 func SetVsync(isVsync bool) {
 	gVsync = isVsync
 	if isVsync {
-		glfw.SwapInterval(1)
+		window.SetSwapInterval(1)
 	} else {
-		glfw.SwapInterval(0)
+		window.SetSwapInterval(0)
 	}
 }
 
@@ -70,10 +71,10 @@ func SetVideoMode(isFullscreen bool, width, height int) {
 		gl.Viewport(0, 0, int32(width), int32(height))
 	}
 	if isFullscreen && !IsFullscreen() {
-		window.SetMonitor(glfw.GetPrimaryMonitor(), 0, 0, width, height, 60)
+		window.SetFullscreen(rgfw.FULLSCREEN_BORDERLESS)
 	} else if !isFullscreen && IsFullscreen() {
-		x, y := centerWindowPosition()
-		window.SetMonitor(nil, x, y, width, height, 60)
+		window.SetFullscreen(rgfw.FULLSCREEN_NONE)
+		window.Center()
 	}
 }
 
@@ -81,55 +82,39 @@ func Shutdown() {
 	window.SetShouldClose(true)
 }
 
-func centerWindowPosition() (x, y int) {
-	_, _, monitorW, monitorH := glfw.GetPrimaryMonitor().GetWorkarea()
-	winWidth, winHeight := window.GetSize()
-	// This isn't _exactly_ the center, but who cares?
-	x = (monitorW / 2) - (winWidth / 2)
-	y = (monitorH / 2) - (winHeight / 2)
-	return
-}
-
 func CenterWindow() {
-	window.SetPos(centerWindowPosition())
+	window.Center()
 }
 
 func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFullscreen bool) {
-	err := glfw.Init()
+	err := rgfw.Init("Total Invasion 22", rgfw.INIT_OPENGL)
 	if err != nil {
 		panic(err)
 	}
 
 	debugMode = enableDebug
 
-	glfw.WindowHint(glfw.Resizable, glfw.False)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	gScreenWidth = screenWidth
 	gScreenHeight = screenHeight
-	if debugMode {
-		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
-	} else {
-		glfw.WindowHint(glfw.OpenGLDebugContext, glfw.False)
-	}
+
+	var flags rgfw.WindowFlags = rgfw.WINDOW_CENTER | rgfw.WINDOW_OPEN_GL | rgfw.WINDOW_NO_RESIZE | rgfw.WINDOW_FOCUS_ON_SHOW
 	if isFullscreen {
-		window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, glfw.GetPrimaryMonitor(), nil)
-	} else {
-		window, err = glfw.CreateWindow(screenWidth, screenHeight, windowTitle, nil, nil)
+		flags |= rgfw.WINDOW_FULLSCREEN_BORDERLESS
 	}
-	if err != nil {
-		panic(err)
-	}
-	CenterWindow()
+	window = rgfw.CreateWindow(windowTitle, 0, 0, screenWidth, screenHeight, flags)
+	glContext = rgfw.CreateOpenGLContext(rgfw.GLHints{
+		MajorVersion: 3, MinorVersion: 3,
+		Profile: rgfw.GL_CORE,
+		Debug:   debugMode,
+	})
+	window.SetContext(glContext)
 	window.MakeContextCurrent()
-	glfw.SwapInterval(1)
+	window.SetSwapInterval(1)
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
 
-	input.Init()
+	input.Init(window)
 
 	tdaudio.Init()
 
@@ -155,17 +140,12 @@ func Run(app App) {
 
 			window.SwapBuffers()
 		}
-		glfw.PollEvents()
+		rgfw.PollEvents()
 	}
-
-	// Reset video mode before leaving
-	winX, winY := window.GetPos()
-	winW, winH := window.GetSize()
-	window.SetMonitor(nil, winX, winY, winW, winH, 60)
 }
 
 func DeInit() {
 	cache.FreeAll()
-	glfw.Terminate()
+	rgfw.Deinit()
 	tdaudio.Teardown()
 }

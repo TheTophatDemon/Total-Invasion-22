@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/input"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
@@ -69,34 +69,34 @@ func init() {
 		Locale:              LocaleEnglish,
 		Fov:                 70.0,
 		ChickenHarm:         true,
-		ActionMenuDown:      Action{input.NewKeyBinding(glfw.KeyDown), input.NewKeyBinding(glfw.KeyS)},
-		ActionMenuUp:        Action{input.NewKeyBinding(glfw.KeyUp), input.NewKeyBinding(glfw.KeyW)},
-		ActionMenuConfirm:   Action{input.NewKeyBinding(glfw.KeyEnter)},
-		ActionMenuCancel:    Action{input.NewKeyBinding(glfw.KeyEscape)},
-		ActionMenuIncrement: Action{input.NewKeyBinding(glfw.KeyRight), input.NewKeyBinding(glfw.KeyD)},
-		ActionMenuDecrement: Action{input.NewKeyBinding(glfw.KeyLeft), input.NewKeyBinding(glfw.KeyA)},
-		ActionForward:       Action{input.NewKeyBinding(glfw.KeyW)},
-		ActionBack:          Action{input.NewKeyBinding(glfw.KeyS)},
-		ActionLeft:          Action{input.NewKeyBinding(glfw.KeyA)},
-		ActionRight:         Action{input.NewKeyBinding(glfw.KeyD)},
-		ActionSlow:          Action{input.NewKeyBinding(glfw.KeyLeftShift), input.NewKeyBinding(glfw.KeyRightShift)},
-		ActionLookLeft:      Action{input.NewMouseMovementBinding(input.MouseAxisNegX), input.NewKeyBinding(glfw.KeyLeft)},
+		ActionMenuDown:      Action{input.NewKeyBinding(rgfw.KEY_DOWN), input.NewKeyBinding(rgfw.KEY_S)},
+		ActionMenuUp:        Action{input.NewKeyBinding(rgfw.KEY_UP), input.NewKeyBinding(rgfw.KEY_W)},
+		ActionMenuConfirm:   Action{input.NewKeyBinding(rgfw.KEY_ENTER)},
+		ActionMenuCancel:    Action{input.NewKeyBinding(rgfw.KEY_ESCAPE)},
+		ActionMenuIncrement: Action{input.NewKeyBinding(rgfw.KEY_RIGHT), input.NewKeyBinding(rgfw.KEY_D)},
+		ActionMenuDecrement: Action{input.NewKeyBinding(rgfw.KEY_LEFT), input.NewKeyBinding(rgfw.KEY_A)},
+		ActionForward:       Action{input.NewKeyBinding(rgfw.KEY_W)},
+		ActionBack:          Action{input.NewKeyBinding(rgfw.KEY_S)},
+		ActionLeft:          Action{input.NewKeyBinding(rgfw.KEY_A)},
+		ActionRight:         Action{input.NewKeyBinding(rgfw.KEY_D)},
+		ActionSlow:          Action{input.NewKeyBinding(rgfw.KEY_SHIFT_L), input.NewKeyBinding(rgfw.KEY_SHIFT_R)},
+		ActionLookLeft:      Action{input.NewMouseMovementBinding(input.MouseAxisNegX), input.NewKeyBinding(rgfw.KEY_LEFT)},
 		ActionFastLookLeft:  Action{nil, nil},
-		ActionLookRight:     Action{input.NewMouseMovementBinding(input.MouseAxisPosX), input.NewKeyBinding(glfw.KeyRight)},
+		ActionLookRight:     Action{input.NewMouseMovementBinding(input.MouseAxisPosX), input.NewKeyBinding(rgfw.KEY_RIGHT)},
 		ActionFastLookRight: Action{nil, nil},
-		ActionFire:          Action{input.NewMouseButtonBinding(glfw.MouseButtonLeft), input.NewKeyBinding(glfw.KeyLeftControl)},
-		ActionAltFire:       Action{input.NewMouseButtonBinding(glfw.MouseButtonRight), input.NewKeyBinding(glfw.KeyLeftAlt)},
-		ActionUse:           Action{input.NewKeyBinding(glfw.KeyE)},
-		ActionSickle:        Action{input.NewKeyBinding(glfw.Key1)},
-		ActionChicken:       Action{input.NewKeyBinding(glfw.Key2)},
-		ActionGrenade:       Action{input.NewKeyBinding(glfw.Key3)},
-		ActionParusu:        Action{input.NewKeyBinding(glfw.Key4)},
-		ActionDblGrenade:    Action{input.NewKeyBinding(glfw.Key5)},
-		ActionSign:          Action{input.NewKeyBinding(glfw.Key6)},
-		ActionAirhorn:       Action{input.NewKeyBinding(glfw.Key7)},
-		ActionDefenestrator: Action{input.NewKeyBinding(glfw.Key8)},
-		ActionCluckster:     Action{input.NewKeyBinding(glfw.Key9)},
-		ActionWeaponWheel:   Action{input.NewKeyBinding(glfw.KeyQ)},
+		ActionFire:          Action{input.NewMouseButtonBinding(rgfw.MOUSE_BUTTON_LEFT), input.NewKeyBinding(rgfw.KEY_CONTROL_L)},
+		ActionAltFire:       Action{input.NewMouseButtonBinding(rgfw.MOUSE_BUTTON_RIGHT), input.NewKeyBinding(rgfw.KEY_ALT_L)},
+		ActionUse:           Action{input.NewKeyBinding(rgfw.KEY_E)},
+		ActionSickle:        Action{input.NewKeyBinding(rgfw.KEY0)},
+		ActionChicken:       Action{input.NewKeyBinding(rgfw.KEY2)},
+		ActionGrenade:       Action{input.NewKeyBinding(rgfw.KEY3)},
+		ActionParusu:        Action{input.NewKeyBinding(rgfw.KEY4)},
+		ActionDblGrenade:    Action{input.NewKeyBinding(rgfw.KEY5)},
+		ActionSign:          Action{input.NewKeyBinding(rgfw.KEY6)},
+		ActionAirhorn:       Action{input.NewKeyBinding(rgfw.KEY7)},
+		ActionDefenestrator: Action{input.NewKeyBinding(rgfw.KEY8)},
+		ActionCluckster:     Action{input.NewKeyBinding(rgfw.KEY9)},
+		ActionWeaponWheel:   Action{input.NewKeyBinding(rgfw.KEY_Q)},
 	}
 	Current = Default
 }

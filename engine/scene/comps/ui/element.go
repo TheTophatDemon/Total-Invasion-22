@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
@@ -17,6 +16,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/input"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 )
 
@@ -477,7 +477,7 @@ func (el *Element) Render(context *render.Context) {
 		failure.CheckOpenGLError()
 	}
 
-	if engine.InDebugMode() && input.IsMouseButtonDown(glfw.MouseButton3) {
+	if engine.InDebugMode() && input.IsMouseButtonDown(rgfw.MOUSE_BUTTON_MIDDLE) {
 		screenRect := el.OnScreenBox()
 		wireMesh := geom.CreateWireMesh(geom.Vertices{
 			Pos: []mgl32.Vec3{

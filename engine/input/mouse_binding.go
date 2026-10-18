@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 type (
 	MouseButtonBinding struct {
 		bindingBase
-		MouseButton glfw.MouseButton
+		MouseButton rgfw.MouseButton
 	}
 	MouseMovementBinding struct {
 		bindingBase
@@ -30,12 +30,12 @@ type (
 
 // MOUSE BUTTON BINDING
 
-func NewMouseButtonBinding(butt glfw.MouseButton) *MouseButtonBinding {
+func NewMouseButtonBinding(butt rgfw.MouseButton) *MouseButtonBinding {
 	return new(MouseButtonBinding{MouseButton: butt})
 }
 
 func (mbb *MouseButtonBinding) Pressed() bool {
-	return mbb.updatePressStates(glfw.GetCurrentContext().GetMouseButton(mbb.MouseButton) == glfw.Press)
+	return mbb.updatePressStates(window.IsMouseDown(mbb.MouseButton))
 }
 
 func (mbb *MouseButtonBinding) JustPressed() bool {
@@ -58,21 +58,21 @@ func (mbb *MouseButtonBinding) Axis() float32 {
 
 func (mbb *MouseButtonBinding) LocalizationKey() string {
 	switch mbb.MouseButton {
-	case glfw.MouseButtonLeft:
+	case rgfw.MOUSE_BUTTON_LEFT:
 		return "mouseButtonLeft"
-	case glfw.MouseButtonRight:
+	case rgfw.MOUSE_BUTTON_RIGHT:
 		return "mouseButtonRight"
-	case glfw.MouseButtonMiddle:
+	case rgfw.MOUSE_BUTTON_MIDDLE:
 		return "mouseButtonMiddle"
-	case glfw.MouseButton4:
+	case rgfw.MOUSE_BUTTON_MISC_1:
 		return "mouseButton4"
-	case glfw.MouseButton5:
+	case rgfw.MOUSE_BUTTON_MISC_2:
 		return "mouseButton5"
-	case glfw.MouseButton6:
+	case rgfw.MOUSE_BUTTON_MISC_3:
 		return "mouseButton6"
-	case glfw.MouseButton7:
+	case rgfw.MOUSE_BUTTON_MISC_4:
 		return "mouseButton7"
-	case glfw.MouseButton8:
+	case rgfw.MOUSE_BUTTON_MISC_5:
 		return "mouseButton8"
 	}
 	return "???"
