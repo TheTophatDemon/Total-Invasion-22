@@ -100,7 +100,6 @@ const (
 	WINDOW_HIDE_MOUSE
 	WINDOW_FULLSCREEN_EXCLUSIVE
 	WINDOW_TRANSLUCENT
-	WINDOW_TRANSPARENT
 	WINDOW_CENTER
 	WINDOW_RAW_MOUSE
 	WINDOW_SCALE_TO_MONITOR
@@ -428,6 +427,7 @@ var (
 	rgfwCreateContextOpenGL            func(hints *GLHints) *OpenGLContext
 	rgfwCreateWindow                   func(title string, x, y, w, h int32, flags WindowFlags) *Window
 	rgfwCloseWindow                    func(window *Window)
+	rgfwWindowShow                     func(window *Window)
 	rgfwWindowShouldClose              func(window *Window) bool
 	rgfwWindowSetShouldClose           func(window *Window, shouldClose bool)
 	rgfwWindowIsKeyDown                func(window *Window, key Key) bool
@@ -460,6 +460,7 @@ func Init(className string, initFlags InitFlags) error {
 	purego.RegisterLibFunc(&rgfwCreateContextOpenGL, lib, "RGFW_createContext_OpenGL")
 	purego.RegisterLibFunc(&rgfwCreateWindow, lib, "RGFW_createWindow")
 	purego.RegisterLibFunc(&rgfwCloseWindow, lib, "RGFW_window_close")
+	purego.RegisterLibFunc(&rgfwWindowShow, lib, "RGFW_window_show")
 	purego.RegisterLibFunc(&rgfwWindowShouldClose, lib, "RGFW_window_shouldClose")
 	purego.RegisterLibFunc(&rgfwWindowSetShouldClose, lib, "RGFW_window_setShouldClose")
 	purego.RegisterLibFunc(&rgfwWindowIsKeyDown, lib, "RGFW_window_isKeyDown")
@@ -512,6 +513,10 @@ func CreateWindow(name string, x, y, width, height int, flags WindowFlags) *Wind
 
 func (window *Window) Close() {
 	rgfwCloseWindow(window)
+}
+
+func (window *Window) Show() {
+	rgfwWindowShow(window)
 }
 
 func (window *Window) ShouldClose() bool {

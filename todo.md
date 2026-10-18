@@ -1,4 +1,9 @@
 # TODO - Development
+- RGFW Transition
+  - Fullscreen doesn't resize the frame buffer
+  - Scrolling doesn't work
+  - Can't bind keyboard keys because the mouse input blocks it
+  - Hide the mouse / trap it in the center
 - Double Grenade Launcher
   - Make grenades less likely to clip through walls
 - Bugs
@@ -14,7 +19,7 @@
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
-- Replace GLFW bindings with purego bindings to reduce CGO overhead
+- Move OpenGL bindings to purego
 - Optimize the memory usage of map loading to avoid GC stutters
 - Optimize memory usage of particle effects
 - Optimize pauses by pre loading textures for entities

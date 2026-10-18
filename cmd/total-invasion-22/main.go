@@ -270,6 +270,7 @@ func main() {
 		"Total Invasion 22",
 		slices.Contains(os.Args[1:], "debug"),
 		settings.Current.Fullscreen,
+		settings.Current.Vsync,
 	)
 	defer engine.DeInit()
 	settings.Current.Apply()

@@ -86,7 +86,7 @@ func CenterWindow() {
 	window.Center()
 }
 
-func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFullscreen bool) {
+func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFullscreen, isVsync bool) {
 	err := rgfw.Init("Total Invasion 22", rgfw.INIT_OPENGL)
 	if err != nil {
 		panic(err)
@@ -97,19 +97,27 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 	gScreenWidth = screenWidth
 	gScreenHeight = screenHeight
 
-	var flags rgfw.WindowFlags = rgfw.WINDOW_CENTER | rgfw.WINDOW_OPEN_GL | rgfw.WINDOW_NO_RESIZE | rgfw.WINDOW_FOCUS_ON_SHOW
+	var flags rgfw.WindowFlags = rgfw.WINDOW_CENTER |
+		rgfw.WINDOW_OPEN_GL |
+		rgfw.WINDOW_NO_RESIZE |
+		rgfw.WINDOW_FOCUS_ON_SHOW |
+		rgfw.WINDOW_HIDE // Have to hide the window until the OpenGL context is set up.
+
 	if isFullscreen {
 		flags |= rgfw.WINDOW_FULLSCREEN_BORDERLESS
 	}
 	window = rgfw.CreateWindow(windowTitle, 0, 0, screenWidth, screenHeight, flags)
 	glContext = rgfw.CreateOpenGLContext(rgfw.GLHints{
 		MajorVersion: 3, MinorVersion: 3,
-		Profile: rgfw.GL_CORE,
-		Debug:   debugMode,
+		Profile:      rgfw.GL_CORE,
+		Debug:        debugMode,
+		DoubleBuffer: 1,
 	})
 	window.SetContext(glContext)
+	window.Show()
 	window.MakeContextCurrent()
-	window.SetSwapInterval(1)
+	SetVsync(isVsync)
+
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
