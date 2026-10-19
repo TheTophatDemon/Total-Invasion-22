@@ -411,6 +411,22 @@ func (event Event) MouseButton() (mouseEvent MouseButtonEvent, ok bool) {
 	return
 }
 
+type MouseDeltaEvent struct {
+	_      structs.HostLayout
+	Type   EventType
+	Window *Window
+	X, Y   float32
+}
+
+func (event Event) MouseDelta() (mouseEvent MouseDeltaEvent, ok bool) {
+	if event.Type != EVENT_MOUSE_MOTION && event.Type != EVENT_MOUSE_RAW_MOTION && event.Type != EVENT_MOUSE_SCROLL {
+		return
+	}
+	mouseEvent = *(*MouseDeltaEvent)(unsafe.Pointer(&event))
+	ok = true
+	return
+}
+
 type FullscreenMode uint8
 
 const (

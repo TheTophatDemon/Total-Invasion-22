@@ -1,7 +1,6 @@
 # TODO - Development
 - RGFW Transition
   - Fullscreen doesn't resize the frame buffer
-  - Scrolling doesn't work
   - Can't bind keyboard keys because the mouse input blocks it
   - Hide the mouse / trap it in the center
 - Double Grenade Launcher

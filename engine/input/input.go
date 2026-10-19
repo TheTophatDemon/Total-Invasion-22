@@ -27,7 +27,7 @@ var lastKeyPressed rgfw.Key = rgfw.KEY_NULL
 var inputFrameNumber uint64
 var mousePrevX, mousePrevY float64
 var mouseDeltaX, mouseDeltaY float64
-var mouseScrollY, mousePrevScrollY float32
+var mouseScrollY float32
 
 var window *rgfw.Window
 
@@ -66,9 +66,7 @@ func PostUpdate() {
 		}
 	}
 	mousePrevX, mousePrevY = float64(mousePosX), float64(mousePosY)
-
-	_, mouseScrollY = rgfw.GetMouseScroll()
-	mousePrevScrollY = mouseScrollY
+	mouseScrollY = 0.0
 
 	for {
 		event, hasEvent := window.CheckEvent()
@@ -95,8 +93,12 @@ func PostUpdate() {
 			if IsCapturingInput() && capturedBinding != nil {
 				endCaptureInput()
 			}
+		case rgfw.EVENT_MOUSE_SCROLL:
+			mouseEvent, _ := event.MouseDelta()
+			mouseScrollY = mouseEvent.Y
 		}
 	}
+
 }
 
 func TrapMouse() {
@@ -150,12 +152,8 @@ func MouseDelta() mgl32.Vec2 {
 	return mgl32.Vec2{float32(mouseDeltaX), float32(mouseDeltaY)}
 }
 
-func MouseScroll() float32 {
-	return mouseScrollY
-}
-
 func MouseScrollDelta() float32 {
-	return mouseScrollY - mousePrevScrollY
+	return mouseScrollY
 }
 
 func SetMousePosition(x, y float32) {
