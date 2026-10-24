@@ -1,8 +1,6 @@
 package input
 
 import (
-	"math"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/rgfw"
 )
@@ -25,15 +23,10 @@ var capturedBinding Binding = nil
 
 var lastKeyPressed rgfw.Key = rgfw.KEY_NULL
 var inputFrameNumber uint64
-var mousePrevX, mousePrevY float64
-var mouseDeltaX, mouseDeltaY float64
+var mouseDeltaX, mouseDeltaY float32
 var mouseScrollY float32
 
 var window *rgfw.Window
-
-func init() {
-	mousePrevX, mousePrevY = math.NaN(), math.NaN()
-}
 
 func Init(win *rgfw.Window) {
 	window = win
@@ -44,30 +37,8 @@ func PostUpdate() {
 	anythingPressed = false
 	wasAnyMouseButtonPressed = AnyMouseButtonPressed()
 	lastKeyPressed = rgfw.KEY_NULL
-	mousePosX, mousePosY := window.GetMousePosition()
-	if !math.IsNaN(mousePrevX) && !math.IsNaN(mousePrevY) {
-		mouseDeltaX = float64(mousePosX) - mousePrevX
-		mouseDeltaY = float64(mousePosY) - mousePrevY
-		movedAxis := MouseAxisNone
-		const moveThreshold = 5.0
-		switch true {
-		case mouseDeltaX > moveThreshold:
-			movedAxis = MouseAxisPosX
-		case mouseDeltaX < -moveThreshold:
-			movedAxis = MouseAxisNegX
-		case mouseDeltaY > moveThreshold:
-			movedAxis = MouseAxisPosY
-		case mouseDeltaY < -moveThreshold:
-			movedAxis = MouseAxisNegY
-		}
-		if movedAxis != MouseAxisNone && IsCapturingInput() {
-			capturedBinding = NewMouseMovementBinding(movedAxis)
-			endCaptureInput()
-		}
-	}
-	mousePrevX, mousePrevY = float64(mousePosX), float64(mousePosY)
 	mouseScrollY = 0.0
-
+	mouseDeltaX, mouseDeltaY = 0, 0
 	for {
 		event, hasEvent := window.CheckEvent()
 		if !hasEvent {
@@ -96,19 +67,40 @@ func PostUpdate() {
 		case rgfw.EVENT_MOUSE_SCROLL:
 			mouseEvent, _ := event.MouseDelta()
 			mouseScrollY = mouseEvent.Y
+		case rgfw.EVENT_MOUSE_RAW_MOTION:
+			mouseEvent, _ := event.MouseDelta()
+			mouseDeltaX += mouseEvent.X
+			mouseDeltaY += mouseEvent.Y
 		}
 	}
 
+	// Capture mouse movement bindings
+	movedAxis := MouseAxisNone
+	const moveThreshold = 5.0
+	switch true {
+	case mouseDeltaX > moveThreshold:
+		movedAxis = MouseAxisPosX
+	case mouseDeltaX < -moveThreshold:
+		movedAxis = MouseAxisNegX
+	case mouseDeltaY > moveThreshold:
+		movedAxis = MouseAxisPosY
+	case mouseDeltaY < -moveThreshold:
+		movedAxis = MouseAxisNegY
+	}
+	if movedAxis != MouseAxisNone && IsCapturingInput() {
+		capturedBinding = NewMouseMovementBinding(movedAxis)
+		endCaptureInput()
+	}
 }
 
 func TrapMouse() {
-	window.SetCaptureMouse(true)
-	mx, my := window.GetMousePosition()
-	mousePrevX, mousePrevY = float64(mx), float64(my)
+	window.CaptureRawMouse(true)
+	window.SetMouseVisibility(false)
 }
 
 func UntrapMouse() {
-	window.SetCaptureMouse(false)
+	window.CaptureRawMouse(false)
+	window.SetMouseVisibility(true)
 }
 
 func IsMouseTrapped() bool {
@@ -154,13 +146,6 @@ func MouseDelta() mgl32.Vec2 {
 
 func MouseScrollDelta() float32 {
 	return mouseScrollY
-}
-
-func SetMousePosition(x, y float32) {
-	mousePrevX = float64(x)
-	mousePrevY = float64(y)
-	mouseDeltaX, mouseDeltaY = 0, 0
-	window.MoveMouse(int(mousePrevX), int(mousePrevY))
 }
 
 func IsMouseButtonDown(button rgfw.MouseButton) bool {

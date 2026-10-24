@@ -440,6 +440,7 @@ var (
 	rgfwDeinit                         func()
 	rgfwPollEvents                     func()
 	rgfwGetMouseScroll                 func(x, y *float32)
+	rgfwGetMouseVector                 func(x, y *float32)
 	rgfwCreateContextOpenGL            func(hints *GLHints) *OpenGLContext
 	rgfwCreateWindow                   func(title string, x, y, w, h int32, flags WindowFlags) *Window
 	rgfwCloseWindow                    func(window *Window)
@@ -463,6 +464,9 @@ var (
 	rgfwWindowCenter                   func(window *Window)
 	rgfwWindowMakeCurrentContextOpenGL func(window *Window)
 	rgfwWindowSetContextOpenGL         func(window *Window, context *OpenGLContext) bool
+	rgfwWindowSetRawMouseMode          func(window *Window, mode bool)
+	rgfwWindowCaptureRawMouse          func(window *Window, state bool)
+	rgfwWindowShowMouse                func(window *Window, show bool)
 )
 
 func Init(className string, initFlags InitFlags) error {
@@ -474,6 +478,8 @@ func Init(className string, initFlags InitFlags) error {
 	purego.RegisterLibFunc(&rgfwDeinit, lib, "RGFW_deinit")
 	purego.RegisterLibFunc(&rgfwPollEvents, lib, "RGFW_pollEvents")
 	purego.RegisterLibFunc(&rgfwCreateContextOpenGL, lib, "RGFW_createContext_OpenGL")
+	purego.RegisterLibFunc(&rgfwGetMouseScroll, lib, "RGFW_getMouseScroll")
+	purego.RegisterLibFunc(&rgfwGetMouseVector, lib, "RGFW_getMouseVector")
 	purego.RegisterLibFunc(&rgfwCreateWindow, lib, "RGFW_createWindow")
 	purego.RegisterLibFunc(&rgfwCloseWindow, lib, "RGFW_window_close")
 	purego.RegisterLibFunc(&rgfwWindowShow, lib, "RGFW_window_show")
@@ -481,7 +487,6 @@ func Init(className string, initFlags InitFlags) error {
 	purego.RegisterLibFunc(&rgfwWindowSetShouldClose, lib, "RGFW_window_setShouldClose")
 	purego.RegisterLibFunc(&rgfwWindowIsKeyDown, lib, "RGFW_window_isKeyDown")
 	purego.RegisterLibFunc(&rgfwWindowGetMouse, lib, "RGFW_window_getMouse")
-	purego.RegisterLibFunc(&rgfwGetMouseScroll, lib, "RGFW_getMouseScroll")
 	purego.RegisterLibFunc(&rgfwWindowIsMouseDown, lib, "RGFW_window_isMouseDown")
 	purego.RegisterLibFunc(&rgfwWindowIsInFocus, lib, "RGFW_window_isInFocus")
 	purego.RegisterLibFunc(&rgfwWindowCaptureMouse, lib, "RGFW_window_captureMouse")
@@ -497,6 +502,9 @@ func Init(className string, initFlags InitFlags) error {
 	purego.RegisterLibFunc(&rgfwWindowCenter, lib, "RGFW_window_center")
 	purego.RegisterLibFunc(&rgfwWindowMakeCurrentContextOpenGL, lib, "RGFW_window_makeCurrentContext_OpenGL")
 	purego.RegisterLibFunc(&rgfwWindowSetContextOpenGL, lib, "RGFW_window_setContext_OpenGL")
+	purego.RegisterLibFunc(&rgfwWindowSetRawMouseMode, lib, "RGFW_window_setRawMouseMode")
+	purego.RegisterLibFunc(&rgfwWindowCaptureRawMouse, lib, "RGFW_window_captureRawMouse")
+	purego.RegisterLibFunc(&rgfwWindowShowMouse, lib, "RGFW_window_showMouse")
 
 	res := rgfwInit(className, initFlags)
 	if res != 0 {
@@ -516,6 +524,11 @@ func PollEvents() {
 
 func GetMouseScroll() (x, y float32) {
 	rgfwGetMouseScroll(&x, &y)
+	return
+}
+
+func GetMouseVector() (x, y float32) {
+	rgfwGetMouseVector(&x, &y)
 	return
 }
 
@@ -614,4 +627,16 @@ func (window *Window) MakeContextCurrent() {
 
 func (window *Window) SetContext(context *OpenGLContext) bool {
 	return rgfwWindowSetContextOpenGL(window, context)
+}
+
+func (window *Window) SetRawMouseMode(state bool) {
+	rgfwWindowSetRawMouseMode(window, state)
+}
+
+func (window *Window) CaptureRawMouse(state bool) {
+	rgfwWindowCaptureRawMouse(window, state)
+}
+
+func (window *Window) SetMouseVisibility(show bool) {
+	rgfwWindowShowMouse(window, show)
 }
