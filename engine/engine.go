@@ -103,9 +103,11 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 		rgfw.WINDOW_FOCUS_ON_SHOW |
 		rgfw.WINDOW_HIDE // Have to hide the window until the OpenGL context is set up.
 
-	if isFullscreen {
-		flags |= rgfw.WINDOW_FULLSCREEN_BORDERLESS
-	}
+	// This flag doesn't work because of a RGFW bug.
+	// if isFullscreen {
+	// 	flags |= rgfw.WINDOW_FULLSCREEN_BORDERLESS
+	// }
+
 	window = rgfw.CreateWindow(windowTitle, 0, 0, screenWidth, screenHeight, flags)
 	glContext = rgfw.CreateOpenGLContext(rgfw.GLHints{
 		MajorVersion: 3, MinorVersion: 3,
@@ -117,6 +119,10 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 	window.Show()
 	window.MakeContextCurrent()
 	SetVsync(isVsync)
+
+	if isFullscreen {
+		window.SetFullscreen(rgfw.FULLSCREEN_BORDERLESS)
+	}
 
 	if err := gl.Init(); err != nil {
 		panic(err)
