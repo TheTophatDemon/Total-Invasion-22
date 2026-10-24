@@ -203,8 +203,8 @@ func (menu *Menu) Layout(queue *ui.RenderQueue, deltaTime float32) {
 	}
 
 	scroll := input.MouseScrollDelta()
-	//TODO: It is no longer registering mouse movement
-	mouseMoved := input.MouseDelta().LenSqr() > 0.1 || !mgl32.FloatEqual(scroll, 0.0)
+	delta := input.MouseDelta()
+	mouseMoved := delta[0] != 0 || delta[1] != 0 || !mgl32.FloatEqual(scroll, 0.0)
 	if mouseMoved {
 		menu.menuSelection = -1
 	}
