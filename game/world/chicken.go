@@ -8,13 +8,13 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -29,7 +29,7 @@ type Chicken struct {
 	AnimPlayer                 comps.AnimationPlayer
 	bloodParticles             comps.ParticleRender
 	actor                      Actor
-	voice                      tdaudio.VoiceId
+	voice                      *audio.Voice
 	walkAnim, flyAnim, dieAnim textures.Animation
 	id                         scene.Id[*Chicken]
 	decomposeTimer             float32 // Time in seconds before the chicken's corpse disappears.
@@ -91,7 +91,7 @@ func SpawnChicken(position mgl32.Vec3, angles [3]math2.Degrees) (id scene.Id[*Ch
 	chk.actor.Health = 45.0
 	chk.actor.MaxHealth, chk.actor.TargetHealth = chk.actor.Health, chk.actor.Health
 
-	chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(position)
+	chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuated(position)
 
 	chk.decomposeTimer = 120.0
 
@@ -134,8 +134,8 @@ func (chk *Chicken) Update(deltaTime float32) {
 
 	chkPos := body.Position
 	chkDir := chk.actor.FacingVec()
-	if chk.voice.IsValid() {
-		chk.voice.SetPositionV(chkPos)
+	if chk.voice != nil {
+		chk.voice.SetPosition(chkPos)
 	}
 
 	if chk.actor.Health > 0 {
@@ -201,7 +201,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 	if chk.actor.Health <= 0 {
 		chk.voice.Stop()
 		chk.actor.collisionFilter = ColLayerMap | ColLayerInvisible
-		chk.voice = cache.GetSfx(SfxChickenPain).PlayAttenuatedV(chk.Body().Position)
+		chk.voice = cache.GetSfx(SfxChickenPain).PlayAttenuated(chk.Body().Position)
 		spawnPosition := chk.actor.Position().Add(chk.actor.FacingVec().Mul(0.5))
 		// Spawn an item sometimes
 		switch v := rand.Float32(); {
@@ -211,7 +211,7 @@ func (chk *Chicken) OnDamage(sourceEntity any, damage float32) bool {
 			SpawnEggCarton(spawnPosition)
 		}
 	} else if !chk.voice.IsPlaying() && rand.Float32() < 0.25 {
-		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuatedV(chk.Body().Position)
+		chk.voice = cache.GetSfx(SfxChickenBok).PlayAttenuated(chk.Body().Position)
 	}
 	return true
 }

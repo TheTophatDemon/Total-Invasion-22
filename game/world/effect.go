@@ -5,12 +5,12 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type Effect struct {
@@ -19,7 +19,7 @@ type Effect struct {
 
 	id        scene.Id[*Effect]
 	particles comps.ParticleRender
-	voice     tdaudio.VoiceId
+	voice     *audio.Voice
 }
 
 func SpawnEffect(position mgl32.Vec3, lifetime float32, particles comps.ParticleRender) (id scene.Id[*Effect], fx *Effect, err error) {
@@ -53,8 +53,8 @@ func (fx *Effect) Update(deltaTime float32) {
 	}
 	fx.Lifetime -= deltaTime
 	fx.particles.Update(deltaTime, fx.Position)
-	if fx.voice.IsValid() {
-		fx.voice.SetPositionV(fx.Position)
+	if fx.voice != nil {
+		fx.voice.SetPosition(fx.Position)
 	}
 	if fx.Lifetime < 0.0 {
 		gWorld.QueueRemoval(fx.id.Handle)
@@ -76,7 +76,7 @@ func SpawnSingleExplosion(position mgl32.Vec3) (id scene.Id[*Effect], fx *Effect
 	if err != nil {
 		return
 	}
-	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuatedV(position)
+	fx.voice = cache.GetSfx("assets/sounds/explosion.wav").PlayAttenuated(position)
 
 	// Apply splash damage to surrounding entities
 	actorIter := gWorld.IterActorsInSphere(position, damageRadius, nil)

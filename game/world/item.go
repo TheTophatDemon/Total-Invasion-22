@@ -8,6 +8,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -15,7 +16,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -27,7 +27,7 @@ type Item struct {
 	animPlayer   comps.AnimationPlayer
 
 	flashColor  color.Color
-	pickupSound tdaudio.SoundId
+	pickupSound *audio.Player
 	healAmount  float32
 	giveAmmo    [game.AmmoTypeCount]int // Amount of ammo to give for each type
 	giveWeapon  game.WeaponIndex
@@ -390,7 +390,7 @@ func (item *Item) OnUse(player *Player) {
 		}
 	}
 
-	item.pickupSound.PlayAttenuatedV(item.body.Position)
+	item.pickupSound.PlayAttenuated(item.body.Position)
 	gWorld.Hud.FlashScreen(item.flashColor, 0.5)
 	if len(item.messageKey) > 0 {
 		gWorld.Hud.ShowMessage(settings.Localize(item.messageKey), 10, item.messageColor)

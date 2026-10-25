@@ -198,8 +198,8 @@ func teleportAction(tr *Trigger, handle scene.Handle) {
 				// which would cause the destination teleporter to immediately teleport the body back.
 				trOther.addToTouching(handle)
 				const sfxTeleport = "assets/sounds/teleport.wav"
-				cache.GetSfx(sfxTeleport).PlayAttenuatedV(actor.Position())
-				cache.GetSfx(sfxTeleport).PlayAttenuatedV(tr.Position)
+				cache.GetSfx(sfxTeleport).PlayAttenuated(actor.Position())
+				cache.GetSfx(sfxTeleport).PlayAttenuated(tr.Position)
 				tr.particles.EmissionTimer = 0.5
 				trOther.particles.EmissionTimer = 0.5
 

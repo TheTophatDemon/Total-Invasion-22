@@ -5,12 +5,12 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/engine/tween"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -19,7 +19,7 @@ const LevelIntroTime = 3.0 // Time after which the level intro ends.
 
 type LevelIntro struct {
 	timer                           float32
-	voice                           tdaudio.VoiceId
+	voice                           *audio.Voice
 	starBackground, blackBackground ui.Element
 	bannerTop, bannerBottom         ui.Element
 	sickle, eyes                    ui.Element

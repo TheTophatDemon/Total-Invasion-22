@@ -8,11 +8,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -37,8 +37,8 @@ func SpawnSickle(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id[*
 		},
 		Facing:       facing,
 		forwardSpeed: 35.0,
-		voices: [4]tdaudio.VoiceId{
-			0: cache.GetSfx("assets/sounds/weapon/sickle.wav").PlayAttenuatedV(position),
+		voices: [4]*audio.Voice{
+			0: cache.GetSfx("assets/sounds/weapon/sickle.wav").PlayAttenuated(position),
 		},
 		StunChance: 0.1,
 		Damage:     200.0,
@@ -126,7 +126,7 @@ func (proj *Projectile) sickleCollide(movement mgl32.Vec3, otherEnt any, mask co
 		// Bounce off of walls
 		proj.forwardSpeed = -math2.Abs(proj.forwardSpeed) / 2.0
 		proj.voices[1] = cache.GetSfx("assets/sounds/weapon/sickle_clink.wav").
-			PlayAttenuatedV(proj.body.Position)
+			PlayAttenuated(proj.body.Position)
 	}
 
 	// Apply damage per second
@@ -134,7 +134,7 @@ func (proj *Projectile) sickleCollide(movement mgl32.Vec3, otherEnt any, mask co
 		damaged := damageable.OnDamage(proj, proj.Damage*deltaTime)
 		if damaged && !proj.voices[2].IsPlaying() {
 			proj.voices[2] = cache.GetSfx("assets/sounds/weapon/sickle_cut.wav").
-				PlayAttenuatedV(proj.body.Position)
+				PlayAttenuated(proj.body.Position)
 		}
 	}
 
@@ -223,8 +223,8 @@ func SpawnFireball(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.375, 0.375}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 35.0,
-		voices: [4]tdaudio.VoiceId{
-			cache.GetSfx("assets/sounds/fireball.wav").PlayAttenuatedV(position),
+		voices: [4]*audio.Voice{
+			cache.GetSfx("assets/sounds/fireball.wav").PlayAttenuated(position),
 		},
 		StunChance: 0.1,
 		Damage:     15,
@@ -397,8 +397,8 @@ func SpawnBlessing(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
 		SpriteRender: comps.NewSpriteRender(tex, nil, &mgl32.Vec2{0.5, 0.5}),
 		AnimPlayer:   comps.NewAnimationPlayer(tex.GetDefaultAnimation(), true),
 		forwardSpeed: 15.0,
-		voices: [4]tdaudio.VoiceId{
-			cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuatedV(position),
+		voices: [4]*audio.Voice{
+			cache.GetSfx("assets/sounds/blessing.wav").PlayAttenuated(position),
 		},
 		StunChance: 0.0,
 		Damage:     15,

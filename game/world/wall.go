@@ -443,16 +443,16 @@ func (wall *Wall) OnUse(player *Player) {
 		wall.targetSwitchState = SwitchOn
 		anim, _ := wall.MeshRender.Texture.GetAnimation("on")
 		wall.AnimPlayer.PlayNewAnim(anim)
-		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuatedV(wall.body.Position)
+		cache.GetSfx("assets/sounds/switch_on.wav").PlayAttenuated(wall.body.Position)
 	case wall.switchState == SwitchOn:
 		wall.targetSwitchState = SwitchOff
 		anim, _ := wall.MeshRender.Texture.GetAnimation("off")
 		wall.AnimPlayer.PlayNewAnim(anim)
-		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuatedV(wall.body.Position)
+		cache.GetSfx("assets/sounds/switch_off.wav").PlayAttenuated(wall.body.Position)
 	case wall.key != game.KeysNone && (player.keys&wall.key) != wall.key:
 		// Locked if keycard not retrieved
 		gWorld.Hud.ShowMessage(settings.Localize(wall.key.Name()+"KeyNeeded"), 10, color.Red)
-		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuatedV(wall.body.Position)
+		cache.GetSfx("assets/sounds/door_locked.wav").PlayAttenuated(wall.body.Position)
 	case !wall.Origin.ApproxEqual(wall.Destination):
 		wall.ToggleMovement()
 	}
@@ -474,7 +474,7 @@ func (wall *Wall) Open() {
 	wall.movePhase = MovePhaseOpening
 	wall.waitTimer = 0
 	if len(wall.activateSound) > 0 {
-		cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
+		cache.GetSfx(wall.activateSound).PlayAttenuated(wall.body.Position)
 	}
 	gridX, gridY, gridZ := gWorld.GameMap.GridShape.WorldToGridPos(wall.Origin)
 	if wall.body.ExcludedLayers != 0 {
@@ -496,7 +496,7 @@ func (wall *Wall) Close() {
 	if wall.WaitTime >= 0.0 {
 		wall.movePhase = MovePhaseClosing
 		if len(wall.activateSound) > 0 {
-			cache.GetSfx(wall.activateSound).PlayAttenuatedV(wall.body.Position)
+			cache.GetSfx(wall.activateSound).PlayAttenuated(wall.body.Position)
 		}
 	}
 	if wall.connectedZones[0] > 0 {

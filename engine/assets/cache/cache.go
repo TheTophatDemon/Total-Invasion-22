@@ -7,14 +7,13 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets"
-	"tophatdemon.com/total-invasion-ii/engine/assets/audio"
 	"tophatdemon.com/total-invasion-ii/engine/assets/fonts"
 	"tophatdemon.com/total-invasion-ii/engine/assets/geom"
 	"tophatdemon.com/total-invasion-ii/engine/assets/locales"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 )
 
 type (
@@ -43,7 +42,7 @@ var loadedShapes map[shapePair]collision.Shape
 var loadedFonts cache[*fonts.Font]
 
 // Cache of sound effects, indexed by .wav file path
-var loadedSfx cache[tdaudio.SoundId]
+var loadedSfx cache[*audio.Player]
 
 // Cache of translations, indexed by .json file path.
 var loadedTranslations cache[*locales.Translation]
@@ -73,11 +72,11 @@ func init() {
 		freeFunc:       nil,
 		resourceName:   "font",
 	}
-	loadedSfx = cache[tdaudio.SoundId]{
-		storage:        make(map[string]tdaudio.SoundId),
+	loadedSfx = cache[*audio.Player]{
+		storage:        make(map[string]*audio.Player),
 		fileExtensions: []string{".wav"},
 		loadFunc:       audio.LoadSfx,
-		freeFunc:       nil,
+		freeFunc:       (*audio.Player).Teardown,
 		resourceName:   "sfx",
 	}
 	loadedTranslations = cache[*locales.Translation]{
@@ -175,7 +174,7 @@ func GetFont(assetPath string) (*fonts.Font, error) {
 }
 
 // Retrieves a sound effect from the game assets.
-func GetSfx(assetPath string) tdaudio.SoundId {
+func GetSfx(assetPath string) *audio.Player {
 	sfx, err := loadedSfx.get(assetPath)
 	if err != nil {
 		failure.LogErrWithLocation("%v", err)
@@ -191,6 +190,12 @@ func PreloadSfx(directory string) {
 	}
 	for _, path := range files {
 		GetSfx(path)
+	}
+}
+
+func StopAllSfx() {
+	for _, player := range loadedSfx.storage {
+		player.StopAll()
 	}
 }
 
@@ -213,6 +218,8 @@ func Reset() {
 	clear(loadedShapes)
 	loadedFonts.freeAll()
 	clear(loadedFonts.storage)
+	loadedSfx.freeAll()
+	clear(loadedSfx.storage)
 }
 
 // This frees memory for all resources currently loaded.
@@ -221,5 +228,6 @@ func FreeAll() {
 	loadedTextures.freeAll()
 	loadedMeshes.freeAll()
 	loadedFonts.freeAll()
+	loadedSfx.freeAll()
 	FreeBuiltInAssets()
 }

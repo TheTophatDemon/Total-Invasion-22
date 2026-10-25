@@ -15,6 +15,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
 	"tophatdemon.com/total-invasion-ii/engine/assets/shaders"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/containers"
 	"tophatdemon.com/total-invasion-ii/engine/failure"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -23,7 +24,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/tree"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -246,7 +246,7 @@ func NewWorld(app engine.Observer, changeInfo game.MapChangeSignal) (*World, err
 		if ent.Properties.Name.Or("") == "level properties" {
 			if songPath, hasSong := ent.Properties.Song.Get(); hasSong {
 				// Play the song
-				tdaudio.QueueSong("assets/music/"+*songPath+".ogg", true, 0)
+				audio.QueueSong("assets/music/"+*songPath+".ogg", true, 0)
 			}
 
 			if skyPath, hasSky := ent.Properties.Sky.Get(); hasSky {
@@ -298,7 +298,8 @@ func (world *World) Update(deltaTime float32) {
 		world.Hud.Update(deltaTime, player)
 		pos := player.actor.Position()
 		dir := player.actor.FacingVec()
-		tdaudio.SetListenerOrientation(pos[0], pos[1], pos[2], dir[0], dir[1], dir[2])
+		audio.SetListenerPosition(pos)
+		audio.SetListenerOrientation(dir)
 	}
 
 	// Remove deleted entities
@@ -411,7 +412,7 @@ func (world *World) EnterWinState(nextLevel string, winCamera scene.Handle) {
 	world.CurrentCamera = scene.Id[*Camera]{Handle: winCamera}
 	camera, _ := world.CurrentCamera.Get()
 	camera.waitTime = 0.0
-	tdaudio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
+	audio.QueueSong("assets/music/viktor_the_victor.ogg", false, 0.0)
 	gWorld.levelEndTime = time.Now()
 	world.Hud.VictoryScreen.EndLevel()
 }

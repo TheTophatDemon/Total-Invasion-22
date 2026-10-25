@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/te3"
 	"tophatdemon.com/total-invasion-ii/engine/assets/textures"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/containers/maybe"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
@@ -14,7 +15,6 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/render"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -39,7 +39,7 @@ type Enemy struct {
 	idleState, chaseState, stunState               enemyState
 	attackState, dodgeState, dieState, reviveState enemyState
 	state, previousState                           *enemyState
-	voice                                          tdaudio.VoiceId
+	voice                                          *audio.Voice
 	spawnAmmo                                      game.AmmoType // Ammo type that will drop when enemy is killed
 	spawnAmmoChance                                float32       // Probability from 0 to 1
 	defaultCollisionFilters                        collision.Mask
@@ -58,7 +58,7 @@ type Enemy struct {
 type enemyState struct {
 	anim                   textures.Animation
 	stopAnim               bool // Set to true to leave the animation on its first frame without playing it.
-	enterSound, leaveSound tdaudio.SoundId
+	enterSound, leaveSound *audio.Player
 	collisionFilters       maybe.T[collision.Mask]
 	updateFunc             func(enemy *Enemy, deltaTime float32)
 	enterFunc              func(enemy *Enemy, oldState *enemyState)
@@ -187,8 +187,8 @@ func (enemy *Enemy) Update(deltaTime float32) {
 
 	enemyPos := enemy.Body().Position
 	enemyDir := enemy.actor.FacingVec()
-	if enemy.voice.IsValid() {
-		enemy.voice.SetPositionV(enemyPos)
+	if enemy.voice != nil {
+		enemy.voice.SetPosition(enemyPos)
 	}
 
 	if enemy.state != &enemy.dieState {
@@ -350,9 +350,9 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 			enemy.actor.body.RestoreLayers()
 			enemy.bloodParticles.LocalTransform.SetPosition(0, 0, 0)
 		}
-		if leaveSound := oldState.leaveSound; leaveSound.IsValid() {
+		if leaveSound := oldState.leaveSound; leaveSound != nil {
 			enemy.voice.Stop()
-			enemy.voice = leaveSound.PlayAttenuatedV(enemy.actor.Position())
+			enemy.voice = leaveSound.PlayAttenuated(enemy.actor.Position())
 		}
 	}
 
@@ -368,9 +368,9 @@ func (enemy *Enemy) changeState(newState *enemyState) {
 				enemy.AnimPlayer.MoveToFrame(-1)
 			}
 		}
-		if newState.enterSound.IsValid() && enemy.framesAlive > 0 {
+		if newState.enterSound != nil && enemy.framesAlive > 0 {
 			enemy.voice.Stop()
-			enemy.voice = newState.enterSound.PlayAttenuatedV(enemy.actor.Position())
+			enemy.voice = newState.enterSound.PlayAttenuated(enemy.actor.Position())
 		}
 
 		// Initialize new state

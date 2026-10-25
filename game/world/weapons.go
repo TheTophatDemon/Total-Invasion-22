@@ -6,11 +6,11 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"tophatdemon.com/total-invasion-ii/engine/assets/cache"
+	"tophatdemon.com/total-invasion-ii/engine/audio"
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
-	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
 	"tophatdemon.com/total-invasion-ii/game/settings"
 )
@@ -45,7 +45,7 @@ type (
 		Equipped      bool
 		HeldDown      bool        // True while the fire button is being held
 		State         WeaponState // Describes the state of transitional animations.
-		Voice         tdaudio.VoiceId
+		Voice         *audio.Voice
 		CooldownTimer float32
 		Sway          float32 // Value tracking the timeline of the sway animation.
 	}
@@ -306,8 +306,8 @@ var (
 			if !airhorn.HeldDown {
 				idleAnim, _ := airhorn.Sprite.BgTexture.GetAnimation(airhorn.IdleAnimName)
 				airhorn.Sprite.AnimPlayer.PlayNewAnim(idleAnim)
-				if airhorn.Voice.IsPlaying() && airhorn.Voice.GetTime() < 800 {
-					airhorn.Voice.Seek(800)
+				if airhorn.Voice.IsPlaying() && airhorn.Voice.TimeFrames() < 800 {
+					airhorn.Voice.SeekFrame(800)
 				}
 			}
 		},
