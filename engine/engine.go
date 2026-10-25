@@ -24,6 +24,7 @@ type App interface {
 
 var debugMode bool
 var window *rgfw.Window
+var initialMonitorMode rgfw.MonitorMode
 var glContext *rgfw.OpenGLContext
 
 // We're tracking this ourselves so that switching to fullscreen doesn't mess up the UI
@@ -71,7 +72,7 @@ func SetVideoMode(isFullscreen bool, width, height int) {
 		gl.Viewport(0, 0, int32(width), int32(height))
 	}
 	if isFullscreen && !IsFullscreen() {
-		window.SetFullscreen(rgfw.FULLSCREEN_BORDERLESS)
+		window.SetFullscreen(rgfw.FULLSCREEN_EXCLUSIVE)
 	} else if !isFullscreen && IsFullscreen() {
 		window.SetFullscreen(rgfw.FULLSCREEN_NONE)
 		window.Center()
@@ -79,6 +80,7 @@ func SetVideoMode(isFullscreen bool, width, height int) {
 }
 
 func Shutdown() {
+	window.GetMonitor().SetMode(initialMonitorMode)
 	window.SetShouldClose(true)
 }
 
@@ -105,7 +107,7 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 
 	// This flag doesn't work because of a RGFW bug.
 	// if isFullscreen {
-	// 	flags |= rgfw.WINDOW_FULLSCREEN_BORDERLESS
+	// 	flags |= rgfw.WINDOW_FULLSCREEN_EXCLUSIVE
 	// }
 
 	window = rgfw.CreateWindow(windowTitle, 0, 0, screenWidth, screenHeight, flags)
@@ -120,8 +122,10 @@ func Init(screenWidth, screenHeight int, windowTitle string, enableDebug, isFull
 	window.MakeContextCurrent()
 	SetVsync(isVsync)
 
+	initialMonitorMode = window.GetMonitor().Mode
+
 	if isFullscreen {
-		window.SetFullscreen(rgfw.FULLSCREEN_BORDERLESS)
+		window.SetFullscreen(rgfw.FULLSCREEN_EXCLUSIVE)
 	}
 
 	if err := gl.Init(); err != nil {
@@ -154,8 +158,8 @@ func Run(app App) {
 
 			window.SwapBuffers()
 		}
-		rgfw.PollEvents()
 	}
+	window.Close()
 }
 
 func DeInit() {

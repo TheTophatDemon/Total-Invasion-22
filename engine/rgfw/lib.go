@@ -435,6 +435,24 @@ const (
 	FULLSCREEN_EXCLUSIVE
 )
 
+type MonitorMode struct {
+	_                            structs.HostLayout
+	Width, Height                int32
+	RefreshRate                  float32
+	RedSize, BlueSize, GreenSize uint8
+	Source                       uintptr
+}
+
+type Monitor struct {
+	_                                                         structs.HostLayout
+	X, Y                                                      int32
+	Name                                                      [128]byte
+	ScaleX, ScaleY, PixelRatio, PhysicalWidth, PhysicalHeight float32
+	Mode                                                      MonitorMode
+	UserPointer                                               uintptr
+	MonitorNode                                               uintptr
+}
+
 var (
 	rgfwInit                           func(className string, flags InitFlags) int32
 	rgfwDeinit                         func()
@@ -467,6 +485,9 @@ var (
 	rgfwWindowSetRawMouseMode          func(window *Window, mode bool)
 	rgfwWindowCaptureRawMouse          func(window *Window, state bool)
 	rgfwWindowShowMouse                func(window *Window, show bool)
+	rgfwWindowGetMonitor               func(window *Window) *Monitor
+	rgfwMonitorGetMode                 func(monitor *Monitor, mode *MonitorMode) bool
+	rgfwMonitorSetMode                 func(monitor *Monitor, mode *MonitorMode) bool
 )
 
 func Init(className string, initFlags InitFlags) error {
@@ -505,6 +526,9 @@ func Init(className string, initFlags InitFlags) error {
 	purego.RegisterLibFunc(&rgfwWindowSetRawMouseMode, lib, "RGFW_window_setRawMouseMode")
 	purego.RegisterLibFunc(&rgfwWindowCaptureRawMouse, lib, "RGFW_window_captureRawMouse")
 	purego.RegisterLibFunc(&rgfwWindowShowMouse, lib, "RGFW_window_showMouse")
+	purego.RegisterLibFunc(&rgfwWindowGetMonitor, lib, "RGFW_window_getMonitor")
+	purego.RegisterLibFunc(&rgfwMonitorGetMode, lib, "RGFW_monitor_getMode")
+	purego.RegisterLibFunc(&rgfwMonitorSetMode, lib, "RGFW_monitor_setMode")
 
 	res := rgfwInit(className, initFlags)
 	if res != 0 {
@@ -639,4 +663,18 @@ func (window *Window) CaptureRawMouse(state bool) {
 
 func (window *Window) SetMouseVisibility(show bool) {
 	rgfwWindowShowMouse(window, show)
+}
+
+func (window *Window) GetMonitor() *Monitor {
+	return rgfwWindowGetMonitor(window)
+}
+
+func (monitor *Monitor) GetMode() (MonitorMode, bool) {
+	var mode MonitorMode
+	ok := rgfwMonitorGetMode(monitor, &mode)
+	return mode, ok
+}
+
+func (monitor *Monitor) SetMode(mode MonitorMode) bool {
+	return rgfwMonitorSetMode(monitor, &mode)
 }
