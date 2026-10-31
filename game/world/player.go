@@ -460,14 +460,8 @@ func (player *Player) takeUserInput(deltaTime float32) {
 			player.safety = false
 		}
 	} else if player.SelectedWeapon != nil && settings.Current.ActionFire.Pressed() {
-		var cast collision.Result
-		if player.SelectedWeapon.IsShooter {
-			// Don't fire if there is a wall too close in front
-			cast, _ = gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
-		}
-
 		ammoBefore := player.ammo
-		if !cast.Hit && player.SelectedWeapon.AttemptFire(player, deltaTime, settings.Current.ActionFire.JustPressed()) {
+		if player.SelectedWeapon.AttemptFire(player, deltaTime, settings.Current.ActionFire.JustPressed()) {
 			player.punTimer.Reset()
 			player.actor.NoiseLevel = player.SelectedWeapon.NoiseLevel
 

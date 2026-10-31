@@ -9,6 +9,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/color"
 	"tophatdemon.com/total-invasion-ii/engine/math2"
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
+	"tophatdemon.com/total-invasion-ii/engine/scene/comps"
 	"tophatdemon.com/total-invasion-ii/engine/scene/comps/ui"
 	"tophatdemon.com/total-invasion-ii/engine/tdaudio"
 	"tophatdemon.com/total-invasion-ii/game"
@@ -25,7 +26,6 @@ type (
 		FireSoundPath              string
 		IdleAnimName, FireAnimName string
 		Index                      game.WeaponIndex
-		IsShooter                  bool
 		Name                       string // Weapon name, same as localization key.
 		NoiseLevel                 float32
 		SwayExtents                mgl32.Vec2  // Defines a rectangle on screen within which the weapon will sway
@@ -33,9 +33,10 @@ type (
 		WheelColor                 color.Color // Color of weapon wheel frame
 		WheelIconPath              string      // Path to icon texture displayed in weapon wheel slot
 
-		InitFunc   func(w *Weapon)
-		UpdateFunc func(w *Weapon, player *Player, deltaTime float32)
-		FireFunc   func(w *Weapon, player *Player, deltaTime float32, justPressed bool)
+		InitFunc    func(w *Weapon)
+		UpdateFunc  func(w *Weapon, player *Player, deltaTime float32)
+		FireFunc    func(w *Weapon, player *Player, deltaTime float32, justPressed bool)
+		BlockedFunc func(w *Weapon, player *Player) bool // Checks if the weapon is blocked and can't fire
 	}
 	// Represents dynamic state of the weapon
 	Weapon struct {
@@ -70,7 +71,7 @@ var (
 		WheelColor:    color.FromBytes(138, 138, 138, 255),
 		WheelIconPath: "assets/textures/sprites/sickle.png",
 		NoiseLevel:    30.0,
-		IsShooter:     true,
+		BlockedFunc:   blockedByRaycast,
 		IdleAnimName:  "idle",
 		Index:         game.WeaponIndexSickle,
 		FireAnimName:  "fire",
@@ -86,7 +87,7 @@ var (
 		},
 		UpdateFunc: func(sickle *Weapon, player *Player, deltaTime float32) {
 			animPlayer := &sickle.Sprite.AnimPlayer
-			if sickle.CanFire(player.ammo) && animPlayer.CurrentAnimation().Name == sickle.FireAnimName {
+			if player.ammo[game.AmmoTypeSickle] > 0 && animPlayer.CurrentAnimation().Name == sickle.FireAnimName {
 				catchAnim, _ := sickle.Sprite.BgTexture.GetAnimation("catch")
 				animPlayer.PlayNewAnim(catchAnim)
 				cache.GetSfx("assets/sounds/weapon/sickle_return.wav").Play()
@@ -107,7 +108,7 @@ var (
 		WheelColor:    color.FromBytes(0, 0, 255, 255),
 		WheelIconPath: "assets/textures/sprites/chicken_cannon.png",
 		NoiseLevel:    50.0,
-		IsShooter:     true,
+		BlockedFunc:   blockedByRaycast,
 		IdleAnimName:  "idle",
 		Index:         game.WeaponIndexChicken,
 		FireAnimName:  "fire",
@@ -134,7 +135,25 @@ var (
 		WheelColor:    color.FromBytes(0, 170, 0, 255),
 		WheelIconPath: "assets/textures/sprites/grenade_launcher.png",
 		NoiseLevel:    80.0,
-		IsShooter:     true,
+		BlockedFunc: func(weapon *Weapon, player *Player) bool {
+			// Test if the shape of the grenade being spawned actually touches anything
+			// A raycast would allow it to intersect the wall in some edge cases, but we don't want it to blow up in the player's face.
+			firePos := player.Body().Position.Add(player.actor.FacingVec().Add(mgl32.Vec3{0.0, 0.15, 0.0}))
+			grenadeShape := GrenadeShape().ShrunkenBy(-0.1)
+			// Check map geometry
+			if gWorld.GameMap.GridShape.OtherBodyTouches(mgl32.Vec3{}, firePos, grenadeShape, ColLayerMap) {
+				return true
+			}
+			// Check solid entities
+			for handle := range gWorld.bspTree.PotentiallyTouchingEnts(firePos, grenadeShape) {
+				if bodyHaver, ok := handle.Get[comps.HasBody](); ok {
+					if bodyHaver != player && bodyHaver.Body().OnLayer(ColLayerMap) && bodyHaver.Body().Shape.Touches(bodyHaver.Body().Position, firePos, grenadeShape) {
+						return true
+					}
+				}
+			}
+			return false
+		},
 		IdleAnimName:  "idle",
 		Index:         game.WeaponIndexGrenade,
 		FireAnimName:  "fire",
@@ -161,7 +180,7 @@ var (
 		WheelColor:    color.FromBytes(0, 255, 130, 255),
 		WheelIconPath: "assets/textures/sprites/parusu.png",
 		NoiseLevel:    50.0,
-		IsShooter:     true,
+		BlockedFunc:   blockedByRaycast,
 		IdleAnimName:  "idle",
 		Index:         game.WeaponIndexParusu,
 		FireAnimName:  "fire",
@@ -196,7 +215,29 @@ var (
 		SwaySpeed:     mgl32.Vec2{0.75, 1.25},
 		AmmoType:      game.AmmoTypeGrenade,
 		AmmoCost:      1,
-		IsShooter:     true,
+		BlockedFunc: func(weapon *Weapon, player *Player) bool {
+			// Test if the shape of the grenade being spawned actually touches anything
+			// A raycast would allow it to intersect the wall in some edge cases, but we don't want it to blow up in the player's face.
+			sideVec := player.actor.FacingVec().Cross(math2.Vec3Up()).Mul(0.7)
+			firePos := player.Body().Position.Add(player.actor.FacingVec().Add(mgl32.Vec3{0.0, 0.15, 0.0}).Add(sideVec))
+			if weapon.Sprite.BgFlippedHorz {
+				firePos = firePos.Add(sideVec.Mul(-2))
+			}
+			grenadeShape := GrenadeShape().ShrunkenBy(-0.1)
+			// Check map geometry
+			if gWorld.GameMap.GridShape.OtherBodyTouches(mgl32.Vec3{}, firePos, grenadeShape, ColLayerMap) {
+				return true
+			}
+			// Check solid entities
+			for handle := range gWorld.bspTree.PotentiallyTouchingEnts(firePos, grenadeShape) {
+				if bodyHaver, ok := handle.Get[comps.HasBody](); ok {
+					if bodyHaver != player && bodyHaver.Body().OnLayer(ColLayerMap) && bodyHaver.Body().Shape.Touches(bodyHaver.Body().Position, firePos, grenadeShape) {
+						return true
+					}
+				}
+			}
+			return false
+		},
 		IdleAnimName:  "idle",
 		FireAnimName:  "fire",
 		FireSoundPath: "assets/sounds/weapon/grenadelaunch.wav",
@@ -235,7 +276,7 @@ var (
 		WheelColor:    color.FromBytes(170, 0, 0, 255),
 		WheelIconPath: "assets/textures/sprites/sign_of_madness.png",
 		NoiseLevel:    35.0,
-		IsShooter:     false,
+		BlockedFunc:   nil,
 		IdleAnimName:  "idle",
 		FireAnimName:  "swing",
 		InitFunc: func(sign *Weapon) {
@@ -293,6 +334,7 @@ var (
 		FireSoundPath: "assets/sounds/weapon/airhorn.wav",
 		IdleAnimName:  "idle",
 		Index:         game.WeaponIndexAirhorn,
+		BlockedFunc:   nil,
 		FireAnimName:  "fire",
 		InitFunc: func(airhorn *Weapon) {
 			airhornTex := cache.GetTexture("assets/textures/ui/airhorn_hud.png")
@@ -366,7 +408,7 @@ func (weap *Weapon) Init(weaponDef *WeaponDef, equipped bool) {
 }
 
 func (weap *Weapon) AttemptFire(player *Player, deltaTime float32, justPressed bool) bool {
-	if weap == nil || weap.WeaponDef == nil || !weap.CanFire(player.ammo) {
+	if weap == nil || weap.WeaponDef == nil || !weap.CanFire(player) {
 		return false
 	}
 	weap.CooldownTimer = weap.Cooldown
@@ -408,8 +450,11 @@ func (weap *Weapon) OnDeselect() {
 	}
 }
 
-func (weap *Weapon) CanFire(ammo game.Ammo) bool {
-	return weap.State == WeaponStateReady && weap.CooldownTimer <= 0.0 && ammo[weap.AmmoType] >= weap.AmmoCost
+func (weap *Weapon) CanFire(player *Player) bool {
+	return weap.State == WeaponStateReady &&
+		weap.CooldownTimer <= 0.0 &&
+		player.ammo[weap.AmmoType] >= weap.AmmoCost &&
+		(weap.BlockedFunc == nil || !weap.BlockedFunc(weap, player))
 }
 
 func (weap *Weapon) Update(player *Player, deltaTime float32) {
@@ -453,10 +498,17 @@ func (weap *Weapon) Update(player *Player, deltaTime float32) {
 	} else {
 		// Default behavior: Switch to idle animation when firing is complete.
 		idleAnim, _ := weap.Sprite.BgTexture.GetAnimation(weap.IdleAnimName)
-		if weap.CanFire(player.ammo) || player.ammo[weap.AmmoType] == 0 {
+		if (weap.State == WeaponStateReady &&
+			weap.CooldownTimer <= 0.0 &&
+			player.ammo[weap.AmmoType] >= weap.AmmoCost) || player.ammo[weap.AmmoType] == 0 {
 			weap.Sprite.AnimPlayer.ChangeAnimation(idleAnim)
 		}
 	}
 
 	weap.HeldDown = false
+}
+
+func blockedByRaycast(weapon *Weapon, player *Player) bool {
+	cast, _ := gWorld.Raycast(player.Body().Position, player.actor.FacingVec(), ColLayerMap, 1.5, player.Body())
+	return cast.Hit
 }

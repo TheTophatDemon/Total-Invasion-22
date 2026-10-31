@@ -239,6 +239,10 @@ func SpawnFireball(position, facing mgl32.Vec3, owner scene.Handle) (id scene.Id
  *               Grenade
  *=============================================**/
 
+func GrenadeShape() collision.Shape {
+	return collision.NewBoxShape(0.25, 0.25, 0.25)
+}
+
 func SpawnGrenade(position, direction mgl32.Vec3, owner scene.Handle) (id scene.Id[*Projectile], proj *Projectile, err error) {
 	id, proj, err = gWorld.Projectiles.New()
 	if err != nil {
@@ -251,7 +255,7 @@ func SpawnGrenade(position, direction mgl32.Vec3, owner scene.Handle) (id scene.
 		id: id,
 		body: comps.Body{
 			Position: position,
-			Shape:    collision.NewBoxShape(0.25, 0.25, 0.25),
+			Shape:    GrenadeShape(),
 			Velocity: direction.Mul(20.0),
 			Layers:   ColLayerProjectiles,
 		},

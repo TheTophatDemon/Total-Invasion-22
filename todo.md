@@ -1,18 +1,19 @@
 # TODO - Development
-- Double Grenade Launcher
-  - Make grenades less likely to clip through walls
-- Bugs
-  - Fix jittering in corners
-  - Jittering while walking across non-solid props sometimes??
-  - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
+- Slow down dummkopf shots for lower difficulties
 - Punish Me difficulty
   - Disable overhealing
   - Make enemies revive?
   - Allow enemies to open doors
   - Hide menu option until you hover over it
 - Need ammo indicator for weapon wheel
+- Some kind of feedback when shooting weapon is blocked?
+- Consider making doors not close automatically (it could surprise players who are trying to flee)
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
+- Bugs
+  - Fix jittering in corners
+  - Jittering while walking across non-solid props sometimes??
+  - When changing resolution after throwing a sickle, the sickle will be in the wrong animation.
 - Have world iterators return iter.Seq2 (it might not actually heap allocate)
 - Replace GLFW bindings with purego bindings to reduce CGO overhead
 - Optimize the memory usage of map loading to avoid GC stutters
@@ -23,6 +24,7 @@
 - Modify loading screen graphic to be more on-model
 - Exit screen
 - Make checkpoint effects less harsh
+- Make item flashing less harsh / add setting
 - Player hit noise
 - Dialog Cutscene
   - Song
@@ -30,9 +32,19 @@
 - Re-record enemy voices
 
 # TODO - Levels
+- E1M1
+  - Prevent players from being trapped in hallway after teleporter
+- E1M2
+  - Put checkpoint in hallway after dummkopf
+  - Remove dummkopf in hallway on easier difficulties
+  - Add health
+- E1M5
+  - Secret exit blocked by armor stand
+  - Animate the clowns
+  - Add crowd cheering sound
 - E1M6
+  - Polish
   - Song
-  - Double Grenade Launcher
 
 ## Roadmap after Demo release
 - Change asset loading to use .zip packages?
