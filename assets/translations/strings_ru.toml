@@ -12,9 +12,8 @@ exit = "Выйти"
 # Difficulty screen
 chooseDifficulty = "Выбрать уровень сложности:"
 difficulty0 = "О нет!"
-difficulty1 = "Я готов(а)."
-difficulty2 = "Не сдержите."
-difficulty3 = "Накажите меня!"
+difficulty1 = "Не сдержите."
+difficulty2 = "Накажите меня!"
 changeDifficulty = "Можно переменить попозже в настройках."
 
 # Options Screen

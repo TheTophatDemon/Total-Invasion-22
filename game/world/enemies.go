@@ -12,6 +12,7 @@ import (
 	"tophatdemon.com/total-invasion-ii/engine/math2/collision"
 	"tophatdemon.com/total-invasion-ii/engine/scene"
 	"tophatdemon.com/total-invasion-ii/game"
+	"tophatdemon.com/total-invasion-ii/game/settings"
 )
 
 /**============================================
@@ -403,7 +404,7 @@ func dummkopfUpdateAttack(enemy *Enemy, deltaTime float32) {
 	} else if enemy.AnimPlayer.IsPlayingAnim(attackLoopAnim) {
 		enemy.attackTimer -= deltaTime
 		if enemy.attackTimer < 0.0 {
-			enemy.attackTimer = 0.15
+			enemy.attackTimer = settings.CurrDifficulty().DummkopfShootSpeed
 			enemy.faceTarget()
 			enemy.voice = cache.GetSfx("assets/sounds/enemy/dummkopf/dummkopf_spit.wav").
 				PlayAttenuatedV(enemy.actor.Position())

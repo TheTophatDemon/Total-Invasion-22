@@ -1,13 +1,11 @@
 # TODO - Development
-- Slow down dummkopf shots for lower difficulties
-- Punish Me difficulty
-  - Disable overhealing
-  - Make enemies revive?
-  - Allow enemies to open doors
-  - Hide menu option until you hover over it
+- Add texture properties to make props consistent in size
 - Need ammo indicator for weapon wheel
 - Some kind of feedback when shooting weapon is blocked?
+- Make chickens whackable with sign
 - Consider making doors not close automatically (it could surprise players who are trying to flee)
+- Make eyeballs transparent
+- Switch save system to picking one at the start of the game
 - Chicken cannon secondary attack
 - Gamepad support (for Steam Deck)
 - Bugs
@@ -32,14 +30,7 @@
 - Re-record enemy voices
 
 # TODO - Levels
-- E1M1
-  - Prevent players from being trapped in hallway after teleporter
-- E1M2
-  - Put checkpoint in hallway after dummkopf
-  - Remove dummkopf in hallway on easier difficulties
-  - Add health
 - E1M5
-  - Secret exit blocked by armor stand
   - Animate the clowns
   - Add crowd cheering sound
 - E1M6

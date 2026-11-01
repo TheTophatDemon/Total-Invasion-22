@@ -65,6 +65,9 @@ func (proj *Projectile) Update(deltaTime float32) {
 	}
 
 	movement := proj.body.Velocity.Mul(deltaTime)
+	if !proj.owner.Equals(gWorld.CurrentPlayer.Handle) {
+		movement = movement.Mul(settings.CurrDifficulty().ProjectileSpeedFactor)
+	}
 
 	// Respond to collisions
 	if proj.onCollide != nil {
